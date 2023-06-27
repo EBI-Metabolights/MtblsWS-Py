@@ -9,7 +9,7 @@ HOST=$(hostname)
 APPDIR=$(pwd -P)
 LOG_PATH=$APPDIR/logs
 
-PROCESS_ID=$(ps -ef | grep "python3 -m celery -A app.tasks.worker:celery beat --logfile $LOG_PATH/celery_beat_${HOST}.log" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
+PROCESS_ID=$(ps -ef | grep "$LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log" |  grep -v "grep" | awk '{ print $2 }' | tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
     echo "NO CELERY BEAT"

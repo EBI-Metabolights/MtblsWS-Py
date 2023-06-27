@@ -59,7 +59,7 @@ run_server:
   stage: deploy
   only:
       - development
-      - development
+      - test
       - development-pipeline-test
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/restart_server.sh"

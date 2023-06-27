@@ -10,7 +10,7 @@ HOST=$(hostname)
 APPDIR=$(pwd -P)
 LOG_PATH=$APPDIR/logs
 
-PROCESS_ID=$(ps -ef | grep "$LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}.log" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
+PROCESS_ID=$(ps -ef | grep "$LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}.log" |  grep -v "grep" | awk '{ print $2 }' | tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
     EXISTING_PROCESS=$(netstat -plant 2>/dev/null | grep $SERVER_PORT | awk '{print $7}' | tr "/" " ")
@@ -24,7 +24,7 @@ else
     echo "GUNICORN SERVER PROCESS_ID: ${PROCESS_ID}"
 fi
 
-PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_monitor_worker_${HOST}_${SERVER_PORT}.log" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
+PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_monitor_worker_${HOST}_${SERVER_PORT}.log" |  grep -v "grep" | awk '{ print $2 }' | tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
     echo "NO CELERY MONITOR WORKER"
@@ -32,7 +32,7 @@ else
     echo "CELERY MONITOR WORKER PROCESS_ID: ${PROCESS_ID}"
 fi
 
-PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log" | awk '{ print $2 }' |  head -n -1 | tr '\n' ' ')
+PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log" | grep -v "grep" | awk '{ print $2 }' |  tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
     echo "NO CELERY BEAT"
@@ -46,4 +46,4 @@ cd $APPDIR
 
 eval "$(conda shell.bash hook)"
 conda activate python38-MtblsWS
-celery  -A app.tasks.worker:celery inspect stats | grep @
+(celery  -A app.tasks.worker:celery inspect stats | grep @) || echo "No workers"

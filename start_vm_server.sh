@@ -33,7 +33,7 @@ eval "$(conda shell.bash hook)"
 conda activate python38-MtblsWS
 
 
-PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_monitor_worker_${HOST}_${SERVER_PORT}.log" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
+PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_monitor_worker_${HOST}_${SERVER_PORT}.log" |  grep -v "grep" | awk '{ print $2 }' | tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
     echo "CELERY MONITOR WORKER will be started"
@@ -43,7 +43,7 @@ else
 fi
 
 
-PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log" | awk '{ print $2 }' |  head -n -1 | tr '\n' ' ')
+PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log" | grep -v "grep" | awk '{ print $2 }' |  tr '\n' ' ')
 if [ -z "$PROCESS_ID" ]; then
     echo "CELERY BEAT will be started"
     python3 -m celery -A app.tasks.worker:celery beat --logfile $LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log --loglevel info --detach
@@ -52,7 +52,7 @@ else
 fi
 
 
-PROCESS_ID=$(ps -ef | grep "$LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
+PROCESS_ID=$(ps -ef | grep "$LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}" | grep -v "grep"  | awk '{ print $2 }'  | tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
     EXISTING_PROCESS=$(netstat -plant 2>/dev/null | grep $SERVER_PORT | awk '{print $7}') | tr "/" " "

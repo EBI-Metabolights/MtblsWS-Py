@@ -20,7 +20,7 @@ LOG_PATH=$APPDIR/logs
 
 cd $APPDIR
 
-PROCESS_ID=$(ps -ef | grep "$LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
+PROCESS_ID=$(ps -ef | grep "$LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}" | grep -v "grep" | awk '{ print $2 }' | tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
     echo "NO GUNICORN SERVER"
@@ -29,7 +29,14 @@ else
     kill -9 $PROCESS_ID
 fi
 
+PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log" |  grep -v "grep" | awk '{ print $2 }' | tr '\n' ' ')
 
+if [ -z "$PROCESS_ID" ]; then
+    echo "NO CELERY BEAT"
+else
+    echo "CELERY BEAT PROCESS_ID: ${PROCESS_ID} will be killed"
+    kill -9 $PROCESS_ID || echo "Process was not running."
+fi
 
 
 eval "$(conda shell.bash hook)"
@@ -42,13 +49,3 @@ echo "Shutdown signal will be sent to all workers"
 C_FAKEFORK=1
 celery -A app.tasks.worker:celery control shutdown
 echo "Shutdown signal was sent to all workers"
-
-
-PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log" | awk '{ print $2 }' |  head -n -1 | tr '\n' ' ')
-
-if [ -z "$PROCESS_ID" ]; then
-    echo "NO CELERY BEAT"
-else
-    echo "CELERY BEAT PROCESS_ID: ${PROCESS_ID} will be killed"
-    kill -9 $PROCESS_ID
-fi

@@ -35,27 +35,6 @@ Basic description of the Web Service
 
 logger = logging.getLogger('wslog')
 
-app_fields = {
-    'WsName': fields.String,
-    'WsVersion': fields.String,
-    'WsDescription': fields.String,
-    'WsURL': fields.String,
-}
-
-api_fields = {
-    'ApiVersion': fields.String,
-    'ApiDocumentation': fields.String,
-    'ApiSpecification': fields.String,
-    'IsatoolsApi': fields.String,
-    'METASPACE-Api': fields.String,
-    'mzml2isa': fields.String
-}
-
-about_fields = {
-    'WsApp': fields.Nested(app_fields),
-    'WsApi': fields.Nested(api_fields),
-}
-
 
 class About(Resource):
     """Basic description of the Web Service"""
@@ -70,26 +49,25 @@ class About(Resource):
             }
         ]
     )
-    @marshal_with(about_fields, envelope='AboutWS')
     def get(self):
 
         from flask import current_app as app
 
         """Get a basic description of the Web Service"""
         logger.info('Getting WS-about onto_information')
-        api = {"ApiVersion": get_settings().server.description.metabolights_api_version,
-               "ApiDocumentation": get_settings().server.service.app_host_url + get_settings().server.service.api_doc + ".html",
-               "ApiSpecification": get_settings().server.service.app_host_url + get_settings().server.service.api_doc + ".json",
-               "IsatoolsApi": get_settings().server.description.isa_api_version,
-               "METASPACE-Api": get_settings().server.description.metaspace_api_version,
+        api = {"version": get_settings().server.description.metabolights_api_version,
+               "documentation": get_settings().server.service.app_host_url + get_settings().server.service.api_doc + ".html",
+               "specification": get_settings().server.service.app_host_url + get_settings().server.service.api_doc + ".json",
+               "isatoolsApi": get_settings().server.description.isa_api_version,
+               "metaspaceApi": get_settings().server.description.metaspace_api_version,
                "mzml2isa": get_settings().server.description.mzml2isa_api_version
                }
-        appl = {"WsName": get_settings().server.description.ws_app_name,
-                "WsVersion": get_settings().server.description.ws_app_version,
-                "WsDescription": get_settings().server.description.ws_app_description,
-                "WsURL": get_settings().server.service.app_host_url + get_settings().server.service.resources_path 
+        app = {"name": get_settings().server.description.ws_app_name,
+                "version": get_settings().server.description.ws_app_version,
+                "description": get_settings().server.description.ws_app_description,
+                "url": get_settings().server.service.app_host_url + get_settings().server.service.resources_path 
                 }
-        about = {'WsApp': appl, 'WsApi': api}
+        about = {"about": {'app': app, 'api': api}}
         return about
 
 
