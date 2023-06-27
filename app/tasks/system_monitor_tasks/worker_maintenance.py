@@ -78,6 +78,7 @@ def check_additional_vm_workers(
         index = i + 1
     
         full_worker_name = f"{worker_name_prefix}_{index}@{local_hostname}"
+        logger.info(f"Check {full_worker_name}")
         worker_name = f"{worker_name_prefix}_{index}"
         
         
