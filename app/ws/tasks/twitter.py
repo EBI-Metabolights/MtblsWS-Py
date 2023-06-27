@@ -5,13 +5,14 @@ import tweepy
 from flask import request, current_app as app
 from flask_restful import Resource, abort, reqparse
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.utils import metabolights_exception_handler
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study
-from app.ws.db.settings import get_directory_settings
 from app.ws.db.types import StudyStatus
 from app.ws.db.wrappers import update_study_model_from_directory, create_study_model_from_db_study
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
 
@@ -108,9 +109,9 @@ class PublicStudyTweet(Resource):
             today = today.replace(hour=0, minute=0, second=0, microsecond=0)
             release_date = today - timedelta(days=1)
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
 
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             end = release_date + timedelta(days=1)
 
             start = release_date
@@ -119,9 +120,9 @@ class PublicStudyTweet(Resource):
             query = query.filter(Study.status == StudyStatus.PUBLIC.value,
                                  Study.releasedate >= start, Study.releasedate < end)
             new_public_studies = query.all()
-            directory_settings = get_directory_settings(app)
-            study_folders = directory_settings.studies_folder
-            url = app.config.get("WS_APP_BASE_LINK")
+            settings = get_study_settings()
+            study_folders = settings.mounted_paths.study_metadata_files_root_path
+            url = get_settings().server.service.ws_app_base_link
 
             public_study_messages = []
             public_study_ids = []
@@ -175,14 +176,14 @@ class PublicStudyTweet(Resource):
     @staticmethod
     def configure_twitter_api(twitter_credentials=None):
         if not twitter_credentials:
-            twitter_credentials = app.config.get('TWITTER_CREDENTIALS')
+            twitter_credentials = get_settings().twitter.connection
 
-        consumer_key = twitter_credentials["consumer_key"]
-        consumer_secret = twitter_credentials["consumer_secret"]
-        access_token = twitter_credentials["token"]
-        access_token_secret = twitter_credentials["token_secret"]
+        consumer_key = twitter_credentials.consumer_key
+        consumer_secret = twitter_credentials.consumer_secret
+        access_token = twitter_credentials.token
+        access_token_secret = twitter_credentials.token_secret
         # not used now
-        bearer = twitter_credentials["bearer"]
+        bearer = twitter_credentials.bearer
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
         auth.set_access_token(access_token, access_token_secret)
         api = tweepy.API(auth)

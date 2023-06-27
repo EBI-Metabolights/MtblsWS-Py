@@ -28,6 +28,8 @@ from flask_restful_swagger import swagger
 
 from app.ws.mtblsWSclient import WsClient
 from app.ws.report_builders.combined_maf_builder import CombinedMafBuilder
+from app.ws.settings.utils import get_study_settings
+from app.ws.study.user_service import UserService
 from app.ws.utils import create_maf, read_tsv, write_tsv
 
 logger = logging.getLogger('wslog')
@@ -202,13 +204,13 @@ class MetaboliteAnnotationFile(Resource):
 
         logger.info('MAF: Getting ISA-JSON Study %s', study_id)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
         maf_feedback = ""
-
+        study_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, study_id)
         for assay_file_name in assay_file_names:
             annotation_file_name = None
             assay_file = assay_file_name['assay_file_name']
@@ -302,14 +304,10 @@ class CombineMetaboliteAnnotationFiles(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
-        is_curator, __, __, __, study_location, __, __, __ = wsc.get_permissions('MTBLS1', user_token)
-        if is_curator is False:
-            abort(403)
-
+        
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         combiBuilder = CombinedMafBuilder(
             studies_to_combine=studies_to_combine,
-            original_study_location=study_location,
             method=method
         )
 

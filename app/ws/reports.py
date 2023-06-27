@@ -23,6 +23,7 @@ from datetime import datetime
 from flask import request, jsonify, current_app as app
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.ws.db_connection import get_connection, get_study
 from app.ws.isaApiClient import IsaApiClient
@@ -146,7 +147,9 @@ class StudyAssayTypeReports(Resource):
         if is_curator is False:
             abort(413)
 
-        reporting_path = os.path.join(app.config.get('REPORTING_ROOT_PATH'), app.config.get('REPORTING_PATH'), 'global')
+        reporting_path = os.path.join(get_settings().study.mounted_paths.reports_root_path, 
+                                      get_settings().report.report_base_folder_name, 
+                                      get_settings().report.report_global_folder_name)
         msg = AnalyticalMethodBuilder(
             original_study_location=study_location,
             studytype=studytype,
@@ -312,7 +315,9 @@ class reports(Resource):
             else:
                 abort(403)
 
-        reporting_path = os.path.join(app.config.get('REPORTING_ROOT_PATH'), app.config.get('REPORTING_PATH'), 'global')
+        reporting_path = os.path.join(get_settings().study.mounted_paths.reports_root_path, 
+                                      get_settings().report.report_base_folder_name, 
+                                      get_settings().report.report_global_folder_name)
         if query == 'daily_stats':
             file_name = 'daily_report.json'
             j_file = readDatafromFile(os.path.join(reporting_path, file_name))
@@ -464,7 +469,9 @@ class reports(Resource):
         if not write_access:
             abort(403)
 
-        reporting_path = os.path.join(app.config.get('REPORTING_ROOT_PATH'), app.config.get('REPORTING_PATH'), 'global')
+        reporting_path = os.path.join(get_settings().study.mounted_paths.reports_root_path, 
+                                      get_settings().report.report_base_folder_name, 
+                                      get_settings().report.report_global_folder_name)
         file_name = ''
         res = ''
 
@@ -546,7 +553,7 @@ class reports(Resource):
             data = {}
             for st in studies:
                 print(st[0])
-                folder_path = os.path.join(app.config.get('STUDY_PATH'), str(st[0]))
+                folder_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, str(st[0]))
                 study_files, latest_update_time = get_all_files(folder_path)
 
                 study_info = get_study(st[0])
@@ -649,7 +656,7 @@ class reports(Resource):
             for studyID in studies:
                 print(studyID[0])
                 logger.info("Extracting study extension details: " + studyID[0])
-                wd = os.path.join(app.config.get('STUDY_PATH'), studyID[0])
+                wd = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, studyID[0])
 
                 try:
                     file_ext.append(get_file_extensions(studyID[0], wd))

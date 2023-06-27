@@ -1,30 +1,27 @@
 from typing import List, Optional
 
-from flask import current_app as app
 from sqlalchemy import func
 
 from app.utils import MetabolightsException, MetabolightsAuthorizationException
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import SimplifiedUserModel, UserModel
 from app.ws.db.schemes import Study, User
-from app.ws.db.settings import get_directory_settings
-from app.ws.db.types import UserStatus, UserRole
+from app.ws.db.types import StudyStatus, UserStatus, UserRole
 from app.ws.db.utils import datetime_to_int
+from app.ws.settings.utils import get_study_settings
 
 
 class UserService(object):
     instance = None
     db_manager = None
-    directory_settings = None
+    study_settings = None
 
     @classmethod
-    def get_instance(cls, application=None):
+    def get_instance(cls):
         if not cls.instance:
             cls.instance = UserService()
-            if not application:
-                application = app
-            cls.db_manager = DBManager.get_instance(application)
-            cls.directory_settings = get_directory_settings(application)
+            cls.db_manager = DBManager.get_instance()
+            cls.study_settings = get_study_settings()
         return cls.instance
     
     def get_user_studies(self, user_token):
@@ -55,6 +52,31 @@ class UserService(object):
             if study:
                 return self.validate_user_has_curator_role(user_token)
             raise MetabolightsAuthorizationException(message=f"Not a valid study id")
+
+    def validate_user_has_read_access(self, user_token, study_id, obfuscationcode=None):
+        if not study_id:
+            raise MetabolightsAuthorizationException(message=f"Not a valid study id")
+        try:
+            with self.db_manager.session_maker() as db_session:
+                base_query = db_session.query(Study.acc, Study.status, Study.obfuscationcode)
+                study = base_query.filter(Study.acc == study_id).first()
+                if not study:
+                    raise MetabolightsAuthorizationException(message=f"Not a valid study id")
+                else:
+                    if study[1] == StudyStatus.PUBLIC.value:
+                        return True
+                    else:
+                        if obfuscationcode:
+                            if study[2] == obfuscationcode and study[1] == StudyStatus.INREVIEW.value:
+                                return True
+                            if study[2] != obfuscationcode:
+                                raise MetabolightsAuthorizationException(message=f"Not a valid study id or obfuscation code")
+                    
+        except Exception as e:
+            raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)        
+        self.validate_user_has_write_access(user_token, study_id)
+        return True
+        
 
     def validate_user_has_curator_role(self, user_token):
         return self.validate_user_by_token(user_token, [UserRole.ROLE_SUPER_USER.value])

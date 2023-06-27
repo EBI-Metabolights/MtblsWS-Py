@@ -26,9 +26,11 @@ from flask_restful_swagger import swagger
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from app.config import get_settings
 
 from app.ws.db_connection import get_all_studies
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.user_service import UserService
 from app.ws.utils import safe_str
 
 logger = logging.getLogger('wslog')
@@ -55,7 +57,7 @@ def get_google_calendar_events():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            cal_token = app.config.get('GOOGLE_CALENDAR_TOKEN')
+            cal_token = get_settings().google.connection.google_calender_api
             logger.info("Looking for Google Calendar Token: " + cal_token)
             flow = InstalledAppFlow.from_client_secrets_file(cal_token, SCOPES)
             creds = flow.run_local_server(port=0)
@@ -65,7 +67,8 @@ def get_google_calendar_events():
             pickle.dump(creds, token)
     service = build('calendar', 'v3', credentials=creds)
 
-    calendar_id = app.config.get('GOOGLE_CALENDAR_ID')
+    calendar_id = get_settings().google.services.google_calendar_id
+    
     logger.info("Reading Google Calendar events for calendar id " + calendar_id)
     events = service.events().list(calendarId=calendar_id, maxResults=2500).execute()
 
@@ -103,7 +106,7 @@ def add_google_calendar_event(events, service,  event_text=None, event_date=None
     }
 
     # events = None
-    calendar_id = app.config.get('GOOGLE_CALENDAR_ID')
+    calendar_id = get_settings().google.services.google_calendar_id
     for existing_event in events['items']:
         existing_id = existing_event['summary']
         existing_date = existing_event['start']['date']
@@ -168,12 +171,8 @@ class GoogleCalendar(Resource):
 
         if user_token is None:
             abort(401)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
 
-        # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions('MTBLS4', user_token)
-        if not is_curator:
-            abort(403)
 
         status, message = update_or_create_calendar_entries(user_token=user_token)
 

@@ -27,6 +27,8 @@ import pandas as pd
 from flask import current_app as app
 from owlready2 import get_ontology, urllib, IRIS
 
+from app.config import get_settings
+
 logger = logging.getLogger('wslog')
 
 
@@ -60,16 +62,17 @@ def load_ontology_file(filepath):
     try:
         return get_ontology(filepath).load()
     except:
-        logger.info("Fail to load ontology from {path}".format(path=app.config.get('MTBLS_ONTOLOGY_FILE')))
+        logger.info("Fail to load ontology from {path}".format(path=filepath))
         return []
     
 def getMetaboTerm(keyword, branch, mapping=''):
+    file = get_settings().file_resources.mtbls_ontology_file
     try:
-        onto = load_ontology_file(app.config.get('MTBLS_ONTOLOGY_FILE'))
+        onto = load_ontology_file(file)
         if not onto:
             return []
     except:
-        logger.info("Fail to load ontology from {path}".format(path=app.config.get('MTBLS_ONTOLOGY_FILE')))
+        logger.info("Fail to load ontology from {path}".format(path=file))
         return []
 
     result = []
@@ -312,7 +315,7 @@ def getMetaboZoomaTerm(keyword, mapping):
         return res
 
     try:
-        fileName = app.config.get('MTBLS_ZOOMA_FILE')  # metabolights_zooma.tsv
+        fileName = get_settings().file_resources.mtbls_zooma_file # metabolights_zooma.tsv
         df = pd.read_csv(fileName, sep="\t", header=0, encoding='utf-8')
         df = df.drop_duplicates(subset='PROPERTY_VALUE', keep="last")
 
@@ -424,7 +427,7 @@ def getBioportalTerm(keyword, ontology=''):
         url += '&ontologies=' + onto_list + '&require_exact_match=true'
 
         request = urllib.request.Request(url)
-        request.add_header('Authorization', 'apikey token=' + app.config.get('BIOPORTAL_TOKEN'))
+        request.add_header('Authorization', 'apikey token=' + get_settings().bioportal.api_token)
         response = urllib.request.urlopen(request)
         content = response.read().decode('utf-8')
         j_content = json.loads(content)

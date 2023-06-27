@@ -5,70 +5,32 @@
             "name": "Gunicorn run",
             "type": "python",
             "request": "launch",
-            "program": "~/miniconda3/envs/python38-MtblsWS/bin/gunicorn",
+            "program": "/nfs/public/rw/homes/tc_cm01/miniconda3/envs/python38-MtblsWS/bin/gunicorn",
             "args": [ "--bind=0.0.0.0:5001", "--worker-class=gevent", "--preload", "wsapp:app"],
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
-            "postDebugTask": "killdebugger"
+            "postDebugTask": "killdebugger",
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
         },
         {
-            "name": "Guvicorn profile",
+            "name": "Celery Worker",
             "type": "python",
             "request": "launch",
-            "module": "cProfile",
-            "args": ["-o", "${workspaceFolder}/tmp.prof", "gunicorn", "--worker-class", "gevent", "--preload", "-w", "3", "wsapp:app"],
-            "envFile": "${workspaceFolder}/.env",
+            "module": "celery",
+            "args": [
+                "-A",
+                "app.tasks.worker:celery",
+                "worker",
+                "--loglevel",
+                "info",
+                "-Q",
+                "common-tasks,monitor-tasks"
+            ],
+            "jinja": true,
             "justMyCode": false,
-            "postDebugTask": "killdebugger"
-        },
-        {
-            "name": "Celery Worker",
-            "type": "python",
-            "request": "launch",
-            "module": "celery",
-            "args": [
-                "-A",
-                "app.tasks.worker:celery",
-                "worker",
-                "--loglevel",
-                "info",
-                "-Q",
-                "mtbls-tasks"
-            ],
-            "jinja": true,
-            "justMyCode": false
-        },
-        {
-            "name": "Python: Current File (Integrated Terminal)",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: Refactor",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/scripts/refactor_study_folder.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Celery Worker",
-            "type": "python",
-            "request": "launch",
-            "module": "celery",
-            "args": [
-                "-A",
-                "app.tasks.worker:celery",
-                "worker",
-                "--loglevel",
-                "info",
-                "-Q",
-                "mtbls-tasks"
-            ],
-            "jinja": true,
-            "justMyCode": false
-        },      
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets", "GEVENT_SUPPORT": "True"}
+
+        }, 
         {
             "name": "Celery Beat",
             "type": "python",
@@ -82,8 +44,55 @@
                 "info"
             ],
             "jinja": true,
-            "justMyCode": false
-        },      
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
 
+        },      
+        {
+            "name": "Python: Current File (Integrated Terminal)",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
+        },
+        {
+            "name": "Python: Refactor",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/refactor_study_folder.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Maintain MetaData/Data Files",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/study_folder_maintenance.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}"},
+            "args": ["", "metadata", "metadata_migration_report.txt", "STORAGE_MIGRATION_TEST", "apply"]
+        },
+        {
+            "name": "Python: Create Test Data Files",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/create_test_data_files.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}"},
+            "args": ["/nfs/public/services/metabolomics/prod/studies/stage/private", "/nfs/public/rw/metabolomics/dev/studies/maintenance_test/test-data-files"]
+        },
+        {
+            "name": "Guvicorn profile",
+            "type": "python",
+            "request": "launch",
+            "module": "cProfile",
+            "args": ["-o", "${workspaceFolder}/tmp.prof", "gunicorn", "--worker-class", "gevent", "--preload", "-w", "3", "wsapp:app"],
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false,
+            "postDebugTask": "killdebugger",
+            "env": {"PYTHONPATH": "${cwd}"}
+        }
 	]
 }

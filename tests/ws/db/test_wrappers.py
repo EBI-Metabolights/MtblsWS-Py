@@ -1,7 +1,7 @@
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study
-from app.ws.db.settings import get_directory_settings
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
+from app.ws.settings.utils import get_study_settings
 
 
 class TestWrappers(object):
@@ -9,12 +9,12 @@ class TestWrappers(object):
     def test_create_mtbls_file_obj_01(self, flask_app, sensitive_data):
         study_id = "MTBLS1"
         with flask_app.app_context():
-            db_manager = DBManager.get_instance(flask_app)
+            db_manager = DBManager.get_instance()
             with db_manager.session_maker() as db_session:
                 db_study_obj = db_session.query(Study).filter(Study.acc == study_id).first()
                 study = create_study_model_from_db_study(db_study_obj)
-            studies_root_path = get_directory_settings(flask_app)
-            update_study_model_from_directory(study, studies_root_path.studies_folder,
+            studies_root_path = get_study_settings().mounted_paths.study_metadata_files_root_path
+            update_study_model_from_directory(study, studies_root_path,
                                               optimize_for_es_indexing=False,
                                               revalidate_study=True,
                                               user_token_to_revalidate=sensitive_data.super_user_token_001,
@@ -34,12 +34,12 @@ class TestWrappers(object):
     def test_create_mtbls_file_obj_01_optimized(self, flask_app, sensitive_data):
         study_id = "MTBLS1"
         with flask_app.app_context():
-            db_manager = DBManager.get_instance(flask_app)
+            db_manager = DBManager.get_instance()
             with db_manager.session_maker() as db_session:
                 db_study_obj = db_session.query(Study).filter(Study.acc == study_id).first()
                 study = create_study_model_from_db_study(db_study_obj)
-            studies_root_path = get_directory_settings(flask_app)
-            update_study_model_from_directory(study, studies_root_path.studies_folder,
+            studies_root_path = get_study_settings().mounted_paths.study_metadata_files_root_path
+            update_study_model_from_directory(study, studies_root_path,
                                               optimize_for_es_indexing=True,
                                               revalidate_study=True,
                                               user_token_to_revalidate=sensitive_data.super_user_token_001,
@@ -60,12 +60,12 @@ class TestWrappers(object):
     def test_create_mtbls_file_obj_02_optimized(self, flask_app, sensitive_data):
         study_id = "MTBLS2435"
         with flask_app.app_context():
-            db_manager = DBManager.get_instance(flask_app)
+            db_manager = DBManager.get_instance()
             with db_manager.session_maker() as db_session:
                 db_study_obj = db_session.query(Study).filter(Study.acc == study_id).first()
                 study = create_study_model_from_db_study(db_study_obj)
-            studies_root_path = get_directory_settings(flask_app)
-            update_study_model_from_directory(study, studies_root_path.studies_folder,
+            studies_root_path = get_study_settings().mounted_paths.study_metadata_files_root_path
+            update_study_model_from_directory(study, studies_root_path,
                                               optimize_for_es_indexing=True,
                                               revalidate_study=True,
                                               user_token_to_revalidate=sensitive_data.super_user_token_001,

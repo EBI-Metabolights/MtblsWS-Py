@@ -1,28 +1,20 @@
 from functools import lru_cache
-
-from app.ws.settings.celery import CelerySettings
-from app.ws.settings.redis import RedisSettings
-from app.ws.settings.study import StudySettings
-from app.ws.settings.system import SystemSettings
+from app.config import get_settings
+from app.config.model.hpc_cluster import HpcClusterConfiguration
+from app.config.model.study import StudySettings
 
 
-@lru_cache(1)
-def get_celery_settings() -> CelerySettings:
-    return CelerySettings()
 
 
 @lru_cache(1)
-def get_redis_settings() -> RedisSettings:
-    return RedisSettings()
+def get_study_settings() -> StudySettings:
+    settings = get_settings().study
+    return settings
+
 
 @lru_cache(1)
-def get_study_settings(app) -> StudySettings:
-    settings = StudySettings()
+def get_cluster_settings() -> HpcClusterConfiguration:
+    settings = get_settings().hpc_cluster.configuration
 
     return settings
 
-@lru_cache(1)
-def get_system_settings(app) -> SystemSettings:
-    settings = SystemSettings()
-
-    return settings

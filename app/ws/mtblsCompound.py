@@ -3,13 +3,13 @@ import os
 from flask import request, current_app as app, jsonify
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
-from app.tasks.common.elasticsearch import delete_compound_index, reindex_all_compounds, reindex_compound
-from app.tasks.periodic_tasks.compound import sync_compound_on_es_and_db
+from app.tasks.common_tasks.basic_tasks.elasticsearch import delete_compound_index, reindex_all_compounds, reindex_compound
+from app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization import sync_compound_on_es_and_db
 from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsDBException
 from flask import send_file, make_response
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefMetabolite
-from app.ws.db.settings import get_directory_settings
+from app.ws.settings.utils import get_study_settings
 from app.ws.utils import log_request
 from app.ws.db import models
 
@@ -36,7 +36,7 @@ class MtblsCompounds(Resource):
 
         logger.info('Getting  All Compound IDs ')
 
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             accs = db_session.query(RefMetabolite.acc).all()
             acc_list = []
             for acc in accs:
@@ -52,7 +52,7 @@ class MtblsCompoundsDetails(Resource):
         parameters=[
             {
                 "name": "accession",
-                "description": "Study Identifier",
+                "description": "Compound Identifier",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
@@ -82,7 +82,7 @@ class MtblsCompoundsDetails(Resource):
 
         logger.info('Getting Compound details for accession number  %s', accession)
 
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             metabolite = db_session.query(RefMetabolite).filter(RefMetabolite.acc == accession).first()
 
             if not metabolite:
@@ -95,7 +95,7 @@ class MtblsCompoundsDetails(Resource):
         return result
 
     def validate_requested_accession(self, requested_acc):
-        compound_id_prefix = app.config.get("MTBLS_COMPOUND_ID_PREFIX")
+        compound_id_prefix = "MTBLC"
         if not requested_acc.startswith(compound_id_prefix):
             raise MetabolightsException(f"Passed accession :- {requested_acc} is invalid. Accession must start with %s" % compound_id_prefix)
 
@@ -141,8 +141,8 @@ class MtblsCompoundFile(Resource):
             abort(404)
         compound_id = accession.upper()
 
-        settings = get_directory_settings(app)
-        compound_file_path = os.path.join(settings.reference_folder, compound_id, compound_id + "_data.json")
+        study_settings = get_study_settings()
+        compound_file_path = os.path.join(study_settings.mounted_paths.compounds_root_path, compound_id, compound_id + "_data.json")
     
         if os.path.exists(compound_file_path):
             resp = make_response(send_file(compound_file_path))
@@ -203,8 +203,8 @@ class MtblsCompoundSpectraFile(Resource):
             abort(404)
         compound_id = accession.upper()
 
-        settings = get_directory_settings(app)
-        spectrum_path = os.path.join(settings.reference_folder, compound_id, compound_id + "_spectrum")
+        settings = get_study_settings()
+        spectrum_path = os.path.join(settings.mounted_paths.compounds_root_path, compound_id, compound_id + "_spectrum")
         specra_file_path = os.path.join(spectrum_path, spectra_id, spectra_id + ".json")
     
         if os.path.exists(specra_file_path):

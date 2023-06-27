@@ -15,25 +15,29 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+import datetime
 import json
 import logging
 import os
+from pathlib import Path
 import re
-import threading
-
-from flask import current_app as app
+import shutil
+from typing import Any, Dict
 from flask import request
 from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
+from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.db_connection import override_validations, query_comments, update_comments
+from app.ws.settings.utils import get_study_settings
 from app.ws.study import commons
-from app.ws.study.validation.commons import job_status, is_newer_timestamp, submitJobToCluser, is_newer_files, \
-    update_val_schema_files, validate_study
+from app.ws.study.user_service import UserService
+from app.ws.study.validation.commons import job_status, is_newer_timestamp, submitJobToCluser
+from app.ws.validation_utils import get_validation_report_content, update_validation_files_task
 
 logger = logging.getLogger('wslog')
 
 
-class Validation(Resource):
+class ValidationFile(Resource):
     @swagger.operation(
         summary="Validate study",
         notes='''Validating the overall study. 
@@ -109,121 +113,134 @@ class Validation(Resource):
         ]
     )
     def get(self, study_id):
+        return get_validation_report_content(study_id, "all")
 
+
+class ValidationReport(Resource):
+    @swagger.operation(
+        summary="Returns validation report file content. ",
+        notes='''"If there is no validation report file, status is 'not ready'. The endpoind filters validation messages if validation messages exceed maximum limit 50 in each section, the endpoind filters , "''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study to validate",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "level",
+                "description": "Study to validate",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "defaultValue": "all",
+                "default": "all"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
         user_token = None
-        # User authentication
+        parser = reqparse.RequestParser()
+        parser.add_argument('level', help="Validation level")
+        level = "all"
+        if request.args:
+            args = parser.parse_args(req=request)
+            level = args['level']
+            
+        if level not in ("all", "error", "warning", "info", "success"):
+            raise MetabolightsException(message="level is not valid.")
+            
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
-        if user_token is None or study_id is None:
-            abort(401)
+        return get_validation_report_content(study_id, level)
 
-        study_id = study_id.upper()
+        # try:
+        #     number_of_files = sum([len(files) for r, d, files in os.walk(readonly_files_folder)])
+        # except:
+        #     number_of_files = 0
+            
+        # if section == 'all' and log_category == 'all' and number_of_files >= validation_files_limit:
+        #     force_static_validation = True  # ToDo, We need to use static files until pagenation is implemented
+        #     static_validation_file = force_static_validation
 
-        # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = commons.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
+        # study_status = study_status.lower()
 
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('section', help="Validation section", location="args")
-        parser.add_argument('level', help="Validation message levels", location="args")
-        parser.add_argument('static_validation_file', help="Use pre-generated validations", location="args")
-        args = parser.parse_args()
-        section = args['section']
-        log_category = args['level']
-        static_validation_file = args['static_validation_file']
-        if not static_validation_file:
-            static_validation_file = 'true'  # Set to same as input default value
-        static_validation_file = True if static_validation_file.lower() == 'true' else False
+        # if (static_validation_file and study_status in ('in review', 'public')) or force_static_validation:
 
-        log_categories = "error", "warning", "info", "success", "all"
-        if log_category is None or log_category not in log_categories:
-            log_category = 'all'
+        #     validation_file =  os.path.join(internal_files_folder, settings.validation_report_file_name)
+        #     # Some file in the filesystem is newer than the validation reports, so we need to re-generate
+        #     validation_file_mtime = 0
+        #     if os.path.exists(validation_file):
+        #         validation_file_mtime = os.path.getmtime(validation_file)
+            
+                
+        #     if get_last_update_on_folder(readonly_files_folder) > validation_file_mtime or get_last_update_on_folder(metadata_files_folder) > validation_file_mtime:
+        #         return update_val_schema_files(validation_file, study_id, user_token,
+        #                                        obfuscation_code, log_category=log_category, return_schema=True)
 
-        val_sections = "all", "isa-tab", "publication", "protocols", "people", "samples", "assays", "maf", "files"
-        if section is None or section not in val_sections:
-            section = 'all'
+        #     if os.path.isfile(validation_file):
+        #         try:
+        #             with open(validation_file, 'r', encoding='utf-8') as f:
+        #                 validation_schema = json.load(f)
+        #         except Exception as e:
+        #             logger.error(str(e))
+        #             validation_schema = update_val_schema_files(validation_file, study_id, user_token,
+        #                                                         obfuscation_code, log_category=log_category,
+        #                                                         return_schema=True)
+        #             # validation_schema = \
+        #             #     validate_study(study_id, study_location, user_token, obfuscation_code,
+        #             #                    validation_section=section,
+        #             #                    log_category=log_category, static_validation_file=False)
+        #     else:
+        #         validation_schema = update_val_schema_files(validation_file, study_id, user_token,
+        #                                                     obfuscation_code, log_category=log_category,
+        #                                                     return_schema=True)
+        #         # validation_schema = \
+        #         #     validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
+        #         #                    log_category=log_category, static_validation_file=static_validation_file)
 
-        try:
-            number_of_files = sum([len(files) for r, d, files in os.walk(study_location)])
-        except:
-            number_of_files = 0
+        # else:
+        #     static_validation_file_path = os.path.join(internal_files_folder, settings.validation_files_json_name)
+        #     validation_schema = \
+        #         validate_study(study_id, metadata_files_folder, user_token, obfuscation_code, validation_section=section,
+        #                        log_category=log_category, static_validation_file=static_validation_file_path)
 
-        validation_files_limit = app.config.get('VALIDATION_FILES_LIMIT')
-        force_static_validation = False
-
-        # We can only use the static validation file when all values are used. MOE uses 'all' as default
-        if section != 'all' or log_category != 'all':
-            static_validation_file = False
-
-        if section == 'all' or log_category == 'all':
-            validation_file = os.path.join(study_location, 'validation_report.json')
-            if os.path.isfile(validation_file):
-                with open(validation_file, 'r', encoding='utf-8') as f:
-                    validation_schema = json.load(f)
-                    return validation_schema
-
-        if section == 'all' and log_category == 'all' and number_of_files >= validation_files_limit:
-            force_static_validation = True  # ToDo, We need to use static files until pagenation is implemented
-            static_validation_file = force_static_validation
-
-        study_status = study_status.lower()
-
-        if (static_validation_file and study_status in ('in review', 'public')) or force_static_validation:
-
-            validation_file = os.path.join(study_location, 'validation_report.json')
-
-            # Some file in the filesystem is newer than the validation reports, so we need to re-generate
-            if is_newer_files(study_location):
-                return update_val_schema_files(validation_file, study_id, study_location, user_token,
-                                               obfuscation_code, log_category=log_category, return_schema=True)
-
-            if os.path.isfile(validation_file):
-                try:
-                    with open(validation_file, 'r', encoding='utf-8') as f:
-                        validation_schema = json.load(f)
-                except Exception as e:
-                    logger.error(str(e))
-                    validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
-                                                                obfuscation_code, log_category=log_category,
-                                                                return_schema=True)
-                    # validation_schema = \
-                    #     validate_study(study_id, study_location, user_token, obfuscation_code,
-                    #                    validation_section=section,
-                    #                    log_category=log_category, static_validation_file=False)
-            else:
-                validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
-                                                            obfuscation_code, log_category=log_category,
-                                                            return_schema=True)
-                # validation_schema = \
-                #     validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
-                #                    log_category=log_category, static_validation_file=static_validation_file)
-
-            # if study_status == 'in review':
-            #     try:
-            #         cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
-            #         cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + "/validate-study/update-file'"
-            #         logger.info("Starting cluster job for Validation schema update: " + cmd)
-            #         status, message, job_out, job_err = lsf_job('bsub', job_param=cmd, send_email=False)
-            #         lsf_msg = message + '. ' + job_out + '. ' + job_err
-            #         if not status:
-            #             logger.error("LSF job error: " + lsf_msg)
-            #         else:
-            #             logger.info("LSF job submitted: " + lsf_msg)
-            #     except Exception as e:
-            #         logger.error(str(e))
-        else:
-            validation_schema = \
-                validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
-                               log_category=log_category, static_validation_file=static_validation_file)
-
-        return validation_schema
+        # return validation_schema
 
 
-class UpdateValidationFile(Resource):
+class ValidationProcess(Resource):
     @swagger.operation(
         summary="Update validation file",
         notes="Update validation file",
@@ -235,6 +252,16 @@ class UpdateValidationFile(Resource):
                 "allowMultiple": False,
                 "paramType": "path",
                 "dataType": "string"
+            },
+            {
+                "name": "force",
+                "description": "Force to start validation if it is not started. If it is false, it returns only current status.",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "Boolean",
+                "defaultValue": True,
+                "default": True
             },
             {
                 "name": "user_token",
@@ -276,20 +303,146 @@ class UpdateValidationFile(Resource):
             abort(401)
 
         study_id = study_id.upper()
-
+        
+        parser = reqparse.RequestParser()
+        parser.add_argument("force", help="force to start validation if it is not started.", location="args")
+        args = parser.parse_args()
+        force_to_start = True
+        if args and "force" in args and args["force"]:
+            force_to_start = False if args["force"].lower() == "false" else True
+            
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = commons.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
+        # is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        # study_status = commons.get_permissions(study_id, user_token)
+        # if not write_access:
+        #     abort(403)
+        
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+        result = update_validation_files_task( study_id=study_id, user_token=user_token, force_to_start=force_to_start)    
+        return result    
+        # settings = get_study_settings()
+        # file_path = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
+        # validation_report_file_name = settings.validation_report_file_name
+        # validation_file = os.path.join(file_path, validation_report_file_name)
 
-        validation_file = os.path.join(study_location, 'validation_report.json')
-        """ Background thread to update the validations file """
-        threading.Thread(
-            target=update_val_schema_files(validation_file, study_id, study_location, user_token, obfuscation_code),
-            daemon=True).start()
 
-        return {"success": "Validation schema file updated"}
+
+class StudyValidationTask(Resource):
+    @swagger.operation(
+        summary="A task is created to update validation report file",
+        notes="If there is a current validation task for study, This enpoint returns its status",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study to validate",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def post(self, study_id):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None or study_id is None:
+            abort(401)
+
+        study_id = study_id.upper()
+        
+        force_to_start = True
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+        result = update_validation_files_task( study_id=study_id, user_token=user_token, force_to_start=force_to_start)    
+        return result
+    
+    @swagger.operation(
+        summary="Returns the status of the last validation task.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study to validate",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self, study_id):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None or study_id is None:
+            abort(401)
+
+        study_id = study_id.upper()
+        
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+        result = update_validation_files_task( study_id=study_id, user_token=user_token, force_to_start=False)    
+        return result            
 
 
 class OverrideValidation(Resource):
@@ -361,45 +514,44 @@ class OverrideValidation(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        if user_token is None or study_id is None:
-            abort(401)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
 
         study_id = study_id.upper()
-
-        # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = commons.get_permissions(study_id, user_token)
-        if not is_curator:
-            abort(403)
-
-        val_feedback = ""
-        override_list = []
+        override_list = {}
         # First, get all existing validations from the database
         try:
             query_list = override_validations(study_id, 'query')
             if query_list and query_list[0]:
                 for val in query_list[0].split('|'):
-                    override_list.append(val)
+                    if val and len(val.split(':')) > 1:
+                        key_value = val.split(':')
+                        if key_value[0].strip():
+                            override_list[key_value[0].strip()] = key_value[1].strip()
         except Exception as e:
             logger.error('Could not query existing overridden validations from the database')
 
         # Get the new validations submitted
         data_dict = json.loads(request.data.decode('utf-8'))
         validation_data = data_dict['validations']
-
+        val_feedback = ""
         # only add unique validations to the update statement
         for val, val_message in validation_data[0].items():
-            val_found = False
-            for existing_val in override_list:
-                if val + ":" in existing_val:  # Do we already have this validation rule in the database
-                    val_found = True
-                    val_feedback = val_feedback + "Validation '" + val + "' was already stored in the database. "
+            if val and val.strip():
+                if not val_message or not val_message.strip():
+                    if val.strip() in override_list:
+                        val_feedback += "Validation key '" + 'val' + "' was deleted. "
+                        del override_list[val.strip()]
+                    else:
+                        val_feedback += "Validation key '" + val + "' is skipped (No value in  database). "
+                else:
+                    if val.strip() in override_list:
+                        val_feedback += "Validation key '" + val + "' was updated in the database. "
+                    else:
+                        val_feedback += "Validation key '" + val + "' stored in the database. "
+                    override_list[val.strip()] = val_message.strip()
 
-            if not val_found:
-                override_list.append(val + ':' + val_message)
-                val_feedback = "Validation '" + val + "' stored in the database"
-
-        db_update_string = "|".join(override_list)
+        
+        db_update_string = "|".join([f"{x}:{override_list[x]}" for x in override_list])
         try:
             query_list = override_validations(study_id, 'update', override=db_update_string)
         except Exception as e:
@@ -485,29 +637,41 @@ class ValidationComment(Resource):
             abort(403)
 
         feedback = ""
-        comment_list = []
+        comment_list = {}
         # query_comments is a db_connection.py method
         query_list = query_comments(study_id)
         if query_list and query_list[0] is not None:
             for val in query_list[0].split('|'):
-                comment_list.append(val)
+                key_value = val.split(':')
+                if len(key_value) > 1:
+                    comment_list[key_value[0].strip()] = key_value[1]
+                # else:
+                #     comment_list[""] = key_value[0]
 
         # Get the new validations submitted
         data_dict = json.loads(request.data.decode('utf-8'))
         new_comments = data_dict['comments']
 
         for val_sequence, comment in new_comments.items():
-            val_found = False
-            for i, existing_comment in enumerate(comment_list):
-                if val_sequence + ":" in existing_comment:  # Do we already have this comment in the database
-                    comment_list[i] = f' {comment}'
-                    feedback += f"Comment for {val_sequence} has been updated."
-
-            if not val_found:
-                comment_list.append(val_sequence + ':' + comment)
-                feedback += f"Comment for {val_sequence} has been stored in the database."
-
-        db_update_string = f' {"|".join(comment_list)}'
+            key = val_sequence.strip()
+            if key in comment_list:
+                if comment:
+                    feedback += f"Comment for {key} has been updated."
+                    comment_list[key] = comment
+                else:
+                    feedback += f"Comment for {key} has been deleted."
+                    del comment_list[key]
+            else:
+                if comment:
+                    feedback += f"Comment for {key} has been stored in the database."
+                    comment_list[key] = comment
+                else:
+                    feedback += f"Empty comment for {key} has been ignored."
+                
+        updated_comments = []
+        for key in comment_list:
+            updated_comments.append(f"{key}:{comment_list[key]}")
+        db_update_string = "|".join(updated_comments)
 
         try:
             __ = update_comments(study_id, db_update_string)
@@ -606,7 +770,7 @@ class NewValidation(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, \
         study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -632,17 +796,21 @@ class NewValidation(Resource):
             log_category = 'all'
 
         val_sections = "all", "isa-tab", "publication", "protocols", "people", "samples", "assays", "maf", "files"
-
-        script = app.config.get('VALIDATION_SCRIPT')
+        settings = get_study_settings()
+        script = settings.validation_script
         para = ' -l {level} -i {study_id} -u {token} -s {section}'.format(level=log_category, study_id=study_id,
                                                                           token=user_token, section=section)
         file_name = None
         logger.info("Validation params are - " + str(log_category) + " " + str(section))
         pattern = re.compile(".validation_" + section + "\S+.json")
-
-        for filepath in os.listdir(study_location):
-            if pattern.match(filepath):
-                file_name = filepath
+        
+        internal_files_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
+        readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
+        metadata_files_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
+    
+        for file_item in os.listdir(internal_files_folder):
+            if pattern.match(file_item):
+                file_name = file_item
                 break
 
         if file_name:
@@ -656,21 +824,21 @@ class NewValidation(Resource):
                 return {
                     "message": "Validation is already in progress. Job " + sub_job_id + " is in running or pending state"}
 
-            file_name = study_location + "/" + file_name
-            if os.path.isfile(file_name) and status == "DONE":
+            file_path = os.path.join(internal_files_folder, file_name)
+            if os.path.isfile(file_path) and status == "DONE":
                 if not force_run:
                     try:
-                        with open(file_name, 'r', encoding='utf-8') as f:
+                        with open(file_path, 'r', encoding='utf-8') as f:
                             validation_schema = json.load(f)
                             return validation_schema
                     except Exception as e:
                         logger.error(str(e))
                         return {"message": "Error in reading the Validation"}
                 else:
-                    if is_newer_timestamp(study_location, file_name):
-                        os.remove(file_name)
+                    if is_newer_timestamp(metadata_files_folder, file_path) or is_newer_timestamp(readonly_files_folder, file_path):
+                        os.remove(file_path)
                         command = script + ' ' + para
-                        return submitJobToCluser(command, section, study_location)
+                        return submitJobToCluser(command, section, internal_files_folder)
                     else:
                         try:
                             with open(file_name, 'r', encoding='utf-8') as f:
@@ -680,27 +848,22 @@ class NewValidation(Resource):
                             logger.error(str(e))
                             return {"message": "Error in reading the Validation file"}
 
-            elif os.path.isfile(file_name) and os.path.getsize(file_name) > 0:
-                if is_newer_timestamp(study_location, file_name):
+            elif os.path.isfile(file_path) and os.path.getsize(file_path) > 0:
+                if is_newer_timestamp(metadata_files_folder, file_path) or is_newer_timestamp(readonly_files_folder, file_path):
                     logger.info(" job status is not present, creating new job")
                     os.remove(file_name)
                     command = script + ' ' + para
-                    return submitJobToCluser(command, section, study_location)
+                    return submitJobToCluser(command, section, internal_files_folder)
                 else:
                     try:
                         logger.info(" job status is not present and no update, returning validation")
-                        with open(file_name, 'r', encoding='utf-8') as f:
+                        with open(file_path, 'r', encoding='utf-8') as f:
                             validation_schema = json.load(f)
                             return validation_schema
                     except Exception as e:
                         logger.error(str(e))
                         return {"message": "Error in reading the Validation"}
         else:
-            try:
-                os.remove(file_name)
-            except Exception as e:
-                pass
-                # submit a new job return job id
-                logger.info(" no file present , creating new job")
-                command = script + ' ' + para
-                return submitJobToCluser(command, section, study_location)
+            logger.info(" no file present , creating new job")
+            command = script + ' ' + para
+            return submitJobToCluser(command, section, internal_files_folder)

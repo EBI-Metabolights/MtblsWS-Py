@@ -25,13 +25,14 @@ import pandas as pd
 from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
-from app.utils import metabolights_exception_handler, MetabolightsDBException
+from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsDBException
 from app.ws.db.dbmanager import DBManager
 from app.ws.study import commons
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import identify_study_id
-from app.ws.utils import get_table_header, totuples, validate_row, log_request, read_tsv, write_tsv, \
+from app.ws.utils import delete_column_from_tsv_file, get_table_header, totuples, validate_row, log_request, read_tsv, write_tsv, \
     read_tsv_with_filter
 from app.ws.db.schemes import Study
 from app.ws.db.types import StudyStatus
@@ -48,6 +49,39 @@ logger = logging.getLogger('wslog')
 def insert_row(idx, df, df_insert):
     return df.iloc[:idx, ].append(df_insert, ignore_index=True).append(df.iloc[idx:, ]).reset_index(drop=True)
 
+def filter_dataframe(filename: str, df: pd.DataFrame, df_data_dict, df_header) -> pd.DataFrame:
+    if filename.startswith("m_") and filename.endswith(".tsv"):
+        filtered_df = df
+        filtered_df_header = df_header
+        selected_columns = []
+        for column in df.columns:
+            header, ext = os.path.splitext(column)
+            if header in default_maf_columns:
+                selected_columns.append(column)
+        filtered_df = df[selected_columns]
+        filtered_df_header = get_table_header(filtered_df)
+        df_data_dict = totuples(filtered_df.reset_index(), 'rows')
+        return df_data_dict, filtered_df_header
+    return df_data_dict, df_header
+
+def get_dataframe(filename, file_path) -> pd.DataFrame:
+        maf_file = False
+        if filename.startswith("m_") and filename.endswith(".tsv"):
+            maf_file = True
+        try:
+            if maf_file:
+                col_names = pd.read_csv(file_path, sep="\t", nrows=0).columns
+                selected_columns = []
+                for column in col_names:
+                    header, ext = os.path.splitext(column)
+                    if header in default_maf_columns:
+                        selected_columns.append(column)
+                file_df = read_tsv(file_path, selected_columns)
+            else:
+                file_df = read_tsv(file_path)
+            return file_df
+        except Exception:
+            abort(400, "The file name was not found")
 
 class SimpleColumns(Resource):
     @swagger.operation(
@@ -162,7 +196,7 @@ class SimpleColumns(Resource):
         study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
             table_df = read_tsv(file_name)
@@ -185,7 +219,7 @@ class SimpleColumns(Resource):
         df_header = get_table_header(table_df)
 
         message = write_tsv(table_df, file_name)
-
+        df_data_dict, df_header = filter_dataframe(file_basename, table_df, df_data_dict, df_header)
         return {'header': df_header, 'data': df_data_dict, 'message': message}
 
 
@@ -281,7 +315,7 @@ class ComplexColumns(Resource):
         study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
             table_df = read_tsv(file_name)
@@ -323,7 +357,7 @@ class ComplexColumns(Resource):
         df_data_dict = totuples(table_df.reset_index(), 'rows')
 
         message = write_tsv(table_df, file_name)
-
+        df_data_dict, df_header = filter_dataframe(file_basename, table_df, df_data_dict, df_header)
         return {'header': df_header, 'rows': df_data_dict, 'message': message}
 
     @swagger.operation(
@@ -434,18 +468,20 @@ class ComplexColumns(Resource):
 
         audit_status, dest_path = write_audit_files(study_location)
 
-        for column in columns:
-            tsv_file = os.path.join(study_location, file_name)
-            if not os.path.isfile(tsv_file):
-                abort(406, "File " + file_name + " does not exist")
-            else:
-                file_df = read_tsv(tsv_file)
-                try:
-                    file_df.drop(column, axis=1, inplace=True)
-                    write_tsv(file_df, tsv_file)
-                except Exception as e:
-                    logger.error("Could not remove column '" + column + "' from file " + file_name)
-                    logger.error(str(e))
+        
+        tsv_file = os.path.join(study_location, file_name)
+        if not os.path.isfile(tsv_file):
+            abort(406, "File " + file_name + " does not exist")
+        else:
+            file_df = read_tsv(tsv_file)
+            try:
+                for column in columns:
+                    delete_column_from_tsv_file(file_df, column)
+                write_tsv(file_df, tsv_file)
+            except Exception as e:
+                logger.error("Could not remove column '" + column + "' from file " + file_name)
+                logger.error(str(e))
+                return {"Success": "Failed to remove column(s) from " + file_name} 
 
         return {"Success": "Removed column(s) from " + file_name}
 
@@ -453,8 +489,27 @@ class ComplexColumns(Resource):
 class ColumnsRows(Resource):
     @swagger.operation(
         summary="Update a given cell, based on row and column index",
-        nickname="Add table columns",
-        notes="Update an TSV table for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed.",
+        nickname="Update table columns",
+        notes="""Update an TSV table for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed.
+        
+        <code><pre>
+        {
+        "data": [
+            {
+                "row": 1,
+                "column": 0,
+                "value": "test"
+            },
+            {
+                "row": 1,
+                "column": 1,
+                "value": "test2"
+            }
+            ]
+        }
+        </pre>
+        </code>
+        """,
         parameters=[
             {
                 "name": "study_id",
@@ -545,7 +600,7 @@ class ColumnsRows(Resource):
             study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
             table_df = read_tsv(file_name)
@@ -578,7 +633,7 @@ class ColumnsRows(Resource):
 
         # Get an indexed header row
         df_header = get_table_header(table_df)
-
+        df_data_dict, df_header = filter_dataframe(file_basename, table_df, df_data_dict, df_header)
         return {'header': df_header, 'rows': df_data_dict, 'message': message}
 
 
@@ -699,11 +754,11 @@ class AddRows(Resource):
             study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        file_basename = file_name
         if file_name == 'metabolights_zooma.tsv':  # This will edit the MetaboLights Zooma mapping file
             if not is_curator:
                 abort(403)
-            file_name = app.config.get('MTBLS_ZOOMA_FILE')
+            file_name = get_settings().file_resources.mtbls_zooma_file
         else:
             file_name = os.path.join(study_location, file_name)
 
@@ -751,10 +806,10 @@ class AddRows(Resource):
 
         # Get the updated data table
         try:
-            df_data_dict = totuples(read_tsv(file_name), 'rows')
+            df_data_dict = totuples(get_dataframe(file_basename, file_name), 'rows')
         except FileNotFoundError:
             abort(400, "The file " + file_name + " was not found")
-
+        df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
         return {'header': df_header, 'data': df_data_dict, 'message': message}
 
     @swagger.operation(
@@ -876,7 +931,7 @@ class AddRows(Resource):
         study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        file_basename = file_name
         file_name = os.path.join(study_location, file_name)
 
         try:
@@ -907,7 +962,7 @@ class AddRows(Resource):
 
         # Get an indexed header row
         df_header = get_table_header(file_df)
-
+        df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
         return {'header': df_header, 'data': df_data_dict, 'message': message}
 
     @swagger.operation(
@@ -995,7 +1050,7 @@ class AddRows(Resource):
             study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
             file_df = read_tsv(file_name)
@@ -1022,9 +1077,118 @@ class AddRows(Resource):
 
         # Get an indexed header row
         df_header = get_table_header(file_df)
-
+        df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
         return {'header': df_header, 'data': df_data_dict, 'message': message}
 
+    @swagger.operation(
+        summary="Get a row of the given TSV file",
+        nickname="Get TSV row",
+        notes="Get TSV file for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "file_name",
+                "description": "TSV File name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "row_num",
+                "description": "The row number(s) to get, comma separated if more than one",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The TSV file has been updated."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id, file_name):
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('row_num', help="The row number of the cell(s) to get (exclude header)", location="args")
+        args = parser.parse_args()
+        row_num = args['row_num']
+
+        # param validation
+        if study_id is None or file_name is None or row_num is None:
+            abort(404)
+
+        fname, ext = os.path.splitext(file_name)
+        ext = ext.lower()
+        if ext not in ('.tsv', '.csv', '.txt'):
+            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = commons.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+        file_basename = file_name
+        file_name = os.path.join(study_location, file_name)
+        try:
+            file_df = read_tsv(file_name)
+        except FileNotFoundError:
+            abort(400, "The file " + file_name + " was not found")
+
+        row_nums = row_num.split(",")
+            
+        # result_df.columns = file_df.columns
+        # Need to remove the highest row number first as the DataFrame dynamically re-orders when one row is removed
+        sorted_num_rows = [int(x) for x in row_nums]
+        sorted_num_rows.sort(reverse=False)
+        count = 0
+        result_df = file_df.filter(items=sorted_num_rows, axis=0)
+
+
+
+        df_data_dict = totuples(result_df, 'rows')
+
+        # Get an indexed header row
+        df_header = get_table_header(file_df)
+        df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
+        return {'header': df_header, 'data': df_data_dict, 'message': ""}
 
 class GetTsvFile(Resource):
     @swagger.operation(
@@ -1129,16 +1293,7 @@ class GetTsvFile(Resource):
         if file_basename.startswith("m_") and file_basename.endswith(".tsv"):
             maf_file = True
         try:
-            if maf_file:
-                col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
-                selected_columns = []
-                for column in col_names:
-                    header, ext = os.path.splitext(column)
-                    if header in default_maf_columns:
-                        selected_columns.append(column)
-                file_df = read_tsv(file_name, selected_columns)
-            else:
-                file_df = read_tsv(file_name)
+            file_df = get_dataframe(file_basename, file_name)
         except FileNotFoundError:
             abort(400, "The file " + file_name + " was not found")
 
@@ -1146,7 +1301,7 @@ class GetTsvFile(Resource):
 
         # Get an indexed header row
         df_header = get_table_header(file_df, study_id, file_name_param)
-
+        df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
         return {'header': df_header, 'data': df_data_dict}
 
 
@@ -1227,7 +1382,7 @@ class GetAssayMaf(Resource):
 
         study_id = study_id.upper()
 
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
             query = query.filter(Study.status == StudyStatus.PUBLIC.value,
                                  Study.acc == study_id)
@@ -1238,7 +1393,7 @@ class GetAssayMaf(Resource):
 
         logger.info('Trying to load MAF for Study %s, Sheet number %d', study_id, sheet_number)
 
-        study_path = app.config.get('STUDY_PATH')
+        study_path = get_settings().study.mounted_paths.study_metadata_files_root_path
         study_location = os.path.join(study_path, study_id)
         maflist = []
 

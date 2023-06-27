@@ -19,6 +19,7 @@
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 from flask import abort, current_app as app
+from app.config import get_settings
 from app.ws.db_connection import mtblc_on_chebi_accession
 import os
 
@@ -59,7 +60,7 @@ class EnzymePortalHelper(Resource):
             abort(404, data)
 
         mtblc = data[0]
-        mtblc_url = app.config.get('WS_APP_BASE_LINK')
+        mtblc_url = get_settings().server.service.ws_app_base_link
         mtblc_url = mtblc_url + os.sep + mtblc + os.sep + '#biology'
 
         return {"metabolights_id": data[0], "metabolights_url": mtblc_url}

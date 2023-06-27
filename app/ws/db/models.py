@@ -2,7 +2,6 @@ import datetime
 from typing import Optional, List, Dict, Union
 
 from pydantic import BaseModel, Field, validator
-from app.ws.db.types import UserStatus
 
 from app.ws.db.utils import datetime_to_int
 
@@ -70,6 +69,7 @@ class UserModel(BaseModel):
 
     class Config:
         orm_mode = True
+        allow_population_by_field_name = True
         
     @validator('joinDate', check_fields=False)
     def datetime_validation(cls, value):

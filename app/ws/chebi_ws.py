@@ -55,11 +55,11 @@ class ChebiLiteEntity(Resource):
         if not compound_name:
             abort(400, "Invalid compound name")
 
-        if not get_chebi_ws_proxy(app):
+        if not get_chebi_ws_proxy():
             abort(501, "Remote server error")
 
         try:
-            search_result = get_chebi_ws_proxy(app).get_lite_entity_list(compound_name.lower(),
+            search_result = get_chebi_ws_proxy().get_lite_entity_list(compound_name.lower(),
                                                                          SearchCategory.ALL_NAMES, 20,
                                                                          StarsCategory.ALL)
 
@@ -94,14 +94,14 @@ class ChebiEntity(Resource):
     def get(self, chebi_id):
         log_request(request)
 
-        if not get_chebi_ws_proxy(app):
+        if not chebi_id:
             abort(400, "Invalid ChEBI id")
 
-        if not get_chebi_ws_proxy(app):
+        if not get_chebi_ws_proxy():
             abort(501, "Remote server error")
 
         try:
-            search_result = get_chebi_ws_proxy(app).get_complete_entity(chebi_id)
+            search_result = get_chebi_ws_proxy().get_complete_entity(chebi_id)
 
             if not search_result:
                 return abort(404, f"Entity not found with ChEBI id {chebi_id}")

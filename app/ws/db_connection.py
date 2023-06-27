@@ -27,7 +27,9 @@ import psycopg2
 import psycopg2.extras
 from flask import current_app as app, abort
 from psycopg2 import pool
+from app.config import get_settings
 from app.utils import MetabolightsDBException
+from app.ws.settings.utils import get_study_settings
 
 from app.ws.utils import get_single_file_information, check_user_token, val_email, fixUserDictKeys
 
@@ -298,8 +300,9 @@ def get_all_private_studies_for_user(user_token):
     val_query_params(user_token)
 
     study_list = execute_select_query(query=query_studies_user, user_token=user_token)
-    study_location = app.config.get('STUDY_PATH')
-    file_name = 'i_Investigation.txt'
+    settings = get_study_settings()
+    study_location = settings.mounted_paths.study_metadata_files_root_path
+    file_name = settings.investigation_file_name
     isa_title = 'Study Title'
     isa_descr = 'Study Description'
 
@@ -347,7 +350,7 @@ def get_all_studies_for_user(user_token):
     study_list = execute_select_query(query=query_studies_user, user_token=user_token)
     if not study_list:
         return []
-    study_location = app.config.get('STUDY_PATH')
+    study_location = get_settings().study.mounted_paths.study_metadata_files_root_path
     file_name = 'i_Investigation.txt'
     isa_title = 'Study Title'
     isa_descr = 'Study Description'
@@ -436,6 +439,7 @@ def get_private_studies():
     release_connection(postgresql_pool, conn)
     return data
 
+
 def get_all_non_public_studies():
     query = "select acc from studies where status = 0 OR status = 1 OR status = 2;"
     postgresql_pool, conn, cursor = get_connection()
@@ -443,6 +447,7 @@ def get_all_non_public_studies():
     data = cursor.fetchall()
     release_connection(postgresql_pool, conn)
     return data
+
 
 def get_study_by_type(sType, publicStudy=True):
     q2 = ' '
@@ -502,6 +507,7 @@ def add_placeholder_flag(study_id):
 
     except Exception as e:
         return False, str(e)
+
 
 def get_obfuscation_code(study_id):
     val_acc(study_id)
@@ -603,7 +609,7 @@ def biostudies_accession(study_id, biostudies_id, method):
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {'study_id': study_id, 'biostudies_acc': biostudies_id})
+        cursor.execute(query, {'study_id': study_id, 'biostudies_id': biostudies_id})
 
         if method == 'add' or method == 'delete':
             conn.commit()
@@ -653,10 +659,11 @@ def check_access_rights(user_token, study_id, study_obfuscation_code=None):
 
     if study_list is None or not check_user_token(user_token):
         return False, False, False, 'ERROR', 'ERROR', 'ERROR', 'ERROR', 'ERROR', 'ERROR'
-
-    study_location = app.config.get('STUDY_PATH')
+    settings = get_study_settings()
+    study_location = settings.mounted_paths.study_metadata_files_root_path
+    investigation_file_name = settings.investigation_file_name
     complete_study_location = os.path.join(study_location, study_id)
-    complete_file_name = os.path.join(complete_study_location, 'i_Investigation.txt')
+    complete_file_name = os.path.join(complete_study_location, investigation_file_name)
     isa_date_format = "%Y-%m-%d"
     is_curator = False
     read_access = False
@@ -928,6 +935,7 @@ def override_validations(study_id, method, override=""):
     except Exception as e:
         return False
 
+
 def query_comments(study_id):
     """
     Get any comments associated with a study.
@@ -949,6 +957,7 @@ def query_comments(study_id):
     data = cursor.fetchall()
     release_connection(postgresql_pool, conn)
     return data[0]
+
 
 def update_comments(study_id, comments=None):
     """
@@ -1125,13 +1134,16 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
         logger.error("Error: " + str(e))
     return data
 
+
 def get_connection():
     postgresql_pool = None
     conn = None
     cursor = None
-    params = app.config.get('DB_PARAMS')
-    conn_pool_min = app.config.get('CONN_POOL_MIN')
-    conn_pool_max = app.config.get('CONN_POOL_MAX')
+    settings = get_settings()
+    params = settings.database.connection.dict()
+
+    conn_pool_min = settings.database.configuration.conn_pool_min
+    conn_pool_max = settings.database.configuration.conn_pool_max
     try:
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
         conn = postgresql_pool.getconn()
@@ -1149,9 +1161,10 @@ def get_connection2():
     conn = None
     cursor = None
     try:
-        params = app.config.get('DB_PARAMS')
-        conn_pool_min = app.config.get('CONN_POOL_MIN')
-        conn_pool_max = app.config.get('CONN_POOL_MAX')
+        settings = get_settings()
+        params = settings.database.connection.dict()
+        conn_pool_min = settings.database.configuration.conn_pool_min
+        conn_pool_max = settings.database.configuration.conn_pool_max
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
         conn = postgresql_pool.getconn()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)

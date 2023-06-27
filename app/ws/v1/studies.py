@@ -8,9 +8,9 @@ from flask_restful_swagger import swagger
 from app.utils import metabolights_exception_handler, MetabolightsDBException
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study
-from app.ws.db.settings import get_directory_settings
 from app.ws.db.types import StudyStatus
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
 
@@ -70,7 +70,7 @@ class V1StudyDetail(Resource):
             user_token = request.headers['user_token']
                 
         
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
             query = query.filter(Study.acc == study_id)
             study = query.first()
@@ -80,12 +80,12 @@ class V1StudyDetail(Resource):
 
             if StudyStatus(study.status) != StudyStatus.PUBLIC:
                 if user_token:
-                    UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+                    UserService.get_instance().validate_user_has_write_access(user_token, study_id)
                 else:
                     abort(http_status_code=403)
                     
-            directory_settings = get_directory_settings(app)
-            study_folders = directory_settings.studies_folder
+            study_settings = get_study_settings()
+            study_folders = study_settings.mounted_paths.study_metadata_files_root_path
             m_study = create_study_model_from_db_study(study)
 
         update_study_model_from_directory(m_study, study_folders, optimize_for_es_indexing=True)
