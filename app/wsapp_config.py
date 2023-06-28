@@ -34,7 +34,7 @@ from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.wsproxy import get_chebi_ws_proxy
 from app.ws.chebi_workflow import ChEBIPipeLine, ChEBIPipeLineLoad, SplitMaf
-from app.ws.chebi_ws import ChebiEntity, ChebiLiteEntity
+from app.ws.chebi_ws import ChebiEntity, ChebiImageProxy, ChebiLiteEntity
 from app.ws.cluster_jobs import LsfUtils
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.cronjob import cronjob
@@ -387,4 +387,6 @@ def initialize_app(flask_app):
     
     api.add_resource(DataFolders, res_path + "/ebi-internal/data-folders")
     
+    api.add_resource(ChebiImageProxy, res_path + "/proxy/images/chebi/<chebiIdentifier>")
+     
     

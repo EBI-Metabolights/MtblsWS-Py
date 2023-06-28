@@ -1,8 +1,11 @@
 import logging
-
-from flask import request, abort, current_app as app
+import os
+import io
+import requests
+from flask import request, abort, Response, current_app as app
 from flask_restful import Resource
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.ws.chebi.types import SearchCategory, StarsCategory
 from app.ws.chebi.wsproxy import ChebiWsException, get_chebi_ws_proxy
@@ -109,3 +112,46 @@ class ChebiEntity(Resource):
             return search_result.dict()
         except ChebiWsException as e:
             abort(501, "Remote server error", e.message)
+
+
+class ChebiImageProxy(Resource):
+
+    @swagger.operation(
+        summary="Get image by chebi id",
+        nickname="Get image by chebi id",
+        notes="Get image by chebi id",
+        parameters=[
+            {
+                "name": "chebiIdentifier",
+                "description": "chebiIdentifier without CHEBI: prefix",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            }
+        ],
+        responseMessages=responseMessages
+    )
+    def get(self, chebiIdentifier: str):
+        image_name = chebiIdentifier
+        chebiIdentifier = chebiIdentifier.replace(".png", "")
+        
+        if not chebiIdentifier.isnumeric() or len(chebiIdentifier) > 8:
+            abort(404, "invalid chebi id")
+        chebi_url = "https://www.ebi.ac.uk/chebi/displayImage.do"
+        default_params = "defaultImage=true&imageIndex=0&dimensions=500&scaleMolecule=false"
+        chebi_id_param = f"chebiId=CHEBI:{chebiIdentifier}"
+        settings = get_settings()
+        url = f"{chebi_url}?{default_params}&{chebi_id_param}"
+        img_root_path = settings.chebi.caches.images_cache_path
+        image_path = os.path.join(img_root_path, image_name)
+        try: 
+            with requests.get(url, stream=True) as r:
+                with open(image_path, "wb") as f:
+                    f.write(r.content)
+                bytes = io.BytesIO(r.content)
+                
+                return Response(bytes, mimetype="image/png", direct_passthrough=True)
+
+        except Exception as exc:
+            abort(404, f"{str(exc)}")

@@ -41,7 +41,7 @@ class DataMoverAvailableStorage(object):
         self.cluster_study_readonly_files_root_path = mounted_paths.cluster_study_readonly_files_root_path
         self.cluster_study_internal_files_root_path = mounted_paths.cluster_study_internal_files_root_path
         self.cluster_study_readonly_audit_files_root_path = mounted_paths.cluster_study_readonly_audit_files_root_path
-        self.chebi_annotation_sub_folder = self.study_settings.chebi_annotation_sub_folder
+        self.chebi_annotation_sub_folder = self.settings.chebi.pipeline.chebi_annotation_sub_folder
 
     def sync_from_studies_folder(self, target_ftp_folder: str, ignore_list: List[str] = None,
                                  **kwargs):

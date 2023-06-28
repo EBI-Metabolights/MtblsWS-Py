@@ -60,12 +60,12 @@ iac = IsaApiClient()
 
 instance_dir = os.path.join(os.getcwd(), "instance")
 flask_app = Flask(__name__, instance_relative_config=True, instance_path=instance_dir)
-study_settings = get_study_settings()
+settings = get_settings()
 pubchem_end = "_pubchem.tsv"
 complete_end = "_complete.sdf"
 pubchem_sdf_extension = '_pubchem.sdf'
 classyfire_end = "_classyfire"
-anno_sub_folder = study_settings.chebi_annotation_sub_folder
+anno_sub_folder = settings.chebi.pipeline.chebi_annotation_sub_folder
 final_cid_column_name = "final_external_id"
 unknown_list = "unknown", "un-known", "n/a", "un_known", "not known", "not-known", "not_known", "unidentified", \
                "not identified", "unmatched"

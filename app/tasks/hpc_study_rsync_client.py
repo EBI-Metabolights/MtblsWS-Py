@@ -241,7 +241,7 @@ class StudyRsyncClient:
             exclude_list = ["*"]
         elif source.folder_type == StudyFolderType.INTERNAL:
             if target.location == StudyFolderLocation.PRIVATE_FTP_STORAGE:
-                include_list = [self.settings.study.chebi_annotation_sub_folder]
+                include_list = [self.settings.chebi.pipeline.chebi_annotation_sub_folder]
             elif target.location == StudyFolderLocation.READONLY_STUDY_STORAGE:
                 include_list = ["metadata_summary.tsv", "data_files_summary.txt"]
 

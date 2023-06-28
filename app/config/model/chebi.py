@@ -23,6 +23,7 @@ class ChebiPipelineSearchServices(BaseModel):
 
 
 class ChebiPipelineConfiguration(BaseModel):
+    chebi_annotation_sub_folder: str = "chebi_pipeline_annotations"
     curated_metabolite_list_file_location: str
     chebi_upload_script: str
     chebi_pipeline_url: str
@@ -37,8 +38,11 @@ class ChebiPipelineConfiguration(BaseModel):
 class ChebiServiceSettings(BaseModel):
     connection: ChebiServiceConnection
     configuration: ChebiServiceConfiguration
-
+    
+class ChebiCacheSettings(BaseModel):
+    images_cache_path: str
 
 class ChebiSettings(BaseModel):
     pipeline: ChebiPipelineConfiguration
     service: ChebiServiceSettings
+    caches: ChebiCacheSettings
