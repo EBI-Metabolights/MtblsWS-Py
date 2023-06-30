@@ -935,18 +935,11 @@ def remove_file(file_location: str, file_name: str, always_remove=False):
     
     first_folder = file_name.split(os.sep)[0]
     
-    if first_folder in (files_folder_name, internal_files_folder_name, audit_files_folder_name):
+    if first_folder == files_folder_name:
         study_id = os.path.basename(file_location)
         mounted_paths = settings.hpc_cluster.datamover.mounted_paths
-        if first_folder == files_folder_name:
-            new_file_relative_path = file_name.replace(f"{files_folder_name}/", "", 1)
-            remote_path = os.path.join(mounted_paths.cluster_study_readonly_files_root_path, study_id, new_file_relative_path)
-        elif first_folder == internal_files_folder_name:
-            new_file_relative_path = file_name.replace(f"{internal_files_folder_name}/", "", 1)
-            remote_path = os.path.join(mounted_paths.cluster_study_internal_files_root_path, study_id, new_file_relative_path)
-        elif first_folder == audit_files_folder_name:
-            new_file_relative_path = file_name.replace(f"{audit_files_folder_name}/", "", 1)
-            remote_path = os.path.join(mounted_paths.cluster_study_audit_files_root_path, study_id, new_file_relative_path)
+        new_file_relative_path = file_name.replace(f"{files_folder_name}/", "", 1)
+        remote_path = os.path.join(mounted_paths.cluster_study_readonly_files_root_path, study_id, new_file_relative_path)
         try:    
             result, message = delete_remote_file(remote_path)
             return result, message
