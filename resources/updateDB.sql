@@ -101,7 +101,7 @@ $$
         update curation_log_temp set ms_size  = (studysize - 18000), nmr_size = 18000 where acc = 'MTBLS200';
         update curation_log_temp set ms_size  = (studysize - 12000), nmr_size = 12000 where acc = 'MTBLS103';
         update curation_log_temp set ms_size  = (studysize - 355000), nmr_size = 355000 where acc = 'MTBLS336';
-        update curation_log_temp set status = 'Placeholder' where placeholder = '1';
+        update curation_log_temp set status = 'Placeholder' where placeholder = '1' and username = 'MetaboLights Placeholder';
 
     END
 $$;
