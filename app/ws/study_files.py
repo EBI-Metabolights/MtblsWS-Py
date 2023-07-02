@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import pathlib
+import re
 import shutil
 import time
 from typing import Dict, List, Set
@@ -38,6 +39,7 @@ from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
 
 from app.services.storage_service.storage_service import StorageService
+from app.tasks.datamover_tasks.basic_tasks.file_management import list_directory
 from app.tasks.datamover_tasks.curation_tasks import data_file_operations
 from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
@@ -46,7 +48,7 @@ from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import get_all_files_from_filesystem, get_all_files, write_audit_files
 from app.ws.study.study_service import StudyService, identify_study_id
 from app.ws.study.user_service import UserService
-from app.ws.study_folder_utils import evaluate_files, get_directory_files, get_referenced_file_set
+from app.ws.study_folder_utils import FileMetadata, evaluate_files, get_directory_files, get_referenced_file_set, sortFileMetadataList
 from app.ws.utils import get_assay_file_list, remove_file, log_request
 
 logger = logging.getLogger('wslog')
@@ -281,8 +283,17 @@ without setting the "force" parameter to True''',
         study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403, error='Not authorized')
-
-        audit_status, dest_path = write_audit_files(study_location)
+        pattern = re.compile('([asi]_.*\.txt)|(m_.*\.tsv)')
+        metadata_update = False
+        for file in files:
+            f_name = file["name"]
+            match =  pattern.match(f_name)
+            if match:
+                match_result = match.groups()
+                result =  match_result[0]
+                metadata_update = True
+        if metadata_update:            
+            write_audit_files(study_location)
 
         status = False
         message = None
@@ -409,18 +420,19 @@ class StudyRawAndDerivedDataFiles(Resource):
             search_pattern = f"{args['search_pattern']}" if 'search_pattern' in args and args['search_pattern'] else search_pattern
             if '..' + os.path.sep in search_pattern or '.' + os.path.sep in search_pattern:
                 raise MetabolightsException(http_code=401, message="Relative folder search patterns (., ..) are not allowed")
-            if not search_pattern.startswith(f'{data_files_subfolder}/'):
+            search_pattern_prefix = f'{data_files_subfolder}/'
+            if not search_pattern.startswith(search_pattern_prefix):
                 raise MetabolightsException(http_code=401, message=f"Search pattern should start with {f'{data_files_subfolder}/'}")
 
         UserService.get_instance().validate_user_has_curator_role(user_token)
         StudyService.get_instance().get_study_by_acc(study_id)
         settings = get_study_settings()
-        
         study_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
-        search_path = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
+        search_subfolder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id, data_files_subfolder)
+        search_path = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id, search_pattern)
         ignore_list = self.get_ignore_list(search_path)
 
-        glob_search_result = glob.glob(os.path.join(search_path, search_pattern), recursive=True)
+        glob_search_result = glob.glob(os.path.join(search_subfolder, search_path), recursive=True)
         search_results = [os.path.abspath(file) for file in glob_search_result if not os.path.isdir(file)]
         excluded_folders = get_settings().file_filters.folder_exclusion_list
 
@@ -429,12 +441,12 @@ class StudyRawAndDerivedDataFiles(Resource):
         filtered_result = []
         warning_occurred = False
         for item in search_results:
-            is_in_study_folder = item.startswith(search_path + os.path.sep) and ".." + os.path.sep not in item
+            is_in_study_folder = item.startswith(search_subfolder + os.path.sep) and ".." + os.path.sep not in item
             if is_in_study_folder:
-                relative_path = item.replace(search_path + os.path.sep, '')
+                relative_path = item.replace(search_subfolder + os.path.sep, f"{search_pattern_prefix}")
                 sub_path = relative_path.split(os.path.sep)
                 if sub_path and sub_path[0] not in excluded_folder_set:
-                    filtered_result.append(item)
+                    filtered_result.append(relative_path)
             else:
                 if not warning_occurred:
                     message = f"{search_pattern} pattern results for {study_id} are not allowed: {item}"
@@ -585,7 +597,7 @@ class StudyRawAndDerivedDataFiles(Resource):
             inputs = {"study_id": study_id, "files": files_input, "target_location": target_location, "override": override }
             result = data_file_operations.move_data_files.apply_async(kwargs=inputs, expires=60*5)
 
-            result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
+            result = {'content': f"Task has been started. Task id: {result.id}", 'message': None, "err": None}
             return result
         except Exception as ex:
             raise MetabolightsException(http_code=500, message=f"Move files task submission was failed", exception=ex)
@@ -1013,12 +1025,28 @@ class StudyFilesReuse(Resource):
         # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
         # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
         search_result = evaluate_files(directory_files, referenced_files)
+        try:
+            settings = get_settings()
+            ftp_root_path = get_settings().hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path
+            ftp_folder_path = os.path.join(ftp_root_path, study.obfuscationcode)
+            inputs = {"path": ftp_folder_path}
+            task = list_directory.apply_async(kwargs=inputs, expires=60*5)
+            ftp_files: List[FileMetadata] = task.get(timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds * 2)
+        except Exception as exc:
+            logger.error(f"Error for study {study.acc}: {str(exc)}")
+            ftp_files = []
+            
         ftp_private_relative_root_path = get_private_ftp_relative_root_path()
         upload_path = os.path.join(ftp_private_relative_root_path, upload_folder)
         search_result.uploadPath = upload_path
         search_result.obfuscationCode = study.obfuscationcode
+        search_result.latest = ftp_files
+        sortFileMetadataList(search_result.study)
+        sortFileMetadataList(ftp_files)
+        
         return search_result.dict()
-    
+
+        
         # return update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
         #                                 files_list_json_file, include_internal_files=include_internal_files)
         # if os.path.isfile(files_list_json_file):
@@ -1758,6 +1786,7 @@ class StudyFilesTree(Resource):
         search_result = evaluate_files(directory_files, referenced_files)
         search_result.uploadPath = upload_path
         search_result.obfuscationCode = study.obfuscationcode
+        sortFileMetadataList(search_result.study)
         return search_result.dict()
 
 

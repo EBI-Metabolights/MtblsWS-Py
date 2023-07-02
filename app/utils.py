@@ -33,7 +33,7 @@ class MetabolightsException(Exception):
 
 
 class MetabolightsDBException(MetabolightsException):
-    def __init__(self, message: str, exception: Exception = None, http_code=501):
+    def __init__(self, message: str, exception: Exception = None, http_code=401):
         super(MetabolightsDBException, self).__init__(message, exception, http_code)
 
 

@@ -63,6 +63,7 @@ Misc of utils
 logger = logging.getLogger('wslog')
 
 date_format = "%Y%m%d%H%M%S"  # 20180724092134
+date_time_separted_format = "%Y%m%d_%H%M%S"  # 20180724092134
 file_date_format = "%B %d %Y %H:%M:%S"  # 20180724092134
 isa_date_format = "%Y-%m-%d"
 
@@ -80,6 +81,8 @@ def get_timestamp():
     """
     return time.strftime(date_format)
 
+def get_timestamp_based_folder():
+    return time.strftime(date_time_separted_format)
 
 def get_year_plus_one(todays_date=False, isa_format=False):
     """
@@ -103,7 +106,7 @@ def new_timestamped_folder(path):
     :param path:
     :return:
     """
-    new_folder = os.path.join(path, get_timestamp())
+    new_folder = os.path.join(path, get_timestamp_based_folder())
     try:
         os.makedirs(new_folder)
     except FileExistsError:
@@ -930,8 +933,14 @@ def remove_file(file_location: str, file_name: str, always_remove=False):
     files_folder_name = settings.study.readonly_files_symbolic_link_name
     internal_files_folder_name = settings.study.internal_files_symbolic_link_name
     audit_files_folder_name = settings.study.audit_files_symbolic_link_name
+    
+    if not file_name:
+        return False, "Deleting root folder is not allowed."
     if file_name.strip(os.sep) in (files_folder_name, internal_files_folder_name, audit_files_folder_name):
-        return False, "Managed folders can not be deleted."
+        return False, "Deleting managed folders is not allowed."
+    
+    if (file_name.startswith(internal_files_folder_name)):
+        return False, "Deleting internal files is not allowed."
     
     first_folder = file_name.split(os.sep)[0]
     
@@ -955,17 +964,27 @@ def remove_file(file_location: str, file_name: str, always_remove=False):
             if file_status == 'active' and not always_remove:  # If active metadata and "remove anyway" flag if not set
                 return False, file_name + " is referenced in metadata file. Referenced files can not be deleted."
         if os.path.exists(file_to_delete):  # First, does the file/folder exist?
-            if os.path.islink(file_to_delete):
-                os.unlink(file_to_delete)
-            elif os.path.isfile(file_to_delete):  # is it a file?
-                os.remove(file_to_delete)
-            elif os.path.isdir(file_to_delete):  # is it a folder
-                shutil.rmtree(file_to_delete)
+            dirname = os.path.dirname(file_to_delete)
+            mode = os.stat(dirname).st_mode
+            new_mode = mode
+            if mode & 0o700 != 0o700 and always_remove:
+                new_mode = mode | 0o700
+                os.chmod(dirname)
+            try: 
+                if os.path.islink(file_to_delete):
+                    os.unlink(file_to_delete)
+                elif os.path.isfile(file_to_delete):  # is it a file?
+                    os.remove(file_to_delete)
+                elif os.path.isdir(file_to_delete):  # is it a folder
+                    shutil.rmtree(file_to_delete)
+            finally:
+                if mode != new_mode and always_remove:
+                    os.chmod(dirname, mode)    
         else:
             return False, "Can not find file " + file_name
     except Exception as exc:
         return False, f"Can not delete file {file_name}. {str(exc)}"
-    return True, "File " + file_name + "is deleted"
+    return True, "File " + file_name + " is deleted"
 
 
 def map_file_type(file_name, directory, assay_file_list=None):

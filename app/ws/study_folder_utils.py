@@ -22,17 +22,25 @@ class LiteFileMetadata(BaseModel):
     timestamp: str = ""
     type: str = "unknown"
 
-class FileMetadata(BaseModel):
-    createdAt: str = ""
-    directory: bool = False
-    file: str
-    status: str = "unreferenced"
-    timestamp: str = ""
-    type: str = "unknown"
+
+def sortFileMetadataList(items: List[LiteFileMetadata]):
+    items.sort(key=metadata_sort)
+
+def metadata_sort(item: LiteFileMetadata):
+    if not item:
+        return ""
+    if item.directory:
+        return item.file.upper()
+    else:
+        # ~~ is to ensure files are after folders
+        return "~~" + item.file.upper()
+    
+class FileMetadata(LiteFileMetadata):
     relative_path: str = ""
     extension: str = ""
     is_stop_folder: bool = False
     is_empty: bool = False
+    
 
 
 class FileSearchResult(BaseModel):
@@ -40,7 +48,7 @@ class FileSearchResult(BaseModel):
     private: List[str] = []
     uploadPath: str = ""
     obfuscationCode: str = ""
-    latest: List[str] = []
+    latest: List[FileMetadata] = []
 
 
 class LiteFileSearchResult(BaseModel):
@@ -48,7 +56,7 @@ class LiteFileSearchResult(BaseModel):
     private: List[str] = []
     uploadPath: str = ""
     obfuscationCode: str = ""
-    latest: List[str] = []
+    latest: List[LiteFileMetadata] = []
 
 
 class StudyFolderIndex(BaseModel):

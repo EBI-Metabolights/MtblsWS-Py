@@ -333,12 +333,13 @@ def write_audit_files(study_location):
 
     try:
         # make a copy of ISA-Tab & MAF
-        for isa_file in glob.glob(os.path.join(study_location, "?_*.t*")):
-            isa_file_name = os.path.basename(isa_file)
-            src_file = isa_file
-            dest_file = os.path.join(dest_path, isa_file_name)
-            logger.info("Copying %s to %s", src_file, dest_file)
-            copy_file(src_file, dest_file)
+        for pattern in ["[asi]_*.txt", "m_*.tsv"]:
+            for isa_file in glob.glob(os.path.join(study_location, pattern)):
+                isa_file_name = os.path.basename(isa_file)
+                src_file = isa_file
+                dest_file = os.path.join(dest_path, isa_file_name)
+                logger.info("Copying %s to %s", src_file, dest_file)
+                copy_file(src_file, dest_file)
     except:
         return False, dest_path
 

@@ -6,6 +6,7 @@ from typing import List, Union
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.acl import Acl
 from app.tasks.worker import MetabolightsTask, celery
+from app.ws.study_folder_utils import FileMetadata, evaluate_files, get_directory_files
 
 logger = logging.getLogger("datamover_worker")
 
@@ -67,6 +68,17 @@ def chmod(self, paths: Union[str, List[str]], acl: Union[int, Acl] = Acl.AUTHORI
         results[path_item] = update_permission(path_item, permission)
 
     return results
+
+
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    name="app.tasks.datamover_tasks.basic_tasks.file_management.list_directory",
+)
+def list_directory(self, path: str) -> FileMetadata:
+    directory_files = get_directory_files(path, None, search_pattern="**/*", recursive=False, exclude_list=[])
+    search_result = evaluate_files(directory_files, [])
+    return search_result.study
 
 
 @celery.task(
