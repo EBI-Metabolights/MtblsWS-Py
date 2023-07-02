@@ -157,8 +157,9 @@ def get_study_folder_files(root_path: str, file_descriptors: Dict[str, FileDescr
                     if len(item.name) > 2 and item.name[:2] in METADATA_FILE_PREFIXES:
                         continue
 
-                
             relative_path = str(item).replace(f"{root_path}/", "")
+            if item.is_symlink() and not item.resolve().exists():
+                continue
             if not item.is_symlink() or (item.is_symlink() and item.resolve().exists()):
                 m_time = os.path.getmtime(item)
                 is_empty = True if item.stat().st_size == 0 else False
