@@ -12,62 +12,12 @@ from app.tasks.worker import celery
 from celery.result import AsyncResult
 from app.ws.redis.redis import RedisStorage, get_redis_server
 from app.ws.settings.utils import get_study_settings
-from app.ws.study.user_service import UserService
+from app.ws.study.validation.model import ValidationReportFile, ValidationTaskDescription
 
 logger = logging.getLogger("ws_log")
 UTC_SIMPLE_DATE_FORMAT='%Y-%m-%d %H:%M:%S'
 
-class ValidationTaskDescription(BaseModel):
-    task_id: str = ""
-    last_update_time: Union[int, float] = 0
-    last_update_time_str: str = ""
-    last_status: str = ""
-    task_done_time: Union[int, float] = 0
-    task_done_time_str: str = ""
-
-
-
-class ValidationDetail(BaseModel):
-    message: str = ""
-    section: str = ""
-    val_sequence: str = ""
-    status: str = ""
-    metadata_file: str = ""
-    value: str = ""
-    description: str = ""
-    val_override: str = ""
-    val_message: str = ""
-    comment: str = ""
-
-def validation_message_sorter(item: ValidationDetail):
-    if item.status:
-        if item.status == "error":
-            return 0
-        elif item.status == "warning":
-            return 10
-        elif item.status == "info":
-            return 100
-        elif item.status == "success":
-            return 100
-    return 1000     
-
-
-class ValidationSection(BaseModel):
-    section: str = ""
-    has_more_items: bool = False
-    details: List[ValidationDetail] = []
-    
-class ValidationReportContent(BaseModel):
-    status: str = "not ready"
-    timing: float = 0.0
-    last_update_time: str = ""
-    last_update_timestamp: int = 0
-    validations: List[ValidationSection] = []
-    
-class ValidationReport(BaseModel):
-    validation: ValidationReportContent = ValidationReportContent()
-
-def get_validation_report(study_id: str, level: str="all") -> ValidationReport:
+def get_validation_report(study_id: str, level: str="all") -> ValidationReportFile:
         
     study_id = study_id.upper()
 
@@ -86,7 +36,7 @@ def get_validation_report(study_id: str, level: str="all") -> ValidationReport:
     if validation_file.exists():
         try:
             validation_schema = json.loads(validation_file.read_text(encoding="utf-8"))
-            report = ValidationReport.parse_obj(validation_schema)
+            report = ValidationReportFile.parse_obj(validation_schema)
             if report and report.validation:
                 
                 if not report.validation.last_update_time:
@@ -135,7 +85,7 @@ def get_validation_report(study_id: str, level: str="all") -> ValidationReport:
                     
             logger.error(f"{str(exc)}")
     if not report:
-        report = ValidationReport()
+        report = ValidationReportFile()
         # validation_file.write_text(report.dict())
     return report
 
@@ -171,7 +121,7 @@ def update_validation_files_task(study_id, user_token, force_to_start=True):
         if not result or result.state == "PENDING" or result.state == "REVOKED":
             start_new_task = True
             message = "Validation task is not active."
-            report: ValidationReport = get_validation_report(study_id)
+            report: ValidationReportFile = get_validation_report(study_id)
             desc.task_done_time = report.validation.last_update_timestamp
             desc.task_done_time_str = report.validation.last_update_time
         else:

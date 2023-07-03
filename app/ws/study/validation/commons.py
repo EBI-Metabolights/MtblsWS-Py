@@ -40,9 +40,9 @@ from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import get_files_for_validation
 from app.ws.study.study_service import StudyService
 from app.ws.study_folder_utils import FileSearchResult
-from app.ws.utils import read_tsv, map_file_type, get_assay_file_list, find_text_in_isatab_file, get_table_header, \
+from app.ws.utils import read_tsv, map_file_type, find_text_in_isatab_file, get_table_header, \
     get_assay_type_from_file_name, get_assay_headers_and_protcols
-from app.ws.validation_utils import ValidationReport
+from app.ws.study.validation.model import ValidationReportFile
 
 iac = IsaApiClient()
 
@@ -505,7 +505,7 @@ def update_validation_schema_files(validation_file, study_id, user_token, obfusc
     try:
         with open(validation_file, 'w', encoding='utf-8') as f:
             # json.dump(validation_schema, f, ensure_ascii=False, indent=4)
-            json.dump(ValidationReport(), f, ensure_ascii=False)
+            json.dump(ValidationReportFile(), f, ensure_ascii=False)
     except Exception as e:
         logger.error('Error writing validation schema file: ' + str(e))
         
