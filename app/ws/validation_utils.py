@@ -12,7 +12,7 @@ from app.tasks.worker import celery
 from celery.result import AsyncResult
 from app.ws.redis.redis import RedisStorage, get_redis_server
 from app.ws.settings.utils import get_study_settings
-from app.ws.study.validation.model import ValidationReportFile, ValidationTaskDescription
+from app.ws.study.validation.model import ValidationReportFile, ValidationTaskDescription, validation_message_sorter
 
 logger = logging.getLogger("ws_log")
 UTC_SIMPLE_DATE_FORMAT='%Y-%m-%d %H:%M:%S'
@@ -28,62 +28,59 @@ def get_validation_report(study_id: str, level: str="all") -> ValidationReportFi
     validation_file = Path(os.path.join(internal_files_folder, settings.validation_report_file_name))
     max_response_in_section =  settings.max_validation_messages_count_in_response
     internal_folder_path = Path(internal_files_folder)
-    if internal_folder_path.exists():
-        report_file = list(internal_folder_path.glob(settings.validation_report_file_name))
-        if report_file:
-            validation_file = report_file[0]
+    if not internal_folder_path.exists():
+        internal_folder_path.mkdir(exist_ok=True)
+        
     report = None
-    if validation_file.exists():
-        try:
-            validation_schema = json.loads(validation_file.read_text(encoding="utf-8"))
-            report = ValidationReportFile.parse_obj(validation_schema)
-            if report and report.validation:
+    try:
+        validation_schema = json.loads(validation_file.read_text(encoding="utf-8"))
+        report = ValidationReportFile.parse_obj(validation_schema)
+        if report and report.validation:
+            if not report.validation.last_update_time:
+                report.validation.last_update_timestamp = validation_file.stat().st_mtime
+                update_time = datetime.datetime.fromtimestamp(report.validation.last_update_timestamp)
+                report.validation.last_update_time = update_time.strftime('%Y-%m-%d-%H:%M')
+            if report.validation.validations:
+                sections = report.validation.validations
+                for section in sections:
+                    current_details = section.details
+                    if level != 'all':
+                        current_details = [ x for x in section.details if x.status == level ]
+                    if level == 'all':
+                        if current_details and len(current_details) > max_response_in_section:
+                            current_details.sort(key=validation_message_sorter)
+                            section.details = current_details[:max_response_in_section]
+                            section.has_more_items = True
+                    else:
+                        if current_details and len(current_details) > max_response_in_section:
+                            section.details = current_details[:max_response_in_section]
+                            section.has_more_items = True
+                        
+        # if "validation" in validation_schema and validation_schema["validation"]:
+        #     if "last_update_time" not in validation_schema["validation"]:
+        #         last_update_timestamp = validation_file.stat().st_mtime
+        #         update_time = datetime.datetime.fromtimestamp(last_update_timestamp)
+        #         last_update_time_str = update_time.strftime('%Y-%m-%d-%H:%M')
+        #         validation_schema["validation"]["last_update_time"] = last_update_time_str
+        #         validation_schema["validation"]["last_update_timestamp"] = update_time.timestamp()
+        #     if "validations" in validation_schema["validation"] and validation_schema["validation"]["validations"]:
+        #         sections = validation_schema["validation"]["validations"]
+        #         for section in sections:
+        #             if "details" in section and len(section["details"]) > max_response_in_section:
+        #                 section["details"].sort(key=validation_message_sorter)
+        #                 section["details"] = section["details"][:max_response_in_section]
                 
-                if not report.validation.last_update_time:
-                    report.validation.last_update_timestamp = validation_file.stat().st_mtime
-                    update_time = datetime.datetime.fromtimestamp(report.validation.last_update_timestamp)
-                    report.validation.last_update_time = update_time.strftime('%Y-%m-%d-%H:%M')
-                if report.validation.validations:
-                    sections = report.validation.validations
-                    for section in sections:
-                        current_details = section.details
-                        if level != 'all':
-                            current_details = [ x for x in section.details if x.status == level ]
-                        if level == 'all':
-                            if current_details and len(current_details) > max_response_in_section:
-                                current_details.sort(key=validation_message_sorter)
-                                section.details = current_details[:max_response_in_section]
-                                section.has_more_items = True
-                        else:
-                            if current_details and len(current_details) > max_response_in_section:
-                                section.details = current_details[:max_response_in_section]
-                                section.has_more_items = True
-                            
-            # if "validation" in validation_schema and validation_schema["validation"]:
-            #     if "last_update_time" not in validation_schema["validation"]:
-            #         last_update_timestamp = validation_file.stat().st_mtime
-            #         update_time = datetime.datetime.fromtimestamp(last_update_timestamp)
-            #         last_update_time_str = update_time.strftime('%Y-%m-%d-%H:%M')
-            #         validation_schema["validation"]["last_update_time"] = last_update_time_str
-            #         validation_schema["validation"]["last_update_timestamp"] = update_time.timestamp()
-            #     if "validations" in validation_schema["validation"] and validation_schema["validation"]["validations"]:
-            #         sections = validation_schema["validation"]["validations"]
-            #         for section in sections:
-            #             if "details" in section and len(section["details"]) > max_response_in_section:
-            #                 section["details"].sort(key=validation_message_sorter)
-            #                 section["details"] = section["details"][:max_response_in_section]
-                    
-                return report
-        except Exception as exc:
-            if validation_file.exists():
-                if  validation_file.is_symlink():
-                    validation_file.unlink()
-                elif validation_file.is_file():
-                    os.remove(validation_file)
-                elif validation_file.is_dir():
-                    shutil.rmtree(str(validation_file))
-                    
-            logger.error(f"{str(exc)}")
+            return report
+    except Exception as exc:
+        if validation_file.exists():
+            if  validation_file.is_symlink():
+                validation_file.unlink()
+            elif validation_file.is_file():
+                os.remove(validation_file)
+            elif validation_file.is_dir():
+                shutil.rmtree(str(validation_file))
+                
+        logger.error(f"{str(exc)}")
     if not report:
         report = ValidationReportFile()
         # validation_file.write_text(report.dict())
