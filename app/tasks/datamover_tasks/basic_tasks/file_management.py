@@ -1,7 +1,7 @@
 import logging
 import os
 import shutil
-from typing import List, Union
+from typing import Any, Dict, List, Union
 
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.acl import Acl
@@ -23,7 +23,6 @@ def create_folders(
 
     for path_item in input_paths:
         path_exist = os.path.exists(path_item)
-        print(path_item)
         if path_exist:
             if not os.path.isdir(path_item):
                 results[path_item] = {"status": False, "message": f"Path '{path_item}' is not a folder"}
@@ -75,10 +74,10 @@ def chmod(self, paths: Union[str, List[str]], acl: Union[int, Acl] = Acl.AUTHORI
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.list_directory",
 )
-def list_directory(self, path: str) -> FileMetadata:
+def list_directory(self, path: str) -> Dict[str, Any]:
     directory_files = get_directory_files(path, None, search_pattern="**/*", recursive=False, exclude_list=[])
     search_result = evaluate_files(directory_files, [])
-    return search_result.study.dict()
+    return search_result.dict()
 
 
 @celery.task(
@@ -86,26 +85,26 @@ def list_directory(self, path: str) -> FileMetadata:
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.delete_folders",
 )
-def delete_folders(self, folder_paths: Union[str, List[str]]):
+def delete_folders(self, root_path: str, folder_paths: Union[str, List[str]]):
     results = {}
 
     input_paths = get_input_paths(folder_paths)
-
     for path_item in input_paths:
+        relative_path = path_item.replace(root_path, "", 1).strip(os.sep)
         if os.path.exists(path_item):
             if os.path.isdir(path_item):
                 try:
                     shutil.rmtree(path_item)
-                    results[path_item] = {"status": False, "message": f"'{path_item}' was deleted."}
+                    results[path_item] = {"status": False, "message": f"'{relative_path}' was deleted."}
                 except Exception as ex:
                     results[path_item] = {
                         "status": False,
-                        "message": f"Path '{path_item}' could not be deleted. Root cause: {str(ex)}",
+                        "message": f"Path '{relative_path}' could not be deleted. Root cause: {str(ex)}",
                     }
             else:
-                results[path_item] = {"status": False, "message": f"'{path_item}' is not a folder or does not exist."}
+                results[path_item] = {"status": False, "message": f"'{relative_path}' is not a folder or does not exist."}
         else:
-            results[path_item] = {"status": False, "message": f"There is no folder '{path_item}'."}
+            results[path_item] = {"status": False, "message": f"There is no folder '{relative_path}'."}
     return results
 
 
@@ -115,17 +114,18 @@ def delete_folders(self, folder_paths: Union[str, List[str]]):
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.delete_files",
 )
-def delete_files(self, file_paths: Union[str, List[str]]):
+def delete_files(self, root_path: str, file_paths: Union[str, List[str]]):
     results = {}
 
     input_paths = get_input_paths(file_paths)
 
     for path_item in input_paths:
+        relative_path = path_item.replace(root_path, "", 1).strip(os.sep)
         if os.path.exists(path_item):
             if os.path.islink(path_item):
                 try:
                     os.unlink(path_item)
-                    results[path_item] = {"status": True, "message": f"'{path_item}' was deleted."}
+                    results[path_item] = {"status": True, "message": f"'{relative_path}' was deleted."}
                 except Exception as ex:
                     results[path_item] = {
                         "status": False,
@@ -134,7 +134,7 @@ def delete_files(self, file_paths: Union[str, List[str]]):
             elif os.path.isfile(path_item):
                 try:
                     os.remove(path_item)
-                    results[path_item] = {"status": True, "message": f"'{path_item}' was deleted."}
+                    results[path_item] = {"status": True, "message": f"'{relative_path}' was deleted."}
                 except Exception as ex:
                     results[path_item] = {
                         "status": False,
@@ -143,16 +143,16 @@ def delete_files(self, file_paths: Union[str, List[str]]):
             elif os.path.isdir(path_item):
                 try:
                     shutil.rmtree(path_item)
-                    results[path_item] = {"status": True, "message": f"'{path_item}' was deleted."}
+                    results[path_item] = {"status": True, "message": f"'{relative_path}' was deleted."}
                 except Exception as ex:
                     results[path_item] = {
                         "status": False,
                         "message": f"Path '{path_item}' could not be deleted. Root cause: {str(ex)}",
                     }
             else:
-                results[path_item] = {"status": False, "message": f"'{path_item}' is not a file / folder or does not exist."}
+                results[path_item] = {"status": False, "message": f"'{relative_path}' is not a file / folder or does not exist."}
         else:
-            results[path_item] = {"status": False, "message": f"There is no file or folder: '{path_item}'."}
+            results[path_item] = {"status": False, "message": f"There is no file or folder: '{relative_path}'."}
     return results
 
 @celery.task(

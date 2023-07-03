@@ -59,9 +59,7 @@ configure_datamover:
 run_server:
   stage: deploy
   only:
-      - development
       - test
-      - development-pipeline-test
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/restart_server.sh"
     - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/restart_datamover.sh"

@@ -48,8 +48,8 @@ from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import get_all_files_from_filesystem, get_all_files, write_audit_files
 from app.ws.study.study_service import StudyService, identify_study_id
 from app.ws.study.user_service import UserService
-from app.ws.study_folder_utils import FileMetadata, evaluate_files, get_directory_files, get_referenced_file_set, sortFileMetadataList
-from app.ws.utils import get_assay_file_list, remove_file, log_request
+from app.ws.study_folder_utils import FileMetadata, LiteFileSearchResult, evaluate_files, get_directory_files, get_referenced_file_set, sortFileMetadataList
+from app.ws.utils import delete_remote_file, get_assay_file_list, remove_file, log_request
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -267,7 +267,9 @@ without setting the "force" parameter to True''',
             files = args['files'] if args['files'] else None
             file_location = args['location'] if args['location'] else 'study'
             always_remove = False if args['force'].lower() != 'true' else True
-
+            
+        if file_location not in ["study", "upload"]:
+            abort(400, error='Location is invalid')
         # body content validation
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
@@ -283,40 +285,59 @@ without setting the "force" parameter to True''',
         study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403, error='Not authorized')
-        pattern = re.compile('([asi]_.*\.txt)|(m_.*\.tsv)')
-        metadata_update = False
-        for file in files:
-            f_name = file["name"]
-            match =  pattern.match(f_name)
-            if match:
-                match_result = match.groups()
-                result =  match_result[0]
-                metadata_update = True
-        if metadata_update:            
-            write_audit_files(study_location)
 
-        status = False
-        message = None
         errors = []
         
         deleted_files = []
-        for file in files:
-            try:
+        if file_location == "study":
+            pattern = re.compile('([asi]_.*\.txt)|(m_.*\.tsv)')
+            metadata_update = False
+            for file in files:
                 f_name = file["name"]
+                match =  pattern.match(f_name)
+                if match:
+                    match_result = match.groups()
+                    result =  match_result[0]
+                    metadata_update = True
+            if metadata_update:            
+                write_audit_files(study_location)
 
-                if f_name.startswith('i_') and f_name.endswith('.txt') and not is_curator:
-                    errors.append({"status": "error", 'message': "Only MetaboLights curators can remove the investigation file", 'file': f_name})  
-                elif file_location == "study":
-                    status, message = remove_file(study_location, f_name, always_remove)
+            status = False
+            message = None
+            for file in files:
+                try:
+                    f_name = file["name"]
+
+                    if f_name.startswith('i_') and f_name.endswith('.txt') and not is_curator:
+                        errors.append({"status": "error", 'message': "Only MetaboLights curators can remove the investigation file", 'file': f_name})  
+                    elif file_location == "study":
+                        status, message = remove_file(study_location, f_name, always_remove)
+                        if not status:
+                            errors.append({"status": "error", 'message': message, 'file': f_name})
+                        else:
+                            deleted_files.append({"status": "success", 'message': message, 'file': f_name})
+                except Exception as exc:
+                    errors.append({"status": "error", 'message': str(exc), 'file': f_name})
+                    
+            return {"errors": errors, "deleted_files": deleted_files}
+        else:
+            ftp_root_path = get_settings().hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path
+            for file in files:
+                try:
+                    f_name = file["name"]
+                    study_folder_root_path = os.path.join(ftp_root_path, f"{study_id.lower()}-{obfuscation_code}")
+                    file_path = os.path.join(study_folder_root_path, f_name)
+                    status, message = delete_remote_file(study_folder_root_path, file_path)
+
                     if not status:
                         errors.append({"status": "error", 'message': message, 'file': f_name})
                     else:
                         deleted_files.append({"status": "success", 'message': message, 'file': f_name})
-            except Exception as exc:
-                errors.append({"status": "error", 'message': str(exc), 'file': f_name})
-                
-        return {"errors": errors, "deleted_files": deleted_files}
-
+                except Exception as exc:
+                    errors.append({"status": "error", 'message': str(exc), 'file': f_name})
+                    
+            return {"errors": errors, "deleted_files": deleted_files}
+            
         
 class StudyRawAndDerivedDataFiles(Resource):
     @swagger.operation(
@@ -936,6 +957,17 @@ class StudyFilesReuse(Resource):
                 "allowMultiple": False
             },
             {
+                "name": "readonlyMode",
+                "description": "readonlyMode",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "default": True
+            },            
+            {
                 "name": "force",
                 "description": "Force writing Files list json to file",
                 "required": False,
@@ -982,19 +1014,21 @@ class StudyFilesReuse(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-            
+        readonly_mode = True
         obfuscation_code = None
         if "obfuscation_code" in request.headers:
             obfuscation_code = request.headers["obfuscation_code"]
             
         parser = reqparse.RequestParser()
         parser.add_argument('force', help='Force writing files list schema json')
+        parser.add_argument('readonlyMode', help='Readonly Mode')
         parser.add_argument('include_internal_files', help='Ignores internal files')
         force_write = False
         include_internal_files = False
         if request.args:
             args = parser.parse_args(req=request)
             force_write = True if args['force'].lower() == 'true' else False
+            readonly_mode = True if not args['readonlyMode'] or args['readonlyMode'].lower() == 'true' else False
             if args['include_internal_files']:
                 include_internal_files = False if args['include_internal_files'].lower() != 'true' else True
         settings = get_study_settings()
@@ -1025,25 +1059,27 @@ class StudyFilesReuse(Resource):
         # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
         # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
         search_result = evaluate_files(directory_files, referenced_files)
-        try:
-            settings = get_settings()
-            ftp_root_path = get_settings().hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path
-            ftp_folder_path = os.path.join(ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}")
-            inputs = {"path": ftp_folder_path}
-            task = list_directory.apply_async(kwargs=inputs, expires=60*5)
-            output = task.get(timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds * 2)
-            ftp_files = [FileMetadata.parse_obj(x) for x in output]
-        except Exception as exc:
-            logger.error(f"Error for study {study.acc}: {str(exc)}")
-            ftp_files = []
-            
+        if not readonly_mode:
+            try:
+                settings = get_settings()
+                ftp_root_path = settings.hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path
+                ftp_folder_path = os.path.join(ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}")
+                inputs = {"path": ftp_folder_path}
+                task = list_directory.apply_async(kwargs=inputs, expires=60*5)
+                output = task.get(timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds * 2)
+                ftp_files = LiteFileSearchResult.parse_obj(output).study
+                
+                search_result.latest = ftp_files  
+                sortFileMetadataList(ftp_files)
+            except Exception as exc:
+                logger.error(f"Error for study {study.acc}: {str(exc)}")
+                ftp_files = []
+
         ftp_private_relative_root_path = get_private_ftp_relative_root_path()
         upload_path = os.path.join(ftp_private_relative_root_path, upload_folder)
         search_result.uploadPath = upload_path
         search_result.obfuscationCode = study.obfuscationcode
-        search_result.latest = ftp_files
         sortFileMetadataList(search_result.study)
-        sortFileMetadataList(ftp_files)
         
         return search_result.dict()
 
@@ -1709,6 +1745,19 @@ class StudyFilesTree(Resource):
                 "dataType": "string",
             },
             {
+                "name": "location",
+                "description": "location is upload or study",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["study", "upload"],
+                "defaultValue": "study",
+                "default": "study"
+            },           
+            
+            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
@@ -1747,20 +1796,24 @@ class StudyFilesTree(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('include_sub_dir', help='include files in all sub-directories')
         parser.add_argument('directory', help='List files in a specific sub-directory')
-
+        parser.add_argument('location', help='File location')
         parser.add_argument('include_internal_files', help='Ignores internal files')
         include_sub_dir = False
         directory = None
+        location = "study"
         include_internal_files = False
         if request.args:
             args = parser.parse_args(req=request)
-            include_sub_dir = False if args['include_sub_dir'].lower() != 'true' else True
+            if args['include_sub_dir']:
+                include_sub_dir = False if args['include_sub_dir'].lower() != 'true' else True
+            location = args['location'] if  args['location'] else "study"
             directory = args['directory'] if args['directory'] else None
             if args['include_internal_files']:
                 include_internal_files = False if args['include_internal_files'].lower() != 'true' else True
-
+        if location not in ["study", "upload"]:
+            abort(401, message="Study location is not valid")
         if directory and directory.startswith(os.sep):
-            abort(401, "You can only specify folders in the current study folder")
+            abort(401, message="You can only specify folders in the current study folder")
         settings = get_settings()
         study_id, obfuscation_code = identify_study_id(study_id)
         # check for access rights
@@ -1773,24 +1826,40 @@ class StudyFilesTree(Resource):
         upload_path = os.path.join(ftp_private_relative_root_path, upload_folder)
 
         settings = get_settings().study
-        
-        study_metadata_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
+        if location == "study":
+            study_metadata_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
+                
+            # files_list_json_file = os.path.join(study_metadata_location, settings.readonly_files_symbolic_link_name, files_list_json)
+            referenced_files = get_referenced_file_set(study_id=study_id, metadata_path=study_metadata_location)
+            exclude_list = set(get_settings().file_filters.internal_mapping_list)
+            # if force_write:
+            directory_files = get_directory_files(study_metadata_location, directory, search_pattern="**/*", recursive=False, exclude_list=exclude_list, include_metadata_files=True)
+            # metadata_files = get_all_metadata_files()
+            # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
+            # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
+            search_result = evaluate_files(directory_files, referenced_files)
+            sortFileMetadataList(search_result.study)
             
-        # files_list_json_file = os.path.join(study_metadata_location, settings.readonly_files_symbolic_link_name, files_list_json)
-        referenced_files = get_referenced_file_set(study_id=study_id, metadata_path=study_metadata_location)
-        exclude_list = set(get_settings().file_filters.internal_mapping_list)
-        # if force_write:
-        directory_files = get_directory_files(study_metadata_location, directory, search_pattern="**/*", recursive=False, exclude_list=exclude_list, include_metadata_files=True)
-        # metadata_files = get_all_metadata_files()
-        # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
-        # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
-        search_result = evaluate_files(directory_files, referenced_files)
+        else:
+            try:
+                settings = get_settings()
+                ftp_root_path = settings.hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path
+                ftp_folder_path = os.path.join(ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}", directory)
+                inputs = {"path": ftp_folder_path}
+                task = list_directory.apply_async(kwargs=inputs, expires=60*5)
+                output = task.get(timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds * 2)
+                search_result = LiteFileSearchResult.parse_obj(output)
+                # search_result.latest = search_result.study
+                # search_result.study = []
+                sortFileMetadataList(search_result.study)
+            except Exception as exc:
+                logger.error(f"Error for study {study.acc}: {str(exc)}")          
+                return LiteFileSearchResult().dict()
+        
         search_result.uploadPath = upload_path
         search_result.obfuscationCode = study.obfuscationcode
-        sortFileMetadataList(search_result.study)
         return search_result.dict()
-
-
+        
 class FileList(Resource):
     @swagger.operation(
         summary="Get a listof all files and directories  for the given location",

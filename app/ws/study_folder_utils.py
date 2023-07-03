@@ -96,7 +96,7 @@ def get_directory_files(
 
 def evaluate_files(
     source_file_descriptors: Dict[str, FileDescriptor], referenced_file_set: Set[str]
-) -> FileSearchResult:
+) -> LiteFileSearchResult:
     file_search_result = evaluate_files_in_detail(source_file_descriptors, referenced_file_set)
     return LiteFileSearchResult.parse_obj(file_search_result)
 

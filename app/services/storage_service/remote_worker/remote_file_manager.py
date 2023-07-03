@@ -50,8 +50,9 @@ class RemoteFileManager(FileManager):
         return True
 
     def delete_folder(self, folder_path: str) -> bool:
-        folder_path = self.get_absolute_path(folder_path)
-        inputs = {"folder_paths": folder_path}
+        absolute_folder_path = self.get_absolute_path(folder_path)
+        root_path = absolute_folder_path.replace(folder_path, "", 1).strip(os.sep)
+        inputs = {"root_path": root_path, "folder_paths": absolute_folder_path, }
         task = file_management.delete_folders.apply_async(kwargs=inputs, expires=60*5)
         cluster_settings = get_cluster_settings()
         output = task.get(timeout=cluster_settings.task_get_timeout_in_seconds * 2)

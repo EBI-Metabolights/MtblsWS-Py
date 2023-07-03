@@ -49,7 +49,7 @@ from mzml2isa.parsing import convert as isa_convert
 from pandas import Series
 from dirsync import sync
 from app.config import get_settings
-from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files, delete_folders
+from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files
 
 from app.ws.mm_models import OntologyAnnotation
 from app.ws.settings.utils import get_study_settings
@@ -911,11 +911,15 @@ def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, o
 
     return isa_inv, onto
 
-def delete_remote_file(file_path: str) -> Tuple[bool, str]:
-    inputs = {"file_paths": file_path}
-    task = delete_files.apply_async(kwargs=inputs, expires=20)
-    cluster_settings = get_settings().hpc_cluster.configuration
-    output = task.get(timeout=cluster_settings.task_get_timeout_in_seconds * 2)
+def delete_remote_file(root_path: str, file_path: str) -> Tuple[bool, str]:
+    inputs = {"root_path": root_path, "file_paths": file_path}
+    try:
+        task = delete_files.apply_async(kwargs=inputs, expires=20)
+        cluster_settings = get_settings().hpc_cluster.configuration
+        output = task.get(timeout=cluster_settings.task_get_timeout_in_seconds * 2)
+    except Exception as exc:
+        return False, "No response from server."
+    
     if not output:
         return False, "No response from server."
 
@@ -948,9 +952,11 @@ def remove_file(file_location: str, file_name: str, always_remove=False):
         study_id = os.path.basename(file_location)
         mounted_paths = settings.hpc_cluster.datamover.mounted_paths
         new_file_relative_path = file_name.replace(f"{files_folder_name}/", "", 1)
-        remote_path = os.path.join(mounted_paths.cluster_study_readonly_files_root_path, study_id, new_file_relative_path)
-        try:    
-            result, message = delete_remote_file(remote_path)
+        files_folder_root_path = os.path.join(mounted_paths.cluster_study_readonly_files_root_path, study_id)
+        remote_path = os.path.join(files_folder_root_path, new_file_relative_path)
+
+        try: 
+            result, message = delete_remote_file(files_folder_root_path, remote_path)
             return result, message
         except Exception as exc:
             return False, f"File {file_name} is not deleted. {str(exc)}"
