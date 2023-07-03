@@ -26,4 +26,4 @@ def update_validation_files(self, study_id: str, user_token: str):
     validation_file = os.path.join(file_path, validation_report_file_name)
     study: Study = StudyService.get_instance().get_study_by_acc(study_id)
     self.update_state(state='STARTED', meta={'study_id': study_id})
-    update_validation_schema_files(validation_file, study_id, user_token, study.obfuscationcode)
+    return update_validation_schema_files(validation_file, study_id, user_token, study.obfuscationcode)
