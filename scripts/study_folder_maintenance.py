@@ -22,6 +22,7 @@ def maintain_folders(
     output_summary_report=None,
     delete_unreferenced_metadata_files=False,
     apply_future_actions=False,
+    cluster_execution_mode=False
 ):
     if target.lower().startswith("metadata"):
         target = "metadata"
@@ -62,11 +63,12 @@ def maintain_folders(
                 settings=settings,
                 apply_future_actions=apply_future_actions,
                 force_to_maintain=True,
+                cluster_execution_mode=cluster_execution_mode
             )
 
             maintenance_task_list[study_id] = maintenance_task
 
-            if target == "data":
+            if target == "data" or not target:
                 try:
                     maintenance_task.create_maintenance_actions_for_study_data_files()
                 except Exception as ex:
@@ -76,14 +78,15 @@ def maintain_folders(
                         write_actions(fa, maintenance_task.actions, study_id, study_status.name)
                     else:
                         write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
-            elif target == "metadata":
+            if target == "metadata" or not target:
                 try:
                     maintenance_task.maintain_study_rw_storage_folders()
                 except Exception as ex:
                     print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
                 finally:
                     write_actions(fa, maintenance_task.actions, study_id, study_status.name)
-            elif target == "private-ftp":
+            
+            if target == "private-ftp" or not target:
                 try:
                     maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
                 except Exception as ex:
@@ -122,7 +125,7 @@ if __name__ == "__main__":
             if val.isnumeric():
                 return int(val)
         return -1
-
+    
     study_ids = []
     if len(sys.argv) > 1 and sys.argv[1]:
         study_ids = [sys.argv[1]]
@@ -143,6 +146,10 @@ if __name__ == "__main__":
     if len(sys.argv) > 5 and sys.argv[5]:
         apply_future_actions = True if sys.argv[5].lower().startswith("apply") else False
 
+    cluster_execution_mode = False
+    if len(sys.argv) > 6 and sys.argv[6]:
+        cluster_execution_mode = True if sys.argv[6].lower().startswith("cluster") else False    
+    
     if not study_ids:
         studies = StudyService.get_instance().get_all_study_ids()
         skip_study_ids = []
@@ -155,6 +162,7 @@ if __name__ == "__main__":
         output_summary_report=output_summary_report,
         task_name=task_name,
         apply_future_actions=apply_future_actions,
+        cluster_execution_mode=cluster_execution_mode
     )
 
     print("end")

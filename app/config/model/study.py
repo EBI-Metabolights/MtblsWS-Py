@@ -12,6 +12,9 @@ class StudyMountedPaths(BaseModel):
     study_readonly_public_metadata_versions_root_path: str
     study_readonly_integrity_check_files_root_path: str
 
+    study_readonly_files_actual_root_path: str
+    study_readonly_audit_files_actual_root_path: str
+
     readonly_storage_recycle_bin_root_path: str
     rw_storage_recycle_bin_root_path: str
     
@@ -31,7 +34,7 @@ class StudySettings(BaseModel):
     audit_files_symbolic_link_name: str = "AUDIT_FILES"
     internal_files_symbolic_link_name: str = "INTERNAL_FILES"
     readonly_files_symbolic_link_name: str = "FILES"
-
+    readonly_audit_files_symbolic_link_name: str = "AUDIT_ARCHIVE"
     audit_folder_name: str = "audit"
 
     metadata_summary_file_name: str = "metadata_summary.tsv"
@@ -47,6 +50,8 @@ class StudySettings(BaseModel):
 
     investigation_file_name: str = "i_Investigation.txt"
     internal_logs_folder_name: str = "logs"
+    
+    internal_temp_folder_name: str = ".temp"
     internal_backup_folder_name: str = "internal-backup"
 
     validation_report_file_name: str = "validation_report.json"

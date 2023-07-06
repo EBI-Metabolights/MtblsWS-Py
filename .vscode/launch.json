@@ -71,7 +71,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {"PYTHONPATH": "${cwd}"},
-            "args": ["", "metadata", "metadata_migration_report.txt", "STORAGE_MIGRATION_TEST", "apply"]
+            "args": ["", "", "migration_report.txt", "STORAGE_MIGRATION_DRYRUN", "apply", "cluster"]
         },
         {
             "name": "Python: Create Test Data Files",

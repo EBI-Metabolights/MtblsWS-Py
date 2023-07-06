@@ -712,7 +712,7 @@ def create_temp_dir_in_study_folder(parent_folder: str) -> str:
 
 def collect_all_mzml_files(study_id, study_metadata_files_folder):
     settings = get_study_settings()
-    temp_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id, "temp")
+    temp_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id, settings.internal_temp_folder_name)
     folder_path = create_temp_dir_in_study_folder(parent_folder=temp_folder)
     files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
     mzml_files = {}

@@ -140,7 +140,7 @@ class SendFiles(Resource):
         safe_path = safe_join(study_metadata_location, file_name)
         zip_name = None
         try:
-            download_folder_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, "temp")
+            download_folder_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, settings.internal_temp_folder_name)
             os.makedirs(download_folder_path, exist_ok=True)
             short_zip = study_id + "_" + str(random.randint(100000, 200000)) + "_compressed_files.zip"
             zip_name = os.path.join(download_folder_path, short_zip)
@@ -308,7 +308,7 @@ class SendFilesPrivate(Resource):
         safe_path = safe_join(study_metadata_location, file_name)
         zip_name = None
         try:
-            download_folder_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, "temp")
+            download_folder_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, settings.internal_temp_folder_name)
             os.makedirs(download_folder_path, exist_ok=True)
             short_zip = study_id + "_" + str(random.randint(100000, 200000)) + "_compressed_files.zip"
             zip_name = os.path.join(download_folder_path, short_zip)

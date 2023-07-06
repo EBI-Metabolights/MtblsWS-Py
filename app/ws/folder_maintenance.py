@@ -68,6 +68,8 @@ class StudyFolders(BaseModel):
     study_audit_files_root_path: str = ""
 
     study_readonly_files_root_path: str = ""
+    study_readonly_files_actual_root_path: str = ""
+    study_readonly_audit_files_actual_root_path: str = ""
     study_readonly_audit_files_root_path: str = ""
     study_readonly_metadata_files_root_path: str = ""
     study_readonly_public_metadata_versions_root_path: str = ""
@@ -107,6 +109,9 @@ class FolderRootPaths(object):
         self.folders.study_audit_files_root_path = self.study_settings.mounted_paths.study_audit_files_root_path
         
         self.folders.study_readonly_files_root_path = self.study_settings.mounted_paths.study_readonly_files_root_path
+        self.folders.study_readonly_files_actual_root_path = self.study_settings.mounted_paths.study_readonly_files_actual_root_path
+        self.folders.study_readonly_audit_files_actual_root_path = self.study_settings.mounted_paths.study_readonly_audit_files_actual_root_path
+
         self.folders.study_readonly_audit_files_root_path = self.study_settings.mounted_paths.study_readonly_audit_files_root_path
         self.folders.study_readonly_metadata_files_root_path = self.study_settings.mounted_paths.study_readonly_metadata_files_root_path
         self.folders.study_readonly_public_metadata_versions_root_path = self.study_settings.mounted_paths.study_readonly_public_metadata_versions_root_path
@@ -129,6 +134,9 @@ class FolderRootPaths(object):
         self.folders.study_readonly_public_metadata_versions_root_path = mounted_paths.cluster_study_readonly_public_metadata_versions_root_path
         self.folders.study_readonly_integrity_check_files_root_path = mounted_paths.cluster_study_readonly_integrity_check_files_root_path
         
+        self.folders.study_readonly_files_actual_root_path = mounted_paths.cluster_study_readonly_files_actual_root_path
+        self.folders.study_readonly_audit_files_actual_root_path = mounted_paths.cluster_study_readonly_audit_files_actual_root_path
+
         self.folders.readonly_storage_recycle_bin_root_path = mounted_paths.cluster_readonly_storage_recycle_bin_root_path
         self.folders.rw_storage_recycle_bin_root_path = mounted_paths.cluster_rw_storage_recycle_bin_root_path
                
@@ -162,7 +170,7 @@ class StudyFolderMaintenanceTask(object):
         future_actions_sanitise_referenced_files=False,
         future_actions_create_subfolders=False,
         future_actions_compress_folders=False,
-        future_actions_recompress_unexpected_acrhive_files=False,
+        future_actions_recompress_unexpected_archive_files=False,
         apply_future_actions=False,
         max_referenced_files_in_folder=200,
         create_data_files_maintenance_file=True,
@@ -229,7 +237,7 @@ class StudyFolderMaintenanceTask(object):
         self.future_actions_sanitise_referenced_files = future_actions_sanitise_referenced_files
         self.future_actions_create_subfolders = future_actions_create_subfolders
         self.future_actions_compress_folders = future_actions_compress_folders
-        self.future_actions_recompress_unexpected_acrhive_files = future_actions_recompress_unexpected_acrhive_files
+        self.future_actions_recompress_unexpected_archive_files = future_actions_recompress_unexpected_archive_files
         self.max_referenced_files_in_folder = max_referenced_files_in_folder
         self.create_data_files_maintenance_file = create_data_files_maintenance_file
         self.apply_future_actions = apply_future_actions
@@ -518,7 +526,7 @@ class StudyFolderMaintenanceTask(object):
             self._create_subfolder_actions(updated_file_names)
         if self.future_actions_compress_folders:
             self._create_compress_folder_actions(updated_file_names)
-        if self.future_actions_recompress_unexpected_acrhive_files:
+        if self.future_actions_recompress_unexpected_archive_files:
             self._create_recompress_folder_actions(updated_file_names)
 
         return self.future_actions
@@ -1006,9 +1014,9 @@ class StudyFolderMaintenanceTask(object):
         readonly_storage_recycle_bin_path = self.readonly_storage_recycle_bin_path
         created_folders = {}
         deleted_folders = set()
-        readonly_files_path = os.path.join(settings.study_readonly_files_root_path, study_id)
+        readonly_files_actual_path = os.path.join(settings.study_readonly_files_actual_root_path, study_id)
         self._create_folder_future_actions(
-            readonly_files_path, 0o750, readonly_storage_recycle_bin_path, created_folders, deleted_folders
+            readonly_files_actual_path, 0o750, readonly_storage_recycle_bin_path, created_folders, deleted_folders
         )
 
         readonly_metadata_path = os.path.join(settings.study_readonly_metadata_files_root_path, study_id)
@@ -1016,9 +1024,9 @@ class StudyFolderMaintenanceTask(object):
             readonly_metadata_path, 0o750, readonly_storage_recycle_bin_path, created_folders, deleted_folders
         )
 
-        readonly_audit_path = os.path.join(settings.study_readonly_audit_files_root_path, study_id)
+        readonly_audit_actual_path = os.path.join(settings.study_readonly_audit_files_actual_root_path, study_id)
         self._create_folder_future_actions(
-            readonly_audit_path, 0o750, readonly_storage_recycle_bin_path, created_folders, deleted_folders
+            readonly_audit_actual_path, 0o750, readonly_storage_recycle_bin_path, created_folders, deleted_folders
         )
 
         readonly_public_metadata_versions_path = os.path.join(
@@ -1126,7 +1134,10 @@ class StudyFolderMaintenanceTask(object):
 
         log_path = os.path.join(internal_file_path, study_settings.internal_logs_folder_name)
         self._create_rw_storage_folder(log_path, 0o777, study_recycle_bin_path)
-
+        
+        temp_folder_path = os.path.join(internal_file_path, study_settings.internal_temp_folder_name)
+        self._create_rw_storage_folder(temp_folder_path, 0o777, study_recycle_bin_path)
+        
         read_only_files_path = os.path.join(settings.study_readonly_files_root_path, study_id)
         readonly_files_symbolic_link_path = os.path.join(
             settings.study_metadata_files_root_path, study_id, study_settings.readonly_files_symbolic_link_name
@@ -1137,7 +1148,17 @@ class StudyFolderMaintenanceTask(object):
         internal_file_symbolic_link_path: str = os.path.join(
             settings.study_metadata_files_root_path, study_id, study_settings.internal_files_symbolic_link_name
         )
+        
+        study_audit_archive_folder_path = os.path.join(study_audit_folder_path, study_settings.readonly_audit_files_symbolic_link_name)
+        readonly_audit_folder_path = os.path.join(settings.study_readonly_audit_files_root_path, study_id, study_settings.audit_folder_name)
 
+        readonly_audit_files_actual_path = os.path.join(settings.study_readonly_audit_files_actual_root_path, study_id, study_settings.audit_folder_name)
+        self.maintain_study_symlinks(readonly_audit_files_actual_path, readonly_audit_folder_path)
+        self.maintain_study_symlinks(readonly_audit_folder_path, study_audit_archive_folder_path)
+        
+        readonly_files_actual_path = os.path.join(settings.study_readonly_files_actual_root_path, study_id)
+        
+        self.maintain_study_symlinks(readonly_files_actual_path, read_only_files_path)
         self.maintain_study_symlinks(read_only_files_path, readonly_files_symbolic_link_path)
         self.maintain_study_symlinks(study_audit_folder_path, audit_folder_symbolic_link_path)
         self.maintain_study_symlinks(internal_file_path, internal_file_symbolic_link_path)
@@ -1523,8 +1544,13 @@ class StudyFolderMaintenanceTask(object):
         sample_files_list = glob.glob(os.path.join(self.study_metadata_files_path, "s_*.txt"))
 
         if os.path.exists(default_sample_file_path):
+            read_error = False
+            try:
+                self.read_tsv_file(default_sample_file_path)
+            except Exception as exc:
+                read_error = True
             size = os.stat(default_sample_file_path).st_size
-            if size <= 200:
+            if size <= 200 or read_error:
                 self.backup_file(
                     default_sample_file_path,
                     reason=f" {short_sample_file_name} file size is less than minimum sample file size. Current file size in byte: {size}.",

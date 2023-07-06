@@ -40,7 +40,7 @@ class StudyService(object):
                 result = query.filter(Study.acc == study_id).first()
                 if result:
                     return result
-                raise MetabolightsDBException("DB error while retrieving stable id")
+                raise MetabolightsDBException(f"DB error while retrieving study by study id {study_id}")
         except Exception as e:
             raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
 
@@ -51,7 +51,7 @@ class StudyService(object):
                 result = query.filter(Study.obfuscationcode == obfuscationcode).first()
                 if result:
                     return result
-                raise MetabolightsDBException("DB error while retrieving stable id")
+                raise MetabolightsDBException("DB error while retrieving study")
         except Exception as e:
             raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
 
