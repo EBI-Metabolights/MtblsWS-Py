@@ -26,6 +26,7 @@ celery = Celery(
         "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
         "app.tasks.common_tasks.curation_tasks.metabolon",
         "app.tasks.common_tasks.curation_tasks.validation",
+        "app.tasks.common_tasks.curation_tasks.curation_log_sheet_tasks",
         "app.tasks.common_tasks.basic_tasks.email",
         "app.tasks.common_tasks.basic_tasks.elasticsearch",
         "app.tasks.common_tasks.basic_tasks.ftp_operations",
@@ -114,6 +115,11 @@ celery.conf.beat_schedule = {
         "task": "app.tasks.system_monitor_tasks.worker_maintenance.check_all_workers",
         "schedule": periodic_task_configuration.worker_heath_check_period_in_seconds,
         "options": {"expires": periodic_task_configuration.worker_heath_check_period_in_seconds - 3}
+    },
+    "check_curation_log_query": {
+        "task": "app.tasks.common_tasks.curation_tasks.curation_log_sheet_tasks.curation_log_query",
+        "schedule": 20,
+        "options": {"expires": 30 }
     }
 }
 celery.conf.timezone = "UTC"
