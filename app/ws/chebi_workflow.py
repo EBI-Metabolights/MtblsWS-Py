@@ -2135,39 +2135,41 @@ def get_dime_db(inchi_key):
     dime_url = app.config.get('DIME_URL')
     dime_url = dime_url.replace("INCHI_KEY", inchi_key)
     dime_db_ids = ''
-    resp = requests.get(dime_url)
-    if resp.status_code == 200:
-        try:
-            json_resp = resp.json()
-            response_dict = json_resp['_items'][0]['External Sources']
+    try:
+        resp = requests.get(dime_url)
+        if resp.status_code == 200:
+            try:
+                json_resp = resp.json()
+                response_dict = json_resp['_items'][0]['External Sources']
 
-            if 'BioCyc' in response_dict and response_dict['BioCyc']:
-                dime_db_ids = 'MetaCyc:' + response_dict['BioCyc'] + ";"
-            if 'PubChem' in response_dict and response_dict['PubChem']:
-                dime_db_ids = dime_db_ids + 'PubChem:' + response_dict['PubChem'] + ";"
-            if 'KEGG Compound' in response_dict and response_dict['KEGG Compound']:
-                dime_db_ids = dime_db_ids + 'KEGG COMPOUND:' + response_dict['KEGG Compound'] + ";"
-            # Discussed with Chebi Team - No need to add this but add Wikipedia
-            # if 'Wikidata' in response_dict and response_dict['Wikidata']:
-            # dime_db_ids = dime_db_ids + 'Wikidata:' + response_dict['Wikidata'] + ";"
-            if 'Wikipedia' in response_dict and response_dict['Wikipedia']:
-                dime_db_ids = dime_db_ids + 'Wikipedia:' + response_dict['Wikipedia'] + ";"
-            if 'Chemspider' in response_dict and response_dict['Chemspider']:
-                dime_db_ids = dime_db_ids + 'ChemSpider:' + response_dict['Chemspider'] + ";"
-            if 'ChEBI' in response_dict and response_dict['ChEBI']:
-                dime_db_ids = dime_db_ids + 'ChEBI:' + response_dict['ChEBI'] + ";"
-            if 'HMDB Accession' in response_dict and response_dict['HMDB Accession']:
-                hmdb = response_dict['HMDB Accession']
-                if len(hmdb) != 11:
-                    hmdb = '00' + hmdb[4:]
-                dime_db_ids = dime_db_ids + 'HMDB:HMDB' + hmdb + ";"
+                if 'BioCyc' in response_dict and response_dict['BioCyc']:
+                    dime_db_ids = 'MetaCyc:' + response_dict['BioCyc'] + ";"
+                if 'PubChem' in response_dict and response_dict['PubChem']:
+                    dime_db_ids = dime_db_ids + 'PubChem:' + response_dict['PubChem'] + ";"
+                if 'KEGG Compound' in response_dict and response_dict['KEGG Compound']:
+                    dime_db_ids = dime_db_ids + 'KEGG COMPOUND:' + response_dict['KEGG Compound'] + ";"
+                # Discussed with Chebi Team - No need to add this but add Wikipedia
+                # if 'Wikidata' in response_dict and response_dict['Wikidata']:
+                # dime_db_ids = dime_db_ids + 'Wikidata:' + response_dict['Wikidata'] + ";"
+                if 'Wikipedia' in response_dict and response_dict['Wikipedia']:
+                    dime_db_ids = dime_db_ids + 'Wikipedia:' + response_dict['Wikipedia'] + ";"
+                if 'Chemspider' in response_dict and response_dict['Chemspider']:
+                    dime_db_ids = dime_db_ids + 'ChemSpider:' + response_dict['Chemspider'] + ";"
+                if 'ChEBI' in response_dict and response_dict['ChEBI']:
+                    dime_db_ids = dime_db_ids + 'ChEBI:' + response_dict['ChEBI'] + ";"
+                if 'HMDB Accession' in response_dict and response_dict['HMDB Accession']:
+                    hmdb = response_dict['HMDB Accession']
+                    if len(hmdb) != 11:
+                        hmdb = '00' + hmdb[4:]
+                    dime_db_ids = dime_db_ids + 'HMDB:HMDB' + hmdb + ";"
 
-            dime_db_ids = dime_db_ids.rstrip(';')
-        except Exception as ex:
-            logger.warning(f"Invalid result from {dime_url} for input: {inchi_key}  {str(ex)}")
-
+                dime_db_ids = dime_db_ids.rstrip(';')
+            except Exception as ex:
+                logger.warning(f"Invalid result from {dime_url} for input: {inchi_key}  {str(ex)}")
+    except Exception as e:
+        logger.error("DimeDB API is not reachable, so exiting!")
+        
     return dime_db_ids
-
 
 class ChEBIPipeLine(Resource):
     @swagger.operation(
