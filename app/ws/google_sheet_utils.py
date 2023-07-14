@@ -36,21 +36,19 @@ def curation_log_database_query():
 
         data.insert(data.shape[1] - 1, column="percentage known", value=percentage_known)
 
-        token = get_settings().google.connection.google_sheet_api
-
         google_df = getGoogleSheet(get_settings().google.sheets.mtbls_curation_log, 'Database Query',
-                                   get_settings().google.connection.google_sheet_api)
+                                   get_settings().google.connection.google_sheet_api.dict())
 
         data.columns = google_df.columns
 
         replaceGoogleSheet(data, get_settings().google.sheets.mtbls_curation_log, 'Database Query',
-                           get_settings().google.connection.google_sheet_api)
+                           get_settings().google.connection.google_sheet_api.dict())
 
     except Exception as e:
         print(e)
 
         
-def getGoogleSheet(url, worksheetName, token_path):
+def getGoogleSheet(url, worksheetName, credentials_dict):
     '''
     get google sheet
     :param url: url of google sheet
@@ -58,7 +56,7 @@ def getGoogleSheet(url, worksheetName, token_path):
     :return: data frame
     '''
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(token_path, scope)
+    credentials = ServiceAccountCredentials._from_parsed_json_keyfile(credentials_dict, scope)
     gc = gspread.authorize(credentials)
     # wks = gc.open('Zooma terms').worksheet('temp')
     wks = gc.open_by_url(url).worksheet(worksheetName)
@@ -68,7 +66,7 @@ def getGoogleSheet(url, worksheetName, token_path):
     return df
 
 
-def replaceGoogleSheet(df, url, worksheetName, token_path):
+def replaceGoogleSheet(df, url, worksheetName, credentials_dict):
     '''
     replace the old google sheet with new data frame, old sheet will be clear
     :param df: dataframe
@@ -77,7 +75,7 @@ def replaceGoogleSheet(df, url, worksheetName, token_path):
     :return: Nan
     '''
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(token_path, scope)
+    credentials = ServiceAccountCredentials._from_parsed_json_keyfile(credentials_dict, scope)
     gc = gspread.authorize(credentials)
     wks = gc.open_by_url(url).worksheet(worksheetName)
     wks.clear()

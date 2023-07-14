@@ -2,7 +2,7 @@ import logging
 import os
 import celery
 from app.tasks.worker import MetabolightsTask, celery
-from app.tasks.worker import MetabolightsTask
+from app.tasks.worker import (MetabolightsTask, send_email)
 from app.ws.db.schemes import Study
 from app.ws.google_sheet_utils import curation_log_database_query
 
@@ -50,7 +50,7 @@ logger = logging.getLogger("wslog")
     soft_time_limit=60 * 15,
     name="app.tasks.common_tasks.curation_tasks.curation_log_sheet_tasks.curation_log_query",
 )
-def curation_log_query(self):
+def curation_log_query(self, send_mail: bool = False):
     # settings = get_study_settings()
     # file_path = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
     # validation_report_file_name = settings.validation_report_file_name
@@ -62,8 +62,9 @@ def curation_log_query(self):
     try:
         logger.info("Updating curation log-Database Query")
         curation_log_database_query()
+        send_email("Celery Task via Metabolights Dev - Curation Log sheet Query update", "Curation Log sheet Query updated successfully!", None, "metabolights-dev@ebi.ac.uk", None)
         return {"curation log update": True}
     except Exception as e:
-        logger.info(e)
-        print(e)
+        logger.error(e)
+        send_email("Celery Task via Metabolights Dev - Curation Log sheet Query update", "Curation Log sheet Query update Failed!", None, "metabolights-dev@ebi.ac.uk", None)
         raise e

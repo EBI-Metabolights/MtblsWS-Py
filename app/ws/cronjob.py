@@ -162,11 +162,11 @@ class cronjob(Resource):
             try:
                 logger.info('Updating curation log-Database Query')
                 # curation_log_query()
-                task = curation_log_query.apply_async(expires=60*5)
+                inputs = {"send_mail": True }
+                task = curation_log_query.apply_async(kwargs=inputs, expires=60*5)
                 return {'status': f"Task started with task id {task.id}"}
             except Exception as e:
-                logger.info(e)
-                print(e)
+                logger.error(e)
         elif source == 'curation log-Database update':
             try:
                 logger.info('Updating curation log-Database update')
