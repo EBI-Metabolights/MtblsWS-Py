@@ -287,25 +287,26 @@ def get_pubchem_substance(comp_name, res_type):
     result = ""
     comp_name_url = urllib.parse.quote(comp_name)
     url = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/substance/name/" + comp_name_url + "/cids/JSON"
+    try:
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            try:
+                json_resp = resp.json()
+                results = json_resp
+            except Exception as ex:
+                logger.warning(f"Invalid result from {url}  {str(ex)}")
+        if resp.status_code == 404:
+            print_log("    -- No PubChem Substance found for '" + comp_name + "'")
 
-    resp = requests.get(url)
-    if resp.status_code == 200:
-        try:
-            json_resp = resp.json()
-            results = json_resp
-        except Exception as ex:
-            logger.warning(f"Invalid result from {url}  {str(ex)}")
-    if resp.status_code == 404:
-        print_log("    -- No PubChem Substance found for '" + comp_name + "'")
-
-    for idx, result in enumerate(results["InformationList"]['Information']) if results else []:
-        print_log("    -- Found PubChem Substance(s) for '" + comp_name + "' (" + res_type + "), search record #" + str(
-            idx + 1))
-        if res_type == 'cid':
-            return result['CID'][0]  # Only return the top hit
-        else:
-            return result['SID']
-
+        for idx, result in enumerate(results["InformationList"]['Information']) if results else []:
+            print_log("    -- Found PubChem Substance(s) for '" + comp_name + "' (" + res_type + "), search record #" + str(
+                idx + 1))
+            if res_type == 'cid':
+                return result['CID'][0]  # Only return the top hit
+            else:
+                return result['SID']
+    except Exception as e:
+        print_log("    -- Error querying Pubchem API : " + str(e), mode='error')
     return result
 
 
@@ -475,6 +476,14 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                           run_silently=None, update_study_maf=None, obfuscation_code=None):
     sdf_file_list = []
     exiting_pubchem_file = False
+    dimedb_search_status = 'None'
+    dime_db_api_active = True
+    unichem_search_status = 'None'
+    cactus_search_status = 'None'
+    opsin_search_status = 'None'
+    chemspider_search_status = 'None'
+    classyfire_search_status = 'None'
+    chebi_search_status = 'None'
     first_start_time = time.time()
     # Please note that the original MAF must exist without the _pubchem.tsv extension!!
     original_maf_name = annotation_file_name.replace("_pubchem.tsv", ".tsv")
@@ -583,7 +592,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             print_log(str(idx + 1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
 
         if final_cid and final_cid.endswith('.mol') and final_inchi:
-            classyfire_search_id = classyfire(final_inchi)
+            classyfire_search_id,classyfire_search_status = classyfire(final_inchi)
             if classyfire_search_id:
                 pubchem_df.iloc[row_idx, get_idx('classyfire_search_id', pubchem_df_headers)] = str(
                     classyfire_search_id)
@@ -695,19 +704,19 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
 
                     pubchem_df.iloc[row_idx, get_idx('search_type',
                                                      pubchem_df_headers)] = where_found  # Search category/type for logging
-                    cactus_stdinchikey = cactus_search(comp_name, 'stdinchikey')
-                    opsin_stdinchikey = opsin_search(comp_name, 'stdinchikey')
-                    cactus_smiles = cactus_search(comp_name, 'smiles')
-                    opsin_smiles = opsin_search(comp_name, 'smiles')
-                    cactus_inchi = cactus_search(comp_name, 'stdinchi')
-                    opsin_inchi = opsin_search(comp_name, 'stdinchi')
-                    cactus_synonyms = cactus_search(comp_name, 'names')  # Synonyms
+                    cactus_stdinchikey,cactus_search_status = cactus_search(comp_name, 'stdinchikey')
+                    opsin_stdinchikey,opsin_search_status = opsin_search(comp_name, 'stdinchikey')
+                    cactus_smiles,cactus_search_status = cactus_search(comp_name, 'smiles')
+                    opsin_smiles,opsin_search_status = opsin_search(comp_name, 'smiles')
+                    cactus_inchi,cactus_search_status = cactus_search(comp_name, 'stdinchi')
+                    opsin_inchi,opsin_search_status = opsin_search(comp_name, 'stdinchi')
+                    cactus_synonyms,cactus_search_status = cactus_search(comp_name, 'names')  # Synonyms
 
                     ik = cactus_stdinchikey
                     if pc_inchi_key:
                         ik = pc_inchi_key
                         print_log("    -- Searching ChemSpider using PubChem InChIKey, not Cactus")
-                    csid = get_csid(ik)
+                    csid,chemspider_search_status = get_csid(ik)
 
                     pubchem_df.iloc[row_idx, get_idx('iupac_name', pubchem_df_headers)] = pc_name  # PubChem name
 
@@ -749,7 +758,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     print_log(csid)
                     if final_inchi_key and csid == "":
                         print_log("    -- Searching ChemSpider using final_inchi_key")
-                        csid = get_csid(final_inchi_key)
+                        csid,chemspider_search_status = get_csid(final_inchi_key)
                         pubchem_df.iloc[
                             row_idx, get_idx('csid_ik', pubchem_df_headers)] = csid
 
@@ -774,7 +783,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
 
                         if not cactus_stdinchikey and pc_inchi_key:
                             print_log("    -- Searching ChemSpider using PubChem Substance InChIKey")
-                            csid = get_csid(pc_inchi_key)
+                            csid,chemspider_search_status = get_csid(pc_inchi_key)
                             pubchem_df.iloc[row_idx, get_idx('csid_ik', pubchem_df_headers)] = csid
 
                     pubchem_df.iloc[row_idx, get_idx('pubchem_smiles', pubchem_df_headers)] = pc_smiles  # pc_smiles
@@ -889,7 +898,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         if final_inchi_key and len(final_inchi_key) > 0:
             unichem_id = pubchem_df.iloc[row_idx, get_idx('unichem_id', pubchem_df_headers)]
             if not unichem_id:
-                unichem_id = processUniChemResponse(final_inchi_key)
+                unichem_id,unichem_search_status = processUniChemResponse(final_inchi_key)
                 pubchem_df.iloc[row_idx, get_idx('unichem_id', pubchem_df_headers)] = unichem_id.rstrip(
                     ';')
 
@@ -907,9 +916,19 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                 pubchem_df.iloc[row_idx, get_idx('cas_id', pubchem_df_headers)] = cas_id
 
             dime_id = pubchem_df.iloc[row_idx, get_idx('dime_id', pubchem_df_headers)]
-            if not dime_id:
-                dime_id = get_dime_db(final_inchi_key)
-                pubchem_df.iloc[row_idx, get_idx('dime_id', pubchem_df_headers)] = dime_id
+            if not dime_id and dime_db_api_active:
+                dime_id,dimedb_search_status = get_dime_db(final_inchi_key)
+                if dimedb_search_status == 'Failed':
+                    print_log(' Trying DimeDB 2nd time! ')
+                    dime_id,dimedb_search_status = get_dime_db(final_inchi_key)
+                    if dimedb_search_status == 'Failed':
+                        print_log(' Trying DimeDB 3rd time! ')
+                        dime_id,dimedb_search_status = get_dime_db(final_inchi_key)
+                        if dimedb_search_status ==  'Failed':
+                            print_log(' Dime DB API is down, skipping for rest of the run. ')
+                            dime_db_api_active = False
+                else:
+                    pubchem_df.iloc[row_idx, get_idx('dime_id', pubchem_df_headers)] = dime_id
 
             update_db_acc = db_acc.strip(';')
             if update_db_acc:
@@ -967,12 +986,20 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     change_access_rights(study_location)
     pubchem_df_len = str(len(pubchem_df))
 
-    print_log("ChEBI pipeline Done. Overall it took %s seconds" % round(time.time() - first_start_time, 2))
+    print_log("Finishing Pipeline run!!!! ")
+    print_log(f"dimedb_search_status : {str(dimedb_search_status)}")
+    print_log(f"cactus_search_status : {str(cactus_search_status)}")
+    print_log(f"opsin_search_status : {str(opsin_search_status)}")
+    print_log(f"chemspider_search_status : {str(chemspider_search_status)}")
+    print_log(f"unichem_search_status : {str(unichem_search_status)}")
+    print_log(f"classyfire_search_status : {str(classyfire_search_status)}")
+    print_log(f"ChEBI pipeline Done. Overall it took %s seconds" % round(time.time() - first_start_time, 2))
+   
     if obfuscation_code:
         ftp_private_folder = os.path.join(study_id.lower() + "-" + obfuscation_code)
         ftp_private_storage = StorageService.get_ftp_private_storage(app)
         sync_annotation_folder_with_remote_storage(ftp_private_storage, ftp_private_folder)
-    return maf_len, pubchem_df_len, pubchem_file
+    return maf_len, pubchem_df_len, pubchem_file,dimedb_search_status,cactus_search_status,opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status
 
 
 def update_original_maf(maf_df=None, pubchem_df=None, original_maf_name=None, study_location=None,
@@ -1405,6 +1432,7 @@ def remove_sdf_files(sdf_file_name, study_location, sdf_file_list):
 
 def classyfire(inchi):
     print_log("    -- Starting querying ClassyFire")
+    classyfire_search_status = 'None'
     url = app.config.get('CLASSYFIRE_ULR')
     label = 'MetaboLights WS'
     query_id = None
@@ -1414,16 +1442,19 @@ def classyfire(inchi):
                           headers={"Content-Type": "application/json"})
         r.raise_for_status()
         query_id = r.json()['id']
+        print_log("    -- Got ClassyFire query id: " + str(query_id))
+        classyfire_search_status = 'Success'
     except Exception as e:
         print_log("    -- Error querying ClassyFire: " + str(e), mode='error')
-    print_log("    -- Got ClassyFire query id: " + str(query_id))
-    return query_id
+        classyfire_search_status = 'Failed'
+    return query_id,classyfire_search_status
 
 
 def get_classyfire_results(query_id, classyfire_file_name, return_format, classyfire_search, classyfire_df):
     all_ancestors = None
     if classyfire_search and query_id and query_id != 'None':
         try:
+            print_log("Searching Classyfire ..   ", mode='info')
             classyfire_file_name = classyfire_file_name.replace("_pubchem.sdf", "_classyfire.sdf")
             if classyfire_file_name.endswith('.mol'):
                 classyfire_file_name = classyfire_file_name + "_classyfire.sdf"
@@ -1606,24 +1637,31 @@ def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_t
 
 def get_csid(inchikey):
     csid = ""
+    chemspider_search_status = 'None'
     csurl_base = 'http://www.chemspider.com/InChI.asmx/InChIKeyToCSID?inchi_key='
-
-    if inchikey:
-        url1 = csurl_base + inchikey
-        resp1 = requests.get(url1)
-        if resp1.status_code == 200:
-            csid = resp1.text
-            # Something like: '<?xml version="1.0" encoding="utf-8"?><string xmlns="http://www.chemspider.com/">4471938</string>'
-            if csid:
-                try:
-                    csid = csid.split('www.chemspider.com/">')[1]
-                    csid = csid.replace('</string>', '')
-                    print_log("    -- Found CSID " + csid + " using ChemSpider, inchikey: " + inchikey)
-                    return csid
-                except IndexError:
-                    print_log("    -- Could not find CSID in ChemSpider, inchikey: " + inchikey)
-                    return ""
-    return csid
+    try:
+        if inchikey:
+            url1 = csurl_base + inchikey
+            print_log("Searching Chemspider...   ", mode='info')
+            resp1 = requests.get(url1, timeout=10)
+            if resp1.status_code == 200:
+                csid = resp1.text
+                # Something like: '<?xml version="1.0" encoding="utf-8"?><string xmlns="http://www.chemspider.com/">4471938</string>'
+                if csid:
+                    try:
+                        csid = csid.split('www.chemspider.com/">')[1]
+                        csid = csid.replace('</string>', '')
+                        print_log("    -- Found CSID " + csid + " using ChemSpider, inchikey: " + inchikey)
+                        chemspider_search_status = 'Success'
+                        return csid,chemspider_search_status
+                    except IndexError:
+                        print_log("    -- Could not find CSID in ChemSpider, inchikey: " + inchikey)
+                        chemspider_search_status = 'No data'
+                        return "",chemspider_search_status
+    except Exception as e:
+         print_log("Chem spider API is down ",mode = 'info')
+         chemspider_search_status = 'Failed'
+    return csid,chemspider_search_status
 
 
 # def get_csid(inchikey):
@@ -1697,42 +1735,53 @@ def create_pubchem_df(maf_df):
 
 def opsin_search(comp_name, req_type):
     result = ""
-    opsin_url = app.config.get('OPSIN_URL')
-    url = opsin_url + comp_name + '.json'
-    resp = requests.get(url)
-    if resp.status_code == 200:
-        try:
-            json_resp = resp.json()
-            result = json_resp[req_type]
-        except Exception as ex:
-            logger.warning(f"Invalid result from {url}  {str(ex)}")
-
-    return result
+    opsin_search_status = 'None'
+    try:
+        opsin_url = app.config.get('OPSIN_URL')
+        url = opsin_url + comp_name + '.json'
+        print_log("Searching OPSIN ...   ", mode='info')
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            try:
+                json_resp = resp.json()
+                result = json_resp[req_type]
+                opsin_search_status = 'Success'
+            except Exception as ex:
+                logger.warning(f"Invalid result from {url}  {str(ex)}")
+                opsin_search_status = 'Invalid'
+    except Exception as e:
+        print_log("OPSIN Search failed ..", mode='info')
+        opsin_search_status = 'Failed'
+    return result,opsin_search_status
 
 
 def cactus_search(comp_name, search_type):
     result = None
-
+    cactus_search_status = 'None'
     if comp_name is None:
-        return None
+        return None,cactus_search_status
 
     try:
+        print_log("Searching Cactus ...   ", mode='info')
         result = cirpy.resolve(comp_name, search_type)
+        cactus_search_status = 'No data'
         synonyms = ""
     except Exception as e:
         print_log("    -- ERROR: Cactus search failed! " + str(e), mode='error')
-        return result
+        cactus_search_status = 'Failed'
+        return result,cactus_search_status
 
     if result:
+        cactus_search_status = 'Success'
         if search_type == 'stdinchikey':
-            return result.replace('InChIKey=', '')
+            return result.replace('InChIKey=', ''),cactus_search_status
         if search_type == 'names':
             for synonym in result:
                 if get_relevant_synonym(synonym.strip()):
                     synonyms = synonyms + ';' + add_database_name_synonym(synonym)
-            return synonyms.replace(";", "", 1)  # Remove the leading ";"
+            return synonyms.replace(";", "", 1),cactus_search_status  # Remove the leading ";"
 
-    return result
+    return result,cactus_search_status
 
 
 def add_database_name_synonym(synonym):
@@ -1940,7 +1989,7 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_s
 
     if classyfire_search and final_inchi:
         print_log("    -- Getting SDF from ClassyFire for " + str(final_inchi))
-        classyfire_id = classyfire(final_inchi)
+        classyfire_id,classyfire_search_status = classyfire(final_inchi)
     else:
         print_log("    -- Final InChI missing, can not query ClassyFire")
 
@@ -2083,35 +2132,41 @@ class SplitMaf(Resource):
 
 
 def processUniChemResponse(inchi_key):
-    print_log(' calling UNICHEM_URL for inchi key - ' + inchi_key)
+    unichem_search_status = 'Failed'
+    print_log(' Querying Unichem URL with inchi key - ' + inchi_key)
     unichem_url = app.config.get('UNICHEM_URL')
     unichem_url = unichem_url.replace("INCHI_KEY", inchi_key)
-    resp = requests.get(unichem_url)
-    unichem_id = ''
-    if resp.status_code == 200:
-        json_resp = resp.json()
-        response_dict = {item['src_id']: item for item in json_resp if item and 'src_id' in item}
-        if len(response_dict):
-            print_log(' Chem plus search for inchi key - ' + inchi_key + ' contains no data.')
-            return unichem_id
-        if '2' in response_dict:
-            unichem_id = 'DrugBank:' + response_dict['2']['src_compound_id'] + ";"
-        if '3' in response_dict:
-            unichem_id = unichem_id + 'PDBeChem:' + response_dict['3']['src_compound_id'] + ";"
-        if '6' in response_dict:
-            kegg_id = response_dict['6']['src_compound_id']
-            kegg_id = add_database_name_synonym(kegg_id)
-            unichem_id = unichem_id + kegg_id + ";"
-        if '18' in response_dict:
-            unichem_id = unichem_id + 'HMDB:HMDB' + response_dict['18']['src_compound_id'][4:] + ";"
-        if '25' in response_dict:
-            unichem_id = unichem_id + 'LINCS:' + response_dict['25']['src_compound_id'] + ";"
-        if '34' in response_dict:
-            unichem_id = unichem_id + 'DrugCentral:' + response_dict['34']['src_compound_id'] + ";"
-        unichem_id = unichem_id.rstrip(';')
-
-    return unichem_id
-
+    try:
+        resp = requests.get(unichem_url, timeout=10)
+        unichem_id = ''
+        if resp.status_code == 200:
+            json_resp = resp.json()
+            response_dict = {item['src_id']: item for item in json_resp if item and 'src_id' in item}
+            if len(response_dict):
+                print_log(' Chem plus search for inchi key - ' + inchi_key + ' contains no data.')
+                unichem_search_status = 'No data'
+                return unichem_id, unichem_search_status
+            if '2' in response_dict:
+                unichem_id = 'DrugBank:' + response_dict['2']['src_compound_id'] + ";"
+            if '3' in response_dict:
+                unichem_id = unichem_id + 'PDBeChem:' + response_dict['3']['src_compound_id'] + ";"
+            if '6' in response_dict:
+                kegg_id = response_dict['6']['src_compound_id']
+                kegg_id = add_database_name_synonym(kegg_id)
+                unichem_id = unichem_id + kegg_id + ";"
+            if '18' in response_dict:
+                unichem_id = unichem_id + 'HMDB:HMDB' + response_dict['18']['src_compound_id'][4:] + ";"
+            if '25' in response_dict:
+                unichem_id = unichem_id + 'LINCS:' + response_dict['25']['src_compound_id'] + ";"
+            if '34' in response_dict:
+                unichem_id = unichem_id + 'DrugCentral:' + response_dict['34']['src_compound_id'] + ";"
+            unichem_id = unichem_id.rstrip(';')
+            unichem_search_status = 'Success'
+            return unichem_id, unichem_search_status
+    except Exception as e:
+        print_log(' UNICHEM API failed; exception ', mode='info')
+        print_log(f' UNICHEM failed URL - {unichem_url}', mode='info')
+        return '', unichem_search_status
 
 def get_cas_id(inchi_key):
     print_log(' calling Chem plus for inchi key - ' + inchi_key)
@@ -2131,14 +2186,17 @@ def get_cas_id(inchi_key):
 
 
 def get_dime_db(inchi_key):
-    print_log(' calling DIME DB for inchi key - ' + inchi_key)
+    print_log(' Querying DIME DB for inchi key - ' + inchi_key)
     dime_url = app.config.get('DIME_URL')
     dime_url = dime_url.replace("INCHI_KEY", inchi_key)
     dime_db_ids = ''
+    dimedb_search_status = 'None'
     try:
-        resp = requests.get(dime_url)
+        resp = requests.get(dime_url, timeout=10)
+        print_log('Response code ' + str(resp.status_code))
         if resp.status_code == 200:
             try:
+                dimedb_search_status = 'Success'
                 json_resp = resp.json()
                 response_dict = json_resp['_items'][0]['External Sources']
 
@@ -2166,10 +2224,12 @@ def get_dime_db(inchi_key):
                 dime_db_ids = dime_db_ids.rstrip(';')
             except Exception as ex:
                 logger.warning(f"Invalid result from {dime_url} for input: {inchi_key}  {str(ex)}")
+                dimedb_search_status = 'Invalid result'
     except Exception as e:
-        logger.error("DimeDB API is not reachable, so exiting!")
+        print_log(' DimeDB API is not reachable, so exiting !')
+        dimedb_search_status = 'Failed'
         
-    return dime_db_ids
+    return dime_db_ids,dimedb_search_status
 
 class ChEBIPipeLine(Resource):
     @swagger.operation(
@@ -2328,7 +2388,13 @@ class ChEBIPipeLine(Resource):
         maf_len = 0
         new_maf_len = 0
         pubchem_file = "Executed on the cluster"
-
+        dime_db_api_active = None
+        cactus_search_status = None
+        opsin_search_status = None
+        chemspider_search_status = None
+        unichem_search_status = None
+        classyfire_search_status = None
+        
         if annotation_file_name is None:
             old_file_name = ""
             # Loop through all m_*_v2_maf.tsv files
@@ -2356,7 +2422,8 @@ class ChEBIPipeLine(Resource):
                         else:
                             return {"error": message, "message": job_out, "errors": job_err}
                     else:
-                        maf_len, new_maf_len, pubchem_file = \
+                        maf_len, new_maf_len, pubchem_file, dime_db_api_active,cactus_search_status, \
+                        opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status = \
                             search_and_update_maf(study_id, study_location, file_name, classyfire_search, user_token,
                                                   run_silently=run_silently, update_study_maf=update_study_maf,
                                                   obfuscation_code=obfuscation_code)
@@ -2377,15 +2444,19 @@ class ChEBIPipeLine(Resource):
                 else:
                     return {"error": message, "message": job_out, "errors": job_err}
             else:
-                maf_len, new_maf_len, pubchem_file = \
-                    search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
+                maf_len, new_maf_len, pubchem_file, dime_db_api_active, cactus_search_status, opsin_search_status, \
+                chemspider_search_status,unichem_search_status,classyfire_search_status  = \
+                search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
                                           run_silently=run_silently, update_study_maf=update_study_maf,
                                           obfuscation_code=obfuscation_code)
                 pubchem_file = http_file_location + pubchem_file.split('/' + study_id)[1]
 
             # if file still present rmeove it
 
-            return {"in_rows": maf_len, "out_rows": new_maf_len, "pubchem_file": pubchem_file}
+            return {"in_rows": maf_len, "out_rows": new_maf_len, "pubchem_file": pubchem_file, "DimeDB API status":dime_db_api_active,
+                    "OPSIN Search status":opsin_search_status, "Cactus search status":cactus_search_status, 
+                    "ChemSpider search status" :chemspider_search_status, "Unichem search status" : unichem_search_status, 
+                    "Classyfire search status":classyfire_search_status}
 
         return {"success": str(maf_count) + " MAF files found, " + str(maf_changed) + " files needed updating."}
 
