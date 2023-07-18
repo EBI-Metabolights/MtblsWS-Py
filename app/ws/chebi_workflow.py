@@ -864,7 +864,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     else:
                         # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
                         # and the classyFire SDF
-                        sdf_file_list, classyfire_id = get_sdf(study_location, str(final_cid), pc_name,
+                        sdf_file_list, classyfire_id, classyfire_search_status = get_sdf(study_location, str(final_cid), pc_name,
                                                                sdf_file_list, final_inchi, classyfire_search)
                         pubchem_df.iloc[row_idx, get_idx('classyfire_search_id', pubchem_df_headers)] = str(
                             classyfire_id)
@@ -979,7 +979,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     # pubchem_df = re_sort_pubchem_file(pubchem_df)
 
     annotated_study_location = study_location + os.sep + anno_sub_folder + os.sep
-    update_sdf_file_info(pubchem_df, annotated_study_location, short_file_name + classyfire_end, classyfire_search,
+    classy_sdf_downoaded = update_sdf_file_info(pubchem_df, annotated_study_location, short_file_name + classyfire_end, classyfire_search,
                          study_id, pubchem_file, pubchem_df_headers)
     write_tsv(pubchem_df, pubchem_file)
     concatenate_sdf_files(pubchem_df, annotated_study_location, short_file_name + complete_end, run_silently)
@@ -993,13 +993,14 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     print_log(f"chemspider_search_status : {str(chemspider_search_status)}")
     print_log(f"unichem_search_status : {str(unichem_search_status)}")
     print_log(f"classyfire_search_status : {str(classyfire_search_status)}")
+    print_log(f"Classyfire SDF downloaded : {str(classy_sdf_downoaded)}")
     print_log(f"ChEBI pipeline Done. Overall it took %s seconds" % round(time.time() - first_start_time, 2))
    
     if obfuscation_code:
         ftp_private_folder = os.path.join(study_id.lower() + "-" + obfuscation_code)
         ftp_private_storage = StorageService.get_ftp_private_storage(app)
         sync_annotation_folder_with_remote_storage(ftp_private_storage, ftp_private_folder)
-    return maf_len, pubchem_df_len, pubchem_file,dimedb_search_status,cactus_search_status,opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status
+    return maf_len, pubchem_df_len, pubchem_file,dimedb_search_status,cactus_search_status,opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_sdf_downoaded
 
 
 def update_original_maf(maf_df=None, pubchem_df=None, original_maf_name=None, study_location=None,
@@ -1079,6 +1080,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
     classyfire_file_name = classyfire_file_name + '.' + return_format
     classyfire_df = get_classyfire_lookup_mapping()
     file_changed = False
+    classy_sdf_downoaded = 'None'
     rowIdx = 0
     cluster_ids = []
     for idx, row in pubchem_df.iterrows():
@@ -1128,7 +1130,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                 mtbls_sdf_file_name = remove_pubchem_sdf_parameters(study_location, fname)
 
             # Now, get the classyFire queries, download sdf files
-            classyfire_sdf_values = get_classyfire_results(cf_id, full_file, return_format,
+            classyfire_sdf_values,classy_sdf_downoaded = get_classyfire_results(cf_id, full_file, return_format,
                                                            classyfire_search, classyfire_df)
 
             # merge data from Classyfire SDF into new PubChem SDF
@@ -1176,6 +1178,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                         print_log("       -- Error: could not download SDF file for CID " + cid + ". " + str(e),
                                   mode='error')
         rowIdx = rowIdx + 1
+    return classy_sdf_downoaded
     # if file_changed:
     # write_tsv(pubchem_df, pubchem_file_name)
 
@@ -1452,6 +1455,7 @@ def classyfire(inchi):
 
 def get_classyfire_results(query_id, classyfire_file_name, return_format, classyfire_search, classyfire_df):
     all_ancestors = None
+    classy_sdf_downoaded = 'None'
     if classyfire_search and query_id and query_id != 'None':
         try:
             print_log("Searching Classyfire ..   ", mode='info')
@@ -1474,21 +1478,25 @@ def get_classyfire_results(query_id, classyfire_file_name, return_format, classy
                         with open(classyfire_file_name, 'w', encoding='utf-8') as cf_file:
                             cf_file.write(text)
                             cf_file.close()
+                            classy_sdf_downoaded = 'Success'
                 except Exception as e:
                     print_log("       -- ERROR: Could not read classyFire SDF file " + classyfire_file_name
                               + ". Error:" + str(e))
+                    classy_sdf_downoaded = 'Failed'
 
                 print_log("       -- ClassyFire SDF download took %s seconds" % round(time.time() - start_time, 2))
             else:
                 print_log("       -- Already downloaded ClassyFire SDF for query id: " + str(query_id))
+                classy_sdf_downoaded = 'Success'
 
             if classyfire_search:
                 all_ancestors = get_ancestors(classyfire_file_name, classyfire_df)
 
         except Exception as e:
             print_log("    -- ERROR: Could not get classyFire SDF for " + query_id + ". Error:" + str(e), mode='error')
+            classy_sdf_downoaded = 'Failed'
 
-    return all_ancestors
+    return all_ancestors,classy_sdf_downoaded
 
 
 def get_ancestors(classyfire_file_name, classyfire_df):
@@ -1963,6 +1971,7 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
 def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_search):
     classyfire_id = ""
     file_name = ""
+    classyfire_search_status = 'None'
     if study_location and cid:
         if not iupac or len(iupac) < 1:
             iupac = 'no name given'
@@ -1995,7 +2004,7 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_s
 
     sdf_file_list.append([file_name, classyfire_id])
 
-    return sdf_file_list, classyfire_id
+    return sdf_file_list, classyfire_id, classyfire_search_status
 
 
 def read_glytoucan_file():
@@ -2394,6 +2403,7 @@ class ChEBIPipeLine(Resource):
         chemspider_search_status = None
         unichem_search_status = None
         classyfire_search_status = None
+        classy_sdf_downoaded = None
         
         if annotation_file_name is None:
             old_file_name = ""
@@ -2423,7 +2433,7 @@ class ChEBIPipeLine(Resource):
                             return {"error": message, "message": job_out, "errors": job_err}
                     else:
                         maf_len, new_maf_len, pubchem_file, dime_db_api_active,cactus_search_status, \
-                        opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status = \
+                        opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_sdf_downoaded = \
                             search_and_update_maf(study_id, study_location, file_name, classyfire_search, user_token,
                                                   run_silently=run_silently, update_study_maf=update_study_maf,
                                                   obfuscation_code=obfuscation_code)
@@ -2445,7 +2455,7 @@ class ChEBIPipeLine(Resource):
                     return {"error": message, "message": job_out, "errors": job_err}
             else:
                 maf_len, new_maf_len, pubchem_file, dime_db_api_active, cactus_search_status, opsin_search_status, \
-                chemspider_search_status,unichem_search_status,classyfire_search_status  = \
+                chemspider_search_status,unichem_search_status,classyfire_search_status,classy_sdf_downoaded  = \
                 search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
                                           run_silently=run_silently, update_study_maf=update_study_maf,
                                           obfuscation_code=obfuscation_code)
@@ -2456,7 +2466,7 @@ class ChEBIPipeLine(Resource):
             return {"in_rows": maf_len, "out_rows": new_maf_len, "pubchem_file": pubchem_file, "DimeDB API status":dime_db_api_active,
                     "OPSIN Search status":opsin_search_status, "Cactus search status":cactus_search_status, 
                     "ChemSpider search status" :chemspider_search_status, "Unichem search status" : unichem_search_status, 
-                    "Classyfire search status":classyfire_search_status}
+                    "Classyfire search status":classyfire_search_status, "Classyfire SDF download":classy_sdf_downoaded}
 
         return {"success": str(maf_count) + " MAF files found, " + str(maf_changed) + " files needed updating."}
 
