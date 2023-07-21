@@ -22,11 +22,12 @@ import json
 import logging
 import os
 import os.path
+from typing import Dict, List, Set, Tuple
 
 from flask import request, current_app as app
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
-from isatools.model import Extract, Sample, OntologyAnnotation, Assay
+from isatools.model import Extract, Sample, OntologyAnnotation, Assay, Protocol, Study, ProtocolParameter
 from marshmallow import ValidationError
 from app.utils import metabolights_exception_handler
 
@@ -184,32 +185,69 @@ class StudyAssayDelete(Resource):
                 save_audit_copy = False
                 save_msg_str = "NOT be"
 
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
+        study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
                                                          skip_load_tables=True, study_location=study_location)
+        isa_study: Study = study
+        unique_protocols = get_all_unique_protocols_from_study_assays(study_id, isa_study.assays)
+        assay_protocols_and_parameters: Dict[str, Dict[str, Set[str]]] = {}
+        assay_type_protocols: Dict[str, Tuple[str, str, str]] = {}
         # Remove the assay from the study
-        for assay in isa_study.assays:  # ToDo, check if we can delete the correct assay if the file is missing
+        for item in isa_study.assays:  # ToDo, check if we can delete the correct assay if the file is missing
+            assay: Assay = item
             a_file = assay.filename
             a_file = a_file.strip().rstrip('\n')
+            assay_type = get_assay_type_from_file_name(study_id, assay.filename)
 
-            if assay_file_name == a_file:
-                logger.info("Removing assay " + assay_file_name + " from study " + study_id)
-
-                # Get all unique protocols for the study, ie. any protocol that is only used once
-                unique_protocols = get_all_unique_protocols_from_study_assays(study_id, isa_study.assays)
-                assay_type = get_assay_type_from_file_name(study_id, assay.filename)
+            
+            if assay_type not in assay_type_protocols:
                 tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
                     assay_mandatory_type = get_assay_headers_and_protcols(assay_type)
+                assay_type_protocols[assay_type] = protocols
+            protocols = assay_type_protocols[assay_type]
+            for _, protocol_name, parameters in protocols:
+                if protocol_name not in assay_protocols_and_parameters:
+                    assay_protocols_and_parameters[protocol_name] = {}
+                if a_file not in assay_protocols_and_parameters[protocol_name]: 
+                     assay_protocols_and_parameters[protocol_name][a_file] = set()
+                    
+                if parameters:
+                    for param in parameters.split(";"):
+                        assay_protocols_and_parameters[protocol_name][a_file].add(param)
+                    
+        for item in isa_study.assays:
+            assay: Assay = item
+            a_file = assay.filename
+            a_file = a_file.strip().rstrip('\n')
+            if assay_file_name == a_file:
+                logger.info("Removing assay " + assay_file_name + " from study " + study_id)
+                assay_type = get_assay_type_from_file_name(study_id, a_file)
+                # Get all unique protocols for the study, ie. any protocol that is only used once
+                
+                for protocol_name in assay_protocols_and_parameters:
+                    assay_names = assay_protocols_and_parameters[protocol_name]
+                    if not assay_names or (assay_names and len(assay_names) == 1 and a_file in assay_names):
+                        obj = isa_study.get_prot(protocol_name)
+                        if not obj:
+                            abort(404)
+                        # remove object
+                        isa_study.protocols.remove(obj)
+                    elif assay_names and len(assay_names) > 1 and a_file in assay_names:
+                        assay_names = assay_protocols_and_parameters[protocol_name]
+                        other_assays = [x for x in assay_names if x != a_file ]
+                        assay_params =  assay_names[a_file]
+                        if assay_params:
+                            new_params = set()
+                            for other_assay in other_assays:
+                                new_params = new_params.union(assay_names[other_assay])
 
-                for protcol in protocols:
-                    prot_name = protcol[1]
-                    for uprot_name in unique_protocols:
-                        if prot_name == uprot_name:
-                            obj = isa_study.get_prot(prot_name)
-                            if not obj:
-                                abort(404)
-                            # remove object
-                            isa_study.protocols.remove(obj)
-
+                            if not assay_params.issubset(new_params):
+                                new_params_list = []
+                                protocol: Protocol = isa_study.get_prot(protocol_name)
+                                for param in protocol.parameters:
+                                    protocol_param: ProtocolParameter = param
+                                    if protocol_param.parameter_name.term in new_params:
+                                        new_params_list.append(param)
+                                protocol.parameters = new_params_list
                 isa_study.assays.remove(assay)
                 maf_name = get_maf_name_from_assay_name(a_file)
                 logger.info("A copy of the previous files will %s saved", save_msg_str)
