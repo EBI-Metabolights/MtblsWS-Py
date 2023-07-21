@@ -108,17 +108,6 @@ class StudyAssayDelete(Resource):
                 "dataType": "string"
             },
             {
-                "name": "force",
-                "description": "Remove related protocols",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "type": "Boolean",
-                "defaultValue": False,
-                "default": True
-            },
-            {
                 "name": "save_audit_copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
@@ -177,8 +166,6 @@ class StudyAssayDelete(Resource):
 
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('force', help='Remove related protocols', location="args")
-
         
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
@@ -190,17 +177,12 @@ class StudyAssayDelete(Resource):
         save_audit_copy = True
         save_msg_str = "be"
         if "save_audit_copy" in request.headers:
-            if request.headers["save_audit_copy"].lower() == 'true':
+            if request.headers["save_audit_copy"] and request.headers["save_audit_copy"].lower() == 'true':
                 save_audit_copy = True
                 save_msg_str = "be"
             else:
                 save_audit_copy = False
                 save_msg_str = "NOT be"
-
-        remove_protocols = False
-        args = parser.parse_args()
-        if args and "force" in args:
-            remove_protocols = False if args['force'].lower() != 'true' else True
 
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
                                                          skip_load_tables=True, study_location=study_location)
@@ -212,22 +194,21 @@ class StudyAssayDelete(Resource):
             if assay_file_name == a_file:
                 logger.info("Removing assay " + assay_file_name + " from study " + study_id)
 
-                if remove_protocols:  # remove protocols *only* used by this assay
-                    # Get all unique protocols for the study, ie. any protocol that is only used once
-                    unique_protocols = get_all_unique_protocols_from_study_assays(study_id, isa_study.assays)
-                    assay_type = get_assay_type_from_file_name(study_id, assay.filename)
-                    tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
-                        assay_mandatory_type = get_assay_headers_and_protcols(assay_type)
+                # Get all unique protocols for the study, ie. any protocol that is only used once
+                unique_protocols = get_all_unique_protocols_from_study_assays(study_id, isa_study.assays)
+                assay_type = get_assay_type_from_file_name(study_id, assay.filename)
+                tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
+                    assay_mandatory_type = get_assay_headers_and_protcols(assay_type)
 
-                    for protcol in protocols:
-                        prot_name = protcol[1]
-                        for uprot_name in unique_protocols:
-                            if prot_name == uprot_name:
-                                obj = isa_study.get_prot(prot_name)
-                                if not obj:
-                                    abort(404)
-                                # remove object
-                                isa_study.protocols.remove(obj)
+                for protcol in protocols:
+                    prot_name = protcol[1]
+                    for uprot_name in unique_protocols:
+                        if prot_name == uprot_name:
+                            obj = isa_study.get_prot(prot_name)
+                            if not obj:
+                                abort(404)
+                            # remove object
+                            isa_study.protocols.remove(obj)
 
                 isa_study.assays.remove(assay)
                 maf_name = get_maf_name_from_assay_name(a_file)

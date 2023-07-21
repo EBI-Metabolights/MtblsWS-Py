@@ -80,7 +80,11 @@ class StudyFolders(BaseModel):
     cluster_public_ftp_root_path: str = ""
     cluster_private_ftp_recycle_bin_root_path: str = ""
     cluster_public_ftp_recycle_bin_root_path: str = ""    
-    
+
+
+PARAM_COLUMN_NAME_REGEX_PATTERN = re.compile(r"^(.*)\[(.*)\]\s*(\.[1-9][0-9]*)?\s*$")
+NUMBERED_COLUMN_NAME_REGEX_PATTERN = re.compile(r"^(.*)\s*\.([1-9][0-9]*)\s*$")
+
 
 class FolderRootPaths(object):
     def __init__(self, study_settings: StudySettings, cluster_settings: HpcClusterConfiguration, cluster_mode: False):
@@ -1937,15 +1941,19 @@ class StudyFolderMaintenanceTask(object):
         return df
 
     def trim_parameter_column_name(self, name: str):
-        name, ext = os.path.splitext(name)
-
-        param = name.split("[")
-        if len(param) > 1:
-            name = f"{param[0].strip()}[{param[1].replace(']', '').strip()}]"
+        match = PARAM_COLUMN_NAME_REGEX_PATTERN.match(name)
+        if match:
+            groups = match.groups()
+            if groups[2] == None:
+                return f"{groups[0].strip()}[{groups[1].strip()}]"
+            return f"{groups[0].strip()}[{groups[1].strip()}]{groups[2].strip()}"
         else:
-            name = param[0].strip()
-        new_value = f"{name}{ext}"
-        return new_value
+            match = NUMBERED_COLUMN_NAME_REGEX_PATTERN.match(name)
+            if match:
+                groups = match.groups()
+                return f"{groups[0].strip()}.{groups[1].strip()}"
+            else:
+                return name.strip()
 
     def maintain_referenced_data_file_column_values(self, assay_file_path, assay_df: pd.DataFrame):
         raw_spectral_column_name = "Raw Spectral Data File"
