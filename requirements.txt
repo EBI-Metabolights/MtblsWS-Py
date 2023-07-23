@@ -51,3 +51,4 @@ python-jose
 passlib
 tweepy
 celery[redis]
+toml
