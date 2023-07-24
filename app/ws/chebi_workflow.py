@@ -488,7 +488,6 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     chebi_search_status = check_chebi_api()
     classyfire_search_status = check_classyfire_api()
     
-    
     first_start_time = time.time()
     # Please note that the original MAF must exist without the _pubchem.tsv extension!!
     original_maf_name = annotation_file_name.replace("_pubchem.tsv", ".tsv")
@@ -903,7 +902,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         if final_inchi_key and len(final_inchi_key) > 0:
             unichem_id = pubchem_df.iloc[row_idx, get_idx('unichem_id', pubchem_df_headers)]
             if not unichem_id:
-                unichem_id = processUniChemResponse(final_inchi_key)
+                unichem_id = processUniChemResponseAll(final_inchi_key)
                 pubchem_df.iloc[row_idx, get_idx('unichem_id', pubchem_df_headers)] = unichem_id.rstrip(
                     ';')
 
@@ -1815,7 +1814,6 @@ def opsin_search(comp_name, req_type):
 def check_cactus_api(comp_name, search_type='stdinchikey'):
     status = 'Failure'
     try:
-        print_log("Checking Cactus API...   ", mode='info')
         result = cirpy.resolve(comp_name, search_type)
         if result:
             status = 'Success'
@@ -2205,6 +2203,27 @@ def check_unichem_api(inchi_key='BSYNRYMUTXBXSQ-UHFFFAOYSA-N'):
     except Exception as e:
         print_log(' UNICHEM API failed ', mode='info')
     return status
+
+def processUniChemResponseAll(inchi_key):
+    print_log(' Querying Unichem URL with inchi key - ' + inchi_key)
+    unichem_url = app.config.get('UNICHEM_URL')
+    unichem_url = unichem_url.replace("INCHI_KEY", inchi_key)
+    try:
+        resp = requests.get(unichem_url, timeout=10)
+        unichem_id = ''
+        if resp.status_code == 200:
+            json_resp = resp.json()
+            for item in json_resp:
+                label = item["name_label"]
+                src_comp_id = item["src_compound_id"][0]
+                unichem_id = unichem_id+label+":"+src_comp_id+";"
+            
+            unichem_id = unichem_id.rstrip(';')
+            return unichem_id
+    except Exception as e:
+        print_log(f' UNICHEM API failed; exception - {e}', mode='error')
+        print_log(f' UNICHEM failed URL - {unichem_url}', mode='info')
+    return ''
             
 def processUniChemResponse(inchi_key):
     print_log(' Querying Unichem URL with inchi key - ' + inchi_key)
