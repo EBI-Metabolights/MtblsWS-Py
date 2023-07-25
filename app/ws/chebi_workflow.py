@@ -922,10 +922,10 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             dime_id = pubchem_df.iloc[row_idx, get_idx('dime_id', pubchem_df_headers)]
             if not dime_id:
                 if dime_db_api_active:
-                    dimedb_search_status = check_dime_db_api(inchi_key='')
+                    dimedb_search_status = check_dime_db_api()
                     if not dimedb_search_status:
                         print_log('Dime DB API failed, Trying 2nd time! ')
-                        dimedb_search_status = check_dime_db_api(inchi_key='')
+                        dimedb_search_status = check_dime_db_api()
                         if not dimedb_search_status:
                             print_log(' Trying DimeDB API 3rd time! ')
                             dimedb_search_status = check_dime_db_api(inchi_key='')
@@ -997,7 +997,12 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     concatenate_sdf_files(pubchem_df, annotated_study_location, short_file_name + complete_end, run_silently)
     change_access_rights(study_location)
     pubchem_df_len = str(len(pubchem_df))
-
+    
+    if dime_db_api_active:
+        dimedb_search_status = 'Success'
+    else:
+        dimedb_search_status = 'Failure'
+        
     print_log("Finishing Pipeline run!!!! ")
     print_log(f"dimedb_search_status : {str(dimedb_search_status)}")
     print_log(f"cactus_search_status : {str(cactus_search_status)}")
@@ -2204,6 +2209,16 @@ def check_unichem_api(inchi_key='BSYNRYMUTXBXSQ-UHFFFAOYSA-N'):
         print_log(' UNICHEM API failed ', mode='info')
     return status
 
+def processDbNames(name=None):
+    if name:
+        if name.startswith('KEGG'):
+            name = name.upper()
+        elif name == 'LipidMaps':
+            name = name.uppper()
+        elif name.startswith('Human Metabolome'):
+            name = 'HMDB'
+    return name
+
 def processUniChemResponseAll(inchi_key):
     print_log(' Querying Unichem URL with inchi key - ' + inchi_key)
     unichem_url = app.config.get('UNICHEM_URL')
@@ -2215,8 +2230,9 @@ def processUniChemResponseAll(inchi_key):
             json_resp = resp.json()
             for item in json_resp:
                 label = item["name_label"]
+                dbname = processDbNames(name=label)
                 src_comp_id = item["src_compound_id"][0]
-                unichem_id = unichem_id+label+":"+src_comp_id+";"
+                unichem_id = unichem_id+dbname+":"+src_comp_id+";"
             
             unichem_id = unichem_id.rstrip(';')
             return unichem_id
