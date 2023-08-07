@@ -901,10 +901,12 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         final_inchi_key = pubchem_df.iloc[idx, get_idx('final_inchi_key', pubchem_df_headers)]
         if final_inchi_key and len(final_inchi_key) > 0:
             unichem_id = pubchem_df.iloc[row_idx, get_idx('unichem_id', pubchem_df_headers)]
+            unichem_id_filtered = unichem_id
             if not unichem_id:
                 unichem_id = processUniChemResponseAll(final_inchi_key)
                 pubchem_df.iloc[row_idx, get_idx('unichem_id', pubchem_df_headers)] = unichem_id.rstrip(
                     ';')
+                unichem_id_filtered =  processUniChemResponse(final_inchi_key)
 
             cas_id = pubchem_df.iloc[row_idx, get_idx('cas_id', pubchem_df_headers)]
             if not cas_id:
@@ -944,9 +946,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     
             update_db_acc = db_acc.strip(';')
             if update_db_acc:
-                update_db_acc = update_db_acc.rstrip(';') + ';' + unichem_id.rstrip(';')
+                update_db_acc = update_db_acc.rstrip(';') + ';' + unichem_id_filtered.rstrip(';')
             else:
-                update_db_acc = unichem_id.rstrip(';')
+                update_db_acc = unichem_id_filtered.rstrip(';')
 
             if update_db_acc.rstrip(';'):
                 update_db_acc = update_db_acc.rstrip(';') + ';' + dime_id.rstrip(';')
@@ -2222,7 +2224,7 @@ def processDbNames(name=None):
 def processUniChemResponseAll(inchi_key):
     print_log(' Querying Unichem URL with inchi key - ' + inchi_key)
     unichem_url = app.config.get('UNICHEM_URL')
-    unichem_url = unichem_url.replace("INCHI_KEY", inchi_key)
+    unichem_url = f"{unichem_url}/verbose_inchikey/{inchi_key}"      
     try:
         resp = requests.get(unichem_url, timeout=10)
         unichem_id = ''
@@ -2244,14 +2246,14 @@ def processUniChemResponseAll(inchi_key):
 def processUniChemResponse(inchi_key):
     print_log(' Querying Unichem URL with inchi key - ' + inchi_key)
     unichem_url = app.config.get('UNICHEM_URL')
-    unichem_url = unichem_url.replace("INCHI_KEY", inchi_key)
+    unichem_url = f"{unichem_url}/inchikey/{inchi_key}"
     try:
         resp = requests.get(unichem_url, timeout=10)
         unichem_id = ''
         if resp.status_code == 200:
             json_resp = resp.json()
             response_dict = {item['src_id']: item for item in json_resp if item and 'src_id' in item}
-            if len(response_dict):
+            if len(response_dict) == 0:
                 print_log(' Chem plus search for inchi key - ' + inchi_key + ' contains no data.')
                 return unichem_id
             if '2' in response_dict:
