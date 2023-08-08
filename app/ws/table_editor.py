@@ -1131,12 +1131,16 @@ class GetTsvFile(Resource):
         try:
             if maf_file:
                 col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
-                selected_columns = []
-                for column in col_names:
-                    header, ext = os.path.splitext(column)
-                    if header in default_maf_columns:
-                        selected_columns.append(column)
-                file_df = read_tsv(file_name, selected_columns)
+                col_length = len(col_names)
+                if col_length > 23:
+                    selected_columns = []
+                    for column in col_names:
+                        header, ext = os.path.splitext(column)
+                        if header in default_maf_columns:
+                            selected_columns.append(column)
+                    file_df = read_tsv(file_name, selected_columns)
+                else:
+                    file_df = read_tsv(file_name)
             else:
                 file_df = read_tsv(file_name)
         except FileNotFoundError:
