@@ -95,7 +95,7 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
     if queue == app.config.get('LSF_DATAMOVER_Q'):
         lsf_host_user = app.config.get('LSF_DATAMOVER_USER')
 
-    bsub_cmd = bsub_cmd + " -W 5760 -q " + queue
+    bsub_cmd = bsub_cmd + " -W 1440 -q " + queue
     ssh_cmd = ssh_cmd + " " + lsf_host_user + "@" + lsf_host
 
     if job_params:
