@@ -112,7 +112,6 @@ class PublicStudyTweet(Resource):
 
         with DBManager.get_instance(app).session_maker() as db_session:
             end = release_date + timedelta(days=1)
-
             start = release_date
 
             query = db_session.query(Study)
@@ -153,7 +152,7 @@ class PublicStudyTweet(Resource):
                         'public_studies': public_study_ids, 'twitter_messages': tweets}
 
             try:
-                api = self.configure_twitter_api()
+                client = self.twitter_client()
             except Exception as e:
                 error = f'Twitter api configuration error {str(e)}'
                 logger.error(error)
@@ -163,8 +162,8 @@ class PublicStudyTweet(Resource):
             twitter_messages = []
             for twitter_message in public_study_messages:
                 try:
-                    api.update_status(status=twitter_message)
-                    twitter_messages.append(twitter_message)
+                    response = client.create_tweet(text=twitter_message)
+                    twitter_messages.append(response)
                     result = {"message": 'successful', 'release_date': str(release_date.strftime(date_format)),
                       'public_studies': public_study_ids, 'twitter_messages': twitter_messages}
                 except Exception as e:
@@ -189,3 +188,18 @@ class PublicStudyTweet(Resource):
         auth.set_access_token(access_token, access_token_secret)
         api = tweepy.API(auth)
         return api
+    
+    @staticmethod
+    def twitter_client(twitter_credentials=None):
+        if not twitter_credentials:
+            twitter_credentials = app.config.get('TWITTER_CREDENTIALS')
+
+        consumer_key = twitter_credentials["consumer_key"]
+        consumer_secret = twitter_credentials["consumer_secret"]
+        access_token = twitter_credentials["token"]
+        access_token_secret = twitter_credentials["token_secret"]
+        client = tweepy.Client(consumer_key=consumer_key,
+                       consumer_secret=consumer_secret,
+                       access_token=access_token,
+                       access_token_secret=access_token_secret)
+        return client
