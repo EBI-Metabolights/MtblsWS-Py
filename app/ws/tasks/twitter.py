@@ -165,11 +165,13 @@ class PublicStudyTweet(Resource):
                 try:
                     api.update_status(status=twitter_message)
                     twitter_messages.append(twitter_message)
-                except Exception as e:
-                    logger.warning(f'Error while sending twitter message {twitter_message}')
-
-            result = {"message": 'successful', 'release_date': str(release_date.strftime(date_format)),
+                    result = {"message": 'successful', 'release_date': str(release_date.strftime(date_format)),
                       'public_studies': public_study_ids, 'twitter_messages': twitter_messages}
+                except Exception as e:
+                    logger.warning(f'Error while sending twitter message {str(e)}')
+                    result = {"status": 'failure', 'release_date': str(release_date.strftime(date_format)),
+                      'error': str(e), }
+            
             return result
 
     @staticmethod
