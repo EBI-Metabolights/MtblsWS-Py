@@ -2202,7 +2202,7 @@ class SplitMaf(Resource):
 def check_unichem_api(inchi_key='BSYNRYMUTXBXSQ-UHFFFAOYSA-N'):
     status = 'Failed'
     unichem_url = app.config.get('UNICHEM_URL')
-    unichem_url = unichem_url.replace("INCHI_KEY", inchi_key)
+    unichem_url = f"{unichem_url}/inchikey/{inchi_key}"
     try:
         resp = requests.get(unichem_url, timeout=10)
         if resp.status_code == 200:
