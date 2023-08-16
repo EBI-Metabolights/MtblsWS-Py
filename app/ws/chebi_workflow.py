@@ -487,6 +487,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     unichem_search_status = check_unichem_api()
     chebi_search_status = check_chebi_api()
     classyfire_search_status = check_classyfire_api()
+    chebi_master_list_initialised = 'No'
+    if wsc.search_manager.curated_metabolite_table.initialized:
+        chebi_master_list_initialised = 'Yes'
     
     first_start_time = time.time()
     # Please note that the original MAF must exist without the _pubchem.tsv extension!!
@@ -1020,7 +1023,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         ftp_private_folder = os.path.join(study_id.lower() + "-" + obfuscation_code)
         ftp_private_storage = StorageService.get_ftp_private_storage(app)
         sync_annotation_folder_with_remote_storage(ftp_private_storage, ftp_private_folder)
-    return maf_len, pubchem_df_len, pubchem_file,dimedb_search_status,cactus_search_status,opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status
+    return maf_len, pubchem_df_len, pubchem_file,dimedb_search_status,cactus_search_status,opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised
 
 
 def update_original_maf(maf_df=None, pubchem_df=None, original_maf_name=None, study_location=None,
@@ -2542,7 +2545,7 @@ class ChEBIPipeLine(Resource):
                             return {"error": message, "message": job_out, "errors": job_err}
                     else:
                         maf_len, new_maf_len, pubchem_file, dime_db_api_active,cactus_search_status, \
-                        opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status = \
+                        opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised = \
                             search_and_update_maf(study_id, study_location, file_name, classyfire_search, user_token,
                                                   run_silently=run_silently, update_study_maf=update_study_maf,
                                                   obfuscation_code=obfuscation_code)
@@ -2564,7 +2567,7 @@ class ChEBIPipeLine(Resource):
                     return {"error": message, "message": job_out, "errors": job_err}
             else:
                 maf_len, new_maf_len, pubchem_file, dime_db_api_active, cactus_search_status, opsin_search_status, \
-                chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status  = \
+                chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised  = \
                 search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
                                           run_silently=run_silently, update_study_maf=update_study_maf,
                                           obfuscation_code=obfuscation_code)
@@ -2575,7 +2578,7 @@ class ChEBIPipeLine(Resource):
             return {"in_rows": maf_len, "out_rows": new_maf_len, "pubchem_file": pubchem_file, "DimeDB API hit":dime_db_api_active,
                     "OPSIN API hit":opsin_search_status, "Cactus API hit":cactus_search_status, 
                     "ChemSpider API hit" :chemspider_search_status, "Unichem API hit" : unichem_search_status,"CHEBI API hit":chebi_search_status,
-                    "Classyfire API hit":classyfire_search_status, "Classyfire SDF downloaded":classy_file_downoaded}
+                    "Classyfire API hit":classyfire_search_status, "Classyfire SDF downloaded":classy_file_downoaded, "CHEBI Master List initialised":chebi_master_list_initialised}
 
         return {"success": str(maf_count) + " MAF files found, " + str(maf_changed) + " files needed updating."}
 
