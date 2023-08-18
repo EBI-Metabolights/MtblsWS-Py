@@ -5,8 +5,7 @@
             "name": "Gunicorn run",
             "type": "python",
             "request": "launch",
-            "program": "/nfs/public/rw/homes/tc_cm01/miniconda3/envs/python38-MtblsWS/bin/gunicorn",
-            "args": [ "--bind=0.0.0.0:5001", "--worker-class=gevent", "--preload", "wsapp:app"],
+            "program": "${workspaceFolder}/wsapp.py",
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
             "postDebugTask": "killdebugger",
@@ -71,7 +70,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {"PYTHONPATH": "${cwd}"},
-            "args": ["", "metadata", "metadata_migration_report.txt", "STORAGE_MIGRATION_TEST", "apply"]
+            "args": ["MTBLS1", "metadata", "metadata_migration_report.txt", "STORAGE_MIGRATION_TEST", "apply"]
         },
         {
             "name": "Python: Create Test Data Files",

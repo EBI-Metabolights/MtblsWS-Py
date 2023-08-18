@@ -497,18 +497,18 @@ def update_validation_schema_files(validation_file, study_id, user_token, obfusc
     metadata_files_folder = os.path.join(study_settings.mounted_paths.study_metadata_files_root_path, study_id)
     # Tidy up old files first
     validation_files_path = os.path.join(internal_files_folder, study_settings.validation_files_json_name)
-    if os.path.isfile(validation_files_path):
-        os.remove(validation_files_path)
+    # if os.path.isfile(validation_files_path):
+    #     os.remove(validation_files_path)
 
-    if os.path.isfile(validation_file):
-        os.remove(validation_file)
-    try:
-        with open(validation_file, 'w', encoding='utf-8') as f:
-            # json.dump(validation_schema, f, ensure_ascii=False, indent=4)
-            json.dump(ValidationReportFile(), f, ensure_ascii=False)
-    except Exception as e:
-        logger.error('Error writing validation schema file: ' + str(e))
-        
+    # if os.path.isfile(validation_file):
+    #     os.remove(validation_file)
+    # try:
+    #     with open(validation_file, 'w', encoding='utf-8') as f:
+    #         # json.dump(validation_schema, f, ensure_ascii=False, indent=4)
+    #         json.dump(ValidationReportFile(), f, ensure_ascii=False)
+    # except Exception as e:
+    #     logger.error('Error writing validation schema file: ' + str(e))
+
     f_start_time = time.time()
     
     search_result = get_files_for_validation(study_id, metadata_files_folder)
@@ -531,13 +531,17 @@ def update_validation_schema_files(validation_file, study_id, user_token, obfusc
         with open(validation_file, 'w', encoding='utf-8') as f:
             # json.dump(validation_schema, f, ensure_ascii=False, indent=4)
             json.dump(validation_schema, f, ensure_ascii=False)
+        # read to ensure 
+        with open(validation_file, 'r', encoding='utf-8') as f:
+            result = json.load(f)
     except Exception as e:
         logger.error('Error writing validation schema file: ' + str(e))
+        return {"status": "failed", "file": validation_file, "message": "File write task was failed"}
     v_end_time = time.time() 
     time_elipsed = round(v_end_time - v_start_time, 2)
     logger.info(study_id + " - Generating validations list took %s seconds" % time_elipsed)
 
-    return {"status": "completed", "file": validation_file}
+    return {"status": "completed", "file": validation_file, "message": None}
 
 
 def get_last_update_on_folder(study_location):
