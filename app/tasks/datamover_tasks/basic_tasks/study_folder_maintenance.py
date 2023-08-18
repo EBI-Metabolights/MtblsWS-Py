@@ -158,6 +158,12 @@ def maintain_storage_study_folders(
     studies = []
     try:
         with DBManager.get_instance().session_maker() as db_session:
+            user = db_session.query(User).filter(User.apitoken == user_token).first()
+            if not user:
+                raise MetabolightsDBException("No user")
+
+            email = user.email
+
             if study_id:
                 user: User = UserService.get_instance().validate_user_has_write_access(user_token, study_id=study_id)
                 studies = db_session.query(Study).filter(Study.acc == study_id).all()
