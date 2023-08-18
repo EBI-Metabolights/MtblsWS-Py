@@ -157,7 +157,7 @@ def maintain_storage_study_folders(
     try:
         UserService.get_instance().validate_user_has_curator_role(user_token)
         with DBManager.get_instance().session_maker() as db_session:
-            user = db_session.query(User.email).filter(User.apitoken == user_token).first()
+            user = db_session.query(User).filter(User.apitoken == user_token).first()
             if not user:
                 raise MetabolightsDBException("No user")
 
