@@ -71,6 +71,7 @@ celery.conf.update(
         "app.tasks.system_monitor_tasks.*": {"queue": "monitor-tasks"},
     },
     task_default_queue="common-tasks",
+    broker_connection_retry_on_startup=True,
     broker_url=broker_url,
     result_backend=result_backend,
     task_acks_late=True,
