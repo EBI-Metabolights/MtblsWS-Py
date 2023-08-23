@@ -79,7 +79,12 @@ class UserModel(BaseModel):
             return value.isoformat()
         return value
 
-
+class UserLiteModel(BaseModel):
+    firstName: str = ""
+    lastName: str = ""
+    affiliation: str = ""
+    address: str = ""
+    
 class NewUserModel(BaseModel):
     
     userId: Optional[int] = Field(None, alias="id")  # excluded from es

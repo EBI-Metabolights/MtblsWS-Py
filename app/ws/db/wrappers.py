@@ -53,7 +53,7 @@ def create_study_model_from_db_study(db_study: Study):
         except Exception as e:
             logger.warning(f'{e.args}')
 
-    m_study.users = [get_user_model(x) for x in db_study.users]
+    m_study.users = [get_user_lite_model(x) for x in db_study.users]
 
     return m_study
 
@@ -67,6 +67,13 @@ def get_user_model(db_user: User):
     m_user.status = UserStatus(int(m_user.status)).name
     return m_user
 
+def get_user_lite_model(db_user: User):
+    m_user = models.UserLiteModel()
+    m_user.firstName = db_user.firstname
+    m_user.lastName = db_user.lastname
+    m_user.affiliation = db_user.affiliation
+    m_user.address = db_user.address
+    return m_user
 
 def update_users_for_indexing(m_study):
     new_indexed_user_list = []

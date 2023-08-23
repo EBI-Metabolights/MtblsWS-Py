@@ -32,6 +32,7 @@ class CuratedMetaboliteTable(object):
         self.df = None
         self.initialized = False
         self.priority_row_set = set()
+        self.initialize_df()
 
     def initialize_df(self):
         try:

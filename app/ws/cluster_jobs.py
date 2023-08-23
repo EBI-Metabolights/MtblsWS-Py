@@ -61,7 +61,7 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
         lsf_host = settings.hpc_cluster.datamover.connection.host
         lsf_host_user = settings.hpc_cluster.datamover.connection.username
 
-    bsub_cmd = bsub_cmd + " -q " + queue
+    bsub_cmd = bsub_cmd + " -W 1440 -q " + queue
     ssh_cmd = ssh_cmd + " " + lsf_host_user + "@" + lsf_host
 
     if job_params:

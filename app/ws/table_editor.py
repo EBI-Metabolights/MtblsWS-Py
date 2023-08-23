@@ -1293,7 +1293,20 @@ class GetTsvFile(Resource):
         if file_basename.startswith("m_") and file_basename.endswith(".tsv"):
             maf_file = True
         try:
-            file_df = get_dataframe(file_basename, file_name)
+            if maf_file:
+                col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
+                col_length = len(col_names)
+                if col_length > 23:
+                    selected_columns = []
+                    for column in col_names:
+                        header, ext = os.path.splitext(column)
+                        if header in default_maf_columns:
+                            selected_columns.append(column)
+                    file_df = read_tsv(file_name, selected_columns)
+                else:
+                    file_df = read_tsv(file_name)
+            else:
+                file_df = read_tsv(file_name)
         except FileNotFoundError:
             abort(400, "The file " + file_name + " was not found")
 

@@ -161,21 +161,24 @@ def maintain_storage_study_folders(
     
             if study_id:
                 user: User = UserService.get_instance().validate_user_has_write_access(user_token, study_id=study_id)
-                studies = db_session.query(Study).filter(Study.acc == study_id).all()
             else:
                 user: User = UserService.get_instance().validate_user_has_curator_role(user_token)
-                studies = db_session.query(Study).all()
                 
             if not user:
                 raise MetabolightsDBException("No user")
             
             email = user[1]
             
-            if not email:
+            if not email or not isinstance(email, str):
                 raise MetabolightsDBException("User email is not valid")
 
-        if not studies:
-            raise MetabolightsDBException(f"No study found on db.")
+            if study_id:
+                studies = db_session.query(Study).filter(Study.acc == study_id).all()
+            else:
+                studies = db_session.query(Study).all()
+                
+            if not studies:
+                raise MetabolightsDBException(f"No study found on db.")
 
         for item in studies:
             study: Study = item
