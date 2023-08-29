@@ -1234,14 +1234,15 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silentl
                     mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + p_cid)
                 if os.path.isfile(mtbls_sdf_file_name):
                     try:
-                        with open(mtbls_sdf_file_name) as infile:
+                        with open(mtbls_sdf_file_name, 'r', encoding="utf-8") as infile:
                             for line in infile:
+                                line = unidecode(line)
                                 if not line.startswith("#"):
                                     outfile.write(line)
                                 else:
                                     print_log("       -- Not adding: " + line.rstrip('\n'), run_silently)
                     except Exception as e:
-                        print_log("       -- Warning, can not read SDF file (" + mtbls_sdf_file_name + ") " + str(e))
+                        print_log("       -- Error, can not read SDF file (" + mtbls_sdf_file_name + ") " + str(e))
                 else:
                     print_log("       -- Error: could not find SDF file: " + mtbls_sdf_file_name, mode='error')
         outfile.close()
