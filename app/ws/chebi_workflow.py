@@ -38,6 +38,7 @@ from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from pubchempy import get_compounds
 from zeep import Client
+from unidecode import unidecode
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage import Storage
@@ -369,7 +370,10 @@ def get_sample_details(study_id, user_token, study_location):
     for idx, sample in sample_df.iterrows():
         try:
             org_term = sample[organism_pos + 2]
-            org = sample['Characteristics[Organism]'] + ' [' + convert_to_chebi_onto(org_term) + ']'
+            org = sample['Characteristics[Organism]']
+            org = unidecode(org)
+            if org_term != '':
+                org = org + ' [' + convert_to_chebi_onto(org_term) + ']'
             if 'blank' in org.lower() or org == " []":
                 org = ""
         except Exception as e:
@@ -378,7 +382,10 @@ def get_sample_details(study_id, user_token, study_location):
 
         try:
             org_part_term = sample[organism_part_pos + 2]
-            org_part = sample['Characteristics[Organism part]'] + ' [' + convert_to_chebi_onto(org_part_term) + ']'
+            org_part = sample['Characteristics[Organism part]']
+            org_part = unidecode(org_part)
+            if org_part_term != '':
+                org_part = org_part + ' [' + convert_to_chebi_onto(org_part_term) + ']'
             if 'blank' in org_part.lower() or org_part == " []":  # ToDo: Do not need blank or other controls
                 org_part = ""
         except Exception as e:
@@ -389,12 +396,16 @@ def get_sample_details(study_id, user_token, study_location):
         variant_onto = ""
         try:
             variant = sample['Characteristics[Variant]']  # There may not always be an ontology for this, so two calls
+            variant = unidecode(variant)
             variant_part_term = sample[variant_pos + 2]
-            variant_onto = ' [' + convert_to_chebi_onto(variant_part_term) + ']'
-            variant = variant + variant_onto
+            if variant_part_term != '':
+                variant_onto = ' [' + convert_to_chebi_onto(variant_part_term) + ']'
+                variant = variant + variant_onto
+            if variant == ' []':
+                variant = ""
         except Exception as e:
             # print_log("    -- WARNING: 'Characteristics[Variant]' not found in the sample sheet")
-            variant = variant + variant_onto
+            variant = ""
 
         complete_org = org + "|" + org_part + "|" + variant
 
