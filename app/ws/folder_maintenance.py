@@ -999,6 +999,7 @@ class StudyFolderMaintenanceTask(object):
             )
             if self.apply_future_actions:
                 os.makedirs(file_path, mode)
+                os.chmod(file_path, mode=mode)
                 self.actions.append(action_log)
             else:
                 self.future_actions.append(action_log)
