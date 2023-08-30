@@ -38,6 +38,7 @@ from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from pubchempy import get_compounds
 from zeep import Client
+from unidecode import unidecode
 from app.config import get_settings
 
 from app.services.storage_service.acl import Acl
@@ -373,7 +374,10 @@ def get_sample_details(study_id, user_token, study_location):
     for idx, sample in sample_df.iterrows():
         try:
             org_term = sample[organism_pos + 2]
-            org = sample['Characteristics[Organism]'] + ' [' + convert_to_chebi_onto(org_term) + ']'
+            org = sample['Characteristics[Organism]']
+            org = unidecode(org)
+            if org_term != '':
+                org = org + ' [' + convert_to_chebi_onto(org_term) + ']'
             if 'blank' in org.lower() or org == " []":
                 org = ""
         except Exception as e:
@@ -382,7 +386,10 @@ def get_sample_details(study_id, user_token, study_location):
 
         try:
             org_part_term = sample[organism_part_pos + 2]
-            org_part = sample['Characteristics[Organism part]'] + ' [' + convert_to_chebi_onto(org_part_term) + ']'
+            org_part = sample['Characteristics[Organism part]']
+            org_part = unidecode(org_part)
+            if org_part_term != '':
+                org_part = org_part + ' [' + convert_to_chebi_onto(org_part_term) + ']'
             if 'blank' in org_part.lower() or org_part == " []":  # ToDo: Do not need blank or other controls
                 org_part = ""
         except Exception as e:
@@ -393,12 +400,16 @@ def get_sample_details(study_id, user_token, study_location):
         variant_onto = ""
         try:
             variant = sample['Characteristics[Variant]']  # There may not always be an ontology for this, so two calls
+            variant = unidecode(variant)
             variant_part_term = sample[variant_pos + 2]
-            variant_onto = ' [' + convert_to_chebi_onto(variant_part_term) + ']'
-            variant = variant + variant_onto
+            if variant_part_term != '':
+                variant_onto = ' [' + convert_to_chebi_onto(variant_part_term) + ']'
+                variant = variant + variant_onto
+            if variant == ' []':
+                variant = ""
         except Exception as e:
             # print_log("    -- WARNING: 'Characteristics[Variant]' not found in the sample sheet")
-            variant = variant + variant_onto
+            variant = ""
 
         complete_org = org + "|" + org_part + "|" + variant
 
@@ -1002,6 +1013,7 @@ def search_and_update_maf(study_id: str, study_metadata_location: str, annotatio
     # pubchem_df = re_sort_pubchem_file(pubchem_df)
 
     annotated_study_location = anno_sub_folder_path
+    
     classy_file_downoaded = update_sdf_file_info(pubchem_df, annotated_study_location, short_file_name + classyfire_end, classyfire_search,
                          study_id, pubchem_file, pubchem_df_headers)
     write_tsv(pubchem_df, pubchem_file)
@@ -1229,14 +1241,15 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silentl
                     mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + p_cid)
                 if os.path.isfile(mtbls_sdf_file_name):
                     try:
-                        with open(mtbls_sdf_file_name) as infile:
+                        with open(mtbls_sdf_file_name, 'r', encoding="utf-8") as infile:
                             for line in infile:
+                                line = unidecode(line)
                                 if not line.startswith("#"):
                                     outfile.write(line)
                                 else:
                                     print_log("       -- Not adding: " + line.rstrip('\n'), run_silently)
                     except Exception as e:
-                        print_log("       -- Warning, can not read SDF file (" + mtbls_sdf_file_name + ") " + str(e))
+                        print_log("       -- Error, can not read SDF file (" + mtbls_sdf_file_name + ") " + str(e))
                 else:
                     print_log("       -- Error: could not find SDF file: " + mtbls_sdf_file_name, mode='error')
         outfile.close()
@@ -2216,7 +2229,7 @@ def processDbNames(name=None):
 
 def processUniChemResponseAll(inchi_key):
     print_log(' Querying Unichem URL with inchi key - ' + inchi_key)
-    unichem_url = app.config.get('UNICHEM_URL')
+    unichem_url = get_settings().chebi.pipeline.search_services.unichem_url
     unichem_url = f"{unichem_url}/verbose_inchikey/{inchi_key}"      
     try:
         resp = requests.get(unichem_url, timeout=10)
@@ -2288,7 +2301,7 @@ def get_cas_id(inchi_key):
 
 def check_dime_db_api(inchi_key='BSYNRYMUTXBXSQ-UHFFFAOYSA-N'):
     print_log('Checking DimeDB API for inchi key...!')
-    dime_url = app.config.get('DIME_URL')
+    dime_url = get_settings().chebi.pipeline.search_services.dime_url
     dime_url = dime_url.replace("INCHI_KEY", inchi_key)
     dimedb_search_status = False
     try:
@@ -2557,8 +2570,9 @@ class ChEBIPipeLine(Resource):
                 else:
                     return {"error": message, "message": job_out, "errors": job_err}
             else:
-                maf_len, new_maf_len, pubchem_file = \
-                    search_and_update_maf(study_id, study_metadata_location, annotation_file_name, classyfire_search, user_token,
+                maf_len, new_maf_len, pubchem_file, dime_db_api_active, cactus_search_status, opsin_search_status, \
+                chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised  = \
+                search_and_update_maf(study_id, study_metadata_location, annotation_file_name, classyfire_search, user_token,
                                           run_silently=run_silently, update_study_maf=update_study_maf,
                                           obfuscation_code=obfuscation_code)
                 pubchem_file = http_file_location + pubchem_file.split('/' + study_id)[1]

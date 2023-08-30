@@ -193,7 +193,7 @@ class PublicStudyTweet(Resource):
     @staticmethod
     def twitter_client(twitter_credentials=None):
         if not twitter_credentials:
-            twitter_credentials = app.config.get('TWITTER_CREDENTIALS')
+            twitter_credentials = get_settings().twitter.connection
 
         consumer_key = twitter_credentials["consumer_key"]
         consumer_secret = twitter_credentials["consumer_secret"]
