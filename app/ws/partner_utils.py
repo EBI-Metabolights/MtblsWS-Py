@@ -24,12 +24,13 @@ from flask import current_app as app, request, abort
 from flask.json import jsonify
 from flask_restful import Resource
 from flask_restful_swagger import swagger
-from app.tasks.curation.metabolon import metabolon_confirm
+from app.tasks.common_tasks.curation_tasks.metabolon import metabolon_confirm
 from app.utils import MetabolightsException
 
 from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.user_service import UserService
 from app.ws.utils import validate_mzml_files, convert_to_isa, copy_file, read_tsv, write_tsv, \
     update_correct_sample_file_name, get_year_plus_one
@@ -103,9 +104,10 @@ class Metabolon(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        user = UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        user = UserService.get_instance().validate_user_has_curator_role(user_token)
         email = user['username']
-        study_location = os.path.join(app.config.get('STUDY_PATH'), study_id)
+        settings = get_study_settings()
+        study_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
         
         try:
             inputs = {"study_id": study_id, "study_location": study_location, "user_token": user_token, "email": email}
@@ -115,4 +117,4 @@ class Metabolon(Resource):
             result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
             return result
         except Exception as ex:
-            raise MetabolightsException(http_code=500, message=f"Sync all compounds task submission was failed", exception=ex)
+            raise MetabolightsException(http_code=500, message=f"Metabolon confirm task submission was failed", exception=ex)

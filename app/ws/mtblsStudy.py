@@ -17,48 +17,62 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 
-from datetime import datetime
 import glob
 import logging
 import os
-import time
-from distutils.dir_util import copy_tree
-import uuid
+from datetime import datetime
 
-from flask import request, send_file, current_app as app, jsonify
-from flask_restful import Resource, reqparse, abort
+from flask import current_app as app
+from flask import jsonify, request, send_file
+from flask_restful import Resource, abort, reqparse
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.file_utils import make_dir_with_chmod
+from app.services.storage_service.models import SyncTaskResult
 from app.services.storage_service.storage_service import StorageService
-from app.tasks.periodic_tasks.study import sync_studies_on_es_and_db
-from app.tasks.periodic_tasks.study_folder import maintain_study_folders
-from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsDBException
+from app.tasks.common_tasks.basic_tasks.elasticsearch import (
+    delete_study_index,
+    reindex_all_public_studies,
+    reindex_all_studies,
+    reindex_study,
+)
+from app.tasks.common_tasks.basic_tasks.email import (
+    send_email_for_private_ftp_folder,
+    send_email_for_study_submitted,
+    send_technical_issue_email,
+)
+from app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization import sync_studies_on_es_and_db
+from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import delete_study_folders, maintain_storage_study_folders
+from app.tasks.hpc_study_rsync_client import VALID_FOLDERS, StudyFolder, StudyFolderLocation, StudyFolderType, StudyRsyncClient
+
+from app.utils import MetabolightsDBException, MetabolightsException, metabolights_exception_handler
 from app.ws import db_connection as db_proxy
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyTaskModel
 from app.ws.db.schemes import Study, StudyTask
-from app.ws.db.settings import get_directory_settings
 from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus, UserRole
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
-from app.ws.db_connection import get_all_studies_for_user, study_submitters, add_placeholder_flag, \
-    query_study_submitters, get_public_studies_with_methods, get_all_private_studies_for_user, get_obfuscation_code, \
-    create_empty_study
+from app.ws.db_connection import (
+    add_placeholder_flag,
+    create_empty_study,
+    get_all_private_studies_for_user,
+    get_all_studies_for_user,
+    get_obfuscation_code,
+    get_public_studies_with_methods,
+    query_study_submitters,
+    study_submitters,
+)
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.settings.utils import get_study_settings
+from app.ws.settings.utils import get_cluster_settings, get_study_settings
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
-from app.ws.study_folder_utils import create_initial_study_folder, update_initial_study_files
 from app.ws.study_utilities import StudyUtils
-from app.tasks.common.elasticsearch import delete_study_index, reindex_all_public_studies, reindex_all_studies, reindex_study
-from app.tasks.common.email import send_email_for_study_submitted, send_technical_issue_email
-from app.tasks.common.ftp_operations import create_private_ftp_folder
-from app.ws.utils import get_year_plus_one, remove_file, copy_file, get_timestamp, copy_files_and_folders, \
-    log_request
+from app.ws.utils import copy_file, copy_files_and_folders, get_timestamp, get_year_plus_one, log_request, remove_file
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 wsc = WsClient()
 iac = IsaApiClient()
 
@@ -68,15 +82,9 @@ class MtblsStudies(Resource):
         summary="Get all public studies",
         notes="Get a list of all public Studies.",
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 200, "message": "OK."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     def get(self):
         log_request(request)
@@ -95,27 +103,15 @@ class MtblsPrivateStudies(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 200, "message": "OK."},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     @metabolights_exception_handler
     def get(self):
@@ -125,7 +121,7 @@ class MtblsPrivateStudies(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
 
         priv_list = wsc.get_private_studies()
         return jsonify(priv_list)
@@ -142,7 +138,7 @@ class MtblsStudyValidationStatus(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "validation_status",
@@ -151,7 +147,7 @@ class MtblsStudyValidationStatus(Resource):
                 "allowMultiple": False,
                 "paramType": "path",
                 "dataType": "string",
-                "enum": ["error", "warn", "success"]
+                "enum": ["error", "warn", "success"],
             },
             {
                 "name": "user_token",
@@ -159,27 +155,15 @@ class MtblsStudyValidationStatus(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 200, "message": "OK."},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     def put(self, study_id, validation_status):
         log_request(request)
@@ -200,8 +184,16 @@ class MtblsStudyValidationStatus(Resource):
         if not result:
             abort(404)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        (
+            is_curator,
+            read_access,
+            write_access,
+            obfuscation_code,
+            study_location,
+            release_date,
+            submission_date,
+            study_status,
+        ) = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -209,24 +201,19 @@ class MtblsStudyValidationStatus(Resource):
 
         return jsonify(result)
 
+
 class MtblsStudiesWithMethods(Resource):
     @swagger.operation(
         summary="Get all public studies, with technology used",
         notes="Get a list of all public Studies, with the technology used.",
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 200, "message": "OK."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     def get(self):
         log_request(request)
-        logger.info('Getting all public studies (with methods)')
+        logger.info("Getting all public studies (with methods)")
         study_list = get_public_studies_with_methods()
         studies = []
         for acc, method in study_list:
@@ -245,27 +232,21 @@ class MyMtblsStudies(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 200, "message": "OK."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     def get(self):
         log_request(request)
 
         # User authentication
         user_token = None
-        if 'user_token' in request.headers:
-            user_token = request.headers['user_token']
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
 
         user_studies = get_all_private_studies_for_user(user_token)
         return jsonify({"data": user_studies})
@@ -282,27 +263,21 @@ class MyMtblsStudiesDetailed(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 200, "message": "OK."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     def get(self):
         log_request(request)
 
         # User authentication
         user_token = None
-        if 'user_token' in request.headers:
-            user_token = request.headers['user_token']
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
 
         user_studies = get_all_studies_for_user(user_token)
 
@@ -319,7 +294,7 @@ class IsaTabInvestigationFile(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "investigation_filename",
@@ -328,7 +303,7 @@ class IsaTabInvestigationFile(Resource):
                 "allowEmptyValue": False,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "version",
@@ -337,7 +312,7 @@ class IsaTabInvestigationFile(Resource):
                 "allowEmptyValue": False,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user_token",
@@ -345,19 +320,13 @@ class IsaTabInvestigationFile(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 200, "message": "OK."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     def get(self, study_id):
         log_request(request)
@@ -369,47 +338,56 @@ class IsaTabInvestigationFile(Resource):
 
         # User authentication
         user_token = None
-        if 'user_token' in request.headers:
-            user_token = request.headers['user_token']
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
 
         if user_token is None:
             abort(401, message="Missing user_token")
 
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('investigation_filename', help='Investigation filename')
-        parser.add_argument('version', help='Version of metadata/Audit record')
+        parser.add_argument("investigation_filename", help="Investigation filename")
+        parser.add_argument("version", help="Version of metadata/Audit record")
         study_version = None
         inv_filename = None
         if request.args:
             args = parser.parse_args(req=request)
-            inv_filename = args['investigation_filename'].lower() if args['investigation_filename'] else None
-            study_version = args['version'].lower() if args['version'] else None
+            inv_filename = args["investigation_filename"].lower() if args["investigation_filename"] else None
+            study_version = args["version"].lower() if args["version"] else None
         if not inv_filename:
             logger.warning("Missing Investigation filename. Using default i_Investigation.txt")
-            inv_filename = 'i_Investigation.txt'
+            inv_filename = "i_Investigation.txt"
 
         if study_version:
             logger.info("Loading version " + study_version + " of the metadata")
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+        (
+            is_curator,
+            read_access,
+            write_access,
+            obfuscation_code,
+            study_location,
+            release_date,
+            submission_date,
+            study_status,
+        ) = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403, message="Study does not exist or your do not have access to this study")
+        settings = get_study_settings()
 
-        logger.info('Getting ISA-Tab Investigation file for %s', study_id)
+        logger.info("Getting ISA-Tab Investigation file for %s", study_id)
         location = study_location
         if study_version:
-            audit = os.path.join(app.config.get('UPDATE_PATH_SUFFIX'), study_version)
-            location = os.path.join(study_location, audit)
+            location = os.path.join(
+                settings.mounted_paths.study_audit_files_root_path, study_id, settings.audit_folder_name, study_version
+            )
 
         files = glob.glob(os.path.join(location, inv_filename))
         if files:
             file_path = files[0]
             filename = os.path.basename(file_path)
             try:
-                return send_file(file_path, cache_timeout=-1,
-                                 as_attachment=True, attachment_filename=filename)
+                return send_file(file_path, cache_timeout=-1, as_attachment=True, attachment_filename=filename)
             except OSError as err:
                 logger.error(err)
                 abort(503, message="Wrong investigation filename or file could not be read.")
@@ -427,7 +405,7 @@ class IsaTabSampleFile(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "sample_filename",
@@ -436,7 +414,7 @@ class IsaTabSampleFile(Resource):
                 "allowEmptyValue": False,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user_token",
@@ -444,27 +422,15 @@ class IsaTabSampleFile(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Study does not exist or your do not have access to this study."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 200, "message": "OK."},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Study does not exist or your do not have access to this study."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     def get(self, study_id):
         log_request(request)
@@ -475,39 +441,46 @@ class IsaTabSampleFile(Resource):
 
         # User authentication
         user_token = None
-        if 'user_token' in request.headers:
-            user_token = request.headers['user_token']
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
 
         if user_token is None:
             abort(401)
 
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('sample_filename', help='Sample filename')
+        parser.add_argument("sample_filename", help="Sample filename")
         sample_filename = None
         if request.args:
             args = parser.parse_args(req=request)
-            sample_filename = args['sample_filename']
+            sample_filename = args["sample_filename"]
             # sample_filename = sample_filename.lower() if args['sample_filename'] else None
         if not sample_filename:
             logger.warning("Missing Sample filename.")
             abort(404, message="Missing Sample filename.")
 
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+        (
+            is_curator,
+            read_access,
+            write_access,
+            obfuscation_code,
+            study_location,
+            release_date,
+            submission_date,
+            study_status,
+        ) = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(401, message="Study does not exist or your do not have access to this study.")
 
-        logger.info('Getting ISA-Tab Sample file %s for %s', sample_filename, study_id)
+        logger.info("Getting ISA-Tab Sample file %s for %s", sample_filename, study_id)
         location = study_location
         files = glob.glob(os.path.join(location, sample_filename))
         if files:
             file_path = files[0]
             filename = os.path.basename(file_path)
             try:
-                return send_file(file_path, cache_timeout=-1,
-                                 as_attachment=True, attachment_filename=filename)
+                return send_file(file_path, cache_timeout=-1, as_attachment=True, attachment_filename=filename)
             except OSError as err:
                 logger.error(err)
                 abort(404, message="Wrong sample filename or file could not be read.")
@@ -525,7 +498,7 @@ class IsaTabAssayFile(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "assay_filename",
@@ -534,7 +507,7 @@ class IsaTabAssayFile(Resource):
                 "allowEmptyValue": False,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user_token",
@@ -542,27 +515,15 @@ class IsaTabAssayFile(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Study does not exist or your do not have access to this study."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 200, "message": "OK."},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Study does not exist or your do not have access to this study."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     def get(self, study_id):
         log_request(request)
@@ -573,30 +534,38 @@ class IsaTabAssayFile(Resource):
 
         # User authentication
         user_token = None
-        if 'user_token' in request.headers:
-            user_token = request.headers['user_token']
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
 
         if user_token is None:
             abort(401)
 
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('assay_filename', help='Assay filename')
+        parser.add_argument("assay_filename", help="Assay filename")
         assay_filename = None
         if request.args:
             args = parser.parse_args(req=request)
-            assay_filename = args['assay_filename'] if args['assay_filename'] else None
+            assay_filename = args["assay_filename"] if args["assay_filename"] else None
         if not assay_filename:
             logger.warning("Missing Assay filename.")
             abort(404, message="Missing Assay filename.")
 
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+        (
+            is_curator,
+            read_access,
+            write_access,
+            obfuscation_code,
+            study_location,
+            release_date,
+            submission_date,
+            study_status,
+        ) = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(401, message="Study does not exist or your do not have access to this study.")
 
-        logger.info('Getting ISA-Tab Assay file for %s', study_id)
+        logger.info("Getting ISA-Tab Assay file for %s", study_id)
         location = study_location
 
         files = glob.glob(os.path.join(location, assay_filename))
@@ -604,8 +573,7 @@ class IsaTabAssayFile(Resource):
             file_path = files[0]
             filename = os.path.basename(file_path)
             try:
-                return send_file(file_path, cache_timeout=-1,
-                                 as_attachment=True, attachment_filename=filename)
+                return send_file(file_path, cache_timeout=-1, as_attachment=True, attachment_filename=filename)
             except OSError as err:
                 logger.error(err)
                 abort(404, message="Wrong assay filename or file could not be read.")
@@ -616,9 +584,9 @@ class IsaTabAssayFile(Resource):
 class CloneAccession(Resource):
     @swagger.operation(
         summary="Create a new study and upload folder",
-        notes='''This will clone the default template LC-MS study if no "study_id" parameter is given
+        notes="""This will clone the default template LC-MS study if no "study_id" parameter is given
         If a "to_study_id" (destination study id) is provided, <b>data will be copied into this *existing* study. 
-        Please be aware that data in the destination study will be replaced with metadata files from "study_id"</b>.''',
+        Please be aware that data in the destination study will be replaced with metadata files from "study_id"</b>.""",
         parameters=[
             {
                 "name": "study_id",
@@ -626,7 +594,7 @@ class CloneAccession(Resource):
                 "required": False,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "to_study_id",
@@ -634,7 +602,7 @@ class CloneAccession(Resource):
                 "required": False,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "include_raw_data",
@@ -644,7 +612,7 @@ class CloneAccession(Resource):
                 "defaultValue": True,
                 "format": "application/json",
                 "required": False,
-                "allowMultiple": False
+                "allowMultiple": False,
             },
             {
                 "name": "user_token",
@@ -652,156 +620,166 @@ class CloneAccession(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Study does not exist or your do not have access to this study."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            },
-            {
-                "code": 408,
-                "message": "Request Timeout. The MetaboLights queue took too long to complete."
-            }
-        ]
+            {"code": 200, "message": "OK."},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Study does not exist or your do not have access to this study."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+            {"code": 408, "message": "Request Timeout. The MetaboLights queue took too long to complete."},
+        ],
     )
     def post(self):
+        # # User authentication
+        # user_token = None
+        # include_raw_data = False
+        # bypass = False
+        # lcms_default_study = "MTBLS121"  # This is the standard LC-MS study. This is private but safe for all to clone
 
-        # User authentication
-        user_token = None
-        include_raw_data = False
-        bypass = False
-        lcms_default_study = 'MTBLS121'  # This is the standard LC-MS study. This is private but safe for all to clone
+        # if "user_token" in request.headers:
+        #     user_token = request.headers["user_token"]
 
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        # if user_token is None:
+        #     abort(401)
 
-        if user_token is None:
-            abort(401)
+        # if "include_raw_data" in request.headers and request.headers["include_raw_data"].lower() == "true":
+        #     include_raw_data = True
 
-        if "include_raw_data" in request.headers and request.headers["include_raw_data"].lower() == 'true':
-            include_raw_data = True
+        # parser = reqparse.RequestParser()
+        # parser.add_argument("study_id", help="Study Identifier")
+        # parser.add_argument("to_study_id", help="Study Identifier")
+        # study_id = None
+        # to_study_id = None
 
-        parser = reqparse.RequestParser()
-        parser.add_argument('study_id', help="Study Identifier")
-        parser.add_argument('to_study_id', help="Study Identifier")
-        study_id = None
-        to_study_id = None
+        # if request.args:
+        #     args = parser.parse_args(req=request)
+        #     study_id = args["study_id"]
+        #     to_study_id = args["to_study_id"]
 
-        if request.args:
-            args = parser.parse_args(req=request)
-            study_id = args['study_id']
-            to_study_id = args['to_study_id']
+        # # param validation
+        # if study_id is None:
+        #     study_id = lcms_default_study
 
-        # param validation
-        if study_id is None:
-            study_id = lcms_default_study
+        # if study_id is lcms_default_study:
+        #     bypass = True  # Users can safely clone this study, even when passing in MTBLS121
 
-        if study_id is lcms_default_study:
-            bypass = True  # Users can safely clone this study, even when passing in MTBLS121
+        # # Can the user read the study requested?
+        # (
+        #     is_curator,
+        #     read_access,
+        #     write_access,
+        #     obfuscation_code,
+        #     study_location,
+        #     release_date,
+        #     submission_date,
+        #     study_status,
+        # ) = wsc.get_permissions(study_id, user_token)
 
-        # Can the user read the study requested?
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+        # if not bypass:
+        #     if not read_access:
+        #         abort(401, message="Study does not exist or your do not have access to this study.")
 
-        if not bypass:
-            if not read_access:
-                abort(401, message="Study does not exist or your do not have access to this study.")
+        # study_id = study_id.upper()
 
-        study_id = study_id.upper()
+        # # This is the existing study
+        # study_to_clone = study_location
 
-        # This is the existing study
-        study_to_clone = study_location
+        # # If the user did not provide an existing study id to clone into, we create a new study
+        # if to_study_id is None:
+        #     study_date = get_year_plus_one()
+        #     logger.info("Creating a new MTBLS Study (cloned from %s) with release date %s", study_id, study_date)
+        #     new_folder_name = user_token + "~~" + study_date + "~" + "new_study_requested_" + get_timestamp()
 
-        # If the user did not provide an existing study id to clone into, we create a new study
-        if to_study_id is None:
-            study_date = get_year_plus_one()
-            logger.info('Creating a new MTBLS Study (cloned from %s) with release date %s', study_id, study_date)
-            new_folder_name = user_token + '~~' + study_date + '~' + 'new_study_requested_' + get_timestamp()
+        #     # study_to_clone = study_location
+        #     queue_folder = wsc.get_queue_folder_removec()
+        #     existing_studies = wsc.get_all_studies_for_user(user_token)
+        #     logger.info("Found the following studies: " + existing_studies)
 
-            # study_to_clone = study_location
-            queue_folder = wsc.get_queue_folder()
-            existing_studies = wsc.get_all_studies_for_user(user_token)
-            logger.info('Found the following studies: ' + existing_studies)
+        #     logger.info(
+        #         "Adding " + study_to_clone + ", using name " + new_folder_name + ", to the queue folder " + queue_folder
+        #     )
+        #     # copy the study onto the queue folder
+        #     try:
+        #         logger.info(
+        #             "Attempting to copy "
+        #             + study_to_clone
+        #             + " to MetaboLights queue folder "
+        #             + os.path.join(queue_folder, new_folder_name)
+        #         )
+        #         if include_raw_data:
+        #             copy_tree(
+        #                 study_to_clone, os.path.join(queue_folder, new_folder_name)
+        #             )  # copy the folder to the queue
+        #             # There is a bug in copy_tree which prevents you to use the same destination folder twice
+        #         else:
+        #             copy_files_and_folders(
+        #                 study_to_clone,
+        #                 os.path.join(queue_folder, new_folder_name),
+        #                 include_raw_data=include_raw_data,
+        #                 include_investigation_file=True,
+        #             )
+        #     except:
+        #         return {"error": "Could not add study into the MetaboLights queue"}
 
-            logger.info('Adding ' + study_to_clone + ', using name ' + new_folder_name +
-                        ', to the queue folder ' + queue_folder)
-            # copy the study onto the queue folder
-            try:
-                logger.info('Attempting to copy ' + study_to_clone + ' to MetaboLights queue folder ' +
-                            os.path.join(queue_folder, new_folder_name))
-                if include_raw_data:
-                    copy_tree(study_to_clone,
-                              os.path.join(queue_folder, new_folder_name))  # copy the folder to the queue
-                    # There is a bug in copy_tree which prevents you to use the same destination folder twice
-                else:
-                    copy_files_and_folders(study_to_clone,
-                                           os.path.join(queue_folder, new_folder_name),
-                                           include_raw_data=include_raw_data, include_investigation_file=True)
-            except:
-                return {"error": "Could not add study into the MetaboLights queue"}
+        #     logger.info("Folder successfully added to the queue")
+        #     # get a list of the users private studies to see if a new study has been created
+        #     new_studies = wsc.get_all_studies_for_user(user_token)
+        #     number = 0
+        #     while existing_studies == new_studies:
+        #         number = number + 1
+        #         if number == 20:  # wait for 20 secounds for the MetaboLights queue to process the study
+        #             logger.info("Waited to long for the MetaboLights queue, waiting for email now")
+        #             abort(408)
 
-            logger.info('Folder successfully added to the queue')
-            # get a list of the users private studies to see if a new study has been created
-            new_studies = wsc.get_all_studies_for_user(user_token)
-            number = 0
-            while existing_studies == new_studies:
-                number = number + 1
-                if number == 20:  # wait for 20 secounds for the MetaboLights queue to process the study
-                    logger.info('Waited to long for the MetaboLights queue, waiting for email now')
-                    abort(408)
+        #         logger.info("Checking if the new study has been processed by the queue")
+        #         time.sleep(3)  # Have to check every so many secounds to see if the queue has finished
+        #         new_studies = wsc.get_all_studies_for_user(user_token)
 
-                logger.info('Checking if the new study has been processed by the queue')
-                time.sleep(3)  # Have to check every so many secounds to see if the queue has finished
-                new_studies = wsc.get_all_studies_for_user(user_token)
+        #     logger.info("Ok, now there is a new private study for the user")
 
-            logger.info('Ok, now there is a new private study for the user')
+        #     # Tidy up the response strings before converting to lists
+        #     new_studies_list = new_studies.replace("[", "").replace("]", "").replace('"', "").split(",")
+        #     existing_studies_list = existing_studies.replace("[", "").replace("]", "").replace('"', "").split(",")
 
-            # Tidy up the response strings before converting to lists
-            new_studies_list = new_studies.replace('[', '').replace(']', '').replace('"', '').split(',')
-            existing_studies_list = existing_studies.replace('[', '').replace(']', '').replace('"', '').split(',')
+        #     logger.info("returning the new study, %s", user_token)
+        #     # return the new entry, i.e. difference between the two lists
+        #     diff = list(set(new_studies_list) - set(existing_studies_list))
 
-            logger.info('returning the new study, %s', user_token)
-            # return the new entry, i.e. difference between the two lists
-            diff = list(set(new_studies_list) - set(existing_studies_list))
+        #     study_id = diff[0]
+        # else:  # User proved an existing study to clone into
+        #     # Can the user read the study requested?
+        #     (
+        #         is_curator,
+        #         read_access,
+        #         write_access,
+        #         obfuscation_code,
+        #         study_location,
+        #         release_date,
+        #         submission_date,
+        #         study_status,
+        #     ) = wsc.get_permissions(to_study_id, user_token)
 
-            study_id = diff[0]
-        else:  # User proved an existing study to clone into
-            # Can the user read the study requested?
-            is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(to_study_id, user_token)
+        #     # Can the user write into the given study?
+        #     if not write_access:
+        #         abort(403)
 
-            # Can the user write into the given study?
-            if not write_access:
-                abort(403)
+        #     copy_files_and_folders(
+        #         study_to_clone, study_location, include_raw_data=include_raw_data, include_investigation_file=True
+        #     )
 
-            copy_files_and_folders(study_to_clone, study_location,
-                                   include_raw_data=include_raw_data, include_investigation_file=True)
+        #     study_id = to_study_id  # Now we need to work with the new folder, not the study to clone from
 
-            study_id = to_study_id  # Now we need to work with the new folder, not the study to clone from
 
-        new_study_location = os.path.join(app.config.get('STUDY_PATH'), study_id)
 
-        log_path = os.path.join(new_study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
-        make_dir_with_chmod(log_path, 0o777)
+        # make_dir_with_chmod(log_path, 0o777)
 
-        # Create an upload folder for all studies anyway
-        status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
-        upload_location = status["upload_location"]
-        return {'new_study': study_id, 'upload_location': upload_location}
+        # # Create an upload folder for all studies anyway
+        # status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
+        # upload_location = status["upload_location"]
+        # return {"new_study": study_id, "upload_location": upload_location}
+        raise MetabolightsException(message="Not implemented")
 
 
 class CreateUploadFolder(Resource):
@@ -815,7 +793,7 @@ class CreateUploadFolder(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user_token",
@@ -823,31 +801,21 @@ class CreateUploadFolder(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 401,
                 "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a study id and a valid user token"
+                "Please provide a study id and a valid user token",
             },
-            {
-                "code": 403,
-                "message": "Study does not exist or your do not have access to this study."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 403, "message": "Study does not exist or your do not have access to this study."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     def post(self, study_id):
-
         user_token = None
         # User authentication
         if "user_token" in request.headers:
@@ -859,13 +827,24 @@ class CreateUploadFolder(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+        (
+            is_curator,
+            read_access,
+            write_access,
+            obfuscation_code,
+            study_location,
+            release_date,
+            submission_date,
+            study_status,
+        ) = wsc.get_permissions(study_id, user_token)
         if not write_access:
-            abort(401, message="Unauthorized. Access to the resource requires user authentication. "
-                               "Please provide a study id and a valid user token")
+            abort(
+                401,
+                message="Unauthorized. Access to the resource requires user authentication. "
+                "Please provide a study id and a valid user token",
+            )
 
-        logger.info('Creating a new study upload folder for study %s', study_id)
+        logger.info("Creating a new study upload folder for study %s", study_id)
         status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
         return status
 
@@ -880,7 +859,7 @@ class AuditFiles(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user_token",
@@ -888,31 +867,24 @@ class AuditFiles(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 401,
                 "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a study id and a valid user token"
+                "Please provide a study id and a valid user token",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token",
             },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     def post(self, study_id):
-
         user_token = None
         # User authentication
         if "user_token" in request.headers:
@@ -924,19 +896,30 @@ class AuditFiles(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+        (
+            is_curator,
+            read_access,
+            write_access,
+            obfuscation_code,
+            study_location,
+            release_date,
+            submission_date,
+            study_status,
+        ) = wsc.get_permissions(study_id, user_token)
         if not write_access:
-            abort(401, message="Unauthorized. Write access to the resource requires user authentication. "
-                               "Please provide a study id and a valid user token")
+            abort(
+                401,
+                message="Unauthorized. Write access to the resource requires user authentication. "
+                "Please provide a study id and a valid user token",
+            )
 
-        logger.info('Creating a new study audit folder for study %s', study_id)
+        logger.info("Creating a new study audit folder for study %s", study_id)
         status, dest_path = write_audit_files(study_location)
 
         if status:
-            return {'Success': 'Created audit record for ' + study_id}
+            return {"Success": "Created audit record for " + study_id}
         else:
-            return {'Error': 'Failed to create audit folder ' + dest_path}
+            return {"Error": "Failed to create audit folder " + dest_path}
 
     @swagger.operation(
         summary="Get an overview of the available audit folders for a study",
@@ -947,7 +930,7 @@ class AuditFiles(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user_token",
@@ -955,28 +938,22 @@ class AuditFiles(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 401,
                 "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a study id and a valid user token"
+                "Please provide a study id and a valid user token",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token",
             },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     def get(self, study_id):
         user_token = None
@@ -989,11 +966,22 @@ class AuditFiles(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+        (
+            is_curator,
+            read_access,
+            write_access,
+            obfuscation_code,
+            study_location,
+            release_date,
+            submission_date,
+            study_status,
+        ) = wsc.get_permissions(study_id, user_token)
         if not read_access:
-            abort(401, message="Unauthorized. Read access to the resource requires user authentication. "
-                               "Please provide a study id and a valid user token")
+            abort(
+                401,
+                message="Unauthorized. Read access to the resource requires user authentication. "
+                "Please provide a study id and a valid user token",
+            )
 
         return jsonify(get_audit_files(study_location))
 
@@ -1008,27 +996,18 @@ class PublicStudyDetail(Resource):
                 "paramType": "path",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
+            {"code": 200, "message": "OK."},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token",
             },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     @metabolights_exception_handler
     def get(self, study_id):
@@ -1037,30 +1016,30 @@ class PublicStudyDetail(Resource):
         if not study_id:
             abort(401)
 
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
-            query = query.filter(Study.status == StudyStatus.PUBLIC.value,
-                                 Study.acc == study_id)
+            query = query.filter(Study.status == StudyStatus.PUBLIC.value, Study.acc == study_id)
             study = query.first()
 
             if not study:
                 raise MetabolightsDBException(f"{study_id} does not exist or is not public")
 
-            directory_settings = get_directory_settings(app)
-            study_folders = directory_settings.studies_folder
+            settings = get_study_settings()
+            study_folders = settings.mounted_paths.study_metadata_files_root_path
             m_study = create_study_model_from_db_study(study)
 
         update_study_model_from_directory(m_study, study_folders)
         dict_data = m_study.dict()
-        result = {'content': dict_data, 'message': None, "err": None}
+        result = {"content": dict_data, "message": None, "err": None}
         return result
+
 
 class CreateAccession(Resource):
     @swagger.operation(
         summary="Create a new study",
-        notes='''Create a new study, with upload folder</br>
+        notes="""Create a new study, with upload folder</br>
         Please note that this includes an empty sample file, which will require at least 
-        one additional data row to be ISA-Tab compliant''',
+        one additional data row to be ISA-Tab compliant""",
         parameters=[
             {
                 "name": "user_token",
@@ -1068,46 +1047,36 @@ class CreateAccession(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             },
             {
                 "name": "study_id",
-                "description": "Requested study id",
+                "description": "Requested study id (Leave it empty for new study id)",
                 "paramType": "header",
                 "type": "string",
                 "required": False,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
+            {"code": 200, "message": "OK."},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token",
             },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     @metabolights_exception_handler
     def get(self):
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
-        studies = UserService.get_instance(app).get_user_studies(user.apitoken)
+        user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
+        studies = UserService.get_instance().get_user_studies(user.apitoken)
         submitted_studies = []
         last_study_datetime = datetime.fromtimestamp(0)
         for study in studies:
@@ -1115,15 +1084,28 @@ class CreateAccession(Resource):
                 submitted_studies.append(study)
             if study.submissiondate.timestamp() > last_study_datetime.timestamp():
                 last_study_datetime = study.submissiondate
-        study_settings = get_study_settings(app)
-        if (datetime.now() - last_study_datetime).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
-            logger.warning(f"New study creation request from user {user.username} in {study_settings.min_study_creation_interval_in_mins} mins")
+        study_settings = get_study_settings()
+        if (
+            datetime.now() - last_study_datetime
+        ).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
+            logger.warning(
+                f"New study creation request from user {user.username} in {study_settings.min_study_creation_interval_in_mins} mins"
+            )
             raise MetabolightsException(message="Submitter can create only one study in five minutes.", http_code=429)
-        
-        if len(submitted_studies) >= study_settings.max_study_in_submitted_status and user.role != UserRole.ROLE_SUPER_USER.value and user.role != UserRole.SYSTEM_ADMIN.value:
-            logger.warning(f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_submitted_status} study in Submitted status.")
-            raise MetabolightsException(message="The user can have at most two studies in Submitted status. Please complete and update status of your current studies.", http_code=400)
-        
+
+        if (
+            len(submitted_studies) >= study_settings.max_study_in_submitted_status
+            and user.role != UserRole.ROLE_SUPER_USER.value
+            and user.role != UserRole.SYSTEM_ADMIN.value
+        ):
+            logger.warning(
+                f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_submitted_status} study in Submitted status."
+            )
+            raise MetabolightsException(
+                message="The user can have at most two studies in Submitted status. Please complete and update status of your current studies.",
+                http_code=400,
+            )
+
         logger.info(f"Step 1: New study creation request is received from user {user.username}")
         new_accession_number = True
         study_acc = None
@@ -1132,82 +1114,114 @@ class CreateAccession(Resource):
             study_acc = self.validate_requested_study_id(requested_study_id, user_token)
             if study_acc:
                 new_accession_number = False
-                logger.warning(f"A previous study creation request from the user {user.username}. The study {study_acc} will be created.")
+                logger.warning(
+                    f"A previous study creation request from the user {user.username}. The study {study_acc} will be created."
+                )
+        folder_name = study_acc
 
-        folder_name = f"temp_study_{uuid.uuid4()}" if new_accession_number else study_acc
-        study_path = None
-        try:
-            study_path = self.create_study_folder(folder_name)
-            logger.info(f"Step 2: Study folder {folder_name} is created on folder.")
-        except Exception as exc:
-            inputs = {"subject": "Study folder creation was failed.",
-                      "body":f"Study folder creation was failed: {folder_name}, user: {user.username} <p> {str(exc)}"}
-            send_technical_issue_email.apply_async(kwargs=inputs)
-            logger.error(f"Study folder creation was failed. User name: {user.username}. {str(inputs)}")
-            raise MetabolightsException(message="Study folder creation was failed.", http_code=501, exception=exc)
-        
+        study: Study = None
         try:
             study_acc = create_empty_study(user_token, study_id=study_acc)
-            
+            study = StudyService.get_instance().get_study_by_acc(study_id=study_acc)
+
+            if study and study.acc:
+                logger.info(f"Step 2: Study id {study_acc} is created on DB.")
+            else:
+                raise MetabolightsException(message="Could not create a new study in db", http_code=503)
         except Exception as exc:
-            inputs = {"subject": "Study id creation on DB was failed.",
-                      "body":f"Study id on db creation was failed: folder: {folder_name}, user: {user.username} <p> {str(exc)}"}
+            inputs = {
+                "subject": "Study id creation on DB was failed.",
+                "body": f"Study id on db creation was failed: folder: {folder_name}, user: {user.username} <p> {str(exc)}",
+            }
             send_technical_issue_email.apply_async(kwargs=inputs)
             logger.error(f"Study id creation on DB was failed. Temp folder: {folder_name}. {str(inputs)}")
-            raise MetabolightsException(message="Study id creation on db was failed.", http_code=501, exception=exc)
-        
-        if study_acc:
-            logger.info(f"Step 3: Study id {study_acc} is created on DB.")
-        else:
-            inputs = {"subject": "Failed to create new study on database", 
-                      "body":f"Study creation was failed on database, user: {user.username}"}
-            send_technical_issue_email.apply_async(kwargs=inputs)
-            logger.error('Failed to create new study. Temp folder is {folder_name}')
-            raise MetabolightsException(message="Could not create a new study in db", http_code=503)
-        
-        try:
-            # Update and rename template files
-            self.update_study_template_files(study_path, study_acc, user_token)
-            logger.info(f"Step 4: Study folder {folder_name} content is updated. Investigation and sample file templates are copied.")
-        except Exception as exc:
-            inputs = {"subject": "Failed to update study initial files", 
-                      "body":f"Study file update task was failed on study folder for study {study_acc}, user: {user.username} <p> {str(exc)}"}
-            logger.error(f"Failed to update study initial files for {folder_name}. {str(inputs)}")
-            send_technical_issue_email.apply_async(kwargs=inputs)
-        
-        try:
-            # All required steps are completed. RENAME temp study folder to study accession number
-            if new_accession_number:
-                root_study_path = app.config.get('STUDY_PATH')
-                last_study_path = os.path.join(root_study_path, study_acc)
-                os.rename(study_path, last_study_path)
-                logger.info(f"Step 5: Study folder {folder_name} is renamed to {study_acc}.")
+            if isinstance(exc, MetabolightsException):
+                raise exc
             else:
-                logger.info(f"Step 5: Renaming {study_acc} study folder task is skipped.")
-        except Exception as exc:
-            inputs = {"subject": "Failed to rename new study folder", 
-                      "body":f"Study folder rename task was failed. Rename from {folder_name} to {study_acc}, user: {user.username} <p> {str(exc)}"}
-            logger.error(f"Failed to rename new study folder {str(inputs)}")
-            send_technical_issue_email.apply_async(kwargs=inputs)
-                                                    
+                raise MetabolightsException(message="Study id creation on db was failed.", http_code=501, exception=exc)
+
+        # try:
+        #     # All required steps are completed. RENAME temp study folder to study accession number
+        #     if new_accession_number:
+        #         root_study_path = study_settings.mounted_paths.study_metadata_files_root_path
+        #         last_study_path = os.path.join(root_study_path, study_acc)
+        #         os.rename(study_path, last_study_path)
+        #         logger.info(f"Step 5: Study folder {folder_name} is renamed to {study_acc}.")
+        #     else:
+        #         logger.info(f"Step 5: Renaming {study_acc} study folder task is skipped.")
+        # except Exception as exc:
+        #     inputs = {"subject": "Failed to rename new study folder",
+        #               "body":f"Study folder rename task was failed. Rename from {folder_name} to {study_acc}, user: {user.username} <p> {str(exc)}"}
+        #     logger.error(f"Failed to rename new study folder {str(inputs)}")
+        #     send_technical_issue_email.apply_async(kwargs=inputs)
+        #     raise MetabolightsException(message=f"Could not renamed {folder_name}  to {study_acc} ", http_code=503)
+        # maintenance_task = None
+        # try:
+        #     maintenance_task = StudyFolderMaintenanceTask(
+        #         study.acc,
+        #         StudyStatus(study.status),
+        #         study.releasedate,
+        #         study.submissiondate,
+        #         obfuscationcode=study.obfuscationcode,
+        #         task_name=f"_INITIAL_{study.acc}",
+        #         delete_unreferenced_metadata_files=False,
+        #         settings=get_study_settings(),
+        #         apply_future_actions=False,
+        #         force_to_maintain=True,
+        #     )
+        #     maintenance_task.maintain_study_rw_storage_folders()
+        #     maintenance_task.create_maintenance_actions_for_study_data_files()
+        #     maintenance_task.execute_future_actions()
+        #     maintenance_task.future_actions.clear()
+        #     logger.info(f"Step 3: Study folders and initial files are created for {study_acc}.")
+        # except Exception as exc:
+        #     inputs = {"subject": "Failed to create initial files for new study folder",
+        #               "body":f"Failed to create initial files for new study folder {study_acc}, user: {user.username} <p> {str(exc)}"}
+        #     logger.error(f"Failed to create audit/internal folders for new study folder {str(inputs)}")
+        #     send_technical_issue_email.apply_async(kwargs=inputs)
+        #     if isinstance(exc, MetabolightsException):
+        #         raise exc
+        #     else:
+        #         raise MetabolightsException(message="Study folder creation was failed.", http_code=501, exception=exc)
+
         # Send email if it is new study
         if new_accession_number:
             inputs = {"user_token": user_token, "study_id": study_acc}
             new_study_email_task = send_email_for_study_submitted.apply_async(kwargs=inputs)
-            logger.info(f"Step 6: Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
+            logger.info(f"Step 3: Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
         else:
-            logger.info(f"Step 6: Skipping email. No email will be sent for the study {study_acc}")
+            logger.info(f"Step 3: Skipping email. No email will be sent for the study {study_acc}")
+
+        # maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
+        # result = maintenance_task.execute_future_actions()
+        # maintenance_task.future_actions.clear()
+        inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False, "task_name": "INITIAL"}
+        create_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
+        logger.info(f"Step 4: Create initial files and folders task has been started for study {study_acc} with task id: {create_folders_task.id}")
         
         # Start ftp folder creation task
-        inputs = {"user_token": user_token, "study_id": study_acc, "send_email": new_accession_number}
-        create_ftp_folder_task = create_private_ftp_folder.apply_async(kwargs=inputs)
-        logger.info(f"Step 7: Create ftp folder task is started for study {study_acc} with task id: {create_ftp_folder_task.id}")
-        
+
+        if new_accession_number:
+            ftp_folder_name = study_acc.lower() + "-" + study.obfuscationcode
+            inputs = {"user_token": user_token, "study_id": study_acc, "folder_name": ftp_folder_name}
+            send_email_for_private_ftp_folder.apply_async(kwargs=inputs)
+            logger.info(f"Step 5: Sending FTP folder email for the study {study_acc}")
+        else:
+            logger.info(f"Step 5: Skipping FTP folder email for the study {study_acc}")
+
+        # # Start ftp folder creation task
+
+        # inputs = {"user_token": user_token, "study_id": study_acc, "send_email": new_accession_number}
+
+        # create_ftp_folder_task = create_private_ftp_folder.apply_async(kwargs=inputs)
+
+        # logger.info(f"Step 6: Create ftp folder task is started for study {study_acc} with task id: {create_ftp_folder_task.id}")
+
         # Start reindex task
         inputs = {"user_token": user_token, "study_id": study_acc}
         reindex_task = reindex_study.apply_async(kwargs=inputs)
-        logger.info(f"Step 8: Reindex task is started for study {study_acc} with task id: {reindex_task.id}")
-            
+        logger.info(f"Step 6: Reindex task is started for study {study_acc} with task id: {reindex_task.id}")
+
         return {"new_study": study_acc}
 
     def validate_requested_study_id(self, requested_study_id, user_token):
@@ -1224,9 +1238,9 @@ class CreateAccession(Resource):
         if not requested_study_id.startswith(study_id_prefix):
             abort(401, message="Invalid study id format. Study id must start with %s" % study_id_prefix)
         # Rule 2
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         # Rule 3
-        last_stable_id = StudyService.get_instance(app).get_next_stable_study_id()
+        last_stable_id = StudyService.get_instance().get_next_stable_study_id()
         requested_id_str = requested_study_id.upper().replace(study_id_prefix, "")
         requested_id = None
         try:
@@ -1237,7 +1251,7 @@ class CreateAccession(Resource):
             if not (last_stable_id >= requested_id > 0):
                 raise MetabolightsException(message="Requested study id must be less then last study id", http_code=400)
         # Rule 4
-        study_location = os.path.join(app.config.get('STUDY_PATH'), requested_study_id)
+        study_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, requested_study_id)
         if os.path.exists(study_location):
             files = os.listdir(study_location)
             if files:
@@ -1249,17 +1263,12 @@ class CreateAccession(Resource):
         else:
             return requested_study_id
 
-    def update_study_template_files(self, study_folder_path, study_acc, user_token):
-        update_initial_study_files(study_folder_path, study_acc, user_token)
-        
-    def create_study_folder(self, folder_name):
-        return create_initial_study_folder(folder_name, app)
-        
+
 class DeleteStudy(Resource):
     @swagger.operation(
         summary="Delete an existing study (curator only)",
-        notes='''Please note that deleting a study will release the accession number back to be reused. 
-        This will be available for the MetaboLights team as a placeholder''',
+        notes="""Please note that deleting a study will release the accession number back to be reused. 
+        This will be available for the MetaboLights team as a placeholder""",
         parameters=[
             {
                 "name": "study_id",
@@ -1267,7 +1276,7 @@ class DeleteStudy(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user_token",
@@ -1275,30 +1284,20 @@ class DeleteStudy(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
+            {"code": 200, "message": "OK."},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token",
             },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     def delete(self, study_id):
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -1313,78 +1312,94 @@ class DeleteStudy(Resource):
         study_id = study_id.upper()
 
         # Need to check that the user is actually an active user, ie the user_token exists
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+        (
+            is_curator,
+            read_access,
+            write_access,
+            obfuscation_code,
+            study_location_deprecated,
+            release_date,
+            submission_date,
+            study_status,
+        ) = wsc.get_permissions(study_id, user_token)
         if not is_curator:
             abort(401)
 
-        logger.info('Deleting study ' + study_id)
+        logger.info("Deleting study " + study_id)
 
         # Remove the submitter from the study
         submitter_emails = query_study_submitters(study_id)
         if submitter_emails:
             for submitter in submitter_emails:
-                study_submitters(study_id, submitter[0], 'delete')
+                study_submitters(study_id, submitter[0], "delete")
 
         # Add the placeholder flag and MetaboLights user to the study
-        mtbls_email = app.config.get("MTBLS_SUBMITTER_EMAIL")
+        mtbls_email = get_settings().auth.service_account.email
         add_placeholder_flag(study_id)
-        study_submitters(study_id, mtbls_email, 'add')
+        study_submitters(study_id, mtbls_email, "add")
+        inputs = {"user_token": user_token, "study_id": study_id, "task_name": "DELETE_STUDY"}
+        cluster_settings = get_cluster_settings()
+        task = delete_study_folders.apply_async(kwargs=inputs)
+        output = task.get(timeout=cluster_settings.task_get_timeout_in_seconds*2)
 
-        # Remove all files in the study folder except the sample sheet and the investigation sheet.
-        if not os.path.exists(study_location):
-            os.makedirs(study_location, exist_ok=True)
+        # study_settings = get_study_settings()
+        # study_location = os.path.join(study_settings.mounted_paths.study_metadata_files_root_path, study_id)
+        # # Remove all files in the study folder except the sample sheet and the investigation sheet.
+        # if not os.path.exists(study_location):
+        #     os.makedirs(study_location, exist_ok=True)
+        # template_folder = study_settings.study_default_template_path
+        # target_file = os.path.join(study_location, "s_{0}.txt".format(study_id))
+        # if not os.path.exists(target_file):
+        #     from_path = os.path.join(template_folder, "s_Sample.txt")
+        #     copy_file(from_path, target_file)
+        # target_file = os.path.join(study_location, "s_{0}.txt".format(study_id))
+        # if not os.path.exists(target_file):
+        #     from_path = os.path.join(template_folder, "i_Investigation.txt")
+        #     copy_file(from_path, target_file)
 
-        template_folder = os.path.join(app.config.get('STUDY_PATH'), app.config.get('DEFAULT_TEMPLATE'))
-        target_file = os.path.join(study_location, 's_{0}.txt'.format(study_id))
-        if not os.path.exists(target_file):
-            from_path = os.path.join(template_folder, "s_Sample.txt")
-            copy_file(from_path, target_file)
-        target_file = os.path.join(study_location, 's_{0}.txt'.format(study_id))
-        if not os.path.exists(target_file):
-            from_path = os.path.join(template_folder, "i_Investigation.txt")
-            copy_file(from_path, target_file)
+        # files = os.listdir(study_location)
+        # files_to_delete = [file for file in files if StudyUtils.is_template_file(file, study_id) is False]
 
-        files = os.listdir(study_location)
-        files_to_delete = [file for file in files if StudyUtils.is_template_file(file, study_id) is False]
-
-        for file_name in files_to_delete:
-            status, message = remove_file(study_location, file_name, True)
+        # for file_name in files_to_delete:
+        #     status, message = remove_file(study_location, file_name, True)
 
         # Remove all files in the upload folder
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
-        private_ftp_study_folder = study_id.lower() + "-" + obfuscation_code
-        if ftp_private_storage.remote.does_folder_exist(private_ftp_study_folder):
-            ftp_private_storage.remote.delete_folder(private_ftp_study_folder)
+        # ftp_private_storage = StorageService.get_ftp_private_storage()
+        # private_ftp_study_folder = study_id.lower() + "-" + obfuscation_code
+        # if ftp_private_storage.remote.does_folder_exist(private_ftp_study_folder):
+        #     ftp_private_storage.remote.delete_folder(private_ftp_study_folder)
 
-        # ftp_private_storage.remote.create_folder(private_ftp_study_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
-        # raw_files_folder = os.path.join(private_ftp_study_folder, 'RAW_FILES')
-        # derived_files_folder = os.path.join(private_ftp_study_folder, 'DERIVED_FILES')
-        # ftp_private_storage.remote.create_folder(raw_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
-        # ftp_private_storage.remote.create_folder(derived_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        # # ftp_private_storage.remote.create_folder(private_ftp_study_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        # # raw_files_folder = os.path.join(private_ftp_study_folder, 'RAW_FILES')
+        # # derived_files_folder = os.path.join(private_ftp_study_folder, 'DERIVED_FILES')
+        # # ftp_private_storage.remote.create_folder(raw_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        # # ftp_private_storage.remote.create_folder(derived_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
 
-        # Here we want to overwrite the 2 basic files,the sample sheet and the investigation sheet
-        for file_name in os.listdir(study_location):
+        # # Here we want to overwrite the 2 basic files,the sample sheet and the investigation sheet
+        # for file_name in os.listdir(study_location):
+        #     if file_name.startswith("i_Investigation"):
+        #         from_path = os.path.join(study_settings.study_default_template_path, "i_Investigation.txt")
 
-            if file_name.startswith("i_Investigation"):
-                from_path = os.path.join(app.config.get('STUDY_PATH'), app.config.get('DEFAULT_TEMPLATE'),
-                                         "i_Investigation.txt")
+        #         logger.info("Attempting to copy {0} to {1}".format(from_path, study_location))
 
-                logger.info('Attempting to copy {0} to {1}'.format(from_path, study_location))
+        #         copy_file(from_path, study_location + "/i_Investigation.txt")
+        #         logger.info("Restored investigation.txt file for {0} to template state.".format(study_id))
 
-                copy_file(from_path, study_location + '/i_Investigation.txt')
-                logger.info('Restored investigation.txt file for {0} to template state.'.format(study_id))
-
-                StudyUtils.overwrite_investigation_file(study_location=study_location, study_id=study_id)
-                logger.info(
-                    'Updated investigation file with values for Study Identifier and Study File Name for study: {0}'
-                        .format(study_id))
-            else:
-                # as there are only two files in the directory this will be the sample file.
-                from_path = os.path.join(app.config.get('STUDY_PATH'), app.config.get('DEFAULT_TEMPLATE'),
-                                         "s_Sample.txt")
-                copy_file(from_path, study_location + '/s_{0}.txt'.format(study_id))
-                logger.info('Restored sample.txt file for {0} to template state.'.format(study_id))
+        #         StudyUtils.overwrite_investigation_file(study_location=study_location, study_id=study_id)
+        #         logger.info(
+        #             "Updated investigation file with values for Study Identifier and Study File Name for study: {0}".format(
+        #                 study_id
+        #             )
+        #         )
+        #     else:
+        #         # as there are only two files in the directory this will be the sample file.
+        #         from_path = os.path.join(
+        #             study_settings.mounted_paths.study_metadata_files_root_path,
+        #             study_settings.study_default_template_path,
+        #             "s_Sample.txt",
+        #         )
+        #         copy_file(from_path, study_location + "/s_{0}.txt".format(study_id))
+        #         logger.info("Restored sample.txt file for {0} to template state.".format(study_id))
 
         status, message = wsc.reindex_study(study_id, user_token)
         if not status:
@@ -1395,7 +1410,8 @@ class DeleteStudy(Resource):
 
 def get_audit_files(study_location):
     folder_list = []
-    audit_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'))
+    settings = get_study_settings()
+    audit_path = os.path.join(study_location, settings.audit_files_symbolic_link_name)
 
     try:
         folder_list = os.listdir(os.path.join(audit_path))
@@ -1407,7 +1423,7 @@ def get_audit_files(study_location):
 class ReindexStudy(Resource):
     @swagger.operation(
         summary="Reindex a MetaboLights study (curator only)",
-        notes='''Reindexing a MetaboLights study to ensure the search index is up to date''',
+        notes="""Reindexing a MetaboLights study to ensure the search index is up to date""",
         parameters=[
             {
                 "name": "study_id",
@@ -1415,7 +1431,7 @@ class ReindexStudy(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user_token",
@@ -1423,7 +1439,7 @@ class ReindexStudy(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             },
             {
                 "name": "include_validation_results",
@@ -1433,36 +1449,26 @@ class ReindexStudy(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "type": "Boolean",
-                "defaultValue": 'false'
-            }
+                "defaultValue": "false",
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 401,
                 "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a study id and a valid user token"
+                "Please provide a study id and a valid user token",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token",
             },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            },
-            {
-                "code": 417,
-                "message": "Unexpected result."
-            }
-        ]
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+            {"code": 417, "message": "Unexpected result."},
+        ],
     )
     @metabolights_exception_handler
     def post(self, study_id):
-
         user_token = None
         # User authentication
         if "user_token" in request.headers:
@@ -1474,27 +1480,38 @@ class ReindexStudy(Resource):
         study_id = study_id.upper()
 
         parser = reqparse.RequestParser()
-        parser.add_argument('include_validation_results')
+        parser.add_argument("include_validation_results")
         include_validation_results = True
         if request.args:
             args = parser.parse_args(req=request)
-            include_validation_results = True if args['include_validation_results'].lower() == 'true' else False
+            include_validation_results = True if args["include_validation_results"].lower() == "true" else False
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+        (
+            is_curator,
+            read_access,
+            write_access,
+            obfuscation_code,
+            study_location,
+            release_date,
+            submission_date,
+            study_status,
+        ) = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(401)
 
-        status, message = wsc.reindex_study(study_id, user_token,
-                                            include_validation_results=include_validation_results, sync=True)
+        status, message = wsc.reindex_study(
+            study_id, user_token, include_validation_results=include_validation_results, sync=True
+        )
 
         if not status:
             MetabolightsException(http_code=500, message=message)
 
-        return {"Success": "Study " + study_id + " has been re-indexed",
-                "read_access": read_access, "write_access": write_access}
-
+        return {
+            "Success": "Study " + study_id + " has been re-indexed",
+            "read_access": read_access,
+            "write_access": write_access,
+        }
 
     @swagger.operation(
         summary="Delete a study index ",
@@ -1505,7 +1522,7 @@ class ReindexStudy(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user_token",
@@ -1513,53 +1530,41 @@ class ReindexStudy(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 200, "message": "OK."},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
         if not study_id:
-            logger.info('No study_id given')
+            logger.info("No study_id given")
             abort(404)
         compound_id = study_id.upper()
 
         # User authentication
-        user_token = ''
+        user_token = ""
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-            
-        logger.info('Deleting a compound')
+
+        logger.info("Deleting a compound")
 
         result = delete_study_index(user_token, compound_id)
 
-        result = {'content': result, 'message': None, "err": None}
+        result = {"content": result, "message": None, "err": None}
         return result
 
 
 class UnindexedStudy(Resource):
     @swagger.operation(
         summary="Gets unindexed studies from database (curator only)",
-        notes='''Gets MetaboLights studies that should be updated for the up-to-date search index''',
+        notes="""Gets MetaboLights studies that should be updated for the up-to-date search index""",
         parameters=[
             {
                 "name": "user_token",
@@ -1567,47 +1572,39 @@ class UnindexedStudy(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 401,
                 "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a study id and a valid user token"
+                "Please provide a study id and a valid user token",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token",
             },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            },
-            {
-                "code": 417,
-                "message": "Unexpected result."
-            }
-        ]
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+            {"code": 417, "message": "Unexpected result."},
+        ],
     )
     @metabolights_exception_handler
     def get(self):
-
         user_token = None
         # User authentication
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         try:
-            with DBManager.get_instance(app).session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(StudyTask)
-                filtered = query.filter(StudyTask.last_execution_status != StudyTaskStatus.EXECUTION_SUCCESSFUL,
-                                        StudyTask.task_name == StudyTaskName.REINDEX).order_by(StudyTask.study_acc)
+                filtered = query.filter(
+                    StudyTask.last_execution_status != StudyTaskStatus.EXECUTION_SUCCESSFUL,
+                    StudyTask.task_name == StudyTaskName.REINDEX,
+                ).order_by(StudyTask.study_acc)
                 result = filtered.all()
                 result_list = []
                 for task in result:
@@ -1615,12 +1612,14 @@ class UnindexedStudy(Resource):
                     result_list.append(model.dict())
 
                 if result_list:
-                    return jsonify({'result': 'Found', 'tasks': result_list})
-                return jsonify({'result': 'There is no study that will be reindexed.'})
+                    return jsonify({"result": "Found", "tasks": result_list})
+                return jsonify({"result": "There is no study that will be reindexed."})
 
         except Exception as e:
-            raise MetabolightsDBException(message=f"Error while retreiving study tasks from database: {str(e)}",
-                                          exception=e)
+            raise MetabolightsDBException(
+                message=f"Error while retreiving study tasks from database: {str(e)}", exception=e
+            )
+
 
 class RetryReindexStudies(Resource):
     @swagger.operation(
@@ -1632,47 +1631,39 @@ class RetryReindexStudies(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 401,
                 "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a study id and a valid user token"
+                "Please provide a study id and a valid user token",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token",
             },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            },
-            {
-                "code": 417,
-                "message": "Unexpected result."
-            }
-        ]
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+            {"code": 417, "message": "Unexpected result."},
+        ],
     )
     @metabolights_exception_handler
     def post(self):
-
         user_token = None
         # User authentication
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         try:
-            with DBManager.get_instance(app).session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(StudyTask)
-                filtered = query.filter(StudyTask.last_execution_status != StudyTaskStatus.EXECUTION_SUCCESSFUL,
-                                        StudyTask.task_name == StudyTaskName.REINDEX).order_by(StudyTask.study_acc)
+                filtered = query.filter(
+                    StudyTask.last_execution_status != StudyTaskStatus.EXECUTION_SUCCESSFUL,
+                    StudyTask.task_name == StudyTaskName.REINDEX,
+                ).order_by(StudyTask.study_acc)
                 tasks = filtered.all()
                 indexed_studies = []
                 unindexed_studies = []
@@ -1681,21 +1672,23 @@ class RetryReindexStudies(Resource):
 
                 for task in tasks:
                     index += 1
-                    print(f'{index}/{total} Indexing {task.study_acc}')
+                    print(f"{index}/{total} Indexing {task.study_acc}")
                     try:
-                        logger.info(f'{index}/{total} Indexing {task.study_acc}')
+                        logger.info(f"{index}/{total} Indexing {task.study_acc}")
                         wsc.reindex_study(task.study_acc, user_token)
                         indexed_studies.append(task.study_acc)
-                        logger.info(f'Indexed study {task.study_acc}')
+                        logger.info(f"Indexed study {task.study_acc}")
                     except Exception as e:
                         unindexed_studies.append({"study_id": task.study_acc, "message": str(e)})
-                        logger.info(f'Unindexed study {task.study_acc}')
+                        logger.info(f"Unindexed study {task.study_acc}")
 
                 return {"indexed_studies": indexed_studies, "unindexed_studies": unindexed_studies}
 
         except Exception as e:
-            raise MetabolightsDBException(message=f"Error while retreiving study tasks from database: {str(e)}",
-                                          exception=e)
+            raise MetabolightsDBException(
+                message=f"Error while retreiving study tasks from database: {str(e)}", exception=e
+            )
+
 
 class MtblsPublicStudiesIndexAll(Resource):
     @swagger.operation(
@@ -1708,44 +1701,35 @@ class MtblsPublicStudiesIndexAll(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. The compound is returned"
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 200, "message": "OK. The compound is returned"},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     @metabolights_exception_handler
     def post(self):
         log_request(request)
-        
 
         # User authentication
-        user_token = ''
+        user_token = ""
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-            
-        logger.info('Indexing a compound')
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        logger.info("Indexing public studies")
         inputs = {"user_token": user_token, "send_email_to_submitter": True}
-        try: 
-            result = reindex_all_public_studies.apply_async(kwargs=inputs, expires=60*5)
+        try:
+            result = reindex_all_public_studies.apply_async(kwargs=inputs, expires=60 * 5)
 
-            result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
+            result = {
+                "content": f"Task has been started. Result will be sent by email. Task id: {result.id}",
+                "message": None,
+                "err": None,
+            }
             return result
         except Exception as ex:
             raise MetabolightsException(http_code=500, message=f"Task submission was failed: {str(ex)}", exception=ex)
@@ -1762,50 +1746,38 @@ class MtblsStudiesIndexAll(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. The compound is returned"
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 200, "message": "OK. The compound is returned"},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     @metabolights_exception_handler
     def post(self):
         log_request(request)
-        
 
         # User authentication
-        user_token = ''
+        user_token = ""
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-            
-        logger.info('Indexing a compound')
-        inputs = {"user_token": user_token, "send_email_to_submitter": True}
-        try: 
-            result = reindex_all_studies.apply_async(kwargs=inputs, expires=60*5)
 
-            result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
+        logger.info("Indexing a compound")
+        inputs = {"user_token": user_token, "send_email_to_submitter": True}
+        try:
+            result = reindex_all_studies.apply_async(kwargs=inputs, expires=60 * 5)
+
+            result = {
+                "content": f"Task has been started. Result will be sent by email. Task id: {result.id}",
+                "message": None,
+                "err": None,
+            }
             return result
         except Exception as ex:
             raise MetabolightsException(http_code=500, message=f"Task submission was failed: {str(ex)}", exception=ex)
-        
-        
-
 
 
 class MtblsStudiesIndexSync(Resource):
@@ -1819,49 +1791,38 @@ class MtblsStudiesIndexSync(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. The compound is returned"
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+            {"code": 200, "message": "OK. The compound is returned"},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
     )
     @metabolights_exception_handler
     def post(self):
         log_request(request)
-        
 
         # User authentication
-        user_token = ''
+        user_token = ""
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-            
-        logger.info('Indexing a compound')
-        inputs = {"user_token": user_token, "send_email_to_submitter": True }
-        try: 
-            result = sync_studies_on_es_and_db.apply_async(kwargs=inputs, expires=60*5)
 
-            result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
+        logger.info("Indexing a compound")
+        inputs = {"user_token": user_token, "send_email_to_submitter": True}
+        try:
+            result = sync_studies_on_es_and_db.apply_async(kwargs=inputs, expires=60 * 5)
+
+            result = {
+                "content": f"Task has been started. Result will be sent by email. Task id: {result.id}",
+                "message": None,
+                "err": None,
+            }
             return result
         except Exception as ex:
             raise MetabolightsException(http_code=500, message=f"Task submission was failed: {str(ex)}", exception=ex)
-        
-        
 
 
 class MtblsStudyFolders(Resource):
@@ -1869,6 +1830,182 @@ class MtblsStudyFolders(Resource):
         summary="Maintain study folders",
         notes="Start a task to maintain all study folders, and return task id. Result will be sent by email.",
         parameters=[
+            {
+                "name": "study_id",
+                "description": "Study to validate",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string",
+            },
+            {
+                "name": "target_folder",
+                "description": "Select target study folders: metadata, data and private ftp folder",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["metadata", "data", "private-ftp"],
+                "allowEmptyValue": False,
+                "defaultValue": "metadata",
+                "default": "metadata"
+            },
+            {
+                "name": "force",
+                "description": "Force to maintain",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": False,
+                "default": True,
+            },
+            {
+                "name": "task_name",
+                "description": "Any task name, backup folders created with this name",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "allowEmptyValue": False,
+                "defaultValue": "MAINTAIN",
+                "default": "MAINTAIN"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            },
+        ],
+        responseMessages=[
+            {"code": 200, "message": "OK. The compound is returned"},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
+    )
+    @metabolights_exception_handler
+    def post(self, study_id):
+        log_request(request)
+
+        # User authentication
+        user_token = ""
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        target_folder = ""
+        if "target_folder" in request.headers:
+            target_folder = request.headers["target_folder"]
+
+        task_name = ""
+        if "task_name" in request.headers:
+            task_name = request.headers["task_name"]
+        if not task_name:
+            task_name = "MAINTAIN"
+        if target_folder not in ("metadata", "data", "private-ftp"):
+            raise MetabolightsException(message="Target folder is not defined.")
+        maintain_metadata_storage = False
+        maintain_data_storage = False
+        maintain_private_ftp_storage = False
+        if target_folder == "metadata":
+            maintain_metadata_storage = True
+        elif target_folder == "data":
+            maintain_data_storage = True
+        elif target_folder == "private-ftp":
+            maintain_private_ftp_storage = True
+            
+        parser = reqparse.RequestParser()
+        parser.add_argument("force", help="force to maintain", location="args")
+        args = parser.parse_args()
+        force_to_maintain = False
+        if args and "force" in args and args["force"]:
+            force_to_maintain = True if args["force"].lower() == "true" else False
+
+        logger.info("Searching study folders")
+        try:
+            inputs = {
+                "user_token": user_token,
+                "send_email_to_submitter": True,
+                "study_id": study_id,
+                "force_to_maintain": force_to_maintain,
+                "task_name": task_name,
+                "maintain_metadata_storage": maintain_metadata_storage,
+                "maintain_data_storage": maintain_data_storage,
+                "maintain_private_ftp_storage": maintain_private_ftp_storage
+            }
+            task = maintain_storage_study_folders.apply_async(kwargs=inputs)
+
+            result = {"content": f"Task has been started. Result will be sent by email with task id {task.id}", "message": None, "err": None}
+            return result
+        except Exception as ex:
+            raise MetabolightsException(http_code=500, message=f"Task submission was failed: {str(ex)}", exception=ex)
+
+
+
+class StudyFolderSynchronization(Resource):
+    @swagger.operation(
+        summary="(Curator Only) If there is no rsync task, it starts new one.",
+        nickname="Start sync process. New and updated files will be sync from source to target study folder",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "source_staging_area",
+                "description": "Source study folder stage",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["private-ftp", "readonly-study", "rw-study", "public-ftp"],
+                "allowEmptyValue": False,
+                "defaultValue": "private-ftp",
+                "default": "private-ftp"
+            },
+            {
+                "name": "target_staging_area",
+                "description": "Target study folder stage",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["private-ftp", "readonly-study", "rw-study", "public-ftp"],
+                "allowEmptyValue": False,
+                "defaultValue": "rw-study",
+                "default": "rw-study"
+            },
+            {
+                "name": "sync_type",
+                "description": "Sync category: sync metadada or data or internal files",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["metadata", "data", "internal", "public-metadata-versions", "integrity-check", "audit"],
+                "allowEmptyValue": False,
+                "defaultValue": "metadata",
+                "default": "metadata"
+            },
+            {
+                "name": "dry_run",
+                "description": "Only check whether there is a difference ",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "Boolean",
+                "allowEmptyValue": False,
+                "defaultValue": True,
+                "default": True
+            },
             {
                 "name": "user_token",
                 "description": "User API token",
@@ -1881,7 +2018,7 @@ class MtblsStudyFolders(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The compound is returned"
+                "message": "OK."
             },
             {
                 "code": 401,
@@ -1898,21 +2035,167 @@ class MtblsStudyFolders(Resource):
         ]
     )
     @metabolights_exception_handler
-    def post(self):
+    def post(self, study_id):
         log_request(request)
-        
+        return self.proces_rsync_request(study_id, request, start_new_task=True)
 
-        # User authentication
-        user_token = ''
+    @swagger.operation(
+        summary="(Curator Only) Returns current rsync task status.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "source_staging_area",
+                "description": "Source study folder stage",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["private-ftp", "readonly-study", "rw-study", "public-ftp"],
+                "allowEmptyValue": False,
+                "defaultValue": "private-ftp",
+                "default": "private-ftp"
+            },
+            {
+                "name": "target_staging_area",
+                "description": "Target study folder stage",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["private-ftp", "readonly-study", "rw-study", "public-ftp"],
+                "allowEmptyValue": False,
+                "defaultValue": "rw-study",
+                "default": "rw-study"
+            },
+            {
+                "name": "sync_type",
+                "description": "Sync category: sync metadada or data or internal files",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["metadata", "data", "internal", "public-metadata-versions", "integrity-check", "audit"],
+                "allowEmptyValue": False,
+                "defaultValue": "metadata",
+                "default": "metadata"
+            },
+            {
+                "name": "dry_run",
+                "description": "Only check whether there is a difference ",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "Boolean",
+                "allowEmptyValue": False,
+                "defaultValue": True,
+                "default": True
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self, study_id):
+        log_request(request)
+        return self.proces_rsync_request(study_id, request, start_new_task=False)    
+    
+    def proces_rsync_request(self, study_id: str, request, start_new_task:bool = False):
+        # param validation
+        if study_id is None:
+            raise MetabolightsException(message='Please provide valid parameter for study identifier')
+        study_id = study_id.upper()
+        sync_type = "metadata"
+        
+        user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
             
-        logger.info('Searching study folders')
-        inputs = {"user_token": user_token, "send_email_to_submitter": True }
-        try: 
-            result = maintain_study_folders.apply_async(kwargs=inputs, expires=60*5)
+        dry_run = True
+        if "dry_run" in request.headers:
+            dry_run = True if request.headers["dry_run"].lower() == "true" else False 
+        
+        if "sync_type" in request.headers:
+            sync_type = request.headers["sync_type"]
+            
+        source_staging_area = "private-ftp"
+        if "source_staging_area" in request.headers:
+            source_staging_area = request.headers["source_staging_area"]
+        
+        target_staging_area = "rw_study"
+        if "target_staging_area" in request.headers:
+            target_staging_area = request.headers["target_staging_area"]
+        if target_staging_area == source_staging_area:
+            raise MetabolightsException(message="Source and target staging areas should be different.") 
+                    
+        if sync_type not in ("metadata", "data", "internal", "public-metadata-versions", "integrity-check", "audit"):
+            raise MetabolightsException(message="sync_type is invalid.")
+        
+        staging_areas = ["private-ftp", "readonly-study", "rw-study", "public-ftp"]
+        if source_staging_area not in staging_areas:
+            raise MetabolightsException(message="Source staging area is invalid.")
+        
+        if target_staging_area not in staging_areas:
+            raise MetabolightsException(message="Target staging area is invalid.")
+        
+        if source_staging_area == "private-ftp" and ((sync_type == "data" and target_staging_area == "readonly-study") or (sync_type == "metadata" and target_staging_area == "rw-study")):
+            study = StudyService.get_instance().get_study_by_acc(study_id)
+            UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+            if StudyStatus(study.status) != StudyStatus.SUBMITTED:
+                UserService.get_instance().validate_user_has_curator_role(user_token)
+        else:
+            UserService.get_instance().validate_user_has_curator_role(user_token)
+        
+        folder_type = StudyFolderType(sync_type.replace("-","_").upper())
+        source_location = StudyFolderLocation(f"{source_staging_area.replace('-','_').upper()}_STORAGE")
+        target_location = StudyFolderLocation(f"{target_staging_area.replace('-','_').upper()}_STORAGE")
+        source = StudyFolder(location=source_location, folder_type=folder_type)
+        target = StudyFolder(location=target_location, folder_type=folder_type)
 
-            result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
-            return result
-        except Exception as ex:
-            raise MetabolightsException(http_code=500, message=f"Task submission was failed: {str(ex)}", exception=ex)
+        if not source.folder_type in VALID_FOLDERS[source_location]:
+            raise MetabolightsException(message="Source folder type is not valid in the selected staging area.")
+
+        if not target.folder_type in VALID_FOLDERS[target_location]:
+            raise MetabolightsException(message="target folder type is not valid in the selected staging area.")
+        
+        study = study = StudyService.get_instance().get_study_by_acc(study_id)
+        client = StudyRsyncClient(study_id=study_id, obfuscation_code=study.obfuscationcode)
+        status_check_only = not start_new_task
+        if dry_run:
+            status: SyncTaskResult = client.rsync_dry_run(source, target, status_check_only=status_check_only)
+        else:
+            status: SyncTaskResult = client.rsync(source, target, status_check_only=status_check_only)
+        return status.dict()
+    
+
+    

@@ -1,0 +1,65 @@
+variables:
+     APP_VERSION: "2.0.0"
+     API_VERSION: "2.0.0"
+     BUILD_SCRIPTS_ROOT_PATH: "/home/gitlab-runner/ci_cd/standalone/mtblsws-py"
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "development-pipeline-test"
+stages:
+  - prepare
+  - build
+  - configure
+  - deploy
+
+
+build_version_files:
+  stage: prepare
+  rules:
+    - if: $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "development-pipeline-test"
+      variables:
+        RELEASE_NAME: dev.${CI_PIPELINE_ID}
+    - if: $CI_COMMIT_BRANCH == "master"
+      variables:
+        RELEASE_NAME: rc.${CI_PIPELINE_ID}
+    - if: $CI_COMMIT_BRANCH == "test"
+      variables:
+        RELEASE_NAME: test.${CI_PIPELINE_ID}
+  script:
+    - echo "PIPELINE_ID ${CI_PIPELINE_ID} and commit ${CI_COMMIT_SHORT_SHA} commit name ${CI_COMMIT_REF_NAME}"
+    - echo "${RELEASE_NAME}-${CI_COMMIT_SHORT_SHA}" > .build_number
+    - echo  "APP_VERSION $APP_VERSION" 
+    - echo  "API_VERSION $API_VERSION" 
+    - echo  "$APP_VERSION" | xargs > app_version
+    - echo  "$API_VERSION" | xargs > api_version
+  artifacts:
+      paths:
+      - app_version
+      - api_version
+      - .build_number
+
+build_docker:
+  stage: build
+  script:
+    - echo  "CI_REGISTRY $CI_REGISTRY"
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
+    - docker build -t $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest .
+    - docker push $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
+
+configure_vm_server:
+  stage: configure
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/update_server.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/update_version_files.sh"
+    
+configure_datamover:
+  stage: configure
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/update_datamover.sh"
+
+run_server:
+  stage: deploy
+  only:
+      - test
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/restart_server.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/restart_datamover.sh"

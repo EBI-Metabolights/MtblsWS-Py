@@ -65,18 +65,18 @@ class MetabolightsStatistics(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
-        db_session = DBManager.get_instance(app).session_maker()
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        db_session = DBManager.get_instance().session_maker()
         try:
             with db_session:
                 query = db_session.query(MlStat)
-                db_params: List[MlStat] = []
+                db_parameters: List[MlStat] = []
                 if category_name:
                     filter_clause = lambda query: query.filter(MlStat.page_section == category_name)
-                    db_params: List[MlStat] = filter_clause(query).order_by(MlStat.sort_order.asc(), MlStat.str_name.asc()).all() 
+                    db_parameters: List[MlStat] = filter_clause(query).order_by(MlStat.sort_order.asc(), MlStat.str_name.asc()).all() 
                 else:
-                    db_params: List[MlStat] = query.order_by(MlStat.page_section.asc(), MlStat.sort_order.asc(), MlStat.str_name.asc()).all() 
-                m_params = [ MetabolightsStatisticsModel.from_orm(db_param).dict() for db_param in db_params ]
+                    db_parameters: List[MlStat] = query.order_by(MlStat.page_section.asc(), MlStat.sort_order.asc(), MlStat.str_name.asc()).all() 
+                m_params = [ MetabolightsStatisticsModel.from_orm(db_param).dict() for db_param in db_parameters ]
                 return jsonify({"content": m_params, "message": None, "error": None})                    
         except Exception as ex:
             raise ex

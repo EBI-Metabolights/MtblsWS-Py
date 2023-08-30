@@ -1,4 +1,7 @@
 #configurations
+.build_number
+app_version
+api_version
 .secrets/
 .test_data
 .old/
@@ -10,7 +13,7 @@ celerybeat-*
 __pycache__/
 *.py[cod]
 *$py.class
-
+.ignore
 # C extensions
 *.so
 
@@ -66,7 +69,7 @@ coverage.xml
 .python-version
 
 # dotenv
-.env
+.env*
 
 # virtualenv
 /venv*/
@@ -85,6 +88,8 @@ logs.txt
 ssl/
 
 # files for keeping PID
+config.yaml
+.secrets
 /app*.pid.old
 /app*.pid
 /tests/.pytest_cache/

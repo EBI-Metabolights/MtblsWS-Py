@@ -28,6 +28,7 @@ from functools import lru_cache
 import boto3
 import requests
 from flask import current_app as app
+from app.config import get_settings
 
 from app.ws.metaspace_isa_api_client import MetaSpaceIsaApiClient
 
@@ -47,14 +48,10 @@ class AwsCredentials(object):
         return
 
     def read_aws_credentials(self):
-        credentials = configparser.ConfigParser()
-        config_file = app.config.get("AWS_CREDENTIALS")
-        credentials.read(config_file)
-        account = credentials['METASPACE']
-
-        self.aws_access_key_id = account['access_key_id']
-        self.aws_secret_access_key = account['secret_access_key']
-        self.bucket = account['bucket']
+        account = get_settings().metaspace.connection
+        self.aws_access_key_id = account.access_key_id
+        self.aws_secret_access_key = account.secret_access_key
+        self.bucket = account.bucket
 
     @property
     def get_access_key(self):
@@ -152,10 +149,11 @@ def save_file(content, path, filename, data_type='text'):
 
 
 def aws_get_annotations(mtspc_obj, output_dir, database=None, fdr=None, sm_instance=None):
+    settings = get_settings()
     if not database:
-        database = app.config.get("METASPACE_DATABASE")
+        database = settings.metaspace.configuration.metaspace_database
     if not fdr:
-        fdr = app.config.get("METASPACE_FDR")
+        fdr = settings.metaspace.configuration.metaspace_fdr
 
     filename = 'annotations'
 
@@ -239,8 +237,9 @@ def get_metadata(dataset_ids, output_dir, sm_instance=None):
             except:
                 logger.error('Could not find dataset ' + ds_id + ' in the METASPACE database')
                 continue
-            fdr = app.config.get("METASPACE_FDR")
-            db_name = app.config.get("METASPACE_DATABASE")
+            settings = get_settings()
+            fdr = settings.metaspace.configuration.metaspace_fdr
+            db_name = settings.metaspace.configuration.metaspace_database
             annotation = db.get_annotations(fdr=fdr, db_name=db_name,
                                             datasetFilter={'ids': ds_id})
             annotation_json = annotation.to_json(orient='records')
@@ -430,6 +429,7 @@ def import_metaspace(study_id=None, dataset_ids=None, study_location=None, user_
                      obfuscation_code=None, sm_instance=None):
     mtspc_obj = None
     input_folder = study_location
+    # TODO: DOWNLOAD METASPACE FILES to correct path
     output_dir = study_location
     std_title = "Please update title of this METASPACE generated study " + study_id
     std_description = "Please update abstract of this METASPACE generated study " + study_id

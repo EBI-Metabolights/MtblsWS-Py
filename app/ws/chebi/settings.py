@@ -1,3 +1,6 @@
+from app.config import get_settings
+
+
 class ChebiWsSettings(object):
     def __init__(self):
         self.chebi_ws_wsdl = None
@@ -8,12 +11,13 @@ class ChebiWsSettings(object):
         self.chebi_ws_service_binding_log_level = None
 
 
-def get_chebi_ws_settings(app):
+def get_chebi_ws_settings():
     settings = ChebiWsSettings()
-    settings.chebi_ws_wsdl = app.config.get("CHEBI_WS_WSDL")
-    settings.chebi_ws_wsdl_service = app.config.get("CHEBI_WS_WSDL_SERVICE")
-    settings.chebi_ws_wsdl_service_port = app.config.get("CHEBI_WS_WSDL_SERVICE_PORT")
-    settings.chebi_ws_strict = app.config.get("CHEBI_WS_STRICT")
-    settings.chebi_ws_xml_huge_tree = app.config.get("CHEBI_WS_XML_HUGE_TREE")
-    settings.chebi_ws_service_binding_log_level = app.config.get("CHEBI_WS_WSDL_SERVICE_BINDING_LOG_LEVEL")
+    app_settings = get_settings()
+    settings.chebi_ws_wsdl = app_settings.chebi.service.connection.chebi_ws_wsdl
+    settings.chebi_ws_wsdl_service = app_settings.chebi.service.connection.chebi_ws_wsdl_service
+    settings.chebi_ws_wsdl_service_port = app_settings.chebi.service.connection.chebi_ws_wsdl_service_port
+    settings.chebi_ws_strict = app_settings.chebi.service.configuration.chebi_ws_strict
+    settings.chebi_ws_xml_huge_tree = app_settings.chebi.service.configuration.chebi_ws_xml_huge_tree
+    settings.chebi_ws_service_binding_log_level = app_settings.chebi.service.configuration.chebi_ws_service_binding_log_level
     return settings

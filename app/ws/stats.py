@@ -27,6 +27,7 @@ from app.ws.db_connection import get_all_study_acc, database_maf_info_table_acti
     insert_update_data
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.utils import get_study_settings
 from app.ws.utils import read_tsv
 
 logger = logging.getLogger('wslog')
@@ -105,32 +106,30 @@ def update_maf_stats(user_token):
         except ValueError:
             logger.error("Failed to update database for " + study_id)
             continue
-
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
-
+        
+        study_metadata_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, study_id)
         try:
             isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
-                                                             skip_load_tables=True, study_location=study_location)
+                                                             skip_load_tables=True, study_location=study_metadata_location)
         except Exception as e:
             logger.error("Failed to load ISA-Tab files for study " + study_id + ". " + str(e))
             continue  # Cannot find the required metadata files, skip to the next study
 
         try:
-            number_of_files = sum([len(files) for r, d, files in os.walk(study_location)])
+            number_of_files = sum([len(files) for r, d, files in os.walk(study_metadata_location)])
         except:
             number_of_files = 0
 
         try:
-            smaple_file_name = isa_study.filename
-            sample_df = read_tsv(os.path.join(study_location, smaple_file_name))
+            sample_file_name = isa_study.filename
+            sample_df = read_tsv(os.path.join(study_metadata_location, sample_file_name))
             sample_len = sample_df.shape[0]
         except FileNotFoundError:
             logger.warning('No sample file found for ' + study_id)
 
         for assay in isa_study.assays:
             complete_maf = []
-            file_name = os.path.join(study_location, assay.filename)
+            file_name = os.path.join(study_metadata_location, assay.filename)
             logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
             # Get the Assay table or create a new one if it does not already exist
             try:
@@ -146,7 +145,7 @@ def update_maf_stats(user_token):
                 logger.error("Error in identifying MAF column in assay")
                 continue  # No MAF column found in this assay
 
-            maf_file_name = os.path.join(study_location, assay_maf_name)  # MAF sheet
+            maf_file_name = os.path.join(study_metadata_location, assay_maf_name)  # MAF sheet
 
             if os.path.isfile(maf_file_name):
                 try:

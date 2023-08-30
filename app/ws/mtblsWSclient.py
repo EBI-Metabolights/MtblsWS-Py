@@ -95,14 +95,10 @@ class WsClient:
         return commons.get_user_email(user_token)
 
     @staticmethod
-    def get_queue_folder():
-        return commons.get_queue_folder()
-
-    @staticmethod
     def create_upload_folder(study_id, obfuscation_code, user_token, send_email=True):
         # Updated to remove Java WS /study/requestFtpFolderOnApiKey dependency
 
-        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
         return commons.create_ftp_folder(study_id, obfuscation_code, user_token,
                                          email_service=WsClient.email_service, send_email=send_email)
@@ -110,7 +106,7 @@ class WsClient:
     def add_empty_study(self, user_token):
         # Updated to remove Java WS /study/createEmptyStudy dependency
 
-        user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
+        user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
 
         study_id = create_empty_study(user_token)
         if not study_id:
@@ -125,7 +121,7 @@ class WsClient:
     def reindex_study(self, study_id, user_token, include_validation_results: bool = False, sync: bool = False):
         # Updated to remove Java WS /study/reindexStudyOnToken dependency
 
-        UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
+        UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
         try:
             self.elasticsearch_service.reindex_study(study_id, user_token, include_validation_results, sync=sync)
             return True, f" {study_id} is successfully indexed"

@@ -4,19 +4,18 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict
+from app.config import get_settings
+from app.config.model.elasticsearch import ElasticsearchSettings
+from app.config.model.study import StudySettings
 
 from app.utils import MetabolightsDBException, MetabolightsException
 from app.ws.db import models
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefMetabolite, StudyTask
-from app.ws.db.settings import DirectorySettings, get_directory_settings
 from app.ws.db.types import StudyTaskName, StudyTaskStatus
 from app.ws.elasticsearch.schemes import Booster, Facet, FacetLine, SearchQuery, SearchResult
-from app.ws.elasticsearch.settings import (ElasticsearchSettings,
-                                           get_elasticsearch_settings)
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
-from flask import current_app as app
 
 from elasticsearch import Elasticsearch
 
@@ -29,34 +28,34 @@ class ElasticsearchService(object):
     DOC_TYPE_STUDY = "study"
     DOC_TYPE_COMPOUND = "compound"
 
-    def __init__(self, settings: ElasticsearchSettings, db_manager: DBManager, directory_settings: DirectorySettings):
+    def __init__(self, settings: ElasticsearchSettings, db_manager: DBManager, study_settings: StudySettings):
         self.settings = settings
         self.db_manager = db_manager
-        self.directory_settings = directory_settings
+        self.study_settings = study_settings
         self._client = None  # lazy load
         self.thread_pool_executor = ThreadPoolExecutor(max_workers=5)
 
     def initialize_client(self):
         settings = self.settings
-        if settings.elasticsearch_use_tls:
-            url = f"https://{settings.elasticsearch_host}:{settings.elasticsearch_port}"
-            http_auth = (settings.elasticsearch_user_name, settings.elasticsearch_user_password)
+        if settings.connection.use_tls:
+            url = f"https://{settings.connection.host}:{settings.connection.port}"
+            http_auth = (settings.connection.username, settings.connection.password)
             self._client = Elasticsearch(url, http_auth=http_auth, verify_certs=False)
         else:
-            url = f"http://{settings.elasticsearch_host}:{settings.elasticsearch_port}"
+            url = f"http://{settings.connection.host}:{settings.connection.port}"
             self._client = Elasticsearch(url)
-        with open(settings.elasticsearch_all_mappings_json) as f:
+        with open(settings.configuration.elasticsearch_all_mappings_json) as f:
             mappings = json.load(f)
         body = json.dumps(mappings)
         if not self._client.indices.exists(self.INDEX_NAME):
             self._client.indices.create(index=self.INDEX_NAME, ignore=400, body=body)
         
-        with open(settings.elasticsearch_compound_mappings_json) as f:
+        with open(settings.configuration.elasticsearch_compound_mappings_json) as f:
             mappings = json.load(f)
         body = json.dumps(mappings)
         self._client.indices.put_mapping(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_COMPOUND, body=body, ignore=[404,400])
 
-        with open(settings.elasticsearch_study_mappings_json) as f:
+        with open(settings.configuration.elasticsearch_study_mappings_json) as f:
             mappings = json.load(f)
         body = json.dumps(mappings)
         self._client.indices.put_mapping(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=body, ignore=[404,400])
@@ -64,15 +63,14 @@ class ElasticsearchService(object):
     instance = None
 
     @classmethod
-    def get_instance(cls, application):
-        if not application:
-            application = app
+    def get_instance(cls):
         if not cls.instance:
-            settings = get_elasticsearch_settings(application)
-            directory_settings = get_directory_settings(application)
-            db_mananager = DBManager.get_instance(application)
+            
+            settings = get_settings().elasticsearch
+            study_settings = get_settings().study
+            db_mananager = DBManager.get_instance()
             cls.instance = ElasticsearchService(settings=settings, db_manager=db_mananager,
-                                                directory_settings=directory_settings)
+                                                study_settings=study_settings)
         return cls.instance
 
     def search(self, query: SearchQuery):
@@ -229,14 +227,14 @@ class ElasticsearchService(object):
         return result
     
     def delete_compound_index(self, user_token, compound_id):
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         self.client.delete(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_COMPOUND, id=compound_id)
 
     def _delete_compound_index(self, compound_id):
         self.client.delete(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_COMPOUND, id=compound_id)
                
     def delete_study_index(self, user_token, study_id):
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         self.client.delete(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, id=study_id)
 
     def _delete_study_index(self, study_id):
@@ -250,7 +248,7 @@ class ElasticsearchService(object):
 
     def reindex_study(self, study_id, user_token, include_validation_results: bool = False, sync: bool = False):
         # Revalidate user permission
-        UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
+        UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
         self._reindex_study(study_id, user_token, include_validation_results, sync)
 
     def _reindex_study(self, study_id, user_token, include_validation_results: bool = False, sync: bool = False):
@@ -261,13 +259,13 @@ class ElasticsearchService(object):
             raise MetabolightsException(f"Error while reindexing.", exception=e, http_code=500)
         
     def reindex_compound(self, user_token, compound_id):
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         compound_id = self._reindex_compound(compound_id)
         return compound_id      
 
     def _reindex_compound(self, compound_id):
         try:
-            with DBManager.get_instance(app).session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 metabolite = db_session.query(RefMetabolite).filter(RefMetabolite.acc == compound_id).first()
 
                 if not metabolite:
@@ -304,7 +302,7 @@ class ElasticsearchService(object):
         
     def reindex_study_with_task(self, study_id, user_token, include_validation_results, sync: bool):
         task_name = StudyTaskName.REINDEX
-        tasks = StudyService.get_instance(app).get_study_tasks(study_id=study_id, task_name=task_name)
+        tasks = StudyService.get_instance().get_study_tasks(study_id=study_id, task_name=task_name)
 
         with self.db_manager.session_maker() as db_session:
             if tasks:
@@ -341,7 +339,7 @@ class ElasticsearchService(object):
                 self.client.index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=document,
                                   id=m_study.studyIdentifier, params=params)
                 message = f'{study_id} is indexed.'
-                tasks = StudyService.get_instance(app).get_study_tasks(study_id=study_id, task_name=task_name)
+                tasks = StudyService.get_instance().get_study_tasks(study_id=study_id, task_name=task_name)
                 if tasks:
                     task = tasks[0]
                     with self.db_manager.session_maker() as db_session:
@@ -353,7 +351,7 @@ class ElasticsearchService(object):
                         db_session.commit()
                 logger.info(message)
             except Exception as e:
-                tasks = StudyService.get_instance(app).get_study_tasks(study_id=study_id, task_name=task_name)
+                tasks = StudyService.get_instance().get_study_tasks(study_id=study_id, task_name=task_name)
 
                 message = f'{study_id} reindex is failed: {str(e)}'
                 if tasks:

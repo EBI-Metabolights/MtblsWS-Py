@@ -1,0 +1,24 @@
+#!/bin/bash
+
+APPDIR={{ application_deployment_path }}
+WORKER_NAME={{ worker_name }}
+WORKER_QUEUE={{ worker_queue }}
+CONDA_ENVIRONMENT={{ conda_environment }}
+
+HOST=$(hostname)
+echo "Starting Celery worker worker on host $HOST"
+
+APP_LOG_DIR=$APPDIR/logs
+PYTHONPATH="$APPDIR:$PYTHONPATH"
+cd $APPDIR
+source $APPDIR/.env
+export $(cat $APPDIR/.env | grep -v '#' | xargs)
+
+echo "Python version:" $(python3 --version)
+echo "Host name: $HOST"
+
+eval "$(conda shell.bash hook)"
+conda activate $CONDA_ENVIRONMENT
+
+
+python -m celery -A app.tasks.worker:celery worker --loglevel info -Q ${WORKER_QUEUE} --autoscale 5,20 --logfile $APP_LOG_DIR/${WORKER_NAME}_$(hostname).log  --detach -n ${WORKER_NAME}@%h

@@ -13,14 +13,6 @@ from tests.ws.test_data.utils import delete_test_study_from_db
 
 class TestWebServiceClient(object):
 
-    def test_get_study_location_public_1(self, flask_app: Flask, email_service_isolated_ws_client: WsClient,
-                                         sensitive_data: SensitiveDatastorage):
-        with flask_app.app_context():
-            ws_client = email_service_isolated_ws_client
-            actual = ws_client.get_study_location("MTBLS1", sensitive_data.super_user_token_001)
-
-            expected = os.path.join(flask_app.config.get('STUDY_PATH'), "MTBLS1")
-            assert expected == actual
 
     def test_get_maf_search_1(self, flask_app: Flask, email_service_isolated_ws_client: WsClient):
         with flask_app.app_context():
@@ -102,16 +94,6 @@ class TestWebServiceClient(object):
             assert result is not None
             data = json.loads(result)
             assert len(data) > 0
-
-    def test_get_queue_folder_1(self, flask_app: Flask,
-                                email_service_isolated_ws_client: WsClient,
-                                sensitive_data: SensitiveDatastorage):
-        with flask_app.app_context():
-            ws_client = email_service_isolated_ws_client
-
-            actual = ws_client.get_queue_folder()
-            expected = flask_app.config.get('STUDY_QUEUE_FOLDER')
-            assert expected == actual
 
     def test_add_empty_study_1(self, flask_app: Flask,
                                email_service_isolated_ws_client: WsClient,

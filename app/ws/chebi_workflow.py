@@ -39,6 +39,7 @@ from flask_restful_swagger import swagger
 from pubchempy import get_compounds
 from zeep import Client
 from unidecode import unidecode
+from app.config import get_settings
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage import Storage
@@ -47,7 +48,9 @@ from app.ws.cluster_jobs import submit_job
 from app.ws.db_connection import get_user_email
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import write_audit_files, get_all_files_from_filesystem
+from app.ws.study.user_service import UserService
 from app.ws.utils import read_tsv, write_tsv, get_assay_file_list, safe_str
 
 logger = logging.getLogger('wslog_chebi')
@@ -58,12 +61,12 @@ iac = IsaApiClient()
 
 instance_dir = os.path.join(os.getcwd(), "instance")
 flask_app = Flask(__name__, instance_relative_config=True, instance_path=instance_dir)
-
+settings = get_settings()
 pubchem_end = "_pubchem.tsv"
 complete_end = "_complete.sdf"
 pubchem_sdf_extension = '_pubchem.sdf'
 classyfire_end = "_classyfire"
-anno_sub_folder = "chebi_pipeline_annotations"
+anno_sub_folder = settings.chebi.pipeline.chebi_annotation_sub_folder
 final_cid_column_name = "final_external_id"
 unknown_list = "unknown", "un-known", "n/a", "un_known", "not known", "not-known", "not_known", "unidentified", \
                "not identified", "unmatched"
@@ -241,8 +244,9 @@ def check_maf_for_pipes(study_location, annotation_file_name):
     # Any rows to split?
     new_maf_df = split_rows(maf_df, annotation_file)
     new_maf_len = len(new_maf_df.index)
-
-    file_name = os.path.join(anno_sub_folder, annotation_file + '.split')
+    annotation_folder_path = os.path.join(study_location, get_study_settings().internal_files_symbolic_link_name, anno_sub_folder)
+    os.makedirs(annotation_folder_path, exist_ok=True)
+    file_name = os.path.join(annotation_folder_path, annotation_file_name + '.split')
     if maf_len != new_maf_len:  # We did find |, so we create a new MAF
         write_tsv(new_maf_df, file_name)
 
@@ -483,7 +487,7 @@ def get_cas_from_synonyms(synonyms):
             return i[4:]
 
 
-def search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
+def search_and_update_maf(study_id: str, study_metadata_location: str, annotation_file_name: str, classyfire_search, user_token,
                           run_silently=None, update_study_maf=None, obfuscation_code=None):
     sdf_file_list = []
     exiting_pubchem_file = False
@@ -505,13 +509,15 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     first_start_time = time.time()
     # Please note that the original MAF must exist without the _pubchem.tsv extension!!
     original_maf_name = annotation_file_name.replace("_pubchem.tsv", ".tsv")
-    short_file_name = os.path.join(study_location, anno_sub_folder, annotation_file_name.replace('.tsv', ''))
+    settings = get_study_settings()
+    anno_sub_folder_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, anno_sub_folder)
+    create_annotation_folder(anno_sub_folder_path)
+    short_file_name = os.path.join(anno_sub_folder_path, annotation_file_name.replace('.tsv', ''))
     if annotation_file_name.endswith(pubchem_end):
         exiting_pubchem_file = True
-        short_file_name = os.path.join(study_location + os.sep + anno_sub_folder + os.sep,
-                                       annotation_file_name.replace(pubchem_end, ''))
+        short_file_name = os.path.join(anno_sub_folder_path, annotation_file_name.replace(pubchem_end, ''))
 
-    annotation_file_name = os.path.join(study_location, annotation_file_name)
+    annotation_file_name = os.path.join(study_metadata_location, annotation_file_name)
     pd.options.mode.chained_assignment = None  # default='warn'
 
     standard_maf_columns = {database_identifier_column: get_idx(database_identifier_column),
@@ -526,12 +532,11 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         maf_len = len(maf_df.index)
     except FileNotFoundError:
         abort(400, "The file " + annotation_file_name + " was not found")
-
     # CHEBI-PIPELINE annotation folder creation remotely
-    create_annotation_folder(study_location + os.sep + anno_sub_folder)
+    
     if obfuscation_code:  # So the curators can FTP new files into the private upload folder for the study
-         ftp_private_annotation_folder = os.path.join(study_id.lower() + "-" + obfuscation_code, anno_sub_folder)
-         ftp_private_storage = StorageService.get_ftp_private_storage(app)
+         ftp_private_annotation_folder = os.path.join(study_id.lower() + "-" + obfuscation_code, settings.internal_files_symbolic_link_name, anno_sub_folder)
+         ftp_private_storage = StorageService.get_ftp_private_storage()
          create_annotation_folder_on_remote_storage(ftp_private_storage, ftp_private_annotation_folder)
 
     # First make sure the existing pubchem annotated spreadsheet is loaded
@@ -563,7 +568,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         short_df = maf_df[[database_identifier_column, maf_compound_name_column, alt_name_column, search_flag,
                            final_cid_column_name, "row_id", final_inchi_column, csid_ik_column]]
         # Make sure we re-read the original MAF so that we don't add the extra PubChem columns
-        maf_df = read_tsv(os.path.join(study_location, original_maf_name))
+        maf_df = read_tsv(os.path.join(study_metadata_location, original_maf_name))
     else:
         short_df = maf_df[[database_identifier_column, maf_compound_name_column]]
 
@@ -882,7 +887,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     else:
                         # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
                         # and the classyFire SDF
-                        sdf_file_list, classyfire_id = get_sdf(study_location, str(final_cid), pc_name,
+                        sdf_file_list, classyfire_id = get_sdf(anno_sub_folder_path, str(final_cid), pc_name,
                                                                sdf_file_list, final_inchi, classyfire_search)
                         pubchem_df.iloc[row_idx, get_idx('classyfire_search_id', pubchem_df_headers)] = str(
                             classyfire_id)
@@ -986,7 +991,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     pubchem_df = re_sort_pubchem_file(pubchem_df)
 
     # Update the submitted MAF in the chebi sub-folder, before adding species
-    chebi_folder = os.path.join(study_location, anno_sub_folder)
+    chebi_folder = anno_sub_folder_path
+    
     update_original_maf(maf_df=maf_df, pubchem_df=pubchem_df,
                         original_maf_name=original_maf_name, study_location=chebi_folder,
                         update_study_maf=update_study_maf)
@@ -994,24 +1000,25 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     if update_study_maf:  # Also update MAF in study folder
         pubchem_df = re_sort_pubchem_file(pubchem_df)
         update_original_maf(maf_df=maf_df, pubchem_df=pubchem_df,
-                            original_maf_name=original_maf_name, study_location=study_location,
+                            original_maf_name=original_maf_name, study_location=study_metadata_location,
                             update_study_maf=update_study_maf)
 
     if not exiting_pubchem_file:
         pubchem_df = reindex_row_id(pubchem_df, pubchem_df_headers)
         # Add sample into to all rows, also duplicate rows for all samples
-        pubchem_df = populate_sample_rows(pubchem_df, study_id, user_token, study_location)
+        pubchem_df = populate_sample_rows(pubchem_df, study_id, user_token, study_metadata_location)
 
     pubchem_file = short_file_name + pubchem_end
     # write_tsv(pubchem_df, pubchem_file)
     # pubchem_df = re_sort_pubchem_file(pubchem_df)
 
-    annotated_study_location = study_location + os.sep + anno_sub_folder + os.sep
+    annotated_study_location = anno_sub_folder_path
+    
     classy_file_downoaded = update_sdf_file_info(pubchem_df, annotated_study_location, short_file_name + classyfire_end, classyfire_search,
                          study_id, pubchem_file, pubchem_df_headers)
     write_tsv(pubchem_df, pubchem_file)
     concatenate_sdf_files(pubchem_df, annotated_study_location, short_file_name + complete_end, run_silently)
-    change_access_rights(study_location)
+    change_access_rights(study_metadata_location, anno_sub_folder_path)
     pubchem_df_len = str(len(pubchem_df))
     
     if dime_db_api_active:
@@ -1032,7 +1039,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
    
     if obfuscation_code:
         ftp_private_folder = os.path.join(study_id.lower() + "-" + obfuscation_code)
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        ftp_private_storage = StorageService.get_ftp_private_storage()
         sync_annotation_folder_with_remote_storage(ftp_private_storage, ftp_private_folder)
     return maf_len, pubchem_df_len, pubchem_file,dimedb_search_status,cactus_search_status,opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised
 
@@ -1052,9 +1059,9 @@ def update_original_maf(maf_df=None, pubchem_df=None, original_maf_name=None, st
         write_tsv(maf_df, os.path.join(study_location, original_maf_name))
 
 
-def change_access_rights(study_location):
+def change_access_rights(study_location, anno_sub_folder_path):
     chmode = 0o777
-    chebi_folder = os.path.join(study_location, anno_sub_folder)
+    chebi_folder = anno_sub_folder_path
     print_log("Changing access right")
     try:
         os.chmod(study_location, chmode)
@@ -1103,7 +1110,7 @@ def create_annotation_folder(folder_loc):
     try:
         if not os.path.exists(folder_loc):
             print_log("Creating ChEBI folder " + folder_loc)
-            os.makedirs(folder_loc)
+            os.makedirs(folder_loc, exist=True)
     except Exception as e:
         print_log(str(e))
 
@@ -1266,7 +1273,7 @@ def removeHydrogen(sdf_file_name):
         count = 0
         final_file = ''
         molecule = str(file_data, 'utf-8').split('$$$$')
-        mol_count = app.config.get('REMOVED_HS_MOL_COUNT')
+        mol_count = get_settings().chebi.pipeline.removed_hs_mol_count
         for mol in molecule:
             if count <= mol_count:
                 fileText = fileText + mol + '$$$$'
@@ -1484,7 +1491,7 @@ def check_classyfire_api():
 
 def classyfire(inchi):
     print_log("    -- Starting querying ClassyFire")
-    url = app.config.get('CLASSYFIRE_ULR')
+    url = get_settings().chebi.pipeline.search_services.classyfire_url
     label = 'MetaboLights WS'
     query_id = None
     try:
@@ -1512,7 +1519,7 @@ def get_classyfire_results(query_id, classyfire_file_name, return_format, classy
                 # r = None
                 start_time = time.time()
                 print_log("       -- Getting ClassyFire SDF for query id: " + str(query_id))
-                url = app.config.get('CLASSYFIRE_ULR')
+                url = get_settings().chebi.pipeline.search_services.classyfire_url
                 r = requests.get('%s/queries/%s.%s' % (url, query_id, return_format),
                                  headers={"Content-Type": "application/%s" % return_format})
                 time.sleep(3)  # Give ClassyFire time to recover first ;-)
@@ -1583,7 +1590,7 @@ def get_classyfire_lookup_mapping():
 
 def get_chebi_obo_file():
     print_log('loading ChEBI OBO file')
-    obo_file = app.config.get('OBO_FILE')
+    obo_file = get_settings().chebi.pipeline.obo_file
     onto = pronto.Ontology(obo_file)
     return onto
 
@@ -1595,8 +1602,8 @@ def get_is_a(onto, chebi_compound):
 
 
 def get_chebi_client():
-    url = app.config.get('CHEBI_URL')
-    wait_time = app.config.get('CHEBI_URL_WAIT')
+    url = get_settings().chebi.service.connection.chebi_ws_wsdl
+    wait_time = get_settings().chebi.pipeline.chebi_url_wait
     client = None
     retries = 20
     attempts = 0
@@ -1723,24 +1730,6 @@ def get_csid(inchikey):
     return csid
 
 
-# def get_csid(inchikey):
-#     csid = ""
-#     csurl_base = app.config.get('CHEMSPIDER_URL')
-#
-#     if inchikey:
-#         url1 = csurl_base + 'SimpleSearch&searchOptions.QueryText=' + inchikey
-#         resp1 = requests.get(url1)
-#         if resp1.status_code == 200:
-#             url2 = csurl_base + 'GetSearchResult&rid=' + resp1.text
-#             resp2 = requests.get(url2)
-#             if resp2.status_code == 200:
-#                 csid = resp2.text
-#                 csid = csid.replace('[', '').replace(']', '').split(',')[0]
-#                 print_log("    -- Found CSID " + csid + " using ChemSpider, inchikey: " + inchikey)
-#                 return csid
-#     return csid
-
-
 def get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey):
     pc_cid = ''
     inchis = []
@@ -1819,7 +1808,7 @@ def check_opsin_api(comp_name):
 def opsin_search(comp_name, req_type):
     result = ""
     try:
-        opsin_url = app.config.get('OPSIN_URL')
+        opsin_url = get_settings().chebi.pipeline.search_services.opsin_url
         url = opsin_url + comp_name + '.json'
         print_log("Searching OPSIN ...   ", mode='info')
         resp = requests.get(url, timeout=10)
@@ -2044,15 +2033,16 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
     return iupac, inchi, inchi_key, smiles, cid, formula, synonyms, where_found, first_synonym
 
 
-def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_search):
+def get_sdf(anno_sub_folder_path, cid, iupac, sdf_file_list, final_inchi, classyfire_search):
     classyfire_id = ""
     file_name = ""
-    if study_location and cid:
+    
+    if anno_sub_folder_path and cid:
         if not iupac or len(iupac) < 1:
             iupac = 'no name given'
 
         if cid.endswith(".mol"):  # We have added a manually created/downloaded mol file
-            mol_file_name = study_location + os.sep + anno_sub_folder + os.sep + file_name
+            mol_file_name = os.path.join(anno_sub_folder_path, file_name)
 
             if os.path.isfile(mol_file_name):
                 print_log("    -- Found manually created MOL structure " + str(cid))
@@ -2062,7 +2052,7 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_s
         else:
             print_log("    -- Checking if we have SDF for CID " + str(cid))
             file_name = cid + pubchem_sdf_extension
-            full_file = study_location + os.sep + anno_sub_folder + os.sep + file_name
+            full_file = os.path.join(anno_sub_folder_path, file_name)
 
             if os.path.isfile(full_file):
                 print_log("    -- Already have PubChem SDF for CID " + str(cid) + " for name: " + iupac)
@@ -2158,7 +2148,7 @@ class SplitMaf(Resource):
         ]
     )
     def post(self, study_id):
-        http_base_location = app.config.get('WS_APP_BASE_LINK')
+        http_base_location = get_settings().server.service.ws_app_base_link
         http_file_location = http_base_location + os.sep + study_id + os.sep + 'files'
 
         # param validation
@@ -2171,11 +2161,12 @@ class SplitMaf(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, \
         study_status = wsc.get_permissions(study_id, user_token)
         if not is_curator:
             abort(403)
-
+        settings = get_settings()
+        study_metdata_location = os.path.join(settings.study.mounted_paths.study_metadata_files_root_path, study_id)
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('annotation_file_name', help="Metabolite Annotation File", location="args")
@@ -2188,8 +2179,8 @@ class SplitMaf(Resource):
             # Loop through all m_*_v2_maf.tsv files
             study_files, _upload_files, _upload_diff, _upload_location, latest_update_time = \
                 get_all_files_from_filesystem(
-                    study_id, obfuscation_code, study_location, directory=None, include_raw_data=False,
-                    assay_file_list=get_assay_file_list(study_location))  # ToDo, Overkill just loop through the folder
+                    study_id, obfuscation_code, study_metdata_location, directory=None, include_raw_data=False,
+                    assay_file_list=get_assay_file_list(study_metdata_location))  # ToDo, Overkill just loop through the folder
             maf_count = 0
             maf_changed = 0
             for file in study_files:
@@ -2197,16 +2188,16 @@ class SplitMaf(Resource):
                 if file_name.startswith('m_') and file_name.endswith('_v2_maf.tsv'):
                     maf_count += 1
                     maf_df, maf_len, new_maf_df, new_maf_len, split_file_name = \
-                        check_maf_for_pipes(study_location, file_name)
+                        check_maf_for_pipes(study_metdata_location, file_name)
                     if maf_len != new_maf_len:
                         maf_changed += 1
         else:
 
-            if not annotation_file_name.endswith('_maf.tsv') or not annotation_file_name.endswith('_pubchem.tsv'):
+            if not annotation_file_name.endswith('_maf.tsv') and not annotation_file_name.endswith('_pubchem.tsv'):
                 abort(404, "Annotation file name must end with '_maf.tsv' or '_pubchem.tsv'")
 
             maf_df, maf_len, new_maf_df, new_maf_len, split_file_name = \
-                check_maf_for_pipes(study_location, annotation_file_name)
+                check_maf_for_pipes(study_metdata_location, annotation_file_name)
 
             return {"maf_rows": maf_len, "new_maf_rows": new_maf_len,
                     "file_name": http_file_location + split_file_name.split(study_id)[1]}
@@ -2238,7 +2229,7 @@ def processDbNames(name=None):
 
 def processUniChemResponseAll(inchi_key):
     print_log(' Querying Unichem URL with inchi key - ' + inchi_key)
-    unichem_url = app.config.get('UNICHEM_URL')
+    unichem_url = get_settings().chebi.pipeline.search_services.unichem_url
     unichem_url = f"{unichem_url}/verbose_inchikey/{inchi_key}"      
     try:
         resp = requests.get(unichem_url, timeout=10)
@@ -2260,7 +2251,7 @@ def processUniChemResponseAll(inchi_key):
             
 def processUniChemResponse(inchi_key):
     print_log(' Querying Unichem URL with inchi key - ' + inchi_key)
-    unichem_url = app.config.get('UNICHEM_URL')
+    unichem_url = get_settings().chebi.pipeline.search_services.unichem_url
     unichem_url = f"{unichem_url}/inchikey/{inchi_key}"
     try:
         resp = requests.get(unichem_url, timeout=10)
@@ -2294,7 +2285,7 @@ def processUniChemResponse(inchi_key):
 
 def get_cas_id(inchi_key):
     print_log(' calling Chem plus for inchi key - ' + inchi_key)
-    chem_plus_url = app.config.get('CHEM_PLUS_URL')
+    chem_plus_url = get_settings().chebi.pipeline.search_services.chem_plus_url
     chem_plus_url = chem_plus_url.replace("INCHI_KEY", inchi_key)
     cas_id = ''
     # resp = requests.get(chem_plus_url)
@@ -2310,7 +2301,7 @@ def get_cas_id(inchi_key):
 
 def check_dime_db_api(inchi_key='BSYNRYMUTXBXSQ-UHFFFAOYSA-N'):
     print_log('Checking DimeDB API for inchi key...!')
-    dime_url = app.config.get('DIME_URL')
+    dime_url = get_settings().chebi.pipeline.search_services.dime_url
     dime_url = dime_url.replace("INCHI_KEY", inchi_key)
     dimedb_search_status = False
     try:
@@ -2324,7 +2315,7 @@ def check_dime_db_api(inchi_key='BSYNRYMUTXBXSQ-UHFFFAOYSA-N'):
 
 def get_dime_db(inchi_key):
     print_log(' Querying DIME DB for inchi key - ' + inchi_key)
-    dime_url = app.config.get('DIME_URL')
+    dime_url = get_settings().chebi.pipeline.search_services.dime_url
     dime_url = dime_url.replace("INCHI_KEY", inchi_key)
     dime_db_ids = ''
     try:
@@ -2459,7 +2450,7 @@ class ChEBIPipeLine(Resource):
     )
     def post(self, study_id):
 
-        http_base_location = app.config.get('WS_APP_BASE_LINK')
+        http_base_location = get_settings().server.service.ws_app_base_link
         http_file_location = http_base_location + os.sep + study_id + os.sep + 'files'
         # param validation
         if study_id is None:
@@ -2471,7 +2462,7 @@ class ChEBIPipeLine(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, \
         study_status = wsc.get_permissions(study_id, user_token)
 
         user_email = get_user_email(user_token)
@@ -2504,9 +2495,10 @@ class ChEBIPipeLine(Resource):
         run_silently = True if run_silently == 'true' else False
         run_on_cluster = True if run_on_cluster == 'true' else False
         update_study_maf = True if update_study_maf == 'true' else False
-
+        settings = get_settings()
+        study_metadata_location = os.path.join(settings.study.mounted_paths.study_metadata_files_root_path, study_id)
         print_log("Creating a new study audit folder for study %s", study_id)
-        audit_status, dest_path = write_audit_files(study_location)
+        audit_status, dest_path = write_audit_files(study_metadata_location)
         cmd = ""
         if run_on_cluster:
             cmd = "curl --silent --request POST"
@@ -2514,7 +2506,7 @@ class ChEBIPipeLine(Resource):
                 classyfire_search).lower() + "' -d 'annotation_file_name=#FILE_NAME#' -d 'update_study_maf=" + str(
                 update_study_maf).lower() + "' "
             cmd = cmd + param + " -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
-            cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + \
+            cmd = cmd + get_settings().chebi.pipeline.chebi_pipeline_url + study_id + \
                   "/chebi-pipeline?source=cluster' "
             print_log("cluster job -  %s", cmd)
 
@@ -2534,7 +2526,7 @@ class ChEBIPipeLine(Resource):
             # Loop through all m_*_v2_maf.tsv files
             study_files, upload_files, upload_diff, upload_location = \
                 get_all_files_from_filesystem(
-                    study_id, obfuscation_code, study_location, directory=None, include_raw_data=False)
+                    study_id, obfuscation_code, study_metadata_location, directory=None, include_raw_data=False)
             maf_count = 0
             maf_changed = 0
             for file in study_files:
@@ -2558,7 +2550,7 @@ class ChEBIPipeLine(Resource):
                     else:
                         maf_len, new_maf_len, pubchem_file, dime_db_api_active,cactus_search_status, \
                         opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised = \
-                            search_and_update_maf(study_id, study_location, file_name, classyfire_search, user_token,
+                            search_and_update_maf(study_id, study_metadata_location, file_name, classyfire_search, user_token,
                                                   run_silently=run_silently, update_study_maf=update_study_maf,
                                                   obfuscation_code=obfuscation_code)
                         if maf_len != new_maf_len:
@@ -2580,7 +2572,7 @@ class ChEBIPipeLine(Resource):
             else:
                 maf_len, new_maf_len, pubchem_file, dime_db_api_active, cactus_search_status, opsin_search_status, \
                 chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised  = \
-                search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
+                search_and_update_maf(study_id, study_metadata_location, annotation_file_name, classyfire_search, user_token,
                                           run_silently=run_silently, update_study_maf=update_study_maf,
                                           obfuscation_code=obfuscation_code)
                 pubchem_file = http_file_location + pubchem_file.split('/' + study_id)[1]
@@ -2708,20 +2700,14 @@ class ChEBIPipeLineLoad(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions('MTBLS1', user_token)
-        if not is_curator:
-            abort(403)
-
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('sdf_file_name', help="SDF File to load into ChEBI", location="args")
         args = parser.parse_args()
         sdf_file_name = args['sdf_file_name']
 
-        shell_script = app.config.get('CHEBI_UPLOAD_SCRIPT')
+        shell_script = get_settings().chebi.pipeline.chebi_upload_script
         command = shell_script
         if sdf_file_name:
             command = shlex.split(shell_script + ' ' + sdf_file_name)

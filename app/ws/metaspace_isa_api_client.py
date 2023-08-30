@@ -24,10 +24,12 @@ from flask import current_app as app
 from flask_restful import Resource, abort
 from isatools.isatab import dump
 from isatools.model import *
+from app.config import get_settings
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.isaAssay import create_assay
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.utils import get_study_settings
 from app.ws.utils import copy_files_and_folders, add_ontology_to_investigation, update_correct_sample_file_name
 
 logger = logging.getLogger('wslog')
@@ -72,8 +74,7 @@ class MetaSpaceIsaApiClient(Resource):
 
         if not isa_inv:
             try:
-                study_path = app.config.get('STUDY_PATH')
-                from_path = os.path.join(study_path, app.config.get('DEFAULT_TEMPLATE'))  # 'DUMMY'
+                from_path = get_settings().file_resources.study_default_template_path
                 to_path = output_dir
                 copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
                 # status, message = convert_to_isa(to_path, study_id)
@@ -149,14 +150,6 @@ class MetaSpaceIsaApiClient(Resource):
                 isa_inv.contacts.append(ct_submitter)
                 isa_study.contacts.append(ct_ppal_inv)
                 isa_study.contacts.append(ct_submitter)
-
-        # isa_inv.studies = isa_study
-
-        # CONNECT TO METASPACE SERVICES
-        # database = config.METASPACE_DATABASE
-        # fdr = config.METASPACE_FDR
-        # sm = SMInstance()  # connect to the main metaspace service
-        # db = sm._moldb_client.getDatabase(database)  # connect to the molecular database service
 
         if assay:
             # assay file
