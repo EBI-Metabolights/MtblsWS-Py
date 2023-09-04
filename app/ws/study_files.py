@@ -1027,7 +1027,7 @@ class StudyFilesReuse(Resource):
         include_internal_files = False
         if request.args:
             args = parser.parse_args(req=request)
-            force_write = True if args['force'].lower() == 'true' else False
+            force_write = True if args['force'] and args['force'].lower() == 'true' else False
             readonly_mode = True if not args['readonlyMode'] or args['readonlyMode'].lower() == 'true' else False
             if args['include_internal_files']:
                 include_internal_files = False if args['include_internal_files'].lower() != 'true' else True
@@ -1052,7 +1052,12 @@ class StudyFilesReuse(Resource):
         #         logger.warning(f"Error reading {files_list_json} for study {study_id}")
         
         referenced_files = get_referenced_file_set(study_id=study_id, metadata_path=study_metadata_location)
-        exclude_list = set(get_settings().file_filters.internal_mapping_list)
+        # exclude_list = set(get_settings().file_filters.internal_mapping_list)
+        
+        exclude_list = set()
+        for item in get_settings().file_filters.rsync_exclude_list:
+            exclude_list.add(os.path.join(get_settings().study.readonly_files_symbolic_link_name, item))
+        # exclude_list = extended_exclude_list.union(exclude_list)
         # if force_write:
         directory_files = get_directory_files(study_metadata_location, None, search_pattern="**/*", recursive=False, exclude_list=exclude_list)
         # metadata_files = get_all_metadata_files()
@@ -1831,7 +1836,9 @@ class StudyFilesTree(Resource):
                 
             # files_list_json_file = os.path.join(study_metadata_location, settings.readonly_files_symbolic_link_name, files_list_json)
             referenced_files = get_referenced_file_set(study_id=study_id, metadata_path=study_metadata_location)
-            exclude_list = set(get_settings().file_filters.internal_mapping_list)
+            exclude_list = set()
+            for item in get_settings().file_filters.rsync_exclude_list:
+                exclude_list.add(os.path.join(get_settings().study.readonly_files_symbolic_link_name, item))
             # if force_write:
             directory_files = get_directory_files(study_metadata_location, directory, search_pattern="**/*", recursive=False, exclude_list=exclude_list, include_metadata_files=True)
             # metadata_files = get_all_metadata_files()
