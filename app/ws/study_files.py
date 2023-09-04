@@ -1840,7 +1840,10 @@ class StudyFilesTree(Resource):
             for item in get_settings().file_filters.rsync_exclude_list:
                 exclude_list.add(os.path.join(get_settings().study.readonly_files_symbolic_link_name, item))
             # if force_write:
-            directory_files = get_directory_files(study_metadata_location, directory, search_pattern="**/*", recursive=False, exclude_list=exclude_list, include_metadata_files=True)
+            include_metadata_files = True
+            if directory == settings.readonly_files_symbolic_link_name:
+                include_metadata_files = False
+            directory_files = get_directory_files(study_metadata_location, directory, search_pattern="**/*", recursive=False, exclude_list=exclude_list, include_metadata_files=include_metadata_files)
             # metadata_files = get_all_metadata_files()
             # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
             # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
