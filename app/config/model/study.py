@@ -5,8 +5,10 @@ class StudyMountedPaths(BaseModel):
     study_metadata_files_root_path: str
     study_internal_files_root_path: str
     study_audit_files_root_path: str
-
+    study_readonly_files_actual_root_path: str
+    study_readonly_audit_files_actual_root_path: str
     study_readonly_files_root_path: str
+    
     study_readonly_audit_files_root_path: str
     study_readonly_metadata_files_root_path: str
     study_readonly_public_metadata_versions_root_path: str
@@ -14,6 +16,8 @@ class StudyMountedPaths(BaseModel):
 
     readonly_storage_recycle_bin_root_path: str
     rw_storage_recycle_bin_root_path: str
+    
+    legacy_study_files_root_path: str
     
     private_ftp_root_path: str = ""
     private_ftp_recycle_bin_root_path: str = ""
@@ -25,6 +29,9 @@ class StudyMountedPaths(BaseModel):
     
 class StudySettings(BaseModel):
     mounted_paths: StudyMountedPaths
+    
+    check_and_use_legacy_study_files_storage_if_it_exists: bool = True
+    
     private_ftp_user_home_path: str = ""
     max_study_in_submitted_status: int = 2
     min_study_creation_interval_in_mins: int = 5
@@ -33,7 +40,7 @@ class StudySettings(BaseModel):
     readonly_files_symbolic_link_name: str = "FILES"
 
     audit_folder_name: str = "audit"
-
+    readonly_audit_folder_symbolic_name: str  = "ARCHIVED_AUDIT_FILES"
     metadata_summary_file_name: str = "metadata_summary.tsv"
     data_files_summary_file_name: str = "data_files_summary.tsv"
     study_folder_maintenance_log_file_name: str = "maintenance_log.tsv"
@@ -47,6 +54,7 @@ class StudySettings(BaseModel):
 
     investigation_file_name: str = "i_Investigation.txt"
     internal_logs_folder_name: str = "logs"
+    internal_temp_folder_name: str = "temp"
     internal_backup_folder_name: str = "internal-backup"
 
     validation_report_file_name: str = "validation_report.json"

@@ -16,7 +16,7 @@ from app.ws.study.study_service import StudyService
 
 def maintain_folders(
     study_id_list: List[str],
-    target=None,
+    target: str = None,
     task_name: str = None,
     settings: StudySettings = None,
     output_summary_report=None,
@@ -113,55 +113,8 @@ def write_actions(f, actions: List[MaintenanceActionLog], study_id, study_status
     f.flush()
 
 
-if __name__ == "__main__":
-    
-
-    def sort_by_study_id(key: str):
-        if key:
-            val = os.path.basename(key).upper().replace("MTBLS", "")
-            if val.isnumeric():
-                return int(val)
-        return -1
-
-    study_ids = []
-    if len(sys.argv) > 1 and sys.argv[1]:
-        study_ids = [sys.argv[1]]
-
-    target = None
-    if len(sys.argv) > 2 and sys.argv[2]:
-        target = sys.argv[2]
-
-    output_summary_report = None
-    if len(sys.argv) > 3 and sys.argv[3]:
-        output_summary_report = sys.argv[3]
-
-    task_name = None
-    if len(sys.argv) > 4 and sys.argv[4]:
-        task_name = sys.argv[4]
-
-    apply_future_actions = False
-    if len(sys.argv) > 5 and sys.argv[5]:
-        apply_future_actions = True if sys.argv[5].lower().startswith("apply") else False
-
-    if not study_ids:
-        studies = StudyService.get_instance().get_all_study_ids()
-        skip_study_ids = []
-        study_ids = [study[0] for study in studies if study[0] and study[0] not in skip_study_ids]
-        
-    study_ids.sort(key=sort_by_study_id)
-    results = maintain_folders(
-        study_ids,
-        target=target,
-        output_summary_report=output_summary_report,
-        task_name=task_name,
-        apply_future_actions=apply_future_actions,
-    )
-
-    print("end")
-
-
 # if __name__ == "__main__":
-#     flask_app = get_flask_app()
+    
 
 #     def sort_by_study_id(key: str):
 #         if key:
@@ -170,10 +123,57 @@ if __name__ == "__main__":
 #                 return int(val)
 #         return -1
 
-#     with flask_app.app_context():
+#     study_ids = []
+#     if len(sys.argv) > 1 and sys.argv[1]:
+#         study_ids = [sys.argv[1]]
+
+#     target = None
+#     if len(sys.argv) > 2 and sys.argv[2]:
+#         target = sys.argv[2]
+
+#     output_summary_report = None
+#     if len(sys.argv) > 3 and sys.argv[3]:
+#         output_summary_report = sys.argv[3]
+
+#     task_name = None
+#     if len(sys.argv) > 4 and sys.argv[4]:
+#         task_name = sys.argv[4]
+
+#     apply_future_actions = False
+#     if len(sys.argv) > 5 and sys.argv[5]:
+#         apply_future_actions = True if sys.argv[5].lower().startswith("apply") else False
+
+#     if not study_ids:
 #         studies = StudyService.get_instance().get_all_study_ids()
-#         skip_study_ids = [f"MTBLS{(i + 1)}" for i in range(501)]
+#         skip_study_ids = []
 #         study_ids = [study[0] for study in studies if study[0] and study[0] not in skip_study_ids]
-#         study_ids.sort(key=sort_by_study_id)
-#         results = maintain_folders(study_ids, flask_app=flask_app)
+        
+#     study_ids.sort(key=sort_by_study_id)
+#     results = maintain_folders(
+#         study_ids,
+#         target=target,
+#         output_summary_report=output_summary_report,
+#         task_name=task_name,
+#         apply_future_actions=apply_future_actions,
+#     )
+
 #     print("end")
+
+
+if __name__ == "__main__":
+    flask_app = get_flask_app()
+
+    def sort_by_study_id(key: str):
+        if key:
+            val = os.path.basename(key).upper().replace("MTBLS", "")
+            if val.isnumeric():
+                return int(val)
+        return -1
+
+    # with flask_app.app_context():
+    # studies = StudyService.get_instance().get_all_study_ids()
+    # skip_study_ids = [f"MTBLS{(i + 1)}" for i in range(501)]
+    study_ids = ["MTBLS20001054"]
+    # study_ids.sort(key=sort_by_study_id)
+    results = maintain_folders(study_ids, target="metadata")
+    print("end")

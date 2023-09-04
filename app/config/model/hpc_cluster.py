@@ -35,9 +35,11 @@ class DataMoverPathConfiguration(BaseModel):
     cluster_study_metadata_files_root_path: str
     cluster_study_internal_files_root_path: str
     cluster_study_audit_files_root_path: str
-
     cluster_study_readonly_files_root_path: str
     cluster_study_readonly_audit_files_root_path: str
+    
+    cluster_study_readonly_files_actual_root_path: str
+    cluster_study_readonly_audit_files_actual_root_path: str
     cluster_study_readonly_metadata_files_root_path: str
     cluster_study_readonly_public_metadata_versions_root_path: str
     cluster_study_readonly_integrity_check_files_root_path: str
@@ -50,6 +52,7 @@ class DataMoverPathConfiguration(BaseModel):
     cluster_public_ftp_root_path: str
     cluster_public_ftp_recycle_bin_root_path: str
     
+    cluster_legacy_study_files_root_path: str
     cluster_reports_root_path: str
     cluster_compounds_root_path: str
     

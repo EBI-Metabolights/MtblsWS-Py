@@ -66,12 +66,15 @@ class StudyFolders(BaseModel):
     study_metadata_files_root_path: str = ""
     study_internal_files_root_path: str = ""
     study_audit_files_root_path: str = ""
-
     study_readonly_files_root_path: str = ""
     study_readonly_audit_files_root_path: str = ""
+    
+    study_readonly_files_actual_root_path: str = ""
+    study_readonly_audit_files_actual_root_path: str = ""
     study_readonly_metadata_files_root_path: str = ""
     study_readonly_public_metadata_versions_root_path: str = ""
     study_readonly_integrity_check_files_root_path: str = ""
+    study_legacy_study_files_root_path: str = ""
 
     readonly_storage_recycle_bin_root_path: str = ""
     rw_storage_recycle_bin_root_path: str = ""
@@ -80,7 +83,6 @@ class StudyFolders(BaseModel):
     cluster_public_ftp_root_path: str = ""
     cluster_private_ftp_recycle_bin_root_path: str = ""
     cluster_public_ftp_recycle_bin_root_path: str = ""    
-
 
 PARAM_COLUMN_NAME_REGEX_PATTERN = re.compile(r"^(.*)\[(.*)\]\s*(\.[1-9][0-9]*)?\s*$")
 NUMBERED_COLUMN_NAME_REGEX_PATTERN = re.compile(r"^(.*)\s*\.([1-9][0-9]*)\s*$")
@@ -111,15 +113,17 @@ class FolderRootPaths(object):
         self.folders.study_audit_files_root_path = self.study_settings.mounted_paths.study_audit_files_root_path
         
         self.folders.study_readonly_files_root_path = self.study_settings.mounted_paths.study_readonly_files_root_path
+        self.folders.study_readonly_files_actual_root_path = self.study_settings.mounted_paths.study_readonly_files_actual_root_path
         self.folders.study_readonly_audit_files_root_path = self.study_settings.mounted_paths.study_readonly_audit_files_root_path
+        self.folders.study_readonly_audit_files_actual_root_path = self.study_settings.mounted_paths.study_readonly_audit_files_actual_root_path
         self.folders.study_readonly_metadata_files_root_path = self.study_settings.mounted_paths.study_readonly_metadata_files_root_path
         self.folders.study_readonly_public_metadata_versions_root_path = self.study_settings.mounted_paths.study_readonly_public_metadata_versions_root_path
         self.folders.study_readonly_integrity_check_files_root_path = self.study_settings.mounted_paths.study_readonly_integrity_check_files_root_path
-        
         self.folders.readonly_storage_recycle_bin_root_path = self.study_settings.mounted_paths.readonly_storage_recycle_bin_root_path
         self.folders.rw_storage_recycle_bin_root_path = self.study_settings.mounted_paths.rw_storage_recycle_bin_root_path
-        
+        self.folders.study_legacy_study_files_root_path = self.study_settings.mounted_paths.legacy_study_files_root_path
 
+        
  
     def _update_folders_as_cluster_mode(self):
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
@@ -128,11 +132,14 @@ class FolderRootPaths(object):
         self.folders.study_audit_files_root_path = mounted_paths.cluster_study_audit_files_root_path
         
         self.folders.study_readonly_files_root_path = mounted_paths.cluster_study_readonly_files_root_path
+        self.folders.study_readonly_files_actual_root_path = mounted_paths.cluster_study_readonly_files_actual_root_path
         self.folders.study_readonly_audit_files_root_path = mounted_paths.cluster_study_readonly_audit_files_root_path
+        self.folders.study_readonly_audit_files_actual_root_path = mounted_paths.cluster_study_readonly_audit_files_actual_root_path
+
         self.folders.study_readonly_metadata_files_root_path = mounted_paths.cluster_study_readonly_metadata_files_root_path
         self.folders.study_readonly_public_metadata_versions_root_path = mounted_paths.cluster_study_readonly_public_metadata_versions_root_path
         self.folders.study_readonly_integrity_check_files_root_path = mounted_paths.cluster_study_readonly_integrity_check_files_root_path
-        
+        self.folders.study_legacy_study_files_root_path = mounted_paths.cluster_legacy_study_files_root_path
         self.folders.readonly_storage_recycle_bin_root_path = mounted_paths.cluster_readonly_storage_recycle_bin_root_path
         self.folders.rw_storage_recycle_bin_root_path = mounted_paths.cluster_rw_storage_recycle_bin_root_path
                
@@ -156,7 +163,7 @@ class StudyFolderMaintenanceTask(object):
         obfuscationcode: str = None,
         settings: StudySettings = None,
         task_name=None,
-        delete_unreferenced_metadata_files=True,
+        delete_unreferenced_metadata_files=False,
         fix_tsv_file_headers=True,
         fix_assay_file_column_values=True,
         fix_sample_file_column_values=True,
@@ -187,7 +194,7 @@ class StudyFolderMaintenanceTask(object):
         self.cluster_execution_mode = cluster_execution_mode
         
         self.paths: FolderRootPaths = FolderRootPaths(study_settings=self.study_settings, cluster_settings=self.cluster_settings, cluster_mode=self.cluster_execution_mode)
-        self.settings = self.paths.folders
+        self.folders = self.paths.folders
         self.task_name = task_name
         date_format = "%Y-%m-%d_%H-%M-%S"
         timestamp_str = time.strftime(date_format)
@@ -199,25 +206,25 @@ class StudyFolderMaintenanceTask(object):
             self.task_name = f"{self.task_name}_{timestamp_str}"
             
         self.study_recycle_bin_path = os.path.join(
-            self.settings.study_audit_files_root_path,
+            self.folders.study_audit_files_root_path,
             study_id,
             self.study_settings.internal_backup_folder_name,
             self.recycle_bin_folder_name,
         )
 
         self.readonly_storage_recycle_bin_path = os.path.join(
-            self.settings.readonly_storage_recycle_bin_root_path, self.recycle_bin_folder_name
+            self.folders.readonly_storage_recycle_bin_root_path, self.recycle_bin_folder_name
         )
         self.rw_storage_recycle_bin_path = os.path.join(
-            self.settings.rw_storage_recycle_bin_root_path, self.recycle_bin_folder_name
+            self.folders.rw_storage_recycle_bin_root_path, self.recycle_bin_folder_name
         )
 
-        self.study_metadata_files_path = os.path.join(self.settings.study_metadata_files_root_path, study_id)
-        self.study_readonly_files_path = os.path.join(self.settings.study_readonly_files_root_path, study_id)
+        self.study_metadata_files_path = os.path.join(self.folders.study_metadata_files_root_path, study_id)
+        self.study_readonly_files_path = os.path.join(self.folders.study_readonly_files_root_path, study_id)
         self.study_audit_files_path = os.path.join(
-            self.settings.study_audit_files_root_path, study_id, self.study_settings.audit_folder_name
+            self.folders.study_audit_files_root_path, study_id, self.study_settings.audit_folder_name
         )
-        self.study_internal_files_path = os.path.join(self.settings.study_internal_files_root_path, study_id)
+        self.study_internal_files_path = os.path.join(self.folders.study_internal_files_root_path, study_id)
 
         self.actions: List[MaintenanceActionLog] = []
         self.future_actions: List[MaintenanceActionLog] = []
@@ -1006,12 +1013,12 @@ class StudyFolderMaintenanceTask(object):
             created_folders[file_path] = chmod_str
 
     def calculate_readonly_study_folders_future_actions(self):
-        settings = self.settings
+        settings = self.folders
         study_id = self.study_id
         readonly_storage_recycle_bin_path = self.readonly_storage_recycle_bin_path
         created_folders = {}
         deleted_folders = set()
-        readonly_files_path = os.path.join(settings.study_readonly_files_root_path, study_id)
+        readonly_files_path = os.path.join(settings.study_readonly_files_actual_root_path, study_id)
         self._create_folder_future_actions(
             readonly_files_path, 0o750, readonly_storage_recycle_bin_path, created_folders, deleted_folders
         )
@@ -1021,7 +1028,7 @@ class StudyFolderMaintenanceTask(object):
             readonly_metadata_path, 0o750, readonly_storage_recycle_bin_path, created_folders, deleted_folders
         )
 
-        readonly_audit_path = os.path.join(settings.study_readonly_audit_files_root_path, study_id)
+        readonly_audit_path = os.path.join(settings.study_readonly_audit_files_actual_root_path, study_id)
         self._create_folder_future_actions(
             readonly_audit_path, 0o750, readonly_storage_recycle_bin_path, created_folders, deleted_folders
         )
@@ -1049,7 +1056,7 @@ class StudyFolderMaintenanceTask(object):
         )
 
     def delete_rw_storage_folders(self):
-        settings = self.settings
+        settings = self.folders
         study_id = self.study_id
         rw_storage_recycle_bin_path = self.rw_storage_recycle_bin_path
 
@@ -1066,7 +1073,7 @@ class StudyFolderMaintenanceTask(object):
         self.backup_file(metadata_path, backup_path=metadata_backup_path, force_delete=True)
 
     def delete_readonly_storage_folders(self):
-        settings = self.settings
+        settings = self.folders
         study_id = self.study_id
         readonly_storage_recycle_bin_path = self.readonly_storage_recycle_bin_path
 
@@ -1108,7 +1115,7 @@ class StudyFolderMaintenanceTask(object):
                         
 
     def maintain_rw_storage_folders(self):
-        settings = self.settings
+        settings = self.folders
         study_id = self.study_id
         study_settings = self.study_settings
         rw_storage_recycle_bin_path = os.path.join(self.rw_storage_recycle_bin_path, self.study_id)
@@ -1132,17 +1139,41 @@ class StudyFolderMaintenanceTask(object):
         log_path = os.path.join(internal_file_path, study_settings.internal_logs_folder_name)
         self._create_rw_storage_folder(log_path, 0o777, study_recycle_bin_path)
 
+
         read_only_files_path = os.path.join(settings.study_readonly_files_root_path, study_id)
         readonly_files_symbolic_link_path = os.path.join(
             settings.study_metadata_files_root_path, study_id, study_settings.readonly_files_symbolic_link_name
-        )
+        )        
+        read_only_files_actual_path = os.path.join(settings.study_readonly_files_actual_root_path, study_id)
+        legacy_study_files_path = os.path.join(settings.study_legacy_study_files_root_path, study_id)
+        read_only_audit_files_path = os.path.join(settings.study_readonly_audit_files_root_path, study_id)
+        
+
         audit_folder_symbolic_link_path: str = os.path.join(
             settings.study_metadata_files_root_path, study_id, study_settings.audit_files_symbolic_link_name
         )
+        
         internal_file_symbolic_link_path: str = os.path.join(
             settings.study_metadata_files_root_path, study_id, study_settings.internal_files_symbolic_link_name
         )
-
+        
+        archived_audit_file_link_path = os.path.join(study_audit_folder_path, study_settings.readonly_audit_folder_symbolic_name)
+        
+        read_only_audit_files_actual_path = os.path.join(settings.study_readonly_audit_files_actual_root_path, study_id)
+        
+        if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists and os.path.exists(legacy_study_files_path):
+            self.maintain_study_symlinks(legacy_study_files_path, read_only_files_path)
+        else:
+            self.maintain_study_symlinks(read_only_files_actual_path, read_only_files_path)
+        
+        legacy_study_audit_path = os.path.join(legacy_study_files_path, self.study_settings.audit_folder_name)
+        if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists and os.path.exists(legacy_study_audit_path):
+            self.maintain_study_symlinks(legacy_study_audit_path, read_only_audit_files_path)
+        else:
+            self.maintain_study_symlinks(read_only_audit_files_actual_path, read_only_audit_files_path)
+        
+        self.maintain_study_symlinks(read_only_audit_files_path, archived_audit_file_link_path)
+        
         self.maintain_study_symlinks(read_only_files_path, readonly_files_symbolic_link_path)
         self.maintain_study_symlinks(study_audit_folder_path, audit_folder_symbolic_link_path)
         self.maintain_study_symlinks(internal_file_path, internal_file_symbolic_link_path)
