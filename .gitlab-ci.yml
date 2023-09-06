@@ -4,7 +4,7 @@ variables:
      BUILD_SCRIPTS_ROOT_PATH: "/home/gitlab-runner/ci_cd/standalone/mtblsws-py"
 workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "development-pipeline-test"
+    - if: $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "staging"
 stages:
   - prepare
   - build
@@ -24,6 +24,9 @@ build_version_files:
     - if: $CI_COMMIT_BRANCH == "test"
       variables:
         RELEASE_NAME: test.${CI_PIPELINE_ID}
+    - if: $CI_COMMIT_BRANCH == "staging"
+      variables:
+        RELEASE_NAME: staging.${CI_PIPELINE_ID}
   script:
     - echo "PIPELINE_ID ${CI_PIPELINE_ID} and commit ${CI_COMMIT_SHORT_SHA} commit name ${CI_COMMIT_REF_NAME}"
     - echo "${RELEASE_NAME}-${CI_COMMIT_SHORT_SHA}" > .build_number
@@ -60,6 +63,7 @@ run_server:
   stage: deploy
   only:
       - test
+      - staging
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/restart_server.sh"
     - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/restart_datamover.sh"
