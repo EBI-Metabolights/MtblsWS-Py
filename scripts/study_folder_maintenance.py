@@ -1,3 +1,4 @@
+import datetime
 import os
 import sys
 import time
@@ -22,25 +23,26 @@ def maintain_folders(
     output_summary_report=None,
     delete_unreferenced_metadata_files=False,
     apply_future_actions=False,
+    cluster_mode:bool=False
 ):
-    if target.lower().startswith("metadata"):
-        target = "metadata"
-    elif target.lower().startswith("data"):
-        target = "data"
-    elif target.lower().startswith("private-ftp"):
-        target = "private-ftp"
+    if not target:
+        raise MaintenanceException(message="target should be 'metadata', 'data', 'private-ftp or combination of them with , char. Examples: 'metadata,data', 'metadata,data,private-ftp'")
+    
+    target_list: List[str] = [x.strip().lower() for x in target.split(',')]
+    
 
     if not study_id_list:
         raise MaintenanceException(message="At least one study should be selected")
-    if not target:
-        raise MaintenanceException(message="target should be 'metadata', 'data' or 'private-ftp")
+    
 
-
+    start = time.time() 
+    start_time_str = datetime.datetime.fromtimestamp(start).strftime("%Y-%m-%d %H:%M:%S")
+    print(f"Maintenance task started at {start_time_str}")
     maintenance_task_list: Dict[str, StudyFolderMaintenanceTask] = {}
     if not settings:
         settings = get_study_settings()
     if not output_summary_report:
-        output_summary_report = "./study_folder_future_maintenance_log.tsv"
+        output_summary_report = "./study_folder_maintenance_log.tsv"
     future_action_log_file_path = output_summary_report
 
     with open(future_action_log_file_path, "w") as fa:
@@ -62,38 +64,39 @@ def maintain_folders(
                 settings=settings,
                 apply_future_actions=apply_future_actions,
                 force_to_maintain=True,
+                cluster_execution_mode=cluster_mode
             )
 
             maintenance_task_list[study_id] = maintenance_task
+            try: 
 
-            if target == "data":
-                try:
-                    maintenance_task.create_maintenance_actions_for_study_data_files()
-                except Exception as ex:
-                    print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
-                finally:
-                    if apply_future_actions:
-                        write_actions(fa, maintenance_task.actions, study_id, study_status.name)
-                    else:
-                        write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
-            elif target == "metadata":
-                try:
-                    maintenance_task.maintain_study_rw_storage_folders()
-                except Exception as ex:
-                    print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
-                finally:
+
+
+                if "private-ftp" in target_list:
+                    try:
+                        maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
+                    except Exception as ex:
+                        print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
+                
+                if "metadata" in target_list:
+                    try:
+                        maintenance_task.maintain_study_rw_storage_folders()
+                    except Exception as ex:
+                        print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
+                        
+                if "data" in target_list:
+                    try:
+                        maintenance_task.create_maintenance_actions_for_study_data_files()
+                    except Exception as ex:
+                        print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
+            finally:
+                if maintenance_task.actions:
                     write_actions(fa, maintenance_task.actions, study_id, study_status.name)
-            elif target == "private-ftp":
-                try:
-                    maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
-                except Exception as ex:
-                    print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
-                finally:
-                    if apply_future_actions:
-                        write_actions(fa, maintenance_task.actions, study_id, study_status.name)
-                    else:
-                        write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
-
+                if maintenance_task.future_actions:
+                    write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
+                task_done_time = time.time()
+                print(f"{study_id} maintenance has been completed. Elapsed time in seconds: {int((task_done_time - start)*100)/100.0} " )
+                    
     return maintenance_task_list
 
 
@@ -124,8 +127,8 @@ if __name__ == "__main__":
         return -1
 
     study_ids = []
-    if len(sys.argv) > 1 and sys.argv[1]:
-        study_ids = [sys.argv[1]]
+    if len(sys.argv) > 1 and sys.argv[1]:         
+        study_ids = sys.argv[1].split(',')
 
     target = None
     if len(sys.argv) > 2 and sys.argv[2]:
@@ -143,11 +146,26 @@ if __name__ == "__main__":
     if len(sys.argv) > 5 and sys.argv[5]:
         apply_future_actions = True if sys.argv[5].lower().startswith("apply") else False
 
+    cluster_mode = False
+    if len(sys.argv) > 6 and sys.argv[6]:
+        cluster_mode = True if sys.argv[6].lower().startswith("cluster") else False
+        
+    items = set()
     if not study_ids:
         studies = StudyService.get_instance().get_all_study_ids()
         skip_study_ids = []
         study_ids = [study[0] for study in studies if study[0] and study[0] not in skip_study_ids]
-        
+    else:
+        study_status_map = {data.name.upper():data.value for data in StudyStatus}
+        for item in study_ids:
+            if item and item.upper().startswith("MTBLS"):
+                items.add(item)
+            elif item and item.upper() in study_status_map:
+                status = StudyStatus(study_status_map[item.upper()])
+                study_id_result = StudyService.get_instance().get_study_ids_with_status(status)
+                for study in study_id_result:
+                    items.add(study[0])
+        study_ids = list(items)
     study_ids.sort(key=sort_by_study_id)
     results = maintain_folders(
         study_ids,
@@ -155,6 +173,7 @@ if __name__ == "__main__":
         output_summary_report=output_summary_report,
         task_name=task_name,
         apply_future_actions=apply_future_actions,
+        cluster_mode=cluster_mode
     )
 
     print("end")

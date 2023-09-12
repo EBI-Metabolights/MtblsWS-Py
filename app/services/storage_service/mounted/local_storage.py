@@ -58,7 +58,7 @@ class LocalStorage(Storage):
                 target_file_backup_path = source_path + "_" + target_path_backup_id
                 os.rename(target_file_path, target_file_backup_path)
 
-            shutil.copyfile(source_path, target_file_path)
+            shutil.copy2(source_path, target_file_path)
             return target_file_path
         except Exception:
             if target_file_backup_path:

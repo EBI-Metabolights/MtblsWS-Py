@@ -1,10 +1,12 @@
 import glob
 import hashlib
+import io
 import logging
 import os
 import pathlib
 import re
 import shutil
+import chardet
 import time
 from datetime import datetime
 from enum import Enum
@@ -26,6 +28,8 @@ from app.services.storage_service.mounted.local_file_manager import \
     MountedVolumeFileManager
 from app.services.storage_service.remote_worker.remote_file_manager import \
     RemoteFileManager
+from app.tasks.bash_client import BashClient
+from app.tasks.hpc_rsync_worker import HpcRsyncWorker
 from app.utils import INVESTIGATION_FILE_ROWS_LIST, INVESTIGATION_FILE_ROWS_SET
 from app.ws.db.types import StudyStatus
 from app.ws.settings.utils import get_cluster_settings, get_study_settings
@@ -174,6 +178,7 @@ class StudyFolderMaintenanceTask(object):
         future_actions_create_subfolders=False,
         future_actions_compress_folders=False,
         future_actions_recompress_unexpected_acrhive_files=False,
+        backup_study_private_ftp_metadata_files=True,
         apply_future_actions=False,
         max_referenced_files_in_folder=200,
         create_data_files_maintenance_file=True,
@@ -185,6 +190,7 @@ class StudyFolderMaintenanceTask(object):
         self.public_release_date = public_release_date
         self.submission_date = submission_date
         self.delete_unreferenced_metadata_files = delete_unreferenced_metadata_files
+        self.backup_study_private_ftp_metadata_files = backup_study_private_ftp_metadata_files
         self.study_settings = settings
         if not self.study_settings:
             self.study_settings = get_study_settings()
@@ -246,42 +252,96 @@ class StudyFolderMaintenanceTask(object):
         self.apply_future_actions = apply_future_actions
         
         # self.file_manager = MountedVolumeFileManager(f"{self.study_id}_local_file_manager")
-    
-    def create_audit_folder(self, folder_name: str = None, stage: str = "BACKUP"):
-        if os.path.exists(self.study_metadata_files_path):
-            self.maintain_rw_storage_folders()
-            metadata_files_list = self.get_all_metadata_files(recursive=False)
-            metadata_files_list.sort()
+    def backup_private_ftp_metadata_files(self, folder_name: str = None, stage: str = "BACKUP"):
+        metadata_files_list = self.get_all_private_ftp_metadata_files(recursive=False)
+        metadata_files_list.sort()
+        mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+        study_id = self.study_id
+        folder_name = f"{study_id.lower()}-{self.obfuscationcode}"
+        
+        private_ftp_root_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, folder_name)
+        private_ftp_recycle_bin_study_path = os.path.join(mounted_paths.cluster_private_ftp_recycle_bin_root_path, folder_name)
+        target_path = self.study_metadata_files_path
+        include_list = ["[asi]_*.txt", "m_*.tsv"]
+        exclude_list = ["*"]
+        if metadata_files_list:
+            command = HpcRsyncWorker.build_rsync_command(
+                private_ftp_root_path, target_path, include_list, exclude_list, rsync_arguments='-auv'
+            )
+            BashClient.execute_command(command)
+            date_format = "%Y-%m-%d_%H-%M-%S"
+            backup_folder_name =  time.strftime(date_format)
+            if stage:
+                backup_folder_name = f"{backup_folder_name}_{stage}"     
+            backup_folder_path = os.path.join(private_ftp_recycle_bin_study_path, backup_folder_name)
+            os.makedirs(backup_folder_path, exist_ok=True)
             
-            if metadata_files_list:
-                if not folder_name:
-                    date_format = "%Y-%m-%d_%H-%M-%S"
-                    folder_name =  time.strftime(date_format)
-                if stage:
-                    folder_name = f"{folder_name}_{stage}"
-                audit_folder_path = os.path.join(self.study_audit_files_path, folder_name)
-                os.makedirs(audit_folder_path, exist_ok=True)
+            # for file_path in metadata_files_list:
+            #     try:
+            #         basename = os.path.basename(file_path)
+            #         target_path = os.path.join(backup_folder_path, basename)
+            #         shutil.copy2(file_path, target_path) 
+            #     except Exception as ex:
+            #         action_log = MaintenanceActionLog(
+            #             item=file_path,
+            #             action=MaintenanceAction.ERROR_MESSAGE,
+            #             parameters={},
+            #             message=f"{self.study_id}: Private ftp metadata file  {file_path} is not copied.",
+            #             successful=False,
+            #         )
+            #         self.actions.append(action_log)
                 
-                for file in metadata_files_list:
-                    basename = os.path.basename(file)
-                    target_file = os.path.join(audit_folder_path, basename)
-                    shutil.copy(file, target_file)
+            #     action_log = MaintenanceActionLog(
+            #         item=file_path,
+            #         action=MaintenanceAction.INFO_MESSAGE,
+            #         parameters={},
+            #         message=f"{self.study_id}: Private ftp metadata files were copied to backup folder {backup_folder_path}.",
+            #         successful=True,
+            #     )
+            #     self.actions.append(action_log)                      
+    
+            for file_path in metadata_files_list:
+                self.backup_file(file_path, reason="Rsync with metadata folder", backup_path=backup_folder_path, keep_file_on_folder=False, force_delete=True)
                 
-                self.update_study_folder_metadata_signature()
-                metadata_files_signature_path = os.path.join(
-                    self.study_internal_files_path, self.study_settings.metadata_files_signature_file_name
-                )
-                basename = os.path.basename(metadata_files_signature_path)
+    def create_audit_folder(self, folder_name: str = None, stage: str = "BACKUP"):
+        # if os.path.exists(self.study_metadata_files_path):
+        metadata_files_list = self.get_all_metadata_files(recursive=False)
+        metadata_files_list.sort()
+        if not folder_name:
+            date_format = "%Y-%m-%d_%H-%M-%S"
+            folder_name =  time.strftime(date_format)
+        if stage:
+            folder_name = f"{folder_name}_{stage}"
+                        
+        if metadata_files_list:
+            if not folder_name:
+                date_format = "%Y-%m-%d_%H-%M-%S"
+                folder_name =  time.strftime(date_format)
+            if stage:
+                folder_name = f"{folder_name}_{stage}"
+            audit_folder_path = os.path.join(self.study_audit_files_path, folder_name)
+            os.makedirs(audit_folder_path, exist_ok=True)
+            
+            for file in metadata_files_list:
+                basename = os.path.basename(file)
                 target_file = os.path.join(audit_folder_path, basename)
-                shutil.copy(metadata_files_signature_path, target_file)
-                action_log = MaintenanceActionLog(
-                    item=audit_folder_path,
-                    action=MaintenanceAction.INFO_MESSAGE,
-                    parameters={},
-                    message=f"{self.study_id}: Audit folder {folder_name} was created.",
-                    successful=True,
-                )
-                self.actions.append(action_log)
+                shutil.copy2(file, target_file)
+            
+            self.update_study_folder_metadata_signature()
+            metadata_files_signature_path = os.path.join(
+                self.study_internal_files_path, self.study_settings.metadata_files_signature_file_name
+            )
+            basename = os.path.basename(metadata_files_signature_path)
+            target_file = os.path.join(audit_folder_path, basename)
+            shutil.copy2(metadata_files_signature_path, target_file)
+            action_log = MaintenanceActionLog(
+                item=audit_folder_path,
+                action=MaintenanceAction.INFO_MESSAGE,
+                parameters={},
+                message=f"{self.study_id}: Audit folder {folder_name} was created.",
+                successful=True,
+            )
+            self.actions.append(action_log)
                     
     def execute_future_actions(self) -> Dict[str, str]:
         if self.cluster_execution_mode:
@@ -535,6 +595,8 @@ class StudyFolderMaintenanceTask(object):
         return self.future_actions
 
     def create_maintenace_actions_for_study_private_ftp_folder(self) -> List[MaintenanceActionLog]:
+        if self.backup_study_private_ftp_metadata_files:
+            self.backup_private_ftp_metadata_files()
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
         study_id = self.study_id
         cluster_private_ftp_recycle_bin_root_path = mounted_paths.cluster_private_ftp_recycle_bin_root_path
@@ -648,15 +710,117 @@ class StudyFolderMaintenanceTask(object):
             self.actions.append(action_log)
             raise ex
         return referenced_files_set
-
+    
+    def maintain_file_encodings(self):
+        metadata_files = self.get_all_metadata_files()
+        study_id = self.study_id
+        status= self.study_status
+        for file_path in metadata_files:
+            converted_file_path = file_path + self.task_name
+            file_converted = False
+            try:
+                if os.path.getsize(file_path) == 0:  # Empty file
+                    action_log = MaintenanceActionLog(
+                        item=file_path,
+                        action=MaintenanceAction.WARNING_MESSAGE,
+                        parameters={"summary": f"Empty file: {file_path}"},
+                        message=f"{self.study_id}: File {file_path} is empty.",
+                        successful=False,
+                    )
+                    self.actions.append(action_log)
+                else:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+            except Exception as e:
+                if isinstance(e, UnicodeDecodeError):
+                    encoding = None
+                    with open(file_path, 'rb') as f:
+                        content = f.read()
+                        first_four_bytes = content[:4]
+                        if first_four_bytes == b'PK\x03\x04':
+                            action_log = MaintenanceActionLog(
+                                item=file_path,
+                                action=MaintenanceAction.ERROR_MESSAGE,
+                                parameters={"summary": f"Error while reading file: {file_path}"},
+                                message=f"{study_id} ({status.name}): {file_path} has xlsx format. xlsx format is not valid for ISA metadata files.",
+                                successful=False,
+                            )
+                            self.actions.append(action_log)
+                            continue
+                            
+                        encoding = chardet.detect(content[:4000] if len(content) > 0 else content)['encoding']
+                    if encoding:
+                        unicode_content = None
+                        encoding_name = None
+                        try:
+                            encoding_name = 'latin1' if encoding == 'ascii' else encoding
+                            unicode_content =  content.decode(encoding=encoding_name)
+                            with open(converted_file_path, 'w', encoding="utf-8") as f:
+                                f.write(unicode_content)
+                                file_converted = True
+                            action_log = MaintenanceActionLog(
+                                item=file_path,
+                                action=MaintenanceAction.WARNING_MESSAGE,
+                                parameters={"summary": f"{encoding} encoded file is converted to utf-8."},
+                                message=f"{study_id} ({status.name}): {file_path}. {encoding} encoded file is converted to utf-8.",
+                                successful=True,
+                            )
+                            self.actions.append(action_log)
+                        except Exception as ex:
+                            try:
+                                unicode_content =  content.decode(encoding="latin1")
+                                with open(converted_file_path, 'w', encoding="utf-8") as f:
+                                    f.write(unicode_content)
+                                    file_converted = True
+                                action_log = MaintenanceActionLog(
+                                    item=file_path,
+                                    action=MaintenanceAction.WARNING_MESSAGE,
+                                    parameters={"summary": f"File encoding is detected as {encoding}. File is decoded as {encoding_name} and converted to utf-8."},
+                                    message=f"{study_id} ({status.name}): {file_path}. File encoding is detected as {encoding}. File is decoded as {encoding_name} and converted to utf-8.",
+                                    successful=True,
+                                )
+                                self.actions.append(action_log)
+                            except Exception as ex:
+                                action_log = MaintenanceActionLog(
+                                    item=file_path,
+                                    action=MaintenanceAction.ERROR_MESSAGE,
+                                    parameters={"summary": f"File encoding is detected as {encoding}. However it is failed to convert to utf-8."},
+                                    message=f"{study_id} ({status.name}): {file_path}. File encoding is detected as {encoding}. However file is not converted to utf-8. {str(self.sanitise(ex))}",
+                                    successful=False,
+                                )
+                                self.actions.append(action_log)
+                    else:
+                        action_log = MaintenanceActionLog(
+                            item=file_path,
+                            action=MaintenanceAction.ERROR_MESSAGE,
+                            parameters={"summary": f"File encoding is not detected and file is not converted to utf-8"},
+                            message=f"{study_id} ({status.name}): {file_path}. File encoding is not detected and file is not converted to utf-8",
+                            successful=False,
+                        )
+                        self.actions.append(action_log)
+                else:
+                    action_log = MaintenanceActionLog(
+                        item=file_path,
+                        action=MaintenanceAction.ERROR_MESSAGE,
+                        parameters={"summary": f"Error while reading file: {file_path}"},
+                        message=f"{self.study_id}: Reading file is failed: {file_path}  {str(self.sanitise(e))}",
+                        successful=False,
+                    )
+                    self.actions.append(action_log)
+                    
+            if file_converted:
+                self.backup_file(file_path)
+                shutil.move(converted_file_path, file_path)
+    
     def maintain_study_rw_storage_folders(self, create_audit_folder=True) -> List[MaintenanceActionLog]:
         investigation = None
         investigation_file_path = os.path.join(self.study_metadata_files_path, self.investigation_file_name)
         update_metadata_files = False
         try:
+            self.maintain_rw_storage_folders()
             if create_audit_folder:
                 self.create_audit_folder(self.task_name)
-            self.maintain_rw_storage_folders()
+            self.maintain_file_encodings()
             self.maintain_unwanted_files()
             self.maintain_metadata_file_types_and_permissions()
             same_metada_files = self.check_study_folder_metadata_signature()
@@ -669,6 +833,8 @@ class StudyFolderMaintenanceTask(object):
                     self.maintain_sample_file_content(investigation)
                     self.maintain_assay_files(investigation)
                     self.maintain_assay_file_content(investigation)
+        except Exception as ex:
+            print(ex)
         finally:
             if update_metadata_files:
                 if investigation and investigation.studies and investigation.studies[0]:
@@ -867,6 +1033,18 @@ class StudyFolderMaintenanceTask(object):
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
 
+    def get_all_private_ftp_metadata_files(self, recursive=False):
+        metadata_files = []
+        patterns = ["a_*.txt", "s_*.txt", "i_*.txt", "m_*.tsv"]
+        mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+        study_id = self.study_id
+        folder_name = f"{study_id.lower()}-{self.obfuscationcode}"
+        private_ftp_root_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, folder_name)
+        
+        for pattern in patterns:
+            metadata_files.extend(glob.glob(os.path.join(private_ftp_root_path, pattern), recursive=recursive))
+        return metadata_files
+    
     def get_all_metadata_files(self, recursive=False):
         metadata_files = []
         patterns = ["a_*.txt", "s_*.txt", "i_*.txt", "m_*.tsv"]
@@ -1043,7 +1221,6 @@ class StudyFolderMaintenanceTask(object):
             created_folders,
             deleted_folders,
         )
-
         readonly_integrity_check_files_path = os.path.join(
             settings.study_readonly_integrity_check_files_root_path, study_id
         )
@@ -1112,7 +1289,7 @@ class StudyFolderMaintenanceTask(object):
         private_ftp_root_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, folder_name)
         private_ftp_root_backup_path = os.path.join(cluster_private_ftp_recycle_bin_root_path, "private-ftp-files")
         self.backup_file(private_ftp_root_path, backup_path=private_ftp_root_backup_path, force_delete=True)
-                        
+        
 
     def maintain_rw_storage_folders(self):
         settings = self.folders
@@ -1141,13 +1318,14 @@ class StudyFolderMaintenanceTask(object):
 
 
         read_only_files_path = os.path.join(settings.study_readonly_files_root_path, study_id)
+        self._create_rw_storage_folder(read_only_files_path, 0o755, study_recycle_bin_path)
         readonly_files_symbolic_link_path = os.path.join(
             settings.study_metadata_files_root_path, study_id, study_settings.readonly_files_symbolic_link_name
         )        
         read_only_files_actual_path = os.path.join(settings.study_readonly_files_actual_root_path, study_id)
         legacy_study_files_path = os.path.join(settings.study_legacy_study_files_root_path, study_id)
         read_only_audit_files_path = os.path.join(settings.study_readonly_audit_files_root_path, study_id)
-        
+        self._create_rw_storage_folder(read_only_audit_files_path, 0o755, study_recycle_bin_path)
 
         audit_folder_symbolic_link_path: str = os.path.join(
             settings.study_metadata_files_root_path, study_id, study_settings.audit_files_symbolic_link_name
@@ -1293,7 +1471,7 @@ class StudyFolderMaintenanceTask(object):
             #     for file in investigation_file_candidates:
             #         self.backup_file(file, reason="Investigation file name is not invalid.")
         else:
-            shutil.copy(temaplate_investigation_file_path, investigation_file_path)
+            shutil.copy2(temaplate_investigation_file_path, investigation_file_path)
             action_log = MaintenanceActionLog(
                 item=investigation_file_path,
                 action=MaintenanceAction.COPY,
@@ -1461,7 +1639,7 @@ class StudyFolderMaintenanceTask(object):
         cleantext = " ".join(cleantext.split())
         return cleantext.strip()
 
-    def backup_file(self, file_path, reason=None, prefix=None, backup_path=None, force_delete=True):
+    def backup_file(self, file_path, reason=None, prefix=None, backup_path=None, force_delete=True, keep_file_on_folder: bool=False):
         if os.path.exists(file_path):
             basename = os.path.basename(file_path)
             if self.delete_unreferenced_metadata_files or force_delete:
@@ -1494,7 +1672,10 @@ class StudyFolderMaintenanceTask(object):
                 target_path = os.path.join(backup_path, basename)
                 target_dir = os.path.dirname(target_path)
                 os.makedirs(target_dir, exist_ok=True)
-                shutil.move(file_path, target_path)  # move current assay file
+                if keep_file_on_folder:
+                    shutil.copy2(file_path, target_path)
+                else:
+                    shutil.move(file_path, target_path)  # move current assay file
                 action_log = MaintenanceActionLog(
                     item=file_path,
                     action=MaintenanceAction.MOVE,
@@ -1510,7 +1691,10 @@ class StudyFolderMaintenanceTask(object):
                     renamed_basename = f"{self.task_name}_{basename}"
                 dirname = os.path.dirname(file_path)
                 target_path = os.path.join(dirname, renamed_basename)
-                shutil.move(file_path, target_path)  # move current assay file
+                if keep_file_on_folder:
+                    shutil.copy2(file_path, target_path)
+                else:
+                    shutil.move(file_path, target_path)  # move current assay file
 
                 action_log = MaintenanceActionLog(
                     item=file_path,
@@ -1519,6 +1703,7 @@ class StudyFolderMaintenanceTask(object):
                     message=f"{self.study_id}: Current path {file_path} was renamed as {renamed_basename}.{(' ' + reason) if reason else ''}",
                 )
                 self.actions.append(action_log)
+        return target_path
 
     def maintain_sample_file(self, investigation: isatools_model.Investigation):
         study_id = self.study_id
@@ -1575,7 +1760,7 @@ class StudyFolderMaintenanceTask(object):
                 )
 
         if not os.path.exists(default_sample_file_path):
-            shutil.copy(temaplate_sample_file_path, default_sample_file_path)  # copy from template
+            shutil.copy2(temaplate_sample_file_path, default_sample_file_path)  # copy from template
             action_log = MaintenanceActionLog(
                 item=default_sample_file_path,
                 action=MaintenanceAction.COPY,
@@ -1910,11 +2095,23 @@ class StudyFolderMaintenanceTask(object):
 
     def read_tsv_file(self, file_path) -> pd.DataFrame:
         message = ""
-
+        backup_file = True
         df = pd.DataFrame()  # Empty file
         try:
             # Enforce str datatype for all columns we read from ISA-Tab tables
-            col_names = pd.read_csv(file_path, sep="\t", nrows=0).columns
+            try:
+                col_names = pd.read_csv(file_path, sep="\t", encoding="utf-8", nrows=0).columns
+            except Exception as e:
+                logger.warning(f"File can not be read with UTF-8: {file_path}")
+                if isinstance(e, UnicodeDecodeError) and backup_file:
+                    with open(file_path, 'rb') as f:
+                        data = f.read()
+                        lines = data.decode('utf-8', 'ignore')
+                    self.backup_file(file_path, reason="Unicode decode error")
+                    with open(file_path, 'w') as f:
+                        f.write(lines)
+                    backup_file = False
+                col_names = pd.read_csv(file_path, sep="\t", encoding="utf-8", nrows=0).columns
             types_dict = {col: str for col in col_names}
             try:
                 if os.path.getsize(file_path) == 0:  # Empty file
@@ -1922,13 +2119,26 @@ class StudyFolderMaintenanceTask(object):
                 else:
                     df = pd.read_csv(file_path, sep="\t", header=0, encoding="utf-8", dtype=types_dict)
             except Exception as e:  # Todo, should check if the file format is Excel. ie. not in the exception handler
+                logger.warning(f"File read error: {str(e)}")
+                if isinstance(e, UnicodeDecodeError) and backup_file:
+                    
+                    with open(file_path, 'rb') as f:
+                        data = f.read()
+                        lines = data.decode('utf-8', 'ignore')
+                        
+                    self.backup_file(file_path, reason="Unicode decode error")
+                    with open(file_path, 'w') as f:
+                        f.write(lines)
+                    backup_file = False
+                
                 if os.path.getsize(file_path) > 0:
                     df = pd.read_csv(
-                        file_path, sep="\t", header=0, encoding="ISO-8859-1", dtype=types_dict
+                        file_path, sep="\t", header=0, encoding="utf-8", dtype=types_dict
                     )  # Excel format
                     logger.info(
-                        "File was opened with 'ISO-8859-1' encoding: " + file_path + ".\nPrevious error: " + str(e)
+                        "File was opened with 'utf-8' encoding and ignore errors option: " + file_path + ".\nPrevious error: " + str(e)
                     )
+                    print(f"Invalid UTF-8 file was converted to UTF with ignore errors option: " + file_path)
                 else:
                     raise e
         except Exception as ex:
