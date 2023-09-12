@@ -577,20 +577,21 @@ class StudyFolderMaintenanceTask(object):
             f.writelines(data_files)
 
     def create_maintenance_actions_for_study_data_files(self) -> List[MaintenanceActionLog]:
+
+        self.calculate_readonly_study_folders_future_actions()
         referenced_file_set = self.get_all_referenced_data_files()
         updated_file_names = {}
         for item in referenced_file_set:
             updated_file_names[item] = item
-
-        self.calculate_readonly_study_folders_future_actions()
-        if self.future_actions_sanitise_referenced_files:
-            self._create_sanitise_file_name_actions(updated_file_names)
-        if self.future_actions_create_subfolders:
-            self._create_subfolder_actions(updated_file_names)
-        if self.future_actions_compress_folders:
-            self._create_compress_folder_actions(updated_file_names)
-        if self.future_actions_recompress_unexpected_acrhive_files:
-            self._create_recompress_folder_actions(updated_file_names)
+        if updated_file_names:
+            if self.future_actions_sanitise_referenced_files:
+                self._create_sanitise_file_name_actions(updated_file_names)
+            if self.future_actions_create_subfolders:
+                self._create_subfolder_actions(updated_file_names)
+            if self.future_actions_compress_folders:
+                self._create_compress_folder_actions(updated_file_names)
+            if self.future_actions_recompress_unexpected_acrhive_files:
+                self._create_recompress_folder_actions(updated_file_names)
 
         return self.future_actions
 
@@ -657,6 +658,16 @@ class StudyFolderMaintenanceTask(object):
         referenced_files_set = set()
         investigation = None
         investigation_file_path = os.path.join(self.study_metadata_files_path, self.investigation_file_name)
+        if not os.path.exists(investigation_file_path):
+            action_log = MaintenanceActionLog(
+                item=investigation_file_path,
+                action=MaintenanceAction.ERROR_MESSAGE,
+                parameters={},
+                message=f"{self.study_id}: {self.investigation_file_name} does not exist.",
+                successful=False,
+            )
+            self.actions.append(action_log)
+            return referenced_files_set
         try:
             investigation = self.load_investigation_file(investigation_file_path)
             if not investigation or not investigation.studies or not investigation.studies[0]:
