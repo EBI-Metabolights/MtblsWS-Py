@@ -1720,14 +1720,14 @@ class StudyFilesTree(Resource):
             },
             {
                 "name": "include_sub_dir",
-                "description": "Include files in all sub-directories. False = only list files in the study folder",
+                "description": "Include files in all sub-directories. False = only list files in the directory",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
                 "paramType": "query",
                 "type": "Boolean",
-                "defaultValue": True,
-                "default": True
+                "defaultValue": False,
+                "default": False
             },
             {
                 "name": "include_internal_files",
@@ -1737,8 +1737,8 @@ class StudyFilesTree(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "type": "Boolean",
-                "defaultValue": False,
-                "default": False
+                "defaultValue": True,
+                "default": True
             },
             {
                 "name": "directory",
@@ -1820,7 +1820,7 @@ class StudyFilesTree(Resource):
         include_sub_dir = False
         directory = None
         location = "study"
-        include_internal_files = False
+        include_internal_files = True
         if request.args:
             args = parser.parse_args(req=request)
             if args['include_sub_dir']:
@@ -1852,7 +1852,10 @@ class StudyFilesTree(Resource):
             referenced_files = get_referenced_file_set(study_id=study_id, metadata_path=study_metadata_location)
             exclude_list = set()
             for item in get_settings().file_filters.rsync_exclude_list:
-                exclude_list.add(os.path.join(get_settings().study.readonly_files_symbolic_link_name, item))
+                exclude_list.add(os.path.join(settings.readonly_files_symbolic_link_name, item))
+            if not include_internal_files:
+                exclude_list.add(settings.internal_files_symbolic_link_name)
+                exclude_list.add(settings.audit_files_symbolic_link_name)
             # if force_write:
             include_metadata_files = True
             if directory == settings.readonly_files_symbolic_link_name:
