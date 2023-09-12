@@ -77,6 +77,12 @@ def maintain_folders(
                         maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
                     except Exception as ex:
                         print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
+
+                if "data" in target_list:
+                    try:
+                        maintenance_task.create_maintenance_actions_for_study_data_files()
+                    except Exception as ex:
+                        print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
                 
                 if "metadata" in target_list:
                     try:
@@ -84,11 +90,6 @@ def maintain_folders(
                     except Exception as ex:
                         print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
                         
-                if "data" in target_list:
-                    try:
-                        maintenance_task.create_maintenance_actions_for_study_data_files()
-                    except Exception as ex:
-                        print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
             finally:
                 if maintenance_task.actions:
                     write_actions(fa, maintenance_task.actions, study_id, study_status.name)
