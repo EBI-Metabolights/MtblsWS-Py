@@ -1769,6 +1769,14 @@ class StudyFilesTree(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "obfuscation_code",
+                "description": "Study obfuscation code",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -1796,6 +1804,12 @@ class StudyFilesTree(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
+        obfuscation_code = None
+        if "obfuscation_code" in request.headers:
+            obfuscation_code = request.headers["obfuscation_code"]
+        
+        if not obfuscation_code and not user_token:
+            abort(401, message="At least one of them is requred: user token or obfuscation code.")
         # If false, only sync ISA-Tab metadata files
         # query validation
         parser = reqparse.RequestParser()
@@ -1820,7 +1834,7 @@ class StudyFilesTree(Resource):
         if directory and directory.startswith(os.sep):
             abort(401, message="You can only specify folders in the current study folder")
         settings = get_settings()
-        study_id, obfuscation_code = identify_study_id(study_id)
+        study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
         # check for access rights
         UserService.get_instance().validate_user_has_read_access(user_token, study_id=study_id, obfuscationcode=obfuscation_code)
         
@@ -1843,7 +1857,7 @@ class StudyFilesTree(Resource):
             include_metadata_files = True
             if directory == settings.readonly_files_symbolic_link_name:
                 include_metadata_files = False
-            directory_files = get_directory_files(study_metadata_location, directory, search_pattern="**/*", recursive=False, exclude_list=exclude_list, include_metadata_files=include_metadata_files)
+            directory_files = get_directory_files(study_metadata_location, directory, search_pattern="**/*", recursive=include_sub_dir, exclude_list=exclude_list, include_metadata_files=include_metadata_files)
             # metadata_files = get_all_metadata_files()
             # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
             # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
@@ -1855,7 +1869,7 @@ class StudyFilesTree(Resource):
                 settings = get_settings()
                 ftp_root_path = settings.hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path
                 ftp_folder_path = os.path.join(ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}", directory)
-                inputs = {"path": ftp_folder_path}
+                inputs = {"path": ftp_folder_path, "recursive": include_sub_dir}
                 task = list_directory.apply_async(kwargs=inputs, expires=60*5)
                 output = task.get(timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds * 2)
                 search_result = LiteFileSearchResult.parse_obj(output)

@@ -74,8 +74,9 @@ def chmod(self, paths: Union[str, List[str]], acl: Union[int, Acl] = Acl.AUTHORI
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.list_directory",
 )
-def list_directory(self, path: str) -> Dict[str, Any]:
-    directory_files = get_directory_files(path, None, search_pattern="**/*", recursive=False, exclude_list=[])
+def list_directory(self, path: str, recursive:bool=False, exclude_list: List[str]=None) -> Dict[str, Any]:
+    applied_exclude_list = exclude_list if exclude_list else []
+    directory_files = get_directory_files(path, None, search_pattern="**/*", recursive=recursive, exclude_list=applied_exclude_list)
     search_result = evaluate_files(directory_files, [])
     return search_result.dict()
 
