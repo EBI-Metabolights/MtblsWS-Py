@@ -39,7 +39,7 @@ logger = logging.getLogger('wslog')
 class About(Resource):
     """Basic description of the Web Service"""
     @swagger.operation(
-        summary="About this Web Service",
+        summary="About MetaboLights Web Service",
         notes="Basic description of the Web Service",
         nickname="about",
         responseMessages=[
