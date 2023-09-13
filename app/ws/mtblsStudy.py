@@ -1198,7 +1198,8 @@ class CreateAccession(Resource):
         inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False, "task_name": "INITIAL"}
         create_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
         logger.info(f"Step 4: Create initial files and folders task has been started for study {study_acc} with task id: {create_folders_task.id}")
-        
+        # wait for a while to complete task
+        _ = create_folders_task.get(timeout=get_settings().hpc_cluster.configuration.task_get_timeout_in_seconds)
         # Start ftp folder creation task
 
         if new_accession_number:
