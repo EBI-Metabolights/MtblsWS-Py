@@ -57,11 +57,9 @@ class DataMoverPathConfiguration(BaseModel):
     cluster_compounds_root_path: str
     
     
-class WorkerConfiguration(BaseModel):
-    number_of_datamover_workers: int = 1
-    datamover_worker_maximum_uptime_in_seconds: int = 3 * 24 * 60 * 60
-    datamover_worker_submission_script_template_name: str
-    broker_queue_names: str
+class SingularityConfiguration(BaseModel):
+    docker_deployment_path: str = "/app-root"
+    run_singularity_script_template_name: str
     worker_deployment_root_path: str
     singularity_image: str
     singularity_docker_username: str
@@ -72,7 +70,13 @@ class WorkerConfiguration(BaseModel):
     config_file_path: str
     secrets_path: str
     shared_paths: List[str]
-    
+
+class WorkerConfiguration(BaseModel):
+    number_of_datamover_workers: int = 1
+    start_datamover_worker_script: str = "start_datamover_worker.sh"
+    datamover_worker_maximum_uptime_in_seconds: int = 3 * 24 * 60 * 60
+    broker_queue_names: str
+
     
 class HpcDataMoverSettings(BaseModel):
     connection: HpcConnection
@@ -83,9 +87,9 @@ class HpcDataMoverSettings(BaseModel):
 
 class HpcComputeSettings(BaseModel):
     connection: HpcConnection
-    standard_queue: str
-    long_process_queue: str
-    default_queue: str
+    standard_queue: str ="standard"
+    long_process_queue: str ="long"
+    default_queue: str = "standard"
 
 
 class HpcClusterSettings(BaseModel):
@@ -93,3 +97,5 @@ class HpcClusterSettings(BaseModel):
     compute: HpcComputeSettings
     ssh_command: str
     configuration: HpcClusterConfiguration
+    singularity: SingularityConfiguration
+

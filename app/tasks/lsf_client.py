@@ -31,8 +31,9 @@ class LsfClient(object):
         self.settings = get_settings()
         self.submit_with_ssh = submit_with_ssh
         
-    def submit_datamover_job(self, script_path: str, job_name: str, output_file=None, error_file=None, account=None) -> int:
-        queue = get_settings().hpc_cluster.datamover.queue_name
+    def submit_hpc_job(self, script_path: str, job_name: str, output_file=None, error_file=None, account=None, queue: str=None) -> int:
+        if not queue:
+            queue = get_settings().hpc_cluster.datamover.queue_name
         bsub_command = self._get_submit_command(script_path, queue, job_name, output_file, error_file, account)
         result: CapturedBashExecutionResult = BashClient.execute_command(bsub_command)
         stdout = result.stdout
@@ -190,3 +191,65 @@ class LsfClient(object):
         with open(file_input_path, "w") as f:
             f.writelines(content)
         return file_input_path
+            
+    def run_singularity(self, task_name: str, command: str, command_arguments: str, unique_task_name: bool = True, hpc_queue_name: str=None, additional_mounted_paths: List[str] = None):
+        messages: List[str] = []
+        additional_mounted_paths = additional_mounted_paths if additional_mounted_paths else []
+        if unique_task_name:
+            try:
+                jobs = self.get_job_status()
+            except Exception as exc:
+                logger.info("There is no datamover job")
+                jobs = []
+            current_tasks = []
+            for job in jobs:
+                if job[1].startswith(task_name):
+                    current_tasks.append(job)
+            if current_tasks:
+                message = f"{task_name} is already running."
+                logger.warning(message)
+                messages.append(message)
+                return None, messages
+        
+        settings = get_settings()
+        script_template = settings.hpc_cluster.singularity.run_singularity_script_template_name
+                
+        docker_config = settings.hpc_cluster.singularity
+                
+        inputs = {
+                    "DOCKER_BOOTSTRAP_COMMAND": command,
+                    "DOCKER_APP_ROOT": docker_config.docker_deployment_path,
+                    "DOCKER_BOOTSTRAP_COMMAND_ARGUMENTS": command_arguments,
+                    "REMOTE_SERVER_BASE_PATH": docker_config.worker_deployment_root_path,
+                    "SINGULARITY_DOCKER_USERNAME": docker_config.singularity_docker_username,
+                    "SINGULARITY_DOCKER_PASSWORD": docker_config.singularity_docker_password,
+                    "SINGULARITY_IMAGE": docker_config.singularity_image,
+                    "CONFIG_FILE_PATH": docker_config.config_file_path,
+                    "SECRETS_PATH": docker_config.secrets_path,
+                    "LOGS_PATH": docker_config.logs_path,
+                    "HOME_DIR": docker_config.user_home_binding_source_path,
+                    "HOME_DIR_MOUNT_PATH": docker_config.user_home_binding_target_path,
+                    "SHARED_PATHS": []
+                }
+        if hpc_queue_name and hpc_queue_name == settings.hpc_cluster.datamover.queue_name:
+            inputs["SHARED_PATHS"] = docker_config.shared_paths
+        if additional_mounted_paths:
+            inputs.update(additional_mounted_paths)
+        script_path = BashClient.prepare_script_from_template(script_template, **inputs)
+                
+        out_log_path = os.path.join(settings.hpc_cluster.configuration.job_track_log_location, f"{task_name}_out.log")
+        err_log_path = os.path.join(settings.hpc_cluster.configuration.job_track_log_location, f"{task_name}_err.log")
+        try:
+            job_id, _, _ = self.submit_hpc_job(
+                        script_path, task_name, output_file=out_log_path, error_file=err_log_path, queue=hpc_queue_name
+                    )
+            messages.append(f"New job was submitted with job id {job_id} for {task_name}")
+        except Exception as exc:
+            message = f"Exception after kill jobs command. {str(exc)}"
+            logger.warning(message)
+            messages.append(message)
+            return None, messages
+        finally:
+            if script_path and os.path.exists(script_path):
+                os.remove(script_path)
+        return job_id, messages

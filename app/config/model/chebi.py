@@ -24,6 +24,7 @@ class ChebiPipelineSearchServices(BaseModel):
 
 class ChebiPipelineConfiguration(BaseModel):
     chebi_annotation_sub_folder: str = "chebi_pipeline_annotations"
+    run_standalone_chebi_pipeline_python_file: str = "app/ws/chebi_pipeline_utils.py"
     curated_metabolite_list_file_location: str
     chebi_upload_script: str
     chebi_pipeline_url: str

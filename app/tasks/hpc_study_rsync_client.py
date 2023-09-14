@@ -184,7 +184,8 @@ class StudyRsyncClient:
         path = None
         if folder.location == StudyFolderLocation.RW_STUDY_STORAGE:
             if folder.folder_type == StudyFolderType.AUDIT:
-                path = mounted_paths.cluster_study_audit_files_root_path
+                path = os.path.join(mounted_paths.cluster_study_audit_files_root_path, self.study_id, self.settings.study.audit_folder_name)
+                return path
             elif folder.folder_type == StudyFolderType.INTERNAL:
                 path = mounted_paths.cluster_study_internal_files_root_path
             elif folder.folder_type == StudyFolderType.METADATA:
@@ -195,7 +196,8 @@ class StudyRsyncClient:
                 return os.path.join(path, self.study_id)
         elif folder.location == StudyFolderLocation.READONLY_STUDY_STORAGE:
             if folder.folder_type == StudyFolderType.AUDIT:
-                path = mounted_paths.cluster_study_readonly_audit_files_root_path
+                path = os.path.join(mounted_paths.cluster_study_readonly_audit_files_root_path, self.study_id, self.settings.study.audit_folder_name)
+                return path
             elif folder.folder_type == StudyFolderType.DATA:
                 path = mounted_paths.cluster_study_readonly_files_root_path
             elif folder.folder_type == StudyFolderType.METADATA:
@@ -223,7 +225,9 @@ class StudyRsyncClient:
             elif folder.folder_type == StudyFolderType.METADATA:
                 path = mounted_paths.cluster_private_ftp_root_path
             elif folder.folder_type == StudyFolderType.INTERNAL:
-                path = mounted_paths.cluster_private_ftp_root_path
+                internal_folder_name = self.settings.study.internal_files_symbolic_link_name
+                path = os.path.join(mounted_paths.cluster_private_ftp_root_path, f"{self.study_id.lower()}-{self.obfuscation_code}", internal_folder_name)
+                return path
             if path:
                 return os.path.join(path, f"{self.study_id.lower()}-{self.obfuscation_code}")
         raise MetabolightsException(message=f"Folder path is not valid for {folder.dict()}")
@@ -237,11 +241,10 @@ class StudyRsyncClient:
         elif source.folder_type == StudyFolderType.DATA:
             exclude_list = ["[asi]_*.txt", "m_*.tsv"]
         elif source.folder_type == StudyFolderType.AUDIT:
-            include_list = [self.settings.study.audit_folder_name]
-            exclude_list = ["*"]
+            exclude_list = [f"{self.settings.study.readonly_audit_folder_symbolic_name}"]
         elif source.folder_type == StudyFolderType.INTERNAL:
             if target.location == StudyFolderLocation.PRIVATE_FTP_STORAGE:
-                include_list = [self.settings.chebi.pipeline.chebi_annotation_sub_folder]
+                include_list = [f"{self.settings.chebi.pipeline.chebi_annotation_sub_folder}/",f"{self.settings.chebi.pipeline.chebi_annotation_sub_folder}/***"]
             elif target.location == StudyFolderLocation.READONLY_STUDY_STORAGE:
                 include_list = ["metadata_summary.tsv", "data_files_summary.txt"]
 

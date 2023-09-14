@@ -2189,7 +2189,7 @@ class StudyFolderSynchronization(Resource):
         if not target.folder_type in VALID_FOLDERS[target_location]:
             raise MetabolightsException(message="target folder type is not valid in the selected staging area.")
         
-        study = study = StudyService.get_instance().get_study_by_acc(study_id)
+        study = StudyService.get_instance().get_study_by_acc(study_id)
         client = StudyRsyncClient(study_id=study_id, obfuscation_code=study.obfuscationcode)
         status_check_only = not start_new_task
         if dry_run:

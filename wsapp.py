@@ -18,8 +18,10 @@
 
 import logging.config
 import os
+# import re
 
-from flask import Flask
+
+from flask import Flask, request, session
 from jinja2 import Environment, select_autoescape, FileSystemLoader
 from app.config import get_settings
 
@@ -69,7 +71,21 @@ def setup_logging():
     logging.config.fileConfig(logging_config_file_path)
     print(f"Running on server: '{hostname}' using logging config {logging_config_file_path}")
 
+# mtbls_pattern = re.compile(r'MTBLS[1-9][0-9]*')
 
+# @application.before_request
+# def check_study():
+#     study_id = None
+#     if "study_id" in request.headers:
+#         study_id = request.headers["study_id"]
+#     if not study_id:
+#         study_id_result = mtbls_pattern.search(request.path)
+        
+#         if study_id_result:
+#             study_id = study_id_result.group()
+#     if study_id:
+#         print(study_id)
+        
 def main():
     setup_logging()
     print("Initialising application")

@@ -1,6 +1,5 @@
 import os
 from typing import List
-from celery.result import AsyncResult
 from app.config import get_settings
 from app.services.storage_service.models import (
     SyncCalculationStatus,
@@ -8,30 +7,83 @@ from app.services.storage_service.models import (
     SyncTaskResult,
     SyncTaskStatus,
 )
-from app.services.storage_service.remote_worker.remote_file_manager import RemoteFileManager
+from app.services.storage_service.remote_worker.remote_file_manager import (
+    RemoteFileManager,
+)
 from app.services.storage_service.storage import Storage
 from app.tasks.bash_client import BashExecutionResult
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
-from app.tasks.hpc_study_rsync_client import StudyFolder, StudyFolderLocation, StudyFolderType, StudyRsyncClient
-from app.tasks.hpc_worker_bash_runner import HpcWorkerBashRunner, TaskDescription, BashExecutionTaskStatus
+from app.tasks.hpc_study_rsync_client import (
+    StudyFolder,
+    StudyFolderLocation,
+    StudyFolderType,
+    StudyRsyncClient,
+)
+from app.tasks.hpc_worker_bash_runner import (
+    HpcWorkerBashRunner,
+    TaskDescription,
+    BashExecutionTaskStatus,
+)
 from app.tasks.worker import celery
+from app.utils import MetabolightsException
 
 
 class RemoteFtpStorage(Storage):
     def __init__(self, name, remote_folder):
         manager_name = name + "_remote_file_manager"
 
-        remote_file_manager: RemoteFileManager = RemoteFileManager(manager_name, mounted_root_folder=remote_folder)
+        remote_file_manager: RemoteFileManager = RemoteFileManager(
+            manager_name, mounted_root_folder=remote_folder
+        )
         self.remote_file_manager: RemoteFileManager = remote_file_manager
 
-        super(RemoteFtpStorage, self).__init__(name=name, remote_file_manager=self.remote_file_manager)
+        super(RemoteFtpStorage, self).__init__(
+            name=name, remote_file_manager=self.remote_file_manager
+        )
 
-    def sync_from_local(self, source_local_folder: str, target_folder: str, ignore_list: List[str] = None, **kwargs):
-        study_id = os.path.basename(source_local_folder)
-        
-        client = StudyRsyncClient(study_id=study_id, obfuscation_code=None)
-        source = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
-        target = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
+    def sync_from_local(
+        self,
+        source_local_folder: str,
+        target_folder: str,
+        ignore_list: List[str] = None,
+        **kwargs,
+    ):
+        sync_chebi_annotation=False
+        study_id = None
+        obfuscation_code = None
+        study_id = kwargs['study_id'] if kwargs and "study_id" in kwargs else None
+        obfuscation_code = kwargs['obfuscation_code'] if kwargs and "obfuscation_code" in kwargs else None
+        sync_chebi_annotation = kwargs['sync_chebi_annotation'] if kwargs and "sync_chebi_annotation" in kwargs else None
+            
+        if not study_id and target_folder:
+            parts = target_folder.split("-")
+            study_id = parts[0].upper() if parts else None
+            obfuscation_code = (
+                target_folder.replace(f"{parts[0]}-", "", 1) if parts else None
+            )
+
+        if not study_id:
+            raise MetabolightsException(message=f"Study id is not defined.")
+
+        client = StudyRsyncClient(study_id=study_id, obfuscation_code=obfuscation_code)
+        if sync_chebi_annotation:
+            source = StudyFolder(
+                location=StudyFolderLocation.RW_STUDY_STORAGE,
+                folder_type=StudyFolderType.INTERNAL,
+            )
+            target = StudyFolder(
+                location=StudyFolderLocation.PRIVATE_FTP_STORAGE,
+                folder_type=StudyFolderType.INTERNAL,
+            )
+        else:
+            source = StudyFolder(
+                location=StudyFolderLocation.RW_STUDY_STORAGE,
+                folder_type=StudyFolderType.METADATA,
+            )
+            target = StudyFolder(
+                location=StudyFolderLocation.PRIVATE_FTP_STORAGE,
+                folder_type=StudyFolderType.METADATA,
+            )
         status = client.rsync(source, target, status_check_only=False)
         return status
         # study_id = UnmountedVolumeFileManager.get_study_id(target_folder)

@@ -251,42 +251,15 @@ def check_datamover_workers(
             messages.append(f"Shutdown signal was sent to {', '.join(running_worker_names)}")
 
         if create_new_job:
-            script_template = get_settings().hpc_cluster.datamover.worker.datamover_worker_submission_script_template_name
             settings = get_settings()
-            inputs = {
-                "CELERY_QUEUE_NAME": settings.hpc_cluster.datamover.worker.broker_queue_names,
-                "REMOTE_SERVER_BASE_PATH": settings.hpc_cluster.datamover.worker.worker_deployment_root_path,
-                "SINGULARITY_DOCKER_USERNAME": settings.hpc_cluster.datamover.worker.singularity_docker_username,
-                "SINGULARITY_DOCKER_PASSWORD": settings.hpc_cluster.datamover.worker.singularity_docker_password,
-                "SINGULARITY_IMAGE": settings.hpc_cluster.datamover.worker.singularity_image,
-                "CONFIG_FILE_PATH": settings.hpc_cluster.datamover.worker.config_file_path,
-                "SECRETS_PATH": settings.hpc_cluster.datamover.worker.secrets_path,
-                "LOGS_PATH": settings.hpc_cluster.datamover.worker.logs_path,
-                "HOME_DIR": settings.hpc_cluster.datamover.worker.user_home_binding_source_path,
-                "HOME_DIR_MOUNT_PATH": settings.hpc_cluster.datamover.worker.user_home_binding_target_path,
-                "SHARED_PATHS": settings.hpc_cluster.datamover.worker.shared_paths,
-            }
-            script_path = BashClient.prepare_script_from_template(script_template, **inputs)
-            
-            out_log_path = os.path.join(cluster_settings.job_track_log_location, f"{worker_name}_out.log")
-            err_log_path = os.path.join(cluster_settings.job_track_log_location, f"{worker_name}_err.log")
-            try:
-                job_id, _, _ = client.submit_datamover_job(
-                    script_path, worker_name, output_file=out_log_path, error_file=err_log_path
-                )
-                messages.append(f"New job was submitted with job id {job_id} for {worker_name}")
-            except Exception as exc:
-                message = f"Exception after kill jobs command. {str(exc)}"
-                logger.warning(message)
-                messages.append(message)
-            finally:
-                if script_path and os.path.exists(script_path):
-                    os.remove(script_path)
+            docker_config = settings.hpc_cluster.singularity
+            command = os.path.join(docker_config.docker_deployment_path, settings.hpc_cluster.datamover.worker.start_datamover_worker_script)
+            command_arguments = settings.hpc_cluster.datamover.worker.broker_queue_names
+            client.run_singularity(worker_name, command, command_arguments, unique_task_name=False)
             
         results[worker_name] = " ".join(messages)
 
     return results
-
 
 if __name__ == "__main__":
     check_additional_vm_workers()
