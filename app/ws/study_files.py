@@ -1767,7 +1767,7 @@ class StudyFilesTree(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             },
             {
@@ -1775,7 +1775,7 @@ class StudyFilesTree(Resource):
                 "description": "Study obfuscation code",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             }
         ],

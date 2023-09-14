@@ -231,7 +231,9 @@ class LsfClient(object):
                     "HOME_DIR_MOUNT_PATH": docker_config.user_home_binding_target_path,
                     "SHARED_PATHS": []
                 }
-        if hpc_queue_name and hpc_queue_name == settings.hpc_cluster.datamover.queue_name:
+        if not hpc_queue_name:
+            hpc_queue_name = get_settings().hpc_cluster.datamover.queue_name
+        if hpc_queue_name == settings.hpc_cluster.datamover.queue_name:
             inputs["SHARED_PATHS"] = docker_config.shared_paths
         if additional_mounted_paths:
             inputs.update(additional_mounted_paths)
