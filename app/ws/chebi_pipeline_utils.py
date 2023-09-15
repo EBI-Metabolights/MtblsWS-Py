@@ -41,6 +41,8 @@ from app.ws.study.folder_utils import write_audit_files, get_all_files_from_file
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.utils import read_tsv, write_tsv, get_assay_file_list, safe_str
+from chembl_structure_pipeline.standardizer import parse_molblock, update_mol_valences
+from rdkit import Chem
 
 logger = logging.getLogger('wslog_chebi')
 
@@ -1301,6 +1303,7 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silentl
     print_log("Concatenating the PubChem and ClassyFire SDF information into the ChEBI submission SDF")
 
     final_cid_list = []
+    no_hs_mol_list = []
     with open(sdf_file_name, 'w') as outfile:
         for idx, row in pubchem_df.iterrows():
             p_cid = row[final_cid_column_name]
@@ -1312,23 +1315,61 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silentl
                     mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + p_cid)
                 if os.path.isfile(mtbls_sdf_file_name):
                     try:
+                        mole_str = ''
                         with open(mtbls_sdf_file_name, 'r', encoding="utf-8") as infile:
                             for line in infile:
                                 line = unidecode(line)
                                 if not line.startswith("#"):
                                     outfile.write(line)
+                                    mole_str = mole_str + line
                                 else:
                                     print_log("       -- Not adding: " + line.rstrip('\n'), run_silently)
+                        no_hs_mol = remove_hs(molfile_str=mole_str)
+                        no_hs_mol = no_hs_mol.rstrip()
+                        no_hs_mol_list.append(no_hs_mol)
                     except Exception as e:
                         print_log("       -- Error, can not read SDF file (" + mtbls_sdf_file_name + ") " + str(e))
                 else:
                     print_log("       -- Error: could not find SDF file: " + mtbls_sdf_file_name, mode='error')
         outfile.close()
-        print_log("removing hydrogen")
-        removeHydrogen(sdf_file_name)
+    final_no_hs_mol = '\n'.join(no_hs_mol_list)
+    no_hs_sdf_file = sdf_file_name[:-4] + "_removed_hs.sdf"
+    with open(no_hs_sdf_file, 'w') as output:
+            output.write(final_no_hs_mol)
+    output.close()
 
+def remove_hs(molfile_str):
+    """Bespoke remove Hs function for MetaboLights team"""
+    out_molfile = None
+    try:
+        mol = parse_molblock(molfile_str)
+        Chem.FastFindRings(mol)
+        mol = update_mol_valences(mol)
+        indices = []
+        for atom in mol.GetAtoms():
+            if atom.GetAtomicNum() == 1 and not atom.GetIsotope():
+                bnd = atom.GetBonds()[0]
+                if not (
+                    bnd.GetBondDir() in (Chem.BondDir.BEGINWEDGE, Chem.BondDir.BEGINDASH)
+                ) and not (
+                    bnd.HasProp("_MolFileBondStereo")
+                    and bnd.GetUnsignedProp("_MolFileBondStereo") in (1, 6)
+                ):
+                    indices.append(atom.GetIdx())
+        mol = Chem.RWMol(mol)
+        for index in sorted(indices, reverse=True):
+            mol.RemoveAtom(index)
+        props = molfile_str.split("M  END")[1].strip()
+        props = props if len(props) > 1 else None
+        out_molfile = Chem.MolToMolBlock(mol)
+        if props:
+            out_molfile += props
+    except Exception as e:
+         print_log("-- Error, cannot remove hydrogen from SDF " + str(e), mode='error')
+    return out_molfile
 
-def removeHydrogen(sdf_file_name):
+#Deprecated and Not used. Using local remove_hs instead.
+def removeHydrogenCheml(sdf_file_name):
     fileSize = os.path.getsize(sdf_file_name)
     if fileSize <= 2000000:
         data = open(sdf_file_name, 'rb').read()
@@ -1799,6 +1840,24 @@ def get_csid(inchikey):
     except Exception as e:
          print_log("Chemspider API search failure.. ",mode = 'info')
     return csid
+
+
+# def get_csid(inchikey):
+#     csid = ""
+#     csurl_base = app.config.get('CHEMSPIDER_URL')
+#
+#     if inchikey:
+#         url1 = csurl_base + 'SimpleSearch&searchOptions.QueryText=' + inchikey
+#         resp1 = requests.get(url1)
+#         if resp1.status_code == 200:
+#             url2 = csurl_base + 'GetSearchResult&rid=' + resp1.text
+#             resp2 = requests.get(url2)
+#             if resp2.status_code == 200:
+#                 csid = resp2.text
+#                 csid = csid.replace('[', '').replace(']', '').split(',')[0]
+#                 print_log("    -- Found CSID " + csid + " using ChemSpider, inchikey: " + inchikey)
+#                 return csid
+#     return csid
 
 
 def get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey):
