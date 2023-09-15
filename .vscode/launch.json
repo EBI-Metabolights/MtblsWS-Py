@@ -6,7 +6,7 @@
             "type": "python",
             "request": "launch",
             "program": "~/miniconda3/envs/python38-MtblsWS/bin/gunicorn",
-            "args": [ "--bind=0.0.0.0:5001", "--worker-class=gevent", "--preload", "wsapp:app"],
+            "args": [ "--bind=0.0.0.0:17000", "--worker-class=gevent", "--preload", "wsapp:app"],
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
             "postDebugTask": "killdebugger"

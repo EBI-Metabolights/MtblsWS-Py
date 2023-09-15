@@ -447,7 +447,7 @@ def populate_sample_rows(pubchem_df, study_id, user_token, study_location):
     org_part_pos = newdf.columns.get_loc('ORGANISM_PART')
     strain_pos = newdf.columns.get_loc('STRAIN')
     for idx, row in newdf.iterrows():  # Loop and add the different unique sample rows
-        if row[0] == "":  # Only add if database is not known
+        if row[0] == "" and all_organisms and len(all_organisms) > idx:  # Only add if database is not known
             s_row = all_organisms[idx]
             org_parts = s_row.split('|')
             newdf.iloc[idx, [org_pos, org_part_pos, strain_pos]] = org_parts[0], org_parts[1], org_parts[2]
