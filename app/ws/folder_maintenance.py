@@ -1,6 +1,7 @@
 import glob
 import hashlib
 import io
+import json
 import logging
 import os
 import pathlib
@@ -177,12 +178,12 @@ class StudyFolderMaintenanceTask(object):
         future_actions_sanitise_referenced_files=False,
         future_actions_create_subfolders=False,
         future_actions_compress_folders=False,
-        future_actions_recompress_unexpected_acrhive_files=False,
+        future_actions_recompress_unexpected_archive_files=False,
         backup_study_private_ftp_metadata_files=True,
         apply_future_actions=False,
         max_referenced_files_in_folder=200,
         create_data_files_maintenance_file=True,
-        cluster_execution_mode=False,
+        cluster_execution_mode=False
     ) -> None:
         self.study_id = study_id
         self.obfuscationcode = obfuscationcode
@@ -211,10 +212,10 @@ class StudyFolderMaintenanceTask(object):
             self.recycle_bin_folder_name = f"{self.study_id}_{self.task_name}_{timestamp_str}"
             self.task_name = f"{self.task_name}_{timestamp_str}"
             
-        self.study_recycle_bin_path = os.path.join(
-            self.folders.study_audit_files_root_path,
+        self.task_temp_path = os.path.join(
+            self.folders.study_internal_files_root_path,
             study_id,
-            self.study_settings.internal_backup_folder_name,
+            self.study_settings.internal_logs_folder_name,
             self.recycle_bin_folder_name,
         )
 
@@ -246,21 +247,110 @@ class StudyFolderMaintenanceTask(object):
         self.future_actions_sanitise_referenced_files = future_actions_sanitise_referenced_files
         self.future_actions_create_subfolders = future_actions_create_subfolders
         self.future_actions_compress_folders = future_actions_compress_folders
-        self.future_actions_recompress_unexpected_acrhive_files = future_actions_recompress_unexpected_acrhive_files
+        self.future_actions_recompress_unexpected_archive_files = future_actions_recompress_unexpected_archive_files
         self.max_referenced_files_in_folder = max_referenced_files_in_folder
         self.create_data_files_maintenance_file = create_data_files_maintenance_file
         self.apply_future_actions = apply_future_actions
         
+    def sync_audit_folders_to_readonly_storage(self):
+
+        study_id = self.study_id
+        mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+        study_audit_files_path = os.path.join(mounted_paths.cluster_study_audit_files_root_path, study_id, get_settings().study.audit_folder_name)
+        target_path  = os.path.join(mounted_paths.cluster_study_readonly_audit_files_root_path, study_id)
+        include_list = None
+        exclude_list = [get_settings().study.readonly_audit_folder_symbolic_name]
+        searched_files = glob.glob(f"{study_audit_files_path}/*")
+        orted_by_mtime_descending = sorted(searched_files, key=lambda t: -os.stat(t).st_mtime)
+        folders = [ f for f in orted_by_mtime_descending if os.path.isdir(f) and os.path.basename(f) != get_settings().study.readonly_audit_folder_symbolic_name]
+        if folders:
+            command = HpcRsyncWorker.build_rsync_command(
+                study_audit_files_path, target_path, include_list, exclude_list, rsync_arguments='-auv'
+            )
+            BashClient.execute_command(command)
+            action_log = MaintenanceActionLog(
+                item=study_audit_files_path,
+                action=MaintenanceAction.INFO_MESSAGE,
+                parameters={},
+                message=f"{self.study_id}: {study_audit_files_path} is sync to readonly storage.",
+                successful=True,
+            )
+            self.actions.append(action_log)
+        
+        if len(folders) > 10:
+            oldest_folders = folders[10:]
+            for folder in oldest_folders:
+                basename = os.path.basename(folder)
+                if not basename.startswith("PUBLIC_VERSION_"):
+                    shutil.rmtree(folder)
+            action_log = MaintenanceActionLog(
+                item=study_audit_files_path,
+                action=MaintenanceAction.INFO_MESSAGE,
+                parameters={},
+                message=f"{self.study_id}: The oldest audit folders are removed  on {study_audit_files_path}.",
+                successful=True,
+            )
+            self.actions.append(action_log)
+        
+    def sync_metadata_public_versions_to_readonly_storage(self):
+        study_id = self.study_id
+        mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+        source_path  = os.path.join(mounted_paths.cluster_study_readonly_audit_files_root_path, study_id)
+        target_path  = os.path.join(mounted_paths.cluster_study_readonly_public_metadata_versions_root_path, study_id)
+
+        searched_files = glob.glob(f"{source_path}/PUBLIC_VERSION_*")
+        print(f"Public version count: {len(searched_files)}")
+        if searched_files:
+            include_list = ["PUBLIC_VERSION_*", "PUBLIC_VERSION_*/*"]
+            exclude_list = ["*"]
+            command = HpcRsyncWorker.build_rsync_command(
+                source_path, target_path, include_list, exclude_list, rsync_arguments='-auv'
+            )
+            BashClient.execute_command(command)
+            action_log = MaintenanceActionLog(
+                item=target_path,
+                action=MaintenanceAction.INFO_MESSAGE,
+                parameters={},
+                message=f"{self.study_id}: Public versions folders are updated on {target_path}.",
+                successful=True,
+            )
+            self.actions.append(action_log)
+
+    def sync_metadata_files_to_readonly_storage(self):
+        study_id = self.study_id
+        mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+        source_path = os.path.join(mounted_paths.cluster_study_metadata_files_root_path, study_id)
+        target_path  = os.path.join(mounted_paths.cluster_study_readonly_metadata_files_root_path, study_id)
+
+        searched_files = self.get_all_metadata_files(recursive=False)
+        if searched_files:
+            include_list = ["[asi]_*.txt", "m_*.tsv"]
+            exclude_list = ["*"]
+            command = HpcRsyncWorker.build_rsync_command(
+                source_path, target_path, include_list, exclude_list, rsync_arguments='-auv'
+            )
+            BashClient.execute_command(command)
+            self.create_metadata_files_signature(metadata_files_path=source_path,  metadata_files_signature_root_path=target_path)
+            action_log = MaintenanceActionLog(
+                item=target_path,
+                action=MaintenanceAction.INFO_MESSAGE,
+                parameters={},
+                message=f"{self.study_id}: Readonly metadata folder is updated on {target_path}.",
+                successful=True,
+            )
+            self.actions.append(action_log)            
+
+            
         # self.file_manager = MountedVolumeFileManager(f"{self.study_id}_local_file_manager")
     def backup_private_ftp_metadata_files(self, folder_name: str = None, stage: str = "BACKUP"):
         metadata_files_list = self.get_all_private_ftp_metadata_files(recursive=False)
         metadata_files_list.sort()
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
         study_id = self.study_id
-        folder_name = f"{study_id.lower()}-{self.obfuscationcode}"
+        if not folder_name:
+            folder_name = f"{study_id.lower()}-{self.obfuscationcode}"
         
         private_ftp_root_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, folder_name)
-        private_ftp_recycle_bin_study_path = os.path.join(mounted_paths.cluster_private_ftp_recycle_bin_root_path, folder_name)
         target_path = self.study_metadata_files_path
         include_list = ["[asi]_*.txt", "m_*.tsv"]
         exclude_list = ["*"]
@@ -269,71 +359,61 @@ class StudyFolderMaintenanceTask(object):
                 private_ftp_root_path, target_path, include_list, exclude_list, rsync_arguments='-auv'
             )
             BashClient.execute_command(command)
-            date_format = "%Y-%m-%d_%H-%M-%S"
-            backup_folder_name =  time.strftime(date_format)
+            backup_folder_name =  f"FTP_FOLDER_{self.task_name}"
             if stage:
-                backup_folder_name = f"{backup_folder_name}_{stage}"     
-            backup_folder_path = os.path.join(private_ftp_recycle_bin_study_path, backup_folder_name)
-            os.makedirs(backup_folder_path, exist_ok=True)
-            
+                backup_folder_name = f"{backup_folder_name}_{stage}"
+                   
+            study_audit_files_path = os.path.join(mounted_paths.cluster_study_audit_files_root_path, 
+                                                  study_id, get_settings().study.audit_folder_name)
+            backup_folder_path = os.path.join(study_audit_files_path, backup_folder_name)
+             
+            self.create_audit_folder(metadata_files_path=private_ftp_root_path, 
+                                        audit_folder_root_path=study_audit_files_path, 
+                                        folder_name=backup_folder_name, 
+                                        metadata_files_signature_root_path=backup_folder_path, 
+                                        stage=stage)
             # for file_path in metadata_files_list:
-            #     try:
-            #         basename = os.path.basename(file_path)
-            #         target_path = os.path.join(backup_folder_path, basename)
-            #         shutil.copy2(file_path, target_path) 
-            #     except Exception as ex:
-            #         action_log = MaintenanceActionLog(
-            #             item=file_path,
-            #             action=MaintenanceAction.ERROR_MESSAGE,
-            #             parameters={},
-            #             message=f"{self.study_id}: Private ftp metadata file  {file_path} is not copied.",
-            #             successful=False,
-            #         )
-            #         self.actions.append(action_log)
+            #     self.backup_file(file_path, reason="synced with metadata folder", backup_path=backup_folder_path, keep_file_on_folder=False, force_delete=True)
                 
-            #     action_log = MaintenanceActionLog(
-            #         item=file_path,
-            #         action=MaintenanceAction.INFO_MESSAGE,
-            #         parameters={},
-            #         message=f"{self.study_id}: Private ftp metadata files were copied to backup folder {backup_folder_path}.",
-            #         successful=True,
-            #     )
-            #     self.actions.append(action_log)                      
-    
-            for file_path in metadata_files_list:
-                self.backup_file(file_path, reason="Rsync with metadata folder", backup_path=backup_folder_path, keep_file_on_folder=False, force_delete=True)
-                
-    def create_audit_folder(self, folder_name: str = None, stage: str = "BACKUP"):
+    def create_audit_folder(self, metadata_files_path: str=None, audit_folder_root_path : str=None, folder_name: str = None, metadata_files_signature_root_path: str=None , stage: str = "BACKUP"):
         # if os.path.exists(self.study_metadata_files_path):
-        metadata_files_list = self.get_all_metadata_files(recursive=False)
+        metadata_files_list = self.get_all_metadata_files(search_path=metadata_files_path, recursive=False)
         metadata_files_list.sort()
-        if not folder_name:
-            date_format = "%Y-%m-%d_%H-%M-%S"
-            folder_name =  time.strftime(date_format)
-        if stage:
-            folder_name = f"{folder_name}_{stage}"
-                        
+                      
         if metadata_files_list:
             if not folder_name:
                 date_format = "%Y-%m-%d_%H-%M-%S"
                 folder_name =  time.strftime(date_format)
-            if stage:
+            if stage and not folder_name.endswith(stage):
                 folder_name = f"{folder_name}_{stage}"
-            audit_folder_path = os.path.join(self.study_audit_files_path, folder_name)
+            if not audit_folder_root_path:
+                audit_folder_root_path = self.study_audit_files_path
+            audit_folder_path = os.path.join(audit_folder_root_path, folder_name)
             os.makedirs(audit_folder_path, exist_ok=True)
             
             for file in metadata_files_list:
                 basename = os.path.basename(file)
                 target_file = os.path.join(audit_folder_path, basename)
                 shutil.copy2(file, target_file)
-            
-            self.update_study_folder_metadata_signature()
+            if not metadata_files_signature_root_path:
+                metadata_files_signature_root_path = self.study_internal_files_path
             metadata_files_signature_path = os.path.join(
-                self.study_internal_files_path, self.study_settings.metadata_files_signature_file_name
+                metadata_files_signature_root_path, self.study_settings.metadata_files_signature_file_name
             )
-            basename = os.path.basename(metadata_files_signature_path)
-            target_file = os.path.join(audit_folder_path, basename)
-            shutil.copy2(metadata_files_signature_path, target_file)
+            files_hash_txt = "metadata_sha256.txt"
+            files_hash_txt_path = os.path.join(
+                metadata_files_signature_root_path, files_hash_txt
+            )
+            self.create_metadata_files_signature(metadata_files_path=metadata_files_path,  metadata_files_signature_root_path=metadata_files_signature_root_path)
+            
+            target_file = os.path.join(audit_folder_path, self.study_settings.metadata_files_signature_file_name)
+            
+            target_files_hash_txt = os.path.join(audit_folder_path, files_hash_txt)
+            if target_file != metadata_files_signature_path:
+                if os.path.exists(metadata_files_signature_path):
+                    shutil.copy2(metadata_files_signature_path, target_file)
+                if os.path.exists(files_hash_txt_path):
+                    shutil.copy2(files_hash_txt_path, target_files_hash_txt)
             action_log = MaintenanceActionLog(
                 item=audit_folder_path,
                 action=MaintenanceAction.INFO_MESSAGE,
@@ -342,6 +422,8 @@ class StudyFolderMaintenanceTask(object):
                 successful=True,
             )
             self.actions.append(action_log)
+            return audit_folder_path
+        return None
                     
     def execute_future_actions(self) -> Dict[str, str]:
         if self.cluster_execution_mode:
@@ -420,12 +502,13 @@ class StudyFolderMaintenanceTask(object):
         for key in updated_file_names:
             file = updated_file_names[key]
             if file:
+                initial_file_name = os.path.join(self.study_metadata_files_path, key)
                 current_path = os.path.join(self.study_metadata_files_path, file)
-                if os.path.exists(current_path) and os.path.isdir(current_path):
+                if os.path.exists(initial_file_name) and os.path.isdir(initial_file_name):
                     new_basename = f"{file}.zip"
                     target_path = os.path.join(self.study_metadata_files_path, new_basename)
                     current_dirname = os.path.dirname(current_path)
-                    current_basename = os.path.dirname(current_path)
+                    current_basename = os.path.basename(current_path)
                     action_log = MaintenanceActionLog(
                         item=current_path,
                         action=MaintenanceAction.COMPRESS,
@@ -590,14 +673,11 @@ class StudyFolderMaintenanceTask(object):
                 self._create_subfolder_actions(updated_file_names)
             if self.future_actions_compress_folders:
                 self._create_compress_folder_actions(updated_file_names)
-            if self.future_actions_recompress_unexpected_acrhive_files:
+            if self.future_actions_recompress_unexpected_archive_files:
                 self._create_recompress_folder_actions(updated_file_names)
-
-        return self.future_actions
+        return updated_file_names
 
     def create_maintenace_actions_for_study_private_ftp_folder(self) -> List[MaintenanceActionLog]:
-        if self.backup_study_private_ftp_metadata_files:
-            self.backup_private_ftp_metadata_files()
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
         study_id = self.study_id
         cluster_private_ftp_recycle_bin_root_path = mounted_paths.cluster_private_ftp_recycle_bin_root_path
@@ -701,7 +781,7 @@ class StudyFolderMaintenanceTask(object):
                             if all_data_columns:
                                 for index, row in assay_df.iterrows():
                                     for i in range(len(all_data_columns)):
-                                        file_name = row[all_data_columns[i]]
+                                        file_name: str = row[all_data_columns[i]]
                                         if file_name and file_name.strip() and file_name not in referenced_files_set:
                                             current_file_name = file_name.strip()
                                             referenced_files_set.add(current_file_name)
@@ -830,7 +910,7 @@ class StudyFolderMaintenanceTask(object):
         try:
             self.maintain_rw_storage_folders()
             if create_audit_folder:
-                self.create_audit_folder(self.task_name)
+                self.create_audit_folder(folder_name=self.task_name)
             self.maintain_file_encodings()
             self.maintain_unwanted_files()
             self.maintain_metadata_file_types_and_permissions()
@@ -865,7 +945,7 @@ class StudyFolderMaintenanceTask(object):
                                 self.actions.append(action_log)
 
                 self.create_metadata_summary_file()
-                self.update_study_folder_metadata_signature()
+                self.create_metadata_files_signature()
             actions_summary = {}
             for item in self.actions:
                 if item.action.name not in actions_summary:
@@ -906,7 +986,7 @@ class StudyFolderMaintenanceTask(object):
                 current_signature_lines = f.readlines()
             if current_signature_lines:
                 current_signature_line = current_signature_lines[0].strip()
-                metadata_files_signature = self.calculate_metadata_files_hash()
+                metadata_files_signature, _ = self.calculate_metadata_files_hash()
                 if current_signature_line == metadata_files_signature:
                     action_log = MaintenanceActionLog(
                         item=self.study_internal_files_path,
@@ -920,32 +1000,53 @@ class StudyFolderMaintenanceTask(object):
 
         return False
 
-    def update_study_folder_metadata_signature(self):
+    def read_hash_file(self, metadata_files_signature_root_path: str=None, hash_file_name: str=None) -> str:
+        if not hash_file_name:
+            hash_file_name = self.study_settings.metadata_files_signature_file_name
+        if not metadata_files_signature_root_path:
+            metadata_files_signature_root_path = self.study_internal_files_path
         metadata_files_signature_path = os.path.join(
-            self.study_internal_files_path, self.study_settings.metadata_files_signature_file_name
+            metadata_files_signature_root_path, hash_file_name
         )
-        current_signature = ""
-        file_exists = False
         if os.path.exists(metadata_files_signature_path):
-            file_exists = True
             with open(metadata_files_signature_path, "r") as f:
                 current_signature_lines = f.readlines()
             if current_signature_lines:
                 current_signature = current_signature_lines[0].strip()
-
-        metadata_files_signature = self.calculate_metadata_files_hash()
+                return current_signature
+        return None
+    
+    def create_metadata_files_signature(self, metadata_files_path: str=None,  metadata_files_signature_root_path: str=None):
+        if not metadata_files_signature_root_path:
+            metadata_files_signature_root_path = self.study_internal_files_path
+        os.makedirs(metadata_files_signature_root_path, exist_ok=True)
+        metadata_files_signature_path = os.path.join(
+            metadata_files_signature_root_path, self.study_settings.metadata_files_signature_file_name
+        )
+        files_hash_txt = "metadata_sha256.txt"
+        metadata_files_hashes_file = os.path.join(
+            metadata_files_signature_root_path, files_hash_txt
+        )
+        hash_file_name = self.study_settings.metadata_files_signature_file_name
+        current_signature = self.read_hash_file(metadata_files_signature_root_path=metadata_files_signature_root_path, hash_file_name=hash_file_name)
+        file_exists = True if current_signature else False
+           
+        metadata_files_signature, files_hash_map = self.calculate_metadata_files_hash(search_path=metadata_files_path)
         if current_signature != metadata_files_signature:
             with open(metadata_files_signature_path, "w") as f:
                 f.write(f"{metadata_files_signature}")
-
-                action_log = MaintenanceActionLog(
-                    item=metadata_files_signature_path,
-                    action=MaintenanceAction.CREATE if not file_exists else MaintenanceAction.UPDATE_CONTENT,
-                    parameters={},
-                    message=f"{self.study_id}: Metadata files signature updated to {metadata_files_signature}. Previous signature: from {current_signature}. The latest signature was stored in {metadata_files_signature_path}",
-                    successful=True,
-                )
-                self.actions.append(action_log)
+            
+            with open(metadata_files_hashes_file, "w") as f:
+                f.write(f"{json.dumps(files_hash_map, indent = 4)}")
+                
+            action_log = MaintenanceActionLog(
+                item=metadata_files_signature_path,
+                action=MaintenanceAction.CREATE if not file_exists else MaintenanceAction.UPDATE_CONTENT,
+                parameters={},
+                message=f"{self.study_id}: Metadata files signature updated to {metadata_files_signature}. Current signature: {current_signature}. The latest signature was stored in {metadata_files_signature_path}",
+                successful=True,
+            )
+            self.actions.append(action_log)
         else:
             action_log = MaintenanceActionLog(
                 item=metadata_files_signature_path,
@@ -972,9 +1073,11 @@ class StudyFolderMaintenanceTask(object):
             )
         action_log_file_path = os.path.join(
             self.study_internal_files_path,
-            self.study_settings.internal_logs_folder_name,
+            self.study_settings.internal_logs_folder_name, f"{self.study_id}_{self.task_name}",
             f"{self.task_name}_{self.study_settings.study_folder_maintenance_log_file_name}",
         )
+        dirname = os.path.dirname(action_log_file_path)
+        os.makedirs
         with open(action_log_file_path, "w") as f:
             f.writelines(rows)
 
@@ -1024,15 +1127,19 @@ class StudyFolderMaintenanceTask(object):
         with open(metadata_summary_file_path, "w") as f:
             f.writelines(rows)
 
-    def calculate_metadata_files_hash(self):
-        metadata_files_list = self.get_all_metadata_files(recursive=False)
+    def calculate_metadata_files_hash(self, search_path: str=None):
+        metadata_files_list = self.get_all_metadata_files(recursive=False, search_path=search_path)
+        file_hashes = {}
         metadata_files_list.sort()
         hashes = []
         for file in metadata_files_list:
-            hashes.append(self.sha256sum(file))
+            basename = os.path.basename(file)
+            hash = self.sha256sum(file)
+            file_hashes[basename] = hash
+            hashes.append(hash)
 
         final_hash = hashlib.sha256("".join(hashes).encode("utf-8")).hexdigest()
-        return final_hash
+        return final_hash, file_hashes
 
     def sha256sum(self, filename):
         if not filename or not os.path.exists(filename):
@@ -1045,22 +1152,24 @@ class StudyFolderMaintenanceTask(object):
         return sha256_hash.hexdigest()
 
     def get_all_private_ftp_metadata_files(self, recursive=False):
-        metadata_files = []
-        patterns = ["a_*.txt", "s_*.txt", "i_*.txt", "m_*.tsv"]
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
         study_id = self.study_id
         folder_name = f"{study_id.lower()}-{self.obfuscationcode}"
         private_ftp_root_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, folder_name)
         
-        for pattern in patterns:
-            metadata_files.extend(glob.glob(os.path.join(private_ftp_root_path, pattern), recursive=recursive))
-        return metadata_files
+        return self.get_all_metadata_files(recursive=recursive, search_path=private_ftp_root_path)
     
-    def get_all_metadata_files(self, recursive=False):
+    def get_all_metadata_files(self, recursive=False, search_path: str=None):
         metadata_files = []
-        patterns = ["a_*.txt", "s_*.txt", "i_*.txt", "m_*.tsv"]
+        patterns = ["[asi]_*.txt", "m_*.tsv"]
+        search_path = search_path if search_path else self.study_metadata_files_path
+        if not os.path.exists(search_path) or not os.path.isdir(search_path):
+            return metadata_files
+        
         for pattern in patterns:
-            metadata_files.extend(glob.glob(os.path.join(self.study_metadata_files_path, pattern), recursive=recursive))
+            search_pattern = os.path.join(search_path, pattern)
+            
+            metadata_files.extend(glob.glob(search_pattern, recursive=recursive))
         return metadata_files
 
     def maintain_metadata_file_types_and_permissions(self, recursive=False):
@@ -1307,7 +1416,7 @@ class StudyFolderMaintenanceTask(object):
         study_id = self.study_id
         study_settings = self.study_settings
         rw_storage_recycle_bin_path = os.path.join(self.rw_storage_recycle_bin_path, self.study_id)
-        study_recycle_bin_path = self.study_recycle_bin_path
+        task_temp_path = self.task_temp_path
 
         audit_path = os.path.join(settings.study_audit_files_root_path, study_id)
         self._create_rw_storage_folder(audit_path, 0o755, rw_storage_recycle_bin_path)
@@ -1322,21 +1431,21 @@ class StudyFolderMaintenanceTask(object):
         self._create_rw_storage_folder(internal_backup_folder_path, 0o755, rw_storage_recycle_bin_path)
 
         study_audit_folder_path = os.path.join(audit_path, study_settings.audit_folder_name)
-        self._create_rw_storage_folder(study_audit_folder_path, 0o755, study_recycle_bin_path)
+        self._create_rw_storage_folder(study_audit_folder_path, 0o755, task_temp_path)
 
         log_path = os.path.join(internal_file_path, study_settings.internal_logs_folder_name)
-        self._create_rw_storage_folder(log_path, 0o777, study_recycle_bin_path)
+        self._create_rw_storage_folder(log_path, 0o777, task_temp_path)
 
 
         read_only_files_path = os.path.join(settings.study_readonly_files_root_path, study_id)
-        self._create_rw_storage_folder(read_only_files_path, 0o755, study_recycle_bin_path)
+        self._create_rw_storage_folder(read_only_files_path, 0o755, task_temp_path)
         readonly_files_symbolic_link_path = os.path.join(
             settings.study_metadata_files_root_path, study_id, study_settings.readonly_files_symbolic_link_name
         )        
         read_only_files_actual_path = os.path.join(settings.study_readonly_files_actual_root_path, study_id)
         legacy_study_files_path = os.path.join(settings.study_legacy_study_files_root_path, study_id)
         read_only_audit_files_path = os.path.join(settings.study_readonly_audit_files_root_path, study_id)
-        self._create_rw_storage_folder(read_only_audit_files_path, 0o755, study_recycle_bin_path)
+        self._create_rw_storage_folder(read_only_audit_files_path, 0o755, task_temp_path)
 
         audit_folder_symbolic_link_path: str = os.path.join(
             settings.study_metadata_files_root_path, study_id, study_settings.audit_files_symbolic_link_name
@@ -1360,16 +1469,15 @@ class StudyFolderMaintenanceTask(object):
         else:
             logger.info(f"{read_only_files_actual_path} folder will be used for study data files")
             self.maintain_study_symlinks(read_only_files_actual_path, read_only_files_path)
-        
-        
-        if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists and os.path.exists(legacy_study_audit_path):
-            logger.info(f"Legacy storage study files folder exists. {legacy_study_audit_path} is used for readonly study audit files")
-            self.maintain_study_symlinks(legacy_study_audit_path, read_only_audit_files_path)
-        else:
-            logger.info(f"{read_only_audit_files_actual_path} is used for readonly study audit files")
-            self.maintain_study_symlinks(read_only_audit_files_actual_path, read_only_audit_files_path)
-        
-        self.maintain_study_symlinks(read_only_audit_files_path, archived_audit_file_link_path)
+                
+        # if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists and os.path.exists(legacy_study_audit_path):
+        #     logger.info(f"Legacy storage study files folder exists. {legacy_study_audit_path} is used for readonly study audit files")
+        #     self.maintain_study_symlinks(legacy_study_audit_path, read_only_audit_files_path)
+        # else:
+        #     logger.info(f"{read_only_audit_files_actual_path} is used for readonly study audit files")
+        self.maintain_study_symlinks(read_only_audit_files_actual_path, read_only_audit_files_path)
+        archived_folder_ref_path = os.path.join(read_only_audit_files_path, self.study_settings.audit_folder_name)
+        self.maintain_study_symlinks(archived_folder_ref_path, archived_audit_file_link_path)
         
         self.maintain_study_symlinks(read_only_files_path, readonly_files_symbolic_link_path)
         self.maintain_study_symlinks(study_audit_folder_path, audit_folder_symbolic_link_path)
@@ -1656,7 +1764,7 @@ class StudyFolderMaintenanceTask(object):
             if self.delete_unreferenced_metadata_files or force_delete:
                 # move if target file exist before renaming other file
                 if not backup_path:
-                    backup_path = self.study_recycle_bin_path
+                    backup_path = self.task_temp_path
                 if os.path.exists(backup_path) and not os.path.isdir(backup_path):
                     basename = os.path.basename(backup_path)
                     dirname = os.path.basename(backup_path)
@@ -2027,6 +2135,7 @@ class StudyFolderMaintenanceTask(object):
     def maintain_assay_file_content(self, investigation):
         study_id = self.study_id
         assignment_column_name = "Metabolite Assignment File"
+        updated_assignment_files ={}
         if investigation and investigation.studies and investigation.studies[0]:
             study: isatools_model.Study = investigation.studies[0]
             referenced_assignment_file_paths = set()
@@ -2054,7 +2163,7 @@ class StudyFolderMaintenanceTask(object):
                                                     assignment_file_path,
                                                     new_assignment_file,
                                                 ) = self.maintain_metabolite_assignment_file_column_in_assay(
-                                                    assay_file_path, assay_df, assignment_column_name, assignment_file
+                                                    assay_file_path, assay_df, assignment_column_name, assignment_file, updated_assignment_files
                                                 )
                                                 referenced_assignment_file_paths.add(assignment_file_path)
                                                 referenced_assignment_files.add(new_assignment_file)
@@ -2282,8 +2391,8 @@ class StudyFolderMaintenanceTask(object):
                         moved_derived_files.append(file_name)
                     else:
                         raw_file_candidates.append(file_name)
-            derived_file_candidates.extend(moved_derived_files)
-            raw_file_candidates.extend(moved_row_files)
+            derived_file_candidates.extend([x for x in moved_derived_files if x not in derived_file_candidates])
+            raw_file_candidates.extend([x for x in moved_row_files if x not in raw_file_candidates])
         max_raw_column_count = 0
         max_derived_column_count = 0
 
@@ -2349,13 +2458,13 @@ class StudyFolderMaintenanceTask(object):
             return f"{self.study_settings.readonly_files_symbolic_link_name}/{referenced_filename}"
 
     def maintain_metabolite_assignment_file_column_in_assay(
-        self, assay_file_path, assay_df, column_name, referenced_file_name, new_referenced_filename=None
+        self, assay_file_path, assay_df, column_name, referenced_file_name, updated_assignment_files, new_referenced_filename=None
     ):
         study_id = self.study_id
-        basename = os.path.basename(referenced_file_name)
+        referenced_file_basename = os.path.basename(referenced_file_name)
         dirname = os.path.dirname(referenced_file_name)
         if not new_referenced_filename:
-            sanitized_file_basename = self.sanitise_metadata_filename(study_id, basename, prefix="m_")
+            sanitized_file_basename = self.sanitise_metadata_filename(study_id, referenced_file_basename, prefix="m_")
             sanitized_filename = os.path.join(dirname, sanitized_file_basename)
         else:
             sanitized_filename = new_referenced_filename
@@ -2363,21 +2472,24 @@ class StudyFolderMaintenanceTask(object):
         assignment_file_path = os.path.join(self.study_metadata_files_path, referenced_file_name)
         sanitized_file_path = os.path.join(self.study_metadata_files_path, sanitized_filename)
 
-        if sanitized_filename and os.path.exists(assignment_file_path) and assignment_file_path != sanitized_file_path:
-            if os.path.exists(sanitized_file_path):
+        if sanitized_filename and assignment_file_path != sanitized_file_path:
+            if os.path.exists(sanitized_file_path) and sanitized_filename not in updated_assignment_files:
                 basename = os.path.basename(sanitized_file_path)
                 self.backup_file(
                     sanitized_file_path, reason=f"Other metabolite assignment file will be renamed to {basename}"
                 )
-
-            shutil.move(assignment_file_path, sanitized_file_path)  # Rename assay file name
-            action_log = MaintenanceActionLog(
-                item=assignment_file_path,
-                action=MaintenanceAction.RENAME,
-                parameters={"target": sanitized_file_path},
-                message=f"{study_id}: {assignment_file_path} file was renamed to {sanitized_file_path}",
-            )
-            self.actions.append(action_log)
+            if os.path.exists(assignment_file_path):
+                shutil.move(assignment_file_path, sanitized_file_path)  # Rename assay file name
+                action_log = MaintenanceActionLog(
+                    item=assignment_file_path,
+                    action=MaintenanceAction.RENAME,
+                    parameters={"target": sanitized_file_path},
+                    message=f"{study_id}: {assignment_file_path} file was renamed to {sanitized_file_path}",
+                )
+                self.actions.append(action_log)
+                
+            updated_assignment_files[sanitized_filename] =  referenced_file_basename
+            assay_df.loc[assay_df[column_name] == referenced_file_name, column_name] = sanitized_filename
             action_log = MaintenanceActionLog(
                 item=assay_file_path,
                 action=MaintenanceAction.UPDATE_CONTENT,
@@ -2389,7 +2501,6 @@ class StudyFolderMaintenanceTask(object):
                 message=f"{self.study_id}: {assay_file_path} assay file content was updated: Field: {column_name}, old: {referenced_file_name} new: {sanitized_filename}",
             )
             self.actions.append(action_log)
-            assay_df.loc[assay_df[column_name] == referenced_file_name, column_name] = sanitized_filename
 
         return sanitized_file_path, sanitized_filename
 

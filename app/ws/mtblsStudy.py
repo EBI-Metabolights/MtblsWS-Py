@@ -2195,6 +2195,8 @@ class StudyFolderSynchronization(Resource):
         if dry_run:
             status: SyncTaskResult = client.rsync_dry_run(source, target, status_check_only=status_check_only)
         else:
+            if target.folder_type == StudyFolderType.METADATA and target.location == StudyFolderLocation.RW_STUDY_STORAGE:
+                write_audit_files(study_id)
             status: SyncTaskResult = client.rsync(source, target, status_check_only=status_check_only)
         return status.dict()
     

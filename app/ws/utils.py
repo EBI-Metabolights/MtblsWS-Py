@@ -63,7 +63,7 @@ Misc of utils
 logger = logging.getLogger('wslog')
 
 date_format = "%Y%m%d%H%M%S"  # 20180724092134
-date_time_separted_format = "%Y%m%d_%H%M%S"  # 20180724092134
+date_time_separted_format = "%Y-%m-%d_%H-%M-%S"  # 20180724092134
 file_date_format = "%B %d %Y %H:%M:%S"  # 20180724092134
 isa_date_format = "%Y-%m-%d"
 

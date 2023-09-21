@@ -70,7 +70,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {"PYTHONPATH": "${cwd}"},
-            "args": ["MTBLSXXXX", "metadata", "metadata_migration_report.tsv", "STORAGE_MIGRATION_1", "apply", "cluster"]
+            "args": ["MTBLSXXX", "metadata", "metadata_migration_report.tsv", "STORAGE_MIGRATION", "apply", "cluster", "true"]
         },
         {
             "name": "Python: Create Test Data Files",

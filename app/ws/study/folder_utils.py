@@ -15,7 +15,11 @@ from app.config.utils import get_private_ftp_relative_root_path
 
 from app.file_utils import make_dir_with_chmod
 from app.study_folder_utils import get_all_study_metadata_and_data_files
+from app.ws.db.schemes import Study
+from app.ws.db.types import StudyStatus
+from app.ws.folder_maintenance import StudyFolderMaintenanceTask
 from app.ws.settings.utils import get_study_settings
+from app.ws.study.study_service import StudyService
 from app.ws.study_folder_utils import FileSearchResult, evaluate_files_in_detail, get_referenced_file_set
 from app.ws.utils import date_format, file_date_format, map_file_type, new_timestamped_folder, copy_file
 
@@ -316,31 +320,51 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
     return dir_list, static_file_found
 
 
-def write_audit_files(study_location):
+def write_audit_files(study_location_or_study_id):
     """
     Write back an ISA-API Investigation object directly into ISA-Tab files
     :param study_location: the filesystem where the study is located
     :return:
     """
-    settings = get_study_settings()
-    # dest folder name is a timestamp
-    update_path = os.path.join(study_location, settings.audit_files_symbolic_link_name)
-    os.makedirs(update_path, exist_ok=True)
-    log_path = os.path.join(study_location, settings.internal_files_symbolic_link_name, settings.internal_logs_folder_name)
-    make_dir_with_chmod(log_path, 0o777)
-
-    dest_path = new_timestamped_folder(update_path)
-
     try:
-        # make a copy of ISA-Tab & MAF
-        for pattern in ["[asi]_*.txt", "m_*.tsv"]:
-            for isa_file in glob.glob(os.path.join(study_location, pattern)):
-                isa_file_name = os.path.basename(isa_file)
-                src_file = isa_file
-                dest_file = os.path.join(dest_path, isa_file_name)
-                logger.info("Copying %s to %s", src_file, dest_file)
-                copy_file(src_file, dest_file)
-    except:
-        return False, dest_path
+        study_id = os.path.basename(study_location_or_study_id)
+        study: Study = StudyService.get_instance().get_study_by_acc(study_id=study_id)
+        study_status = StudyStatus(study.status)
+        public_release_date = study.releasedate
+        submission_date = study.submissiondate
+        maintenance_task = StudyFolderMaintenanceTask(
+                study_id,
+                study_status,
+                public_release_date,
+                submission_date,
+                obfuscationcode=study.obfuscationcode,
+                task_name=None,
+                cluster_execution_mode=False,
+            )
+        dest_path = maintenance_task.create_audit_folder()
+        return  True, dest_path
+    except Exception as ex:
+        return False, None
+    
+    # settings = get_study_settings()
+    # # dest folder name is a timestamp
+    # update_path = os.path.join(study_location, settings.audit_files_symbolic_link_name)
+    # os.makedirs(update_path, exist_ok=True)
+    # log_path = os.path.join(study_location, settings.internal_files_symbolic_link_name, settings.internal_logs_folder_name)
+    # make_dir_with_chmod(log_path, 0o777)
 
-    return True, dest_path
+    # dest_path = new_timestamped_folder(update_path)
+
+    # try:
+    #     # make a copy of ISA-Tab & MAF
+    #     for pattern in ["[asi]_*.txt", "m_*.tsv"]:
+    #         for isa_file in glob.glob(os.path.join(study_location, pattern)):
+    #             isa_file_name = os.path.basename(isa_file)
+    #             src_file = isa_file
+    #             dest_file = os.path.join(dest_path, isa_file_name)
+    #             logger.info("Copying %s to %s", src_file, dest_file)
+    #             copy_file(src_file, dest_file)
+    # except:
+    #     return False, dest_path
+
+    # return True, dest_path

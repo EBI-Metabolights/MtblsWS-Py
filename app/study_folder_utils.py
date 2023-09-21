@@ -32,8 +32,10 @@ class FileDescriptor(BaseModel):
     is_empty: bool = False
 
 
-def get_all_metadata_files(study_metadata_files_path):
+def get_all_metadata_files(study_metadata_files_path: str=None):
     metadata_files = []
+    if not os.path.exists(study_metadata_files_path):
+        return metadata_files
     patterns = ["a_*.txt", "s_*.txt", "i_*.txt", "m_*.tsv"]
     for pattern in patterns:
         metadata_files.extend(glob.glob(os.path.join(study_metadata_files_path, pattern), recursive=False))
