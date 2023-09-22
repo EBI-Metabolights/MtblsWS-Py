@@ -31,6 +31,8 @@ from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage import Storage
 from app.services.storage_service.storage_service import StorageService
 from app.tasks.bash_client import BashClient
+from app.tasks.datamover_tasks.basic_tasks.execute_commands import execute_bash_command
+from app.tasks.hpc_rsync_worker import HpcRsyncWorker
 from app.tasks.lsf_client import LsfClient
 from app.ws.cluster_jobs import submit_job
 from app.ws.db_connection import get_user_email
@@ -1112,8 +1114,27 @@ def search_and_update_maf(study_id: str, study_metadata_location: str, annotatio
    
     if obfuscation_code:
         ftp_private_folder = os.path.join(study_id.lower() + "-" + obfuscation_code)
-        ftp_private_storage = StorageService.get_ftp_private_storage()
-        sync_annotation_folder_with_remote_storage(ftp_private_storage, ftp_private_folder)
+        internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
+        
+        pipeline_settings = get_settings().chebi.pipeline
+        target_ftp_path = os.path.join(get_settings().hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path, ftp_private_folder, settings.internal_files_symbolic_link_name)
+        include_list = [f"{pipeline_settings.chebi_annotation_sub_folder}", 
+                        f"{pipeline_settings.chebi_annotation_sub_folder}/***"]
+        mkdir_command = f"mkdir -p {target_ftp_path}"
+        rsync_command = HpcRsyncWorker.build_rsync_command(
+            f"{internal_files_path}/", f"{target_ftp_path}/", include_list=include_list, exclude_list=["*"], rsync_arguments="-auv"
+        )
+        
+        command = f"{mkdir_command} && {rsync_command}" 
+        
+        inputs = {"command": command }
+        task = execute_bash_command.apply_async(kwargs=inputs, expires=60*5)
+        try:
+            output = task.get(timeout=get_settings().hpc_cluster.configuration.task_get_timeout_in_seconds*3)
+            print_log(f"ChEBI pipeline FTP rsync is completed.\n {output}")
+        except Exception as ex:
+                print_log(f"ChEBI pipeline FTP rsync is not completed. {str(ex)}")
+        
     return maf_len, pubchem_df_len, pubchem_file,dimedb_search_status,cactus_search_status,opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised
 
 

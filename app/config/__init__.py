@@ -1,4 +1,4 @@
-from functools import lru_cache
+from datetime import datetime
 
 from app.config.model.auth import AuthSettings
 from app.config.model.bioportal import BioportalSettings
@@ -51,6 +51,24 @@ class ApplicationSettings(ApplicationBaseSettings):
     celery: CelerySettings
 
 
-@lru_cache(1)
+_application_settings: ApplicationSettings = None
+_last_update_check_timestamp: int = 0 
+
+
 def get_settings():
-    return ApplicationSettings()
+    global _application_settings
+    global _last_update_check_timestamp
+    
+    update_check_time_delta = 60
+    if _application_settings:
+        update_check_time_delta = _application_settings.server.service.config_file_check_period_in_seconds    
+    now = int(datetime.now().timestamp())
+    if now - _last_update_check_timestamp > update_check_time_delta:
+        _application_settings = None
+        _last_update_check_timestamp = now
+    
+    if not _application_settings:
+        print("Configuration file will be updated.")
+        _application_settings = ApplicationSettings()
+    
+    return _application_settings

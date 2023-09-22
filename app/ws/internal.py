@@ -1,15 +1,46 @@
 
+from datetime import datetime
 from flask import current_app as app
 from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.utils import (MetabolightsException,
                        metabolights_exception_handler)
 from app.ws.redis.redis import get_redis_server
 from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
+
+_banner: str = None
+_last_banner_check_timestamp: int=0
+
+def get_banner():
+    global _banner
+    global _last_banner_check_timestamp
     
+    update_check_time_delta = 60
+    settings = get_settings()
+    if settings:
+        update_check_time_delta = settings.server.service.banner_check_period_in_seconds    
+    now = int(datetime.now().timestamp())
+    if now - _last_banner_check_timestamp > update_check_time_delta:
+        _banner = None
+        _last_banner_check_timestamp = now
+    
+    if not _banner:
+        print("Banner will be checked.")
+        redis = get_redis_server()
+        new_banner = redis.get_value("metabolights:banner:message")
+        if new_banner:
+            new_banner = new_banner.decode("utf-8")
+            if new_banner != _banner:
+                _banner = new_banner
+                print(f"Banner is updated. New banner message: {_banner}")
+        
+    return _banner
+
+
 class BannerMessage(Resource):
     @swagger.operation(
         summary="Returns banner message",
@@ -36,13 +67,13 @@ class BannerMessage(Resource):
     )
     @metabolights_exception_handler
     def get(self):
+
         message = None
         try: 
-            redis = get_redis_server()
-            message = redis.get_value("metabolights:banner:message")
+            message = get_banner()
             
             if message:
-                return {"message": None, "content": message.decode("utf-8"), "error": None }
+                return {"message": None, "content": message, "error": None }
             else:
                 return {"message": None, "content": "", "error": None }
         except Exception as ex:

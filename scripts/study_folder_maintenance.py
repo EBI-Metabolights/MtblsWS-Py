@@ -282,7 +282,7 @@ def maintain_folders(
         
                 #     except Exception as ex:
                 #         print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
-                
+                print(f"{str(study_id)} maintenance is completed.")
             except Exception as ex:
                 print(str(ex))
             finally:

@@ -319,6 +319,10 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
                                                              ignore_file_list=ignore_file_list))
     return dir_list, static_file_found
 
+def sort_file_by_modified_time(path):
+    return os.path.getmtime(path)
+
+date_time_separted_format = "%Y-%m-%d_%H-%M-%S"  # 2018-07-24_09-21-34
 
 def write_audit_files(study_location_or_study_id):
     """
@@ -341,6 +345,29 @@ def write_audit_files(study_location_or_study_id):
                 task_name=None,
                 cluster_execution_mode=False,
             )
+        last_metadata_signature = maintenance_task.read_hash_file()
+        metadata_files_signature, _ = maintenance_task.calculate_metadata_files_hash()
+        
+        if metadata_files_signature != last_metadata_signature:
+            maintenance_task.create_metadata_files_signature()
+            
+        search_pattern = os.path.join(maintenance_task.study_audit_files_path, "20??-??-??_??-??-??_BACKUP")
+        results = glob.glob(search_pattern, recursive=False)
+        folders = [f for f in results if os.path.isdir(f)]
+        folders.sort(reverse=True)
+        last_audit_folder = None
+        if folders:
+            try:
+                name = os.path.basename(folders[0])
+                datetime.datetime.strptime(name.replace("_BACKUP", ""), date_time_separted_format)
+                last_audit_folder = folders[0]
+            except:
+                pass
+            
+        if last_audit_folder and metadata_files_signature:
+            audit_folder_signature = maintenance_task.read_hash_file(metadata_files_signature_root_path=last_audit_folder)
+            if audit_folder_signature == metadata_files_signature:
+                return False, None
         dest_path = maintenance_task.create_audit_folder()
         return  True, dest_path
     except Exception as ex:

@@ -19,6 +19,9 @@ class ServerService(BaseModel):
     cors_hosts: str = "*"
     cors_resources_path: str
     api_doc: str
+    maintenance_mode: bool = False
+    config_file_check_period_in_seconds: int = 60
+    banner_check_period_in_seconds: int = 60
 
 
 class ServerDescription(BaseModel):

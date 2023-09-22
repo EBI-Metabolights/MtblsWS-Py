@@ -18,15 +18,17 @@
 
 import logging.config
 import os
+import re
 # import re
 
 
 from flask import Flask, request, session
+from flask_restful import abort
 from jinja2 import Environment, select_autoescape, FileSystemLoader
 from app.config import get_settings
 
 from app.wsapp_config import initialize_app
-
+from app.ws.redis.redis import get_redis_server
 """
 MTBLS WS-Py
 
@@ -71,21 +73,31 @@ def setup_logging():
     logging.config.fileConfig(logging_config_file_path)
     print(f"Running on server: '{hostname}' using logging config {logging_config_file_path}")
 
-# mtbls_pattern = re.compile(r'MTBLS[1-9][0-9]*')
+mtbls_pattern = re.compile(r'MTBLS[1-9][0-9]*')
 
-# @application.before_request
-# def check_study():
-#     study_id = None
-#     if "study_id" in request.headers:
-#         study_id = request.headers["study_id"]
-#     if not study_id:
-#         study_id_result = mtbls_pattern.search(request.path)
+@application.before_request
+def check_study_maintenance_mode():
+    study_id = None
+    settings = get_settings()
+    key =  settings.redis_cache.configuration.study_folder_maintenance_mode_key_prefix
+    redis = get_redis_server()
+    
+    if settings.server.service.maintenance_mode:
+        if "study_id" in request.headers:
+            study_id = request.headers["study_id"]
+        if not study_id:
+            study_id_result = mtbls_pattern.search(request.path)
         
-#         if study_id_result:
-#             study_id = study_id_result.group()
-#     if study_id:
-#         print(study_id)
-        
+            if study_id_result:
+                study_id = study_id_result.group()
+        if study_id:
+            # redis.set_value(f"{key}:{study_id}", value="1" , ex=30)
+            key =  settings.redis_cache.configuration.study_folder_maintenance_mode_key_prefix
+            value = redis.get_value(f"{key}:{study_id}")
+            if value:
+                abort(401, message=f"{study_id} study folders are under maintenance now. Please try again later.")
+    return None
+
 def main():
     setup_logging()
     print("Initialising application")

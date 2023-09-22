@@ -1136,9 +1136,9 @@ class StudyFolderMaintenanceTask(object):
             basename = os.path.basename(file)
             hash = self.sha256sum(file)
             file_hashes[basename] = hash
-            hashes.append(hash)
+            hashes.append(f"{basename}:{hash}")
 
-        final_hash = hashlib.sha256("".join(hashes).encode("utf-8")).hexdigest()
+        final_hash = hashlib.sha256(",".join(hashes).encode("utf-8")).hexdigest()
         return final_hash, file_hashes
 
     def sha256sum(self, filename):
