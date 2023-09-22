@@ -47,8 +47,8 @@ build_docker:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
     - docker build -t $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest .
     - docker push $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
-    - singularity build ${CI_PROJECT_NAME}_${CI_COMMIT_REF_NAME}_latest.sif docker-daemon://$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
-    - curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${CI_PROJECT_NAME}_${CI_COMMIT_REF_NAME}_latest.sif "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/editor/$API_VERSION/${CI_PROJECT_NAME}_${CI_COMMIT_REF_NAME}_latest.sif 
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/build_sif.sh"
+    
 configure_vm_server:
   stage: configure
   script:
