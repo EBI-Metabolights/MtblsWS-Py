@@ -118,6 +118,7 @@ class LsfClient(object):
             ssh_command = BashClient.build_ssh_command(hostname=self.settings.hpc_cluster.datamover.connection.host, username=self.settings.hpc_cluster.datamover.connection.username)
             return f"{ssh_command} {submission_command}"
         return f"{submission_command}"
+    
     def _build_sub_command(self, command: str, job_name: str, queue=None, output_file=None, error_file=None, account=None):
         bsub_command = [self.settings.hpc_cluster.configuration.job_submit_command]
         
@@ -244,6 +245,11 @@ class LsfClient(object):
             job_id, _, _ = self.submit_hpc_job(
                         script_path, task_name, output_file=out_log_path, error_file=err_log_path, queue=hpc_queue_name
                     )
+            hostname=self.settings.hpc_cluster.datamover.connection.host
+            target_path = os.path.join(docker_config.worker_deployment_root_path, f"run_singularity_{task_name}.sh")
+            copy_singularity_run_script = f"scp {target_path} {hostname}:{target_path}"
+            BashClient.execute_command(copy_singularity_run_script)
+            
             messages.append(f"New job was submitted with job id {job_id} for {task_name}")
         except Exception as exc:
             message = f"Exception after kill jobs command. {str(exc)}"

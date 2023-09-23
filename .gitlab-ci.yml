@@ -54,7 +54,7 @@ configure_vm_server:
 configure_datamover:
   stage: configure
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_datamover.sh" "$CI_PROJECT_NAME" "$CI_COMMIT_REF_NAME" "$API_VERSION" "$CI_API_V4_URL" "$CI_PROJECT_ID" "$CI_JOB_TOKEN"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_datamover.sh"
 
 run_server:
   stage: deploy
