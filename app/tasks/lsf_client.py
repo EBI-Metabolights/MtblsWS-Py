@@ -247,7 +247,7 @@ class LsfClient(object):
                     )
             hostname=self.settings.hpc_cluster.datamover.connection.host
             target_path = os.path.join(docker_config.worker_deployment_root_path, f"run_singularity_{task_name}.sh")
-            copy_singularity_run_script = f"scp {target_path} {hostname}:{target_path}"
+            copy_singularity_run_script = f"scp {script_path} {hostname}:{target_path}"
             BashClient.execute_command(copy_singularity_run_script)
             
             messages.append(f"New job was submitted with job id {job_id} for {task_name}")
