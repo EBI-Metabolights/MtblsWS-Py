@@ -155,7 +155,7 @@ def configure_app(flask_app):
     print(f"COMPOUND_FILES_ROOT_PATH:\t{study_settings.mounted_paths.compounds_root_path}")
     print(f"MAIL_SERVER:\t\t\t{settings.email.email_service.connection.host}:{settings.email.email_service.connection.port}")
     print(f"SERVER HOST NAME:\t\tActual: {socket.gethostname()}. WS_HOST_NAME:: {settings.server.service.mtbls_ws_host}")
-    print(f"SERVER PORT:\t\t\t{settings.server.service.port}")
+    print(f"SERVER PORT:\t\t\t{settings.server.service.rest_api_port}")
     print("................................................................................................................")
 
     import yaml

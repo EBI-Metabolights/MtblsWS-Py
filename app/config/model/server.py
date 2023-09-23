@@ -11,7 +11,7 @@ mzml2isa_version = mzml2isa.__version__
 
 
 class ServerService(BaseModel):
-    port: int
+    rest_api_port: int
     app_host_url: str
     ws_app_base_link: str
     mtbls_ws_host: str

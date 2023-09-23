@@ -645,7 +645,7 @@ class Placeholder(Resource):
                         'annotationValue'], row['termAccession'], row['superclass'], row['definition']
 
                 source = '/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
-                ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.port) + source
+                ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 if operation.lower() in ['update', 'u', 'add', 'A']:
                     # ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
@@ -741,7 +741,7 @@ class Placeholder(Resource):
                         temp["superclass"] = superclass
 
                         data = json.dumps({"ontologyEntity": temp})
-                        ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.port) + source
+                        ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                         response = requests.put(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                                                 data=data)
@@ -783,7 +783,7 @@ class Placeholder(Resource):
                     'name'], row['matched_iri'], row['superclass'], row['definition']
 
                 source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
-                ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.port) + source
+                ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 # add / update descriptor
                 if operation.lower() in ['update', 'U', 'add', 'A']:
@@ -875,7 +875,7 @@ class Placeholder(Resource):
                         temp["superclass"] = superclass
 
                         data = json.dumps({"ontologyEntity": temp})
-                        ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.port) + source
+                        ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                         response = requests.put(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                                                 data=data)
@@ -919,7 +919,7 @@ class Placeholder(Resource):
                 superclass, definition = row['superclass'], row['definition']
 
                 source = '/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
-                ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.port) + source
+                ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 list_changes = []
 
@@ -1018,7 +1018,7 @@ class Placeholder(Resource):
                             temp["superclass"] = change['superclass']
 
                             data = json.dumps({"ontologyEntity": temp})
-                            ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.port) + source
+                            ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                             response = requests.put(ws_url,
                                                     headers={'user_token': get_settings().auth.service_account.api_token},

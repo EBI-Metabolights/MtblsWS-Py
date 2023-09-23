@@ -53,7 +53,7 @@ def check_email():
 @check_result
 def check_mtblsws_py():
     host = get_settings().server.service.mtbls_ws_host
-    port = str(get_settings().server.service.port)
+    port = str(get_settings().server.service.rest_api_port)
     context = get_settings().server.service.resources_path
 
     url = f"{host}:{port}{context}" if port else f"{host}{context}"

@@ -360,7 +360,7 @@ def get_sample_file(studyID, sample_file_name):
     import io
     try:
         ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
-        # ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.port) + source
+        # ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
         resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                             params={'sample_filename': sample_file_name})

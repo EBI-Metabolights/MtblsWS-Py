@@ -20,7 +20,7 @@ build_version_files:
         RELEASE_NAME: dev.${CI_PIPELINE_ID}
     - if: $CI_COMMIT_BRANCH == "master"
       variables:
-        RELEASE_NAME: rc.${CI_PIPELINE_ID}
+        RELEASE_NAME: ${CI_PIPELINE_ID}
     - if: $CI_COMMIT_BRANCH == "test"
       variables:
         RELEASE_NAME: test.${CI_PIPELINE_ID}
@@ -48,8 +48,8 @@ build_docker:
 configure_vm_server:
   stage: configure
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/update_server.sh"
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/update_version_files.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_server.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_version_files.sh"
     
 configure_datamover:
   stage: configure
@@ -62,5 +62,12 @@ run_server:
       - test
       - staging
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/restart_server.sh"
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/restart_datamover.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_server.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_datamover.sh"
+
+run_additional_servers:
+  stage: deploy
+  only:
+      - master
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_additional_servers.sh"
