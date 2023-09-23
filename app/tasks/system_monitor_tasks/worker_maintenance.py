@@ -155,7 +155,7 @@ def check_datamover_workers(
     cluster_settings = get_cluster_settings()
     if number_of_workers < 0:
         number_of_workers = max(get_settings().hpc_cluster.datamover.worker.number_of_datamover_workers, 0)
-    if maximum_shutdown_signal_per_time < -1:
+    if maximum_shutdown_signal_per_time <= -1:
         maximum_shutdown_signal_per_time = max(cluster_settings.maximum_shutdown_signal_per_time, 0)
 
     if not registered_workers:
