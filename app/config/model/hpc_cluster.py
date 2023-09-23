@@ -61,7 +61,8 @@ class SingularityConfiguration(BaseModel):
     docker_deployment_path: str = "/app-root"
     run_singularity_script_template_name: str
     worker_deployment_root_path: str
-    singularity_image: str
+    singularity_docker_image_source: str
+    current_singularity_file_descriptor: str
     singularity_docker_username: str
     singularity_docker_password: str
     user_home_binding_source_path: str

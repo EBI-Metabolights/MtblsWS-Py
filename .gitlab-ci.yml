@@ -43,11 +43,7 @@ build_version_files:
 build_docker:
   stage: build
   script:
-    - echo  "CI_REGISTRY $CI_REGISTRY"
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
-    - docker build -t $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest .
-    - docker push $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/build_sif.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/build_sif.sh"
     
 configure_vm_server:
   stage: configure
@@ -58,7 +54,7 @@ configure_vm_server:
 configure_datamover:
   stage: configure
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/$CI_COMMIT_REF_NAME/update_datamover.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_datamover.sh" "$CI_PROJECT_NAME" "$CI_COMMIT_REF_NAME" "$API_VERSION" "$CI_API_V4_URL" "$CI_PROJECT_ID" "$CI_JOB_TOKEN"
 
 run_server:
   stage: deploy

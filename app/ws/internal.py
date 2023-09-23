@@ -24,20 +24,24 @@ def get_banner():
     if settings:
         update_check_time_delta = settings.server.service.banner_check_period_in_seconds    
     now = int(datetime.now().timestamp())
+    current_banner = _banner
     if now - _last_banner_check_timestamp > update_check_time_delta:
         _banner = None
         _last_banner_check_timestamp = now
     
     if not _banner:
         print("Banner will be checked.")
-        redis = get_redis_server()
-        new_banner = redis.get_value("metabolights:banner:message")
-        if new_banner:
-            new_banner = new_banner.decode("utf-8")
-            if new_banner != _banner:
-                _banner = new_banner
-                print(f"Banner is updated. New banner message: {_banner}")
-        
+        try:
+            redis = get_redis_server()
+            new_banner = redis.get_value("metabolights:banner:message")
+            if new_banner:
+                new_banner = new_banner.decode("utf-8")
+                if new_banner != _banner:
+                    _banner = new_banner
+                    print(f"Banner is updated. New banner message: {_banner}")
+        except Exception as ex:
+            print("Failed to load banner")
+            _banner = current_banner
     return _banner
 
 

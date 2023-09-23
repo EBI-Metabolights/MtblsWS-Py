@@ -63,12 +63,17 @@ def get_settings():
     if _application_settings:
         update_check_time_delta = _application_settings.server.service.config_file_check_period_in_seconds    
     now = int(datetime.now().timestamp())
+    current_settings = _application_settings
     if now - _last_update_check_timestamp > update_check_time_delta:
         _application_settings = None
         _last_update_check_timestamp = now
     
     if not _application_settings:
         print("Configuration file will be updated.")
-        _application_settings = ApplicationSettings()
+        try:
+            _application_settings = ApplicationSettings()
+        except Exception as ex:
+            print("Failed to load current configuration file.")
+            _application_settings = current_settings
     
     return _application_settings

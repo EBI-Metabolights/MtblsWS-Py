@@ -215,7 +215,6 @@ class LsfClient(object):
         script_template = settings.hpc_cluster.singularity.run_singularity_script_template_name
                 
         docker_config = settings.hpc_cluster.singularity
-                
         inputs = {
                     "DOCKER_BOOTSTRAP_COMMAND": command,
                     "DOCKER_APP_ROOT": docker_config.docker_deployment_path,
@@ -223,7 +222,7 @@ class LsfClient(object):
                     "REMOTE_SERVER_BASE_PATH": docker_config.worker_deployment_root_path,
                     "SINGULARITY_DOCKER_USERNAME": docker_config.singularity_docker_username,
                     "SINGULARITY_DOCKER_PASSWORD": docker_config.singularity_docker_password,
-                    "SINGULARITY_IMAGE": docker_config.singularity_image,
+                    "SINGULARITY_IMAGE_DESCRIPTOR": docker_config.current_singularity_file_descriptor,
                     "CONFIG_FILE_PATH": docker_config.config_file_path,
                     "SECRETS_PATH": docker_config.secrets_path,
                     "LOGS_PATH": docker_config.logs_path,
