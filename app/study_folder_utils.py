@@ -72,7 +72,7 @@ def find_study_data_files(study_metadata_path, filtered_subfolder=None, search_p
         result = [{"name": str(file)} for file in search_results]
         return result
  
-def get_all_study_metadata_and_data_files(study_metadata_path: str, exclude_list: List[str]=None):
+def get_all_study_metadata_and_data_files(study_metadata_path: str, exclude_list: List[str]=None, include_metadata_files: bool=True):
         data_files_path = study_metadata_path
         file_descriptors: Dict[str, FileDescriptor] = {}
 
@@ -80,7 +80,7 @@ def get_all_study_metadata_and_data_files(study_metadata_path: str, exclude_list
         source_folders_iter = []
         if os.path.exists(study_metadata_path):
             source_folders_iter = get_study_folder_files(
-                data_files_path, file_descriptors, study_source_path_item, pattern=None, recursive=True, exclude_list=exclude_list, include_metadata_files=True
+                data_files_path, file_descriptors, study_source_path_item, pattern=None, recursive=True, exclude_list=exclude_list, include_metadata_files=include_metadata_files,
             )
         
             [x for x in source_folders_iter]

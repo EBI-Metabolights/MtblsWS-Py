@@ -36,7 +36,8 @@ class CuratedMetaboliteTable(object):
 
     def initialize_df(self):
         try:
-            self.df = pd.read_table(self.file_path, engine='python', header=None)
+            self.df: pd.DataFrame = pd.read_table(self.file_path, engine='python', header=None, dtype=str)
+            self.df = self.df.replace(np.nan, '', regex=True)
             self.df[self.COMPOUND_INDEX] = self.df[self.COMPOUND_INDEX].str.replace('\"', '', regex=True)
             logger.info(f"Curated table is loaded. Current row count is {len(self.df.index)}.")
             priority_row_list = self.df.index[self.df[self.PRIORITY_INDEX] >= 1].to_list()
