@@ -167,8 +167,9 @@ def maintain_folders(
                 legacy_metadata_path = os.path.join(mounted_paths.cluster_legacy_study_files_root_path, study_id)
                 new_metadata_path  = os.path.join(mounted_paths.cluster_study_metadata_files_root_path, study_id)
                 new_metadata_folder_exists = True if os.path.exists(new_metadata_path) else False
-                if cluster_mode:
+                if cluster_mode and "data" in target_list:
                     maintenance_task.calculate_readonly_study_folders_future_actions()
+                if cluster_mode and "private-ftp" in target_list:
                     maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
                 maintenance_task.maintain_rw_storage_folders()
                 folders_are_sync = False
@@ -225,7 +226,7 @@ def maintain_folders(
                                                          metadata_files_signature_root_path=released_version_path, 
                                                          folder_name=released_version, stage=None)
                     
-                if cluster_mode:           
+                if cluster_mode and "private-ftp" in target_list:         
                     maintenance_task.backup_study_private_ftp_metadata_files = False if folders_are_sync else True
                     try:
                         if maintenance_task.backup_study_private_ftp_metadata_files:
@@ -286,6 +287,7 @@ def maintain_folders(
             except Exception as ex:
                 print(str(ex))
             finally:
+                maintenance_task.save_actions()
                 if maintenance_task.actions:
                     write_actions(fa, maintenance_task.actions, study_id, study_status.name)
                 if maintenance_task.future_actions:

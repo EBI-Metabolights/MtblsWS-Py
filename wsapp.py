@@ -95,7 +95,7 @@ def check_study_maintenance_mode():
             key =  settings.redis_cache.configuration.study_folder_maintenance_mode_key_prefix
             value = redis.get_value(f"{key}:{study_id}")
             if value:
-                abort(401, message=f"{study_id} study folders are under maintenance now. Please try again later.")
+                abort(503, message=f"{study_id} study folders are under maintenance now. Please try again later.")
     return None
 
 def main():

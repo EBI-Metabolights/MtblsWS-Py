@@ -37,6 +37,7 @@ from app.ws.chebi_workflow import ChEBIPipeLine, ChEBIPipeLineLoad, SplitMaf
 from app.ws.chebi_ws import ChebiEntity, ChebiImageProxy, ChebiLiteEntity
 from app.ws.cluster_jobs import LsfUtils
 from app.ws.compare_files import CompareTsvFiles
+from app.ws.compress import CompressRawDataFolders
 from app.ws.cronjob import cronjob
 from app.ws.curation_log import curation_log
 from app.ws.db.dbmanager import DBManager
@@ -374,6 +375,7 @@ def initialize_app(flask_app):
     api.add_resource(ChebiEntity, res_path + "/chebi/entities/<string:chebi_id>")
 
     api.add_resource(MtblsStudyFolders, res_path + "/ebi-internal/<string:study_id>/study-folders/maintain")
+    api.add_resource(CompressRawDataFolders, res_path + "/ebi-internal/<string:study_id>/study-folders/compress-raw-data-folders")
     
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
     

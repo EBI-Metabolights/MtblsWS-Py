@@ -110,19 +110,24 @@ def get_study_folder_files(root_path: str, file_descriptors: Dict[str, FileDescr
             if item.name and item.name[0] == ".":
                 continue
         
-        if item.is_dir():            
+        if item.is_dir():
             # if not list_all_files:
             #     if item.name in SKIP_FOLDER_NAMES:
             #         continue
             sub_filename = ""
             is_stop_folder = False
             if str(item) != root_path:
-                if os.path.exists(f"{item}/{SKIP_FOLDER_CONTAINS_FILE_NAME}"):
-                    files = glob.iglob(f"{item}/{SKIP_FOLDER_CONTAINS_FILE_NAME_PATTERN}")
-                    if files:
+                search = glob.iglob(f"{item}/{SKIP_FOLDER_CONTAINS_FILE_NAME_PATTERN}")
+                
+                files = [x for x in search]
+                if files:
+                    if os.path.exists(f"{item}/{SKIP_FOLDER_CONTAINS_FILE_NAME}"):
                         is_stop_folder = True
                         sub_filename = SKIP_FOLDER_CONTAINS_FILE_NAME
-
+                    elif item.name.isnumeric():
+                        is_stop_folder = True
+                        sub_filename = files[0]
+                    
             ext = item.suffix.lower()
             relative_path = str(item).replace(f"{root_path}", "").lstrip("/")
 
