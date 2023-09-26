@@ -1,6 +1,7 @@
 
 
 
+import datetime
 from enum import Enum
 import logging
 import os
@@ -16,26 +17,40 @@ from app.ws.settings.utils import get_cluster_settings
 
 logger = logging.getLogger('wslog')
 
+from pydantic import BaseModel
+
 class JobState(str, Enum):
     PEND = "PEND"
     RUN = "RUN"
     DONE = "DONE"
     UNKOWN = "UNKOWN"
+
+class HpcJob(BaseModel):
+    job_id: str = ""
+    status: str = ""
+    name: str = ""
+    submit_time: int = 0
+    
+
     
 class LsfClient(object):
     
-    def __init__(self, cluster_settings: HpcClusterConfiguration=None, submit_with_ssh: bool=True) -> None:
+    def __init__(self, cluster_settings: HpcClusterConfiguration=None, submit_with_ssh: bool=True, datetime_format=None) -> None:
         self.cluster_settings = cluster_settings
         if not cluster_settings:
             self.cluster_settings = get_cluster_settings()
         self.settings = get_settings()
         self.submit_with_ssh = submit_with_ssh
+        self.datetime_format = datetime_format
+        if not datetime_format:
+            self.datetime_format = "%b %d %H:%M"
+
         
-    def submit_hpc_job(self, script_path: str, job_name: str, output_file=None, error_file=None, account=None, queue: str=None) -> int:
+    def submit_hpc_job(self, script_path: str, job_name: str, output_file=None, error_file=None, account=None, queue: str=None, timeout: Union[None, float]=30.0) -> int:
         if not queue:
             queue = get_settings().hpc_cluster.datamover.queue_name
         bsub_command = self._get_submit_command(script_path, queue, job_name, output_file, error_file, account)
-        result: CapturedBashExecutionResult = BashClient.execute_command(bsub_command)
+        result: CapturedBashExecutionResult = BashClient.execute_command(bsub_command, timeout=timeout)
         stdout = result.stdout
         status_line = result.stdout[0] if result.stdout else ""
         job_id = ""
@@ -57,11 +72,11 @@ class LsfClient(object):
             
         return job_id, stdout, result.stderr
             
-    def kill_jobs(self, job_id_list: List[str], failing_gracefully=False):
+    def kill_jobs(self, job_id_list: List[str], failing_gracefully=False, timeout: Union[None, float]=15.0):
         kill_command = f"{self.cluster_settings.job_kill_command} {' '.join(job_id_list)}"
         ssh_command = BashClient.build_ssh_command(hostname=self.settings.hpc_cluster.datamover.connection.host, username=self.settings.hpc_cluster.datamover.connection.username)       
         command = f"{ssh_command} {kill_command}"  
-        result: CapturedBashExecutionResult = BashClient.execute_command(command)
+        result: CapturedBashExecutionResult = BashClient.execute_command(command, timeout=timeout)
         pattern = re.compile('Job <(.+)>.*', re.IGNORECASE)
         lines = result.stdout
         killed_job_id_list = []
@@ -76,7 +91,7 @@ class LsfClient(object):
                     killed_job_id_list.append(match_result[0])
         return killed_job_id_list, result.stdout, result.stderr       
           
-    def get_job_status(self, job_names: Union[None, str, List[str]]=None):
+    def get_job_status(self, job_names: Union[None, str, List[str]]=None, timeout: Union[None, float]=15.0) -> List[HpcJob]:
         if not job_names:
             job_names = []
         elif isinstance(job_names, str):
@@ -84,7 +99,7 @@ class LsfClient(object):
         
         command = self._get_job_status_command()
 
-        result: CapturedBashExecutionResult = BashClient.execute_command(command)  
+        result: CapturedBashExecutionResult = BashClient.execute_command(command, timeout=timeout)  
         results = [] 
         if result.stdout:
             lines = result.stdout
@@ -95,11 +110,21 @@ class LsfClient(object):
                         raise MetabolightsException(message=f"Return format is not valid.")
                     status = columns[2]
                     job_id = columns[0]
+                    submit_time_str = " ".join(columns[7:]) if columns[7] else ""
+                    submit_time = 0
+                    try:
+                        submit_datetime = datetime.datetime.strptime(submit_time_str, self.datetime_format)
+                        submit_datetime = submit_datetime.replace(year=datetime.datetime.now().year)
+                        submit_time = submit_datetime.timestamp()
+
+                    except Exception as ex:
+                        pass
+                    item = HpcJob(job_id=job_id, status=status, name=columns[6].strip(), submit_time=submit_time)
                     if  job_names:
                         if columns[6].strip() in job_names:
-                            results.append((job_id, columns[6].strip(), status))
+                            results.append(item)
                     else:
-                        results.append((job_id, columns[6].strip(), status))
+                        results.append(item)
             return results
         else:
             raise MetabolightsException(message=f"No result returned.")
@@ -204,7 +229,7 @@ class LsfClient(object):
                 jobs = []
             current_tasks = []
             for job in jobs:
-                if job[1].startswith(task_name):
+                if job.name.startswith(task_name):
                     current_tasks.append(job)
             if current_tasks:
                 message = f"{task_name} is already running."

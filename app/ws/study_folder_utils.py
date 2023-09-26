@@ -120,6 +120,8 @@ def evaluate_files_in_detail(
         # else:
         #     if file.is_dir:
         #         metadata.type = "directory"
+        if file.is_stop_folder:
+            metadata.type = "raw"
         if file.is_dir:
             metadata.type = "directory"
         if file.relative_path in referenced_file_set:
@@ -135,14 +137,14 @@ def evaluate_files_in_detail(
             metadata.type = "metadata_investigation"
         elif file_extension in derived_file_extensions:
             metadata.type = "derived"
-        elif file_extension in derived_file_extensions:
-            metadata.type = "derived"
         elif file_extension in raw_file_extensions:
             metadata.type = "raw"
         elif file_extension in (".xls", ".xlsx", ".xlsm", ".csv", ".tsv"):
             metadata.type = "spreadsheet"
         elif file_extension in (".png", ".tiff", ".tif", ".jpeg", ".mpg", ".jpg"):
             metadata.type = "image"
+        elif file_extension in  (".rar", ".7z", ".z", ".g7z", ".arj", ".bz2", ".war", ".tar", ".zip"):
+            metadata.type = "compressed"
 
         if file.relative_path.startswith(
             settings.study.audit_files_symbolic_link_name

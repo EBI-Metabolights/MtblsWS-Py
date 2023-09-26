@@ -30,7 +30,7 @@ class CapturedBashExecutionResult(BashExecutionResult):
     
 class BashClient(object):
     @staticmethod
-    def execute_command(command: str, stdout_log_file_path: str=None, stderr_log_file_path: str=None) -> Union[LoggedBashExecutionResult, CapturedBashExecutionResult]:
+    def execute_command(command: str, stdout_log_file_path: str=None, stderr_log_file_path: str=None, timeout: Union[None, float] = None) -> Union[LoggedBashExecutionResult, CapturedBashExecutionResult]:
         logger.info(f" A command is being executed : '{command}'")
         print(f" A command is being executed  : '{command}'")
         stdout_log_file = None
@@ -42,7 +42,7 @@ class BashClient(object):
                 stderr_log_file = open(stderr_log_file_path, "w")
                 
             if stderr_log_file or stdout_log_file:
-                result = subprocess.run(command, shell=True, stderr=stderr_log_file, stdout=stdout_log_file, check=False)
+                result = subprocess.run(command, shell=True, stderr=stderr_log_file, stdout=stdout_log_file, check=False, timeout=timeout)
                 execution_result = LoggedBashExecutionResult(
                     returncode=result.returncode,
                     command=result.args,
@@ -50,7 +50,7 @@ class BashClient(object):
                     stderr_log_file_path=stderr_log_file_path
                 )
             else:
-                result = subprocess.run(command, shell=True, capture_output=True, check=False)
+                result = subprocess.run(command, shell=True, capture_output=True, check=False, timeout=timeout)
                 execution_result = CapturedBashExecutionResult(
                     returncode=result.returncode,
                     command=result.args,
