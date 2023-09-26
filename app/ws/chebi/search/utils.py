@@ -48,11 +48,11 @@ def safe_split_string(source, split_char: str = "|"):
 
 
 def get_term_in_source(source: str, index: int):
-    if index < 0:
+    if index < 0 or not isinstance(source, str) or not source:
         return None
     if "|" in source:
         search_terms = safe_split_string(source)
-        if len(search_terms) >= index:
+        if search_terms and len(search_terms) >= index:
             return search_terms[index]
         else:
             return None

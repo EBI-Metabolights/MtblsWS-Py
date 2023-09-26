@@ -8,6 +8,7 @@
             "program": "~/miniconda3/envs/python38-MtblsWS/bin/gunicorn",
             "args": [ "--bind=0.0.0.0:17000", "--worker-class=gevent", "--preload", "wsapp:app"],
             "envFile": "${workspaceFolder}/.env",
+            "env": {"PYTHONPATH": "${cwd}"},
             "justMyCode": false,
             "postDebugTask": "killdebugger"
         },
@@ -19,6 +20,7 @@
             "args": ["-o", "${workspaceFolder}/tmp.prof", "gunicorn", "--worker-class", "gevent", "--preload", "-w", "3", "wsapp:app"],
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}"},
             "postDebugTask": "killdebugger"
         },
         {
@@ -36,6 +38,8 @@
                 "mtbls-tasks"
             ],
             "jinja": true,
+            "envFile": "${workspaceFolder}/.env",
+            "env": {"PYTHONPATH": "${workspaceFolder}"},
             "justMyCode": false
         },
         {
