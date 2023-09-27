@@ -4,6 +4,7 @@ import pathlib
 from typing import List
 
 from pydantic import BaseModel
+from app.config import get_settings
 from app.services.storage_service.models import (
     SyncCalculationStatus,
     SyncCalculationTaskResult,
@@ -11,6 +12,8 @@ from app.services.storage_service.models import (
     SyncTaskStatus,
 )
 from app.tasks.bash_client import BashExecutionResult, CapturedBashExecutionResult, LoggedBashExecutionResult
+from app.tasks.datamover_tasks.basic_tasks.execute_commands import execute_bash_command
+from app.tasks.datamover_tasks.basic_tasks.file_management import create_folders
 from app.tasks.hpc_worker_bash_runner import BashExecutionTaskStatus, HpcWorkerBashRunner, TaskDescription
 from app.tasks.utils import get_current_utc_time_string, get_utc_time_string_from_timestamp
 
@@ -26,6 +29,14 @@ class RsyncResult(BaseModel):
     error_message: str = ""
     success_message: str = ""
 
+def create_remote_path(target_path: str):
+    inputs = {"folder_paths": target_path, "exist_ok": True}
+    task = create_folders.apply_async(kwargs=inputs, expires=10)
+    try:
+        task.get(timeout=get_settings().hpc_cluster.configuration.task_get_timeout_in_seconds)
+    except Exception as ex:
+        pass
+    
 
 class HpcRsyncWorker:
     @staticmethod
@@ -40,6 +51,7 @@ class HpcRsyncWorker:
         stdout_log_file_path: str = None,
         stderr_log_file_path: str = None,
     ) -> SyncTaskResult:
+        create_remote_path([source_path, target_path])
         command = HpcRsyncWorker.build_rsync_command(
             source_path, target_path, include_list, exclude_list, rsync_arguments=rsync_arguments
         )
@@ -71,6 +83,8 @@ class HpcRsyncWorker:
         stdout_log_file_path: str = None,
         stderr_log_file_path: str = None,
     ) -> SyncCalculationTaskResult:
+        
+        create_remote_path([source_path, target_path])
         command = HpcRsyncWorker.build_rsync_command(
             source_path,
             target_path,

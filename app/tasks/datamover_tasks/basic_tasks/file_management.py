@@ -30,7 +30,7 @@ def create_folders(
                 results[path_item] = update_permission(path_item, permission)
         else:
             try:
-                make_dir_with_chmod(path_item, permission)
+                make_dir_with_chmod(path_item, permission, exist_ok=exist_ok)
                 last_status = os.path.exists(path_item)
                 if last_status:
                     result = update_permission(path_item, permission)

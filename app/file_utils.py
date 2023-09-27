@@ -16,11 +16,11 @@ def load_json_file(file_name, directory):
         return json.load(file)
 
 
-def make_dir_with_chmod(file_path, chmod):
+def make_dir_with_chmod(file_path, chmod, exist_ok: bool=True):
     previous_mask = os.umask(0)
     try:
         if not os.path.exists(file_path):
-            os.makedirs(file_path, mode=chmod, exist_ok=True)
+            os.makedirs(file_path, mode=chmod, exist_ok=exist_ok)
 
         current_chmod = int(oct(os.stat(file_path).st_mode), 8)
         if current_chmod == int(chmod):

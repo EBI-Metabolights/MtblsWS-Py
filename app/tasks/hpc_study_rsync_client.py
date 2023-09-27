@@ -102,8 +102,10 @@ class StudyRsyncClient:
             mounted_paths.cluster_study_internal_files_root_path,
             self.study_id,
             self.settings.study.internal_logs_folder_name,
+            "rsync_logs"
         )
-
+        os.makedirs(self.log_path, exist_ok=True)
+        
     def rsync(
         self,
         source: StudyFolder,
@@ -239,11 +241,11 @@ class StudyRsyncClient:
             include_list = ["[asi]_*.txt", "m_*.tsv"]
             exclude_list = ["*"]
         elif source.folder_type == StudyFolderType.DATA:
-            exclude_list = ["[asi]_*.txt", "m_*.tsv"]
+            exclude_list = ["[asi]_*.txt", "m_*.tsv", self.settings.study.internal_files_symbolic_link_name, self.settings.study.audit_files_symbolic_link_name, self.settings.chebi.pipeline.chebi_annotation_sub_folder]
         elif source.folder_type == StudyFolderType.AUDIT:
             exclude_list = [f"{self.settings.study.readonly_audit_folder_symbolic_name}"]
         elif source.folder_type == StudyFolderType.INTERNAL:
-            if target.location == StudyFolderLocation.PRIVATE_FTP_STORAGE:
+            if target.location == StudyFolderLocation.PRIVATE_FTP_STORAGE or source.location == StudyFolderLocation.PRIVATE_FTP_STORAGE:
                 include_list = [f"{self.settings.chebi.pipeline.chebi_annotation_sub_folder}/",f"{self.settings.chebi.pipeline.chebi_annotation_sub_folder}/***"]
             elif target.location == StudyFolderLocation.READONLY_STUDY_STORAGE:
                 include_list = ["metadata_summary.tsv", "data_files_summary.txt"]
