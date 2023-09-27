@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from app.config.model.auth import AuthSettings
 from app.config.model.bioportal import BioportalSettings
@@ -21,11 +22,14 @@ from app.config.model.server import ServerSettings
 from app.config.model.study import StudySettings
 from app.config.model.twitter import TwitterSettings
 from app.config.base import ApplicationBaseSettings
+from app.config.model.worker import WorkerSettings
 
+logger = logging.getLogger('wslog')
 
 class ApplicationSettings(ApplicationBaseSettings):
     flask: FlaskConfiguration
     server: ServerSettings
+    workers: WorkerSettings
     database: DatabaseSettings
     elasticsearch: ElasticsearchSettings
     email: EmailSettings
@@ -45,9 +49,7 @@ class ApplicationSettings(ApplicationBaseSettings):
     metaspace: MetaspaceSettings
     google: GoogleSettings
     bioportal: BioportalSettings
-
     redis_cache: RedisSettings
-
     celery: CelerySettings
 
 
@@ -74,6 +76,8 @@ def get_settings():
             _application_settings = ApplicationSettings()
         except Exception as ex:
             print("Failed to load current configuration file.")
+            print(ex)
+            logger.error(ex)
             _application_settings = current_settings
     
     return _application_settings

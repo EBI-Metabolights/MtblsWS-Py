@@ -238,28 +238,27 @@ class LsfClient(object):
                 return None, messages
         
         settings = get_settings()
-        script_template = settings.hpc_cluster.singularity.run_singularity_script_template_name
+        worker_config = settings.workers.datamover_workers.singularity_image_configuration
+        script_template = worker_config.run_singularity_script_template_name
                 
-        docker_config = settings.hpc_cluster.singularity
+        
         inputs = {
                     "DOCKER_BOOTSTRAP_COMMAND": command,
-                    "DOCKER_APP_ROOT": docker_config.docker_deployment_path,
+                    "DOCKER_APP_ROOT": worker_config.docker_deployment_path,
                     "DOCKER_BOOTSTRAP_COMMAND_ARGUMENTS": command_arguments,
-                    "REMOTE_SERVER_BASE_PATH": docker_config.worker_deployment_root_path,
-                    "SINGULARITY_DOCKER_USERNAME": docker_config.singularity_docker_username,
-                    "SINGULARITY_DOCKER_PASSWORD": docker_config.singularity_docker_password,
-                    "SINGULARITY_IMAGE_DESCRIPTOR": docker_config.current_singularity_file_descriptor,
-                    "CONFIG_FILE_PATH": docker_config.config_file_path,
-                    "SECRETS_PATH": docker_config.secrets_path,
-                    "LOGS_PATH": docker_config.logs_path,
-                    "HOME_DIR": docker_config.user_home_binding_source_path,
-                    "HOME_DIR_MOUNT_PATH": docker_config.user_home_binding_target_path,
+                    "REMOTE_SERVER_BASE_PATH": worker_config.worker_deployment_root_path,
+                    "SINGULARITY_IMAGE_DESCRIPTOR": worker_config.current_singularity_file_descriptor,
+                    "CONFIG_FILE_PATH": worker_config.config_file_path,
+                    "SECRETS_PATH": worker_config.secrets_path,
+                    "LOGS_PATH": worker_config.logs_path,
+                    "HOME_DIR": worker_config.user_home_binding_source_path,
+                    "HOME_DIR_MOUNT_PATH": worker_config.user_home_binding_target_path,
                     "SHARED_PATHS": []
                 }
         if not hpc_queue_name:
             hpc_queue_name = get_settings().hpc_cluster.datamover.queue_name
         if hpc_queue_name == settings.hpc_cluster.datamover.queue_name:
-            inputs["SHARED_PATHS"] = docker_config.shared_paths
+            inputs["SHARED_PATHS"] = worker_config.shared_paths
         if additional_mounted_paths:
             inputs.update(additional_mounted_paths)
         script_path = BashClient.prepare_script_from_template(script_template, **inputs)
@@ -271,7 +270,7 @@ class LsfClient(object):
                         script_path, task_name, output_file=out_log_path, error_file=err_log_path, queue=hpc_queue_name
                     )
             hostname=self.settings.hpc_cluster.datamover.connection.host
-            target_path = os.path.join(docker_config.worker_deployment_root_path, f"run_singularity_{task_name}.sh")
+            target_path = os.path.join(worker_config.worker_deployment_root_path, f"run_singularity_{task_name}.sh")
             copy_singularity_run_script = f"scp {script_path} {hostname}:{target_path}"
             BashClient.execute_command(copy_singularity_run_script)
             

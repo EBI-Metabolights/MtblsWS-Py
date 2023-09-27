@@ -107,4 +107,5 @@ class BashClient(object):
 
         with open(file_input_path, "w") as f:
             f.writelines(content)
+        os.chmod(file_input_path, mode=0o770)
         return file_input_path

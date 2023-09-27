@@ -25,11 +25,11 @@ eval "$(conda shell.bash hook)"
 conda activate python38-MtblsWS
 
 
-PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_monitor_worker_${HOST}_${SERVER_PORT}.log" | grep -v "grep" | awk '{ print $2 }' | tr '\n' ' ')
+PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_monitor_worker_${HOST}_${SERVER_PORT}.log" |  grep -v "grep" | awk '{ print $2 }' | tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
     echo "CELERY MONITOR WORKER will be started"
-    python3 -m celery -A app.tasks.worker:celery worker -Q monitor-tasks  --logfile $LOG_PATH/celery_monitor_worker_${HOST}.log --loglevel info -n monitor_worker@%h --concurrency 1 --detach
+    python3 -m celery -A app.tasks.worker:celery worker -Q monitor-tasks  --logfile $LOG_PATH/celery_monitor_worker_${HOST}_${SERVER_PORT}.log --loglevel info -n monitor_worker@%h --concurrency 1 --detach
 else
     echo "CELERY MONITOR WORKER is running. PROCESS_ID: ${PROCESS_ID}"
 fi

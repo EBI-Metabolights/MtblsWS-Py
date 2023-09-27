@@ -33,6 +33,11 @@ class RedisStorage(object):
     def get_value(self, key):
         value = self.redis.get(key)
         return value
+    
+    def search_keys(self, pattern):
+        value = self.redis.keys(pattern)
+        return value
+    
     def delete_value(self, key):
         self.redis.delete(key)
            
