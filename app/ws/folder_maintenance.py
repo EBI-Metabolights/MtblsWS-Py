@@ -1570,20 +1570,20 @@ class StudyFolderMaintenanceTask(object):
         
         read_only_audit_files_actual_path = os.path.join(settings.study_readonly_audit_files_actual_root_path, study_id)
         legacy_study_audit_path = os.path.join(legacy_study_files_path, self.study_settings.audit_folder_name)
-        if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists:
-            logger.info(f"Legacy storage study data files folder is {legacy_study_files_path}")
-            logger.info(f"Legacy storage study audit folder is {legacy_study_audit_path}")
+        # if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists:
+        #     logger.info(f"Legacy storage study data files folder is {legacy_study_files_path}")
+        #     logger.info(f"Legacy storage study audit folder is {legacy_study_audit_path}")
             
-        if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists and os.path.exists(legacy_study_files_path):
-            if self.study_status in [StudyStatus.DORMANT, StudyStatus.INREVIEW, StudyStatus.PUBLIC]:
-                logger.info(f"{read_only_files_actual_path} folder will be used for study data files")
-                self.maintain_study_symlinks(read_only_files_actual_path, read_only_files_path)
-            else:
-                logger.info(f"Legacy storage study files folder exists. {legacy_study_files_path} is used for study data files")
-                self.maintain_study_symlinks(legacy_study_files_path, read_only_files_path)
-        else:
-            logger.info(f"{read_only_files_actual_path} folder will be used for study data files")
-            self.maintain_study_symlinks(read_only_files_actual_path, read_only_files_path)
+        # if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists and os.path.exists(legacy_study_files_path):
+        #     if self.study_status in [StudyStatus.DORMANT, StudyStatus.INREVIEW, StudyStatus.PUBLIC]:
+        #         logger.info(f"{read_only_files_actual_path} folder will be used for study data files")
+        #         self.maintain_study_symlinks(read_only_files_actual_path, read_only_files_path)
+        #     else:
+        #         logger.info(f"Legacy storage study files folder exists. {legacy_study_files_path} is used for study data files")
+        #         self.maintain_study_symlinks(legacy_study_files_path, read_only_files_path)
+        # else:
+        logger.info(f"{read_only_files_actual_path} folder will be used for study data files")
+        self.maintain_study_symlinks(read_only_files_actual_path, read_only_files_path)
                 
         # if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists and os.path.exists(legacy_study_audit_path):
         #     logger.info(f"Legacy storage study files folder exists. {legacy_study_audit_path} is used for readonly study audit files")

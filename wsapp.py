@@ -79,8 +79,6 @@ mtbls_pattern = re.compile(r'MTBLS[1-9][0-9]*')
 def check_study_maintenance_mode():
     study_id = None
     settings = get_settings()
-    key =  settings.redis_cache.configuration.study_folder_maintenance_mode_key_prefix
-    redis = get_redis_server()
     
     if settings.server.service.maintenance_mode:
         if "study_id" in request.headers:
@@ -91,11 +89,13 @@ def check_study_maintenance_mode():
             if study_id_result:
                 study_id = study_id_result.group()
         if study_id:
-            # redis.set_value(f"{key}:{study_id}", value="1" , ex=30)
-            key =  settings.redis_cache.configuration.study_folder_maintenance_mode_key_prefix
-            value = redis.get_value(f"{key}:{study_id}")
-            if value:
-                abort(503, message=f"{study_id} study folders are under maintenance now. Please try again later.")
+            abort(503, message=f"{study_id} study folders are under maintenance now. Please try again later.")
+            # redis = get_redis_server()
+            # # redis.set_value(f"{key}:{study_id}", value="1" , ex=30)
+            # key =  settings.redis_cache.configuration.study_folder_maintenance_mode_key_prefix
+            # value = redis.get_value(f"{key}:{study_id}")
+            # if value:
+            #     abort(503, message=f"{study_id} study folders are under maintenance now. Please try again later.")
     return None
 
 def main():
