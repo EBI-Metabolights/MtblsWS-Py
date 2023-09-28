@@ -311,7 +311,7 @@ without setting the "force" parameter to True''',
                     if f_name.startswith('i_') and f_name.endswith('.txt') and not is_curator:
                         errors.append({"status": "error", 'message': "Only MetaboLights curators can remove the investigation file", 'file': f_name})  
                     elif file_location == "study":
-                        status, message = remove_file(study_location, f_name, always_remove)
+                        status, message = remove_file(study_location, f_name, always_remove, is_curator=is_curator)
                         if not status:
                             errors.append({"status": "error", 'message': message, 'file': f_name})
                         else:

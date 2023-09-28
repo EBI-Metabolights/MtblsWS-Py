@@ -97,7 +97,7 @@ def write_actions(f, actions: List[MaintenanceActionLog], study_id, study_status
         success = action.successful
         action_name = action.action.name
         item = action.item
-        message = action.message
+        message = action.message.replace(item, "") if action.message else action.message
         parameters = action.parameters
         command = action.command
         rows.append(

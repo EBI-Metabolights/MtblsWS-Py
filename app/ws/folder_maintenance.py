@@ -29,7 +29,7 @@ from app.services.storage_service.mounted.local_file_manager import \
     MountedVolumeFileManager
 from app.services.storage_service.remote_worker.remote_file_manager import \
     RemoteFileManager
-from app.study_folder_utils import get_all_study_metadata_and_data_files
+from app.study_folder_utils import FileDescriptor, get_all_study_metadata_and_data_files
 from app.tasks.bash_client import BashClient
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
 from app.utils import INVESTIGATION_FILE_ROWS_LIST, INVESTIGATION_FILE_ROWS_SET
@@ -1157,7 +1157,7 @@ class StudyFolderMaintenanceTask(object):
             success = action.successful
             action_name = action.action.name
             item = action.item
-            message = action.message
+            message = action.message.replace(item, "") if action.message else action.message
             parameters = action.parameters
             command = action.command
             executed = True
@@ -1171,7 +1171,7 @@ class StudyFolderMaintenanceTask(object):
             success = action.successful
             action_name = action.action.name
             item = action.item
-            message = action.message
+            message = action.message.replace(item, "") if action.message else action.message
             parameters = action.parameters
             command = action.command
             executed = False
@@ -2254,6 +2254,9 @@ class StudyFolderMaintenanceTask(object):
         assignment_column_name = "Metabolite Assignment File"
         updated_file_references = {}
         updated_assignment_files ={}
+        exclude_list = ["AUDIT_FILES", "INTERNAL_FILES"]
+        all_data_files: Dict[str, FileDescriptor] = get_all_study_metadata_and_data_files(study_metadata_path=self.study_metadata_files_path, exclude_list=exclude_list, include_metadata_files=False)
+
         if investigation and investigation.studies and investigation.studies[0]:
             study: isatools_model.Study = investigation.studies[0]
             referenced_assignment_file_paths = set()
@@ -2303,10 +2306,10 @@ class StudyFolderMaintenanceTask(object):
                                         successful=False,
                                     )
                                     self.actions.append(action_log)
-                                self.maintain_referenced_data_file_column_values(assay_file_path, assay_df)
-                                # updates = self.maintain_referenced_data_file_column_values(assay_file_path, assay_df)
-                                
-                                # updated_file_references.update(updates)
+                                # self.maintain_referenced_data_file_column_values(assay_file_path, assay_df)
+                                updates = self.maintain_referenced_data_file_column_values(assay_file_path, assay_df, all_data_files)
+                                if updates:
+                                    updated_file_references.update(updates)
                         finally:
                             if assay_df is not None and not assay_df.empty:
                                 self.write_tsv_file(assay_df, assay_file_path)
@@ -2333,14 +2336,21 @@ class StudyFolderMaintenanceTask(object):
             #             if file not in referenced_assignment_file_paths:
             #                 basename = os.path.basename(file)
             #                 self.backup_file(file, reason=f"Metabolite Assignment File {basename} was not referenced.")
-        # if updated_file_references:
-        #     exclude_list = ["FILES/**/*.zip", "AUDIT_FILES", "INTERNAL_FILES"]
-        #     all_files = get_all_study_metadata_and_data_files(study_metadata_path=self.study_metadata_files_path, exclude_list=exclude_list, include_metadata_files=False)
-        #     referenced_in_assays: Set = set(updated_file_references.keys())
-        #     all_files = set([x for x in all_files.keys() if not x.endswith(".zip") and (x.lower().endswith(".d") or x.lower().endswith(".raw"))])
-        #     unreferenced = all_files.difference(referenced_in_assays)
-        #     items = list(unreferenced)
-        #     print("files will be updated.")
+        if updated_file_references:
+            referenced_in_assays: Set = set(updated_file_references.keys())
+            stop_folders = set([x for x in all_data_files if  all_data_files[x].is_stop_folder])
+            unreferenced = stop_folders.difference(referenced_in_assays)
+            if unreferenced:
+                items = list(unreferenced)
+                items.sort()
+                action_log = MaintenanceActionLog(
+                    item=assay_file_path,
+                    action=MaintenanceAction.WARNING_MESSAGE,
+                    parameters={},
+                    message=f"{self.study_id}: {assay_file_path} There are unreferenced raw data folders: {', '.join(items)}.",
+                )
+                self.actions.append(action_log)
+                print(f"Folders are not referenced: {', '.join(items)}")
 
     def read_tsv_file(self, file_path) -> pd.DataFrame:
         message = ""
@@ -2453,29 +2463,33 @@ class StudyFolderMaintenanceTask(object):
                 return f"{groups[0].strip()}.{groups[1].strip()}"
             else:
                 return name.strip()
-    def replace_reference_raw_data_folder_names(self, assay_file_path, assay_df: pd.DataFrame):
+    def replace_reference_raw_data_folder_names(self, assay_file_path, assay_df: pd.DataFrame, all_data_files: Dict[str, FileDescriptor]):
+        all_zip_files = {}
         
-        zip_files_map = {}
         for column in assay_df.columns:
+            zip_files_map = {}
             if " Data File" in column:        
                 file_names = assay_df[column].unique()
                 for file in file_names:
-                    _, ext = os.path.splitext(file)
-                    ext = ext.lower()
                     file_path = os.path.join(self.study_metadata_files_path, file)
-                    dir_path = os.path.dirname(file_path)
                     dir_relative_path = os.path.dirname(file)
-                    _, dir_ext = os.path.splitext(file)
-                    dir_ext = dir_ext.lower()
-                    if ext in (".d", ".raw") and os.path.exists(file_path) and os.path.exists(file_path):
+                    if file in all_data_files:
+                        if all_data_files[file].extension == ".zip":
+                            continue
                         zip_file_path = f"{file_path}.zip"
-                        if os.path.exists(zip_file_path):
+                        if all_data_files[file].is_stop_folder and os.path.exists(zip_file_path):
                             zip_files_map[file] = f"{file}.zip" 
-                    elif dir_ext in (".d", ".raw") and os.path.exists(dir_path):  
-                        zip_file_path = f"{dir_path}.zip"  
-                        if os.path.exists(f"{dir_path}.zip" ):
-                            zip_files_map[file] = f"{dir_relative_path}.zip"  
+                    elif dir_relative_path in all_data_files and all_data_files[dir_relative_path].is_stop_folder:
+                        dir_path = os.path.dirname(file_path)
+                        zip_file_path = f"{dir_path}.zip" 
+                        if os.path.exists(zip_file_path): 
+                            zip_files_map[file] = f"{dir_relative_path}.zip"                             
+                    elif file:
+                        zip_file_relative_path = f"{file}.zip" if not file.endswith(".zip") else None
+                        if zip_file_relative_path and zip_file_relative_path in all_data_files:
+                            zip_files_map[file] = f"{file}.zip"
             if zip_files_map:
+                all_zip_files.update(zip_files_map)
                 assay_df[column] = assay_df[column].apply(lambda x: zip_files_map[x] if x in zip_files_map else x)
                 values = ", ".join(list(zip_files_map.keys())) if len(zip_files_map) < 20 else f'{", ".join(list(zip_files_map.keys()))} ...'
                 action_log = MaintenanceActionLog(
@@ -2484,12 +2498,12 @@ class StudyFolderMaintenanceTask(object):
                     parameters={
                         "column": column,
                     },
-                    message=f"{self.study_id}: {assay_file_path} referenced raw spectral data files are switched to zip files: {values}",
+                    message=f"{self.study_id}: {assay_file_path} {column} referenced data file names are updated with .zip: {values}",
                 )
                 self.actions.append(action_log)
-        return zip_files_map            
+        return all_zip_files            
         
-    def maintain_referenced_data_file_column_values(self, assay_file_path, assay_df: pd.DataFrame):
+    def maintain_referenced_data_file_column_values(self, assay_file_path, assay_df: pd.DataFrame, all_data_files: Dict[str, FileDescriptor]):
         raw_spectral_column_name = "Raw Spectral Data File"
         derived_spectral_column_name = "Derived Spectral Data File"
 
@@ -2513,7 +2527,7 @@ class StudyFolderMaintenanceTask(object):
             for col in all_data_columns:
                 assay_df[col] = assay_df[col].apply(lambda x: self.refactor_referenced_filename(x))
                 
-            # return self.replace_reference_raw_data_folder_names(assay_file_path, assay_df)
+            return self.replace_reference_raw_data_folder_names(assay_file_path, assay_df, all_data_files)
             
 
         # detect invalid raw/derived file extensions and swap them. if needed, add new columns.
@@ -2653,7 +2667,7 @@ class StudyFolderMaintenanceTask(object):
                     )
                 else:
                     row[derived_spectral_column_names[i]] = ""
-        # return self.replace_reference_raw_data_folder_names(assay_file_path, assay_df)
+        return self.replace_reference_raw_data_folder_names(assay_file_path, assay_df, all_data_files)
 
     def refactor_referenced_filename(self, filename: str):
         if not filename or not filename.strip():

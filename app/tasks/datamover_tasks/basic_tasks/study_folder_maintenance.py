@@ -43,7 +43,7 @@ def create_study_folders(
             success = action_log.successful
             action_name = action_log.action.name
             item = action_log.item
-            message = action_log.message
+            message = action_log.message.replace(item, "") if action_log.message else action_log.message
             parameters = action_log.parameters
             rows.append(
                 [
@@ -210,7 +210,7 @@ def maintain_storage_study_folders(
                     success = action_log.successful
                     action_name = action_log.action.name
                     item = action_log.item
-                    message = action_log.message
+                    message = action_log.message.replace(item, "") if action_log.message else action_log.message
                     parameters = action_log.parameters
                     rows.append(
                         [

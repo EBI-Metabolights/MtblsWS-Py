@@ -13,12 +13,13 @@ STOP_FOLDER_EXTENSIONS = {".raw", ".d", ".fid"}
 STOP_FOLDER_SAMPLE_FILES = {".raw": "_FUNC001.DAT", ".d": "SyncHelper", ".fid": "fid"}
 DEFAULT_SAMPLE_FILE_NAME = "_history"
 # SKIP_FOLDER_NAMES= {"audit", "chebi_pipeline_annotations", "__MACOSX", "AUDIT_FILES", "INTERNAL_FILES"}
-SKIP_FOLDER_CONTAINS_FILE_NAME = "fid"
+SKIP_FOLDER_CONTAINS_ANY = ["fid*", "ser*"]
 SKIP_FOLDER_CONTAINS_FILE_NAME_PATTERN = "acqu*"
 
 SKIP_FILE_EXTENSIONS =  {".__MACOSX"}
 
 METADATA_FILE_PREFIXES = {"a_", "i_", "s_", "m_"}
+MANAGED_FOLDERS = {"FILES", "FILES/RAW_FILES", "FILES/DERIVED_FILES"}
 
 
 
@@ -72,7 +73,7 @@ def find_study_data_files(study_metadata_path, filtered_subfolder=None, search_p
         result = [{"name": str(file)} for file in search_results]
         return result
  
-def get_all_study_metadata_and_data_files(study_metadata_path: str, exclude_list: List[str]=None, include_metadata_files: bool=True):
+def get_all_study_metadata_and_data_files(study_metadata_path: str, exclude_list: List[str]=None, include_metadata_files: bool=True) -> Dict[str, FileDescriptor]:
         data_files_path = study_metadata_path
         file_descriptors: Dict[str, FileDescriptor] = {}
 
@@ -116,18 +117,18 @@ def get_study_folder_files(root_path: str, file_descriptors: Dict[str, FileDescr
             #         continue
             sub_filename = ""
             is_stop_folder = False
-            if str(item) != root_path:
+            if relative_path and str(relative_path) not in MANAGED_FOLDERS:
                 search = glob.iglob(f"{item}/{SKIP_FOLDER_CONTAINS_FILE_NAME_PATTERN}")
                 
                 files = [x for x in search]
                 if files:
-                    if os.path.exists(f"{item}/{SKIP_FOLDER_CONTAINS_FILE_NAME}"):
-                        is_stop_folder = True
-                        sub_filename = SKIP_FOLDER_CONTAINS_FILE_NAME
-                    elif item.name.isnumeric():
-                        is_stop_folder = True
-                        sub_filename = files[0]
-                    
+                    for parameters_file in SKIP_FOLDER_CONTAINS_ANY:
+                        items = glob.iglob(f"{item}/{SKIP_FOLDER_CONTAINS_FILE_NAME_PATTERN}")
+                        if items:
+                            sub_filename = parameters_file
+                            is_stop_folder = True
+                            break
+                                    
             ext = item.suffix.lower()
             relative_path = str(item).replace(f"{root_path}", "").lstrip("/")
 

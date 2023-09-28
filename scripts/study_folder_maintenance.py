@@ -110,16 +110,6 @@ def maintain_folders(
     if not study_id_list:
         raise MaintenanceException(message="At least one study should be selected")
     
-    # mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
-
-    # for study_id in study_id_list:
-    #     study: Study = StudyService.get_instance().get_study_by_acc(study_id=study_id)
-    #     private_ftp_folder_name = f"{study_id.lower()}-{study.obfuscationcode}"
-    #     private_ftp_path =  os.path.join(mounted_paths.cluster_private_ftp_root_path, private_ftp_folder_name)
-    #     private_ftp_metadata_files = get_files(private_ftp_path, patterns = ["[asi]_*.txt", "m_*.tsv"])
-    #     if private_ftp_metadata_files:
-    #         print(f"{study_id}")
-    
     maintenance_task_list: Dict[str, StudyFolderMaintenanceTask] = {}
     start = time.time() 
     start_time_str = datetime.datetime.fromtimestamp(start).strftime("%Y-%m-%d %H:%M:%S")
@@ -188,33 +178,32 @@ def maintain_folders(
                         )
                         BashClient.execute_command(command)
                 else:                   
-                    if  skip_if_metadata_is_sync:
-                        folders_are_sync = are_metadata_files_sync(maintenance_task, check_ftp_folders)
+                    folders_are_sync = are_metadata_files_sync(maintenance_task, check_ftp_folders)
+                    if not skip_if_metadata_is_sync:
+                        maintenance_task.create_audit_folder()
+                        maintenance_task.create_audit_folder(metadata_files_path=legacy_study_path, 
+                                                        audit_folder_root_path=audit_folder_root_path, 
+                                                        metadata_files_signature_root_path=audit_path, 
+                                                        folder_name=maintenance_task.task_name)
+                        
+                        study_id = maintenance_task.study_id
+                        mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+                        source_path = os.path.join(mounted_paths.cluster_legacy_study_files_root_path, study_id)
+                        target_path  = os.path.join(mounted_paths.cluster_study_metadata_files_root_path, study_id)
+                        files = maintenance_task.get_all_metadata_files()
+                        for file in files:
+                            maintenance_task.backup_file(file, reason="Replaced from legacy storage", keep_file_on_folder=False)
+                        include_list = ["[asi]_*.txt", "m_*.tsv"]
+                        exclude_list = ["*"]
+                        command = HpcRsyncWorker.build_rsync_command(
+                            source_path, target_path, include_list, exclude_list, rsync_arguments='-auv'
+                        )
+                        result = BashClient.execute_command(command)
+                    else:                        
                         if folders_are_sync:
                             print(f"{study_id} metadata folder is sync. Skip this folder")
                             continue
                         else:
-                            maintenance_task.create_audit_folder()
-                            maintenance_task.create_audit_folder(metadata_files_path=legacy_study_path, 
-                                                         audit_folder_root_path=audit_folder_root_path, 
-                                                         metadata_files_signature_root_path=audit_path, 
-                                                         folder_name=maintenance_task.task_name)
-                            
-                            study_id = maintenance_task.study_id
-                            mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
-                            source_path = os.path.join(mounted_paths.cluster_legacy_study_files_root_path, study_id)
-                            target_path  = os.path.join(mounted_paths.cluster_study_metadata_files_root_path, study_id)
-                            files = maintenance_task.get_all_metadata_files()
-                            for file in files:
-                                maintenance_task.backup_file(file, reason="Replaced from legacy storage", keep_file_on_folder=False)
-                            include_list = ["[asi]_*.txt", "m_*.tsv"]
-                            exclude_list = ["*"]
-                            command = HpcRsyncWorker.build_rsync_command(
-                                source_path, target_path, include_list, exclude_list, rsync_arguments='-auv'
-                            )
-                            result = BashClient.execute_command(command)
-                    else:                        
-                        if not folders_are_sync:
                             maintenance_task.create_audit_folder()
                         
 
@@ -304,7 +293,7 @@ def write_actions(f, actions: List[MaintenanceActionLog], study_id, study_status
         success = action.successful
         action_name = action.action.name
         item = action.item
-        message = action.message
+        message = action.message.replace(item, "") if action.message else action.message
         parameters = action.parameters
         command = action.command
         rows.append(
@@ -376,7 +365,8 @@ if __name__ == "__main__":
         task_name=task_name,
         apply_future_actions=apply_future_actions,
         cluster_mode=cluster_mode,
-        check_ftp_folders=check_ftp_folders
+        check_ftp_folders=check_ftp_folders,
+        skip_if_metadata_is_sync=True
     )
 
     print("end")

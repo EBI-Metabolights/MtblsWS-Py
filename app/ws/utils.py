@@ -931,7 +931,7 @@ def delete_remote_file(root_path: str, file_path: str) -> Tuple[bool, str]:
         
     return False, "No Files"
     
-def remove_file(file_location: str, file_name: str, always_remove=False):
+def remove_file(file_location: str, file_name: str, always_remove=False, is_curator=False):
     settings = get_settings()
     
     files_folder_name = settings.study.readonly_files_symbolic_link_name
@@ -943,7 +943,7 @@ def remove_file(file_location: str, file_name: str, always_remove=False):
     if file_name.strip(os.sep) in (files_folder_name, internal_files_folder_name, audit_files_folder_name):
         return False, "Deleting managed folders is not allowed."
     
-    if (file_name.startswith(internal_files_folder_name)):
+    if (file_name.startswith(internal_files_folder_name)) and not is_curator:
         return False, "Deleting internal files is not allowed."
     
     first_folder = file_name.split(os.sep)[0]

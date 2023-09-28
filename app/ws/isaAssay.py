@@ -255,9 +255,9 @@ class StudyAssayDelete(Resource):
                                     save_investigation_copy=save_audit_copy, save_assays_copy=save_audit_copy,
                                     save_samples_copy=save_audit_copy)
                 try:
-                    remove_file(study_location, a_file, always_remove=True)  # We have to remove active metadata files
+                    remove_file(study_location, a_file, always_remove=True, is_curator=is_curator)  # We have to remove active metadata files
                     if maf_name is not None:
-                        remove_file(study_location, maf_name, always_remove=True)
+                        remove_file(study_location, maf_name, always_remove=True, is_curator=is_curator)
                 except:
                     logger.error("Failed to remove assay file " + a_file + " from study " + study_id)
 
