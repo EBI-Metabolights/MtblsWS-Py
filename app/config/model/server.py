@@ -1,3 +1,5 @@
+from enum import Enum
+from typing import List, Set, Union
 import isatools
 import metaspace
 import mzml2isa
@@ -9,6 +11,18 @@ isatools_version = pkg_resources.get_distribution(isatools.__name__).version
 metaspace_version = pkg_resources.get_distribution(metaspace.name).version
 mzml2isa_version = mzml2isa.__version__
 
+class EndpointMethodOption(str, Enum):
+    GET = "GET"
+    POST = "POST"
+    PUT = "PUT"
+    DELETE = "DELETE" 
+    ANY = "*"   
+
+
+class EndpointDescription(BaseModel):
+    method: Union[EndpointMethodOption, Set[EndpointMethodOption]]
+    path: str    
+    
 
 class ServerService(BaseModel):
     rest_api_port: int
@@ -22,6 +36,8 @@ class ServerService(BaseModel):
     maintenance_mode: bool = False
     config_file_check_period_in_seconds: int = 60
     banner_check_period_in_seconds: int = 60
+    enabled_endpoints_under_maintenance: List[EndpointDescription]
+    disabled_endpoints: List[EndpointDescription]
 
 
 class ServerDescription(BaseModel):

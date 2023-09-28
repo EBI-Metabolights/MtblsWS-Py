@@ -99,7 +99,7 @@ def start_vm_worker(host: HostWorkerConfiguration, current_names: Set[str], resu
     redis_key = f"{initiate_vm_worker_key_prefix}:{hostname}:{name}"
     status = redis.get_value(redis_key)
     if not status or status.decode() != "1":
-        port = get_settings().server.service.rest_api_port
+        port = str(get_settings().server.service.rest_api_port)
         paramters = {
             "application_deployment_path": host.deployment_path,
             "worker_name": name,

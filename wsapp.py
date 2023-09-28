@@ -19,6 +19,7 @@
 import logging.config
 import os
 import re
+from typing import List
 # import re
 
 
@@ -26,6 +27,7 @@ from flask import Flask, request, session
 from flask_restful import abort
 from jinja2 import Environment, select_autoescape, FileSystemLoader
 from app.config import get_settings
+from app.config.model.server import EndpointDescription, EndpointMethodOption
 
 from app.wsapp_config import initialize_app
 from app.ws.redis.redis import get_redis_server
@@ -74,29 +76,50 @@ def setup_logging():
     print(f"Running on server: '{hostname}' using logging config {logging_config_file_path}")
 
 mtbls_pattern = re.compile(r'MTBLS[1-9][0-9]*')
-
+MANAGED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE"}
 @application.before_request
 def check_study_maintenance_mode():
-    study_id = None
     settings = get_settings()
     
-    if settings.server.service.maintenance_mode:
-        if "study_id" in request.headers:
-            study_id = request.headers["study_id"]
-        if not study_id:
-            study_id_result = mtbls_pattern.search(request.path)
+    disabled_endpoints: List[EndpointDescription] = settings.server.service.disabled_endpoints
+    if disabled_endpoints:
+        matched = check_request(request, disabled_endpoints)
+        if matched:
+            abort(503, message=f"This endpoint is disabled and unreachable.")
         
-            if study_id_result:
-                study_id = study_id_result.group()
-        if study_id:
-            abort(503, message=f"{study_id} study folders are under maintenance now. Please try again later.")
-            # redis = get_redis_server()
-            # # redis.set_value(f"{key}:{study_id}", value="1" , ex=30)
-            # key =  settings.redis_cache.configuration.study_folder_maintenance_mode_key_prefix
-            # value = redis.get_value(f"{key}:{study_id}")
-            # if value:
-            #     abort(503, message=f"{study_id} study folders are under maintenance now. Please try again later.")
+    
+    if settings.server.service.maintenance_mode:
+        enabled_endpoints = settings.server.service.enabled_endpoints_under_maintenance
+        if enabled_endpoints:
+            matched = check_request(request, enabled_endpoints)
+            if not matched:
+                abort(503, message=f"This endpoint is under maintenance now. Please try again later.")
+        
     return None
+
+def check_request(current_request, endpoints: List[EndpointDescription]):
+    if current_request.method not in MANAGED_HTTP_METHODS:
+        abort(400, message=f"{current_request.method} is unexpected request method.")
+        
+    for endpoint in endpoints:
+        pattern = endpoint.path
+        
+        method: EndpointMethodOption = endpoint.method
+        if isinstance(endpoint.method, EndpointMethodOption): 
+            method: EndpointMethodOption = [endpoint.method]
+        accepted_methods = set()
+        for item in method:
+            if item == EndpointMethodOption.ANY:
+                accepted_methods = MANAGED_HTTP_METHODS
+                break
+            accepted_methods.add(item.value)
+        if current_request.method not in accepted_methods:
+            continue
+        result = re.fullmatch(pattern, current_request.path)
+
+        if result:
+            return True
+    return False
 
 def main():
     setup_logging()

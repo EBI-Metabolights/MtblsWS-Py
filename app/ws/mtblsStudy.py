@@ -2198,6 +2198,8 @@ class StudyFolderSynchronization(Resource):
             if start_new_task and target.folder_type == StudyFolderType.METADATA and target.location == StudyFolderLocation.RW_STUDY_STORAGE:
                 write_audit_files(study_id)
             status: SyncTaskResult = client.rsync(source, target, status_check_only=status_check_only)
+
+        status.description = f"{status.description[:100]} ..." if status.description and len(status.description) > 100 else status.description
         return status.dict()
     
 

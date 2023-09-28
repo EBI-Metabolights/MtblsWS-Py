@@ -14,3 +14,7 @@ def get_private_ftp_relative_root_path():
         user_home = settings.hpc_cluster.datamover.cluster_private_ftp_user_home_path
         
     return full_path.replace(user_home, "", 1)
+
+def get_host_internal_url():
+    service_settings = get_settings().server.service
+    return f"http://{service_settings.mtbls_ws_host}:{service_settings.mtbls_ws_host}"

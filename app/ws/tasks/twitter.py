@@ -161,6 +161,8 @@ class PublicStudyTweet(Resource):
                         'public_studies': public_study_ids, 'twitter_messages': None}
 
             twitter_messages = []
+            result = {"message": 'No public study found', 'release_date': str(release_date.strftime(date_format)),
+                        'public_studies': public_study_ids, 'twitter_messages': "None"}
             for twitter_message in public_study_messages:
                 try:
                     response = client.create_tweet(text=twitter_message)

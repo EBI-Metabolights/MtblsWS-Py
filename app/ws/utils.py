@@ -49,6 +49,7 @@ from mzml2isa.parsing import convert as isa_convert
 from pandas import Series
 from dirsync import sync
 from app.config import get_settings
+from app.config.utils import get_host_internal_url
 from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files
 
 from app.ws.mm_models import OntologyAnnotation
@@ -1433,8 +1434,10 @@ def get_instrument(studyID, assay_name):
     # res.loc[len(res)] = [sheet_name, key, term]
     try:
         source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
-        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
-        resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
+        settings = get_settings()
+        service_settings = settings.server.service
+        ws_url = f"{service_settings.mtbls_ws_host}:{service_settings.rest_api_port}{source}"
+        resp = requests.get(ws_url, headers={'user_token': settings.auth.service_account.api_token},
                             params={'assay_filename': assay_name})
         data = resp.text
         content = io.StringIO(data)
@@ -1456,8 +1459,10 @@ def get_orgaisms(studyID, sample_file_name):
     # print('getting organism')
     try:
         source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
-        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
-        resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
+        settings = get_settings()
+        service_settings = settings.server.service
+        ws_url = f"{service_settings.mtbls_ws_host}:{service_settings.rest_api_port}{source}"
+        resp = requests.get(ws_url, headers={'user_token': settings.auth.service_account.api_token},
                             params={'sample_filename': sample_file_name})
         data = resp.text
         content = io.StringIO(data)
@@ -1497,8 +1502,8 @@ def get_studytype(studyID=None):
         untarget = False
         target = False
 
-        source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
-        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        source = '/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+        ws_url = get_host_internal_url()+ source
         try:
             resp =requests.get(ws_url , headers={'user_token': get_settings().auth.service_account.api_token})
             data = resp.json()
@@ -1630,8 +1635,8 @@ def get_public_review_studies():
 
 def getFileList(studyID):
     try:
-        source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
-        url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        source = '/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
+        url = get_host_internal_url() + source
         request_obj = urllib_request.Request(url)
         request_obj.add_header('user_token', get_settings().auth.service_account.api_token)
         response = urllib_request.urlopen(request_obj)

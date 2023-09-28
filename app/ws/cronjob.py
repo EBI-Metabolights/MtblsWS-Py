@@ -37,6 +37,7 @@ from gspread_dataframe import set_with_dataframe
 from oauth2client.service_account import ServiceAccountCredentials
 from owlready2 import urllib
 from app.config import get_settings
+from app.config.utils import get_host_internal_url
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
@@ -365,8 +366,8 @@ def get_empty_studies():
                 studyInfo[2] == 'Dormant':
             continue
 
-        source = '/metabolights/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyInfo[0])
-        ws_url = 'http://wp-p3s-19.ebi.ac.uk:5000' + source
+        source = '/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyInfo[0])
+        ws_url = get_host_internal_url() + source
 
         try:
             resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token})
@@ -401,6 +402,7 @@ def get_empty_studies():
     # ws response & email
     empty_email.sort(key=natural_keys)
     no_email.sort(key=natural_keys)
+    
     return empty_email, no_email
 
 
@@ -550,7 +552,7 @@ def extractUntargetStudy(studyType=None, publicStudy=True):
         for studyID in studyIDs:
             print(studyID)
             source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
-            ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
+            ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
             try:
                 resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token})
                 data = resp.json()
@@ -751,8 +753,8 @@ def getFileList2(studyID):
 
 def getFileList(studyID):
     try:
-        source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
-        url = 'http://wp-p3s-19.ebi.ac.uk:5000' + source
+        source = '/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
+        url = get_host_internal_url() + source
         request = urllib.request.Request(url)
         request.add_header('user_token', get_settings().auth.service_account.api_token)
         response = urllib.request.urlopen(request)
@@ -796,7 +798,7 @@ def get_sample_file(studyID, sample_file_name):
     import io
     try:
         source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
-        ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
+        ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
         resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                             params={'sample_filename': sample_file_name})
@@ -820,7 +822,7 @@ def get_assay_file(studyID, assay_file_name):
     import io
     try:
         source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
-        ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
+        ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
         resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                             params={'assay_filename': assay_file_name})
@@ -843,7 +845,7 @@ def assay_sample_list(studyID):
 
     try:
         source = '/metabolights/ws/studies/{study_id}/investigation'.format(study_id=studyID)
-        ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
+        ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
         resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token})
         buf = io.StringIO(resp.text)
@@ -886,7 +888,8 @@ def uniqueOrganism(studyID):
     :return: list of organisms
     '''
     try:
-        url = 'http://wp-p3s-19.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
+        host = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port)
+        url = f'{host}/{studyID}/organisms'
         resp = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
         data = resp.json()
         org = []

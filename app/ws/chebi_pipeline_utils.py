@@ -1634,7 +1634,7 @@ def remove_sdf_files(sdf_file_name, study_location, sdf_file_list):
 def check_classyfire_api():
     status = 'Failure'
     try:
-        url = app.config.get('CLASSYFIRE_ULR')
+        url = get_settings().chebi.pipeline.search_services.classyfire_url
         print_log("Checking CLASSYFIRE API...   ", mode='info')
         url = url + '/queries/1'
         resp = requests.get(url, timeout=10)
@@ -1887,7 +1887,7 @@ def get_csid(inchikey):
 
 # def get_csid(inchikey):
 #     csid = ""
-#     csurl_base = app.config.get('CHEMSPIDER_URL')
+#     csurl_base = unichem_url = get_settings().chebi.pipeline.
 #
 #     if inchikey:
 #         url1 = csurl_base + 'SimpleSearch&searchOptions.QueryText=' + inchikey
@@ -1956,7 +1956,7 @@ def create_pubchem_df(maf_df):
 def check_chebi_api():
     status = 'Failure'
     try:
-        url = app.config.get('CHEBI_URL')
+        url = get_settings().chebi.pipeline.chebi_pipeline_url
         print_log("Checking CHEBI API...   ", mode='info')
         resp = requests.get(url, timeout=10)
         if resp.status_code == 200:
@@ -1968,7 +1968,7 @@ def check_chebi_api():
 def check_opsin_api(comp_name):
     status = 'Failure'
     try:
-        opsin_url = app.config.get('OPSIN_URL')
+        opsin_url = get_settings().chebi.pipeline.search_services.opsin_url
         url = opsin_url + comp_name + '.json'
         print_log("Checking OPSIN API...   ", mode='info')
         resp = requests.get(url, timeout=10)
@@ -2270,7 +2270,7 @@ def get_glytoucan_id(final_cid, df):
 
 def check_unichem_api(inchi_key='BSYNRYMUTXBXSQ-UHFFFAOYSA-N'):
     status = 'Failed'
-    unichem_url = app.config.get('UNICHEM_URL')
+    unichem_url = get_settings().chebi.pipeline.search_services.unichem_url
     unichem_url = f"{unichem_url}/inchikey/{inchi_key}"
     try:
         resp = requests.get(unichem_url, timeout=10)

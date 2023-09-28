@@ -25,6 +25,7 @@ from flask import request, jsonify, current_app as app
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from app.config import get_settings
+from app.config.utils import get_host_internal_url
 
 from app.ws.cluster_jobs import submit_job
 from app.ws.isaApiClient import IsaApiClient
@@ -318,7 +319,7 @@ def maf_reader(studyID, maf_file_name, sample_df):
     :return:  dict{chebiID:[sampleNames]
     '''
 
-    url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{studyID}/{maf_file_name}'.format(studyID=studyID,
+    url = get_host_internal_url() + '/ws/studies/{studyID}/{maf_file_name}'.format(studyID=studyID,
                                                                                                      maf_file_name=maf_file_name)
     response = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
     jsonResponse = response.json()
@@ -359,8 +360,8 @@ def get_sample_file(studyID, sample_file_name):
     '''
     import io
     try:
-        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
-        # ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
+        host = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port)
+        ws_url = f'{host}/metabolights/ws/studies/{studyID}/sample'
 
         resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                             params={'sample_filename': sample_file_name})
@@ -374,7 +375,7 @@ def get_sample_file(studyID, sample_file_name):
 
 
 def getFileList(studyID):
-    url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(
+    url = get_host_internal_url() + '/ws/studies/{study_id}/files?include_raw_data=false'.format(
         study_id=studyID)
     request_obj = urllib_request.Request(url)
     request_obj.add_header('user_token', get_settings().auth.service_account.api_token)
@@ -412,7 +413,9 @@ def uniqueOrganism(studyID):
     :return: list of organisms
     '''
     try:
-        url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
+        host = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port)
+
+        url = f'{host}/metabolights/ws/studies/{studyID}/organisms'
         resp = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
         data = resp.json()
         org = []

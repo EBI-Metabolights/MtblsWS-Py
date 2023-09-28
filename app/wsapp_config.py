@@ -25,6 +25,7 @@ from app.config import get_settings
 from app.utils import ValueMaskUtility
 
 from app.ws.about import About, AboutServer
+from app.ws.app_status import MaintenanceStatus
 from app.ws.assay_protocol import GetProtocolForAssays
 from app.ws.auth.accounts import UserAccounts
 from app.ws.auth.authentication import (AuthLogin, AuthLoginWithToken,
@@ -386,6 +387,8 @@ def initialize_app(flask_app):
     api.add_resource(ElasticSearchQuery, res_path + "/es-index/search")
     
     api.add_resource(BannerMessage, res_path + "/ebi-internal/banner")
+    api.add_resource(MaintenanceStatus, res_path + "/ebi-internal/ws-status")
+    
     
     api.add_resource(DataFolders, res_path + "/ebi-internal/data-folders")
     

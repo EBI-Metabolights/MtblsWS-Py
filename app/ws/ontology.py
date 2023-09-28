@@ -35,6 +35,7 @@ from gspread_dataframe import set_with_dataframe
 from oauth2client.service_account import ServiceAccountCredentials
 from owlready2 import get_ontology
 from app.config import get_settings
+from app.config.utils import get_host_internal_url
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -645,7 +646,7 @@ class Placeholder(Resource):
                         'annotationValue'], row['termAccession'], row['superclass'], row['definition']
 
                 source = '/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
-                ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
+                ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 if operation.lower() in ['update', 'u', 'add', 'A']:
                     # ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
@@ -741,7 +742,7 @@ class Placeholder(Resource):
                         temp["superclass"] = superclass
 
                         data = json.dumps({"ontologyEntity": temp})
-                        ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
+                        ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                         response = requests.put(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                                                 data=data)
@@ -783,7 +784,7 @@ class Placeholder(Resource):
                     'name'], row['matched_iri'], row['superclass'], row['definition']
 
                 source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
-                ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
+                ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 # add / update descriptor
                 if operation.lower() in ['update', 'U', 'add', 'A']:
@@ -875,7 +876,7 @@ class Placeholder(Resource):
                         temp["superclass"] = superclass
 
                         data = json.dumps({"ontologyEntity": temp})
-                        ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
+                        ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                         response = requests.put(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                                                 data=data)
@@ -919,7 +920,7 @@ class Placeholder(Resource):
                 superclass, definition = row['superclass'], row['definition']
 
                 source = '/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
-                ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
+                ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 list_changes = []
 
@@ -1018,7 +1019,7 @@ class Placeholder(Resource):
                             temp["superclass"] = change['superclass']
 
                             data = json.dumps({"ontologyEntity": temp})
-                            ws_url = app.get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
+                            ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                             response = requests.put(ws_url,
                                                     headers={'user_token': get_settings().auth.service_account.api_token},
@@ -1189,7 +1190,7 @@ def get_metainfo(query):
     for studyID in studyIDs:
         # print(f'get {query} from {studyID}.')
         if query.lower() == "factor":
-            url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+            url = get_host_internal_url() + '/ws/studies/{study_id}/factors'.format(study_id=studyID)
 
             try:
                 resp = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
@@ -1210,7 +1211,7 @@ def get_metainfo(query):
                 pass
 
         elif query.lower() == "design descriptor":
-            url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/descriptors'.format(
+            url = get_host_internal_url() + '/ws/studies/{study_id}/descriptors'.format(
                 study_id=studyID)
 
             try:
@@ -1231,7 +1232,7 @@ def get_metainfo(query):
                 pass
 
         elif query.lower() == "organism":
-            url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/organisms'.format(
+            url = get_host_internal_url() + '/ws/studies/{study_id}/organisms'.format(
                 study_id=studyID)
 
             try:
