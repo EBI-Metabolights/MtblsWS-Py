@@ -360,8 +360,8 @@ def get_empty_studies():
                 studyInfo[2] == 'Dormant':
             continue
 
-        source = '/metabolights/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyInfo[0])
-        ws_url = 'http://wp-p3s-19.ebi.ac.uk:5000' + source
+        source = '/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyInfo[0])
+        ws_url = app.config.get("WS_APP_BASE_LINK") + source
 
         try:
             resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
@@ -544,8 +544,8 @@ def extractUntargetStudy(studyType=None, publicStudy=True):
 
         for studyID in studyIDs:
             print(studyID)
-            source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
-            ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+            source = '/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+            ws_url = app.config.get("WS_APP_BASE_LINK") + source
             try:
                 resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
                 data = resp.json()
@@ -710,8 +710,8 @@ def getLCMSinfo():
 
 
 def getFileList2(studyID):
-    source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
-    ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+    source = '/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
+    ws_url = app.config.get("WS_APP_BASE_LINK") + source
     try:
         request = urllib.request.Request(ws_url)
         request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
@@ -748,8 +748,8 @@ def getFileList2(studyID):
 
 def getFileList(studyID):
     try:
-        source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
-        url = 'http://wp-p3s-19.ebi.ac.uk:5000' + source
+        source = '/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
+        url = app.config.get("WS_APP_BASE_LINK") + source
         request = urllib.request.Request(url)
         request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
         response = urllib.request.urlopen(request)
@@ -792,8 +792,8 @@ def get_sample_file(studyID, sample_file_name):
     '''
     import io
     try:
-        source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
-        ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+        source = '/ws/studies/{study_id}/sample'.format(study_id=studyID)
+        ws_url = app.config.get("WS_APP_BASE_LINK") + source
 
         resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                             params={'sample_filename': sample_file_name})
@@ -816,8 +816,8 @@ def get_assay_file(studyID, assay_file_name):
     '''
     import io
     try:
-        source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
-        ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+        source = '/ws/studies/{study_id}/assay'.format(study_id=studyID)
+        ws_url = app.config.get("WS_APP_BASE_LINK") + source
 
         resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                             params={'assay_filename': assay_file_name})
@@ -839,8 +839,8 @@ def assay_sample_list(studyID):
     import io
 
     try:
-        source = '/metabolights/ws/studies/{study_id}/investigation'.format(study_id=studyID)
-        ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+        source = '/ws/studies/{study_id}/investigation'.format(study_id=studyID)
+        ws_url = app.config.get('WS_APP_BASE_LINK') + source
 
         resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
         buf = io.StringIO(resp.text)
@@ -883,7 +883,7 @@ def uniqueOrganism(studyID):
     :return: list of organisms
     '''
     try:
-        url = 'http://wp-p3s-19.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
+        url = app.config.get("WS_APP_BASE_LINK") + '/ws/studies/{study_id}/organisms'.format(study_id=studyID)
         resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
         data = resp.json()
         org = []

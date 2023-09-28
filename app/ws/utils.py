@@ -1372,8 +1372,8 @@ def get_instrument(studyID, assay_name):
     instrument_name = []
     # res.loc[len(res)] = [sheet_name, key, term]
     try:
-        source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
-        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        source = '/ws/studies/{study_id}/assay'.format(study_id=studyID)
+        ws_url = app.config.get("WS_APP_BASE_LINK") + source
         resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                             params={'assay_filename': assay_name})
         data = resp.text
@@ -1395,8 +1395,8 @@ def get_instrument(studyID, assay_name):
 def get_orgaisms(studyID, sample_file_name):
     # print('getting organism')
     try:
-        source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
-        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        source = '/ws/studies/{study_id}/sample'.format(study_id=studyID)
+        ws_url = app.config.get("WS_APP_BASE_LINK") + source
         resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                             params={'sample_filename': sample_file_name})
         data = resp.text
@@ -1437,8 +1437,8 @@ def get_studytype(studyID=None):
         untarget = False
         target = False
 
-        source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
-        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        source = '/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+        ws_url = app.config.get("WS_APP_BASE_LINK") + source
         try:
             resp =requests.get(ws_url , headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
             data = resp.json()
@@ -1569,8 +1569,8 @@ def get_public_review_studies():
 
 def getFileList(studyID):
     try:
-        source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
-        url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        source = '/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
+        url = app.config.get("WS_APP_BASE_LINK") + source
         request_obj = urllib_request.Request(url)
         request_obj.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
         response = urllib_request.urlopen(request_obj)

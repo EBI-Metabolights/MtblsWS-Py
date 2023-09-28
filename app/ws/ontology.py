@@ -1188,7 +1188,7 @@ def get_metainfo(query):
     for studyID in studyIDs:
         # print(f'get {query} from {studyID}.')
         if query.lower() == "factor":
-            url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+            url = app.config.get("WS_APP_BASE_LINK") + '/ws/studies/{study_id}/factors'.format(study_id=studyID)
 
             try:
                 resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
@@ -1209,7 +1209,7 @@ def get_metainfo(query):
                 pass
 
         elif query.lower() == "design descriptor":
-            url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/descriptors'.format(
+            url = app.config.get("WS_APP_BASE_LINK") + '/ws/studies/{study_id}/descriptors'.format(
                 study_id=studyID)
 
             try:
@@ -1230,7 +1230,7 @@ def get_metainfo(query):
                 pass
 
         elif query.lower() == "organism":
-            url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/organisms'.format(
+            url = app.config.get("WS_APP_BASE_LINK") + '/ws/studies/{study_id}/organisms'.format(
                 study_id=studyID)
 
             try:
