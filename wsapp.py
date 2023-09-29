@@ -76,9 +76,12 @@ def setup_logging():
     print(f"Running on server: '{hostname}' using logging config {logging_config_file_path}")
 
 mtbls_pattern = re.compile(r'MTBLS[1-9][0-9]*')
-MANAGED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE"}
+MANAGED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"}
+BYPASS_HTTP_METHODS = ("OPTIONS", "HEAD")
 @application.before_request
 def check_study_maintenance_mode():
+    if request.method in BYPASS_HTTP_METHODS:
+        return None
     settings = get_settings()
     
     disabled_endpoints: List[EndpointDescription] = settings.server.service.disabled_endpoints
