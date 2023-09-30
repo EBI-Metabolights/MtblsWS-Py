@@ -25,3 +25,9 @@ echo "Working directory: $APPDIR"
 export CONFIG_FILE_PATH=$APPDIR/config.yaml
 export SECRETS_PATH=$APPDIR/.secrets
 python3 -m celery -A app.tasks.worker:celery worker -Q ${WORKER_QUEUE} --logfile $APP_LOG_DIR/${WORKER_NAME}_${HOST}_${SERVER_PORT}.log --loglevel info -n ${WORKER_NAME}@%h --detach
+if [ $? -eq 0 ]; then
+    echo "Celery worker is up."
+else
+    echo "Celery worker start task is failed."
+    exit 1
+fi

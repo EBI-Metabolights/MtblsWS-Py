@@ -2465,7 +2465,7 @@ class StudyFolderMaintenanceTask(object):
                 return name.strip()
     def replace_reference_raw_data_folder_names(self, assay_file_path, assay_df: pd.DataFrame, all_data_files: Dict[str, FileDescriptor]):
         all_zip_files = {}
-        
+        other_extensions = [".7z", ".tar", "tar.gz", ".gz", ".rar"]
         for column in assay_df.columns:
             zip_files_map = {}
             if " Data File" in column:        
@@ -2478,7 +2478,13 @@ class StudyFolderMaintenanceTask(object):
                             continue
                         zip_file_path = f"{file_path}.zip"
                         if all_data_files[file].is_stop_folder and os.path.exists(zip_file_path):
-                            zip_files_map[file] = f"{file}.zip" 
+                            zip_files_map[file] = f"{file}.zip"
+                        else:
+                            for extension in other_extensions:
+                                new_zip_path = file.replace(extension, ".zip")
+                                if file.endswith(extension) and new_zip_path in all_data_files:
+                                    zip_files_map[file] = file.replace(extension, ".zip")
+                                    continue
                     elif dir_relative_path in all_data_files and all_data_files[dir_relative_path].is_stop_folder:
                         dir_path = os.path.dirname(file_path)
                         zip_file_path = f"{dir_path}.zip" 
@@ -2488,6 +2494,12 @@ class StudyFolderMaintenanceTask(object):
                         zip_file_relative_path = f"{file}.zip" if not file.endswith(".zip") else None
                         if zip_file_relative_path and zip_file_relative_path in all_data_files:
                             zip_files_map[file] = f"{file}.zip"
+                        else:
+                            for extension in other_extensions:
+                                new_zip_path = file.replace(extension, ".zip")
+                                if file.endswith(extension) and new_zip_path in all_data_files:
+                                    zip_files_map[file] = file.replace(extension, ".zip")
+                                    continue
             if zip_files_map:
                 all_zip_files.update(zip_files_map)
                 assay_df[column] = assay_df[column].apply(lambda x: zip_files_map[x] if x in zip_files_map else x)

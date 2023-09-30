@@ -120,14 +120,16 @@ def get_study_folder_files(root_path: str, file_descriptors: Dict[str, FileDescr
             if relative_path and str(relative_path) not in MANAGED_FOLDERS:
                 search = glob.iglob(f"{item}/{SKIP_FOLDER_CONTAINS_FILE_NAME_PATTERN}")
                 
-                files = [x for x in search]
+                files = [x for x in search if "." not in os.path.basename(x)]
                 if files:
                     for parameters_file in SKIP_FOLDER_CONTAINS_ANY:
-                        items = glob.iglob(f"{item}/{SKIP_FOLDER_CONTAINS_FILE_NAME_PATTERN}")
+                        items = glob.iglob(f"{item}/{parameters_file}")
                         if items:
-                            sub_filename = parameters_file
-                            is_stop_folder = True
-                            break
+                            expected_files = [x for x in items if "." not in os.path.basename(x)]
+                            if expected_files:
+                                sub_filename = parameters_file
+                                is_stop_folder = True
+                                break
                                     
             ext = item.suffix.lower()
             relative_path = str(item).replace(f"{root_path}", "").lstrip("/")

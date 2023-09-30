@@ -6,6 +6,12 @@ if [ -z "$SERVER_PORT" ]; then
     exit 1
 fi
 
+CONDA_ENVIRONMENT="$2"
+if [ -z "$CONDA_ENVIRONMENT" ]; then
+    CONDA_ENVIRONMENT="python38-MtblsWS"
+    echo "CONDA_ENVIRONMENT is not defined. $CONDA_ENVIRONMENT conda environment will be used."
+fi
+
 if [ -z "$CONFIG_FILE_PATH" ]; then
     CONFIG_FILE_PATH="$APPDIR/config.yaml"
 fi
@@ -40,12 +46,17 @@ fi
 
 
 eval "$(conda shell.bash hook)"
-conda activate python38-MtblsWS
+conda activate $CONDA_ENVIRONMENT
 
 source .env
 export $(cat .env | grep -v '#' | xargs)
 
 echo "Shutdown signal will be sent to all workers"
-C_FAKEFORK=1
+export C_FAKEFORK=1
 celery -A app.tasks.worker:celery control shutdown
-echo "Shutdown signal was sent to all workers"
+if [ $? -eq 0 ]; then
+    echo "Shutdown signal was sent to all workers"
+else
+    echo "Shutdown signal task is failed."
+    exit 1
+fi
