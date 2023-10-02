@@ -15,7 +15,7 @@ stages:
 build_version_files:
   stage: prepare
   rules:
-    - if: $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "development-pipeline-test"
+    - if: $CI_COMMIT_BRANCH == "development"
       variables:
         RELEASE_NAME: dev.${CI_PIPELINE_ID}
     - if: $CI_COMMIT_BRANCH == "master"
@@ -58,16 +58,24 @@ configure_datamover:
 
 run_server:
   stage: deploy
-  only:
-      - test
-      - staging
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: manual
+      allow_failure: false
+    - if: $CI_COMMIT_BRANCH == "staging"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == "test"
+      when: on_success
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_server.sh"
     - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_datamover.sh"
 
 run_additional_servers:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: manual
+      allow_failure: true
+    - when: never
   stage: deploy
-  only:
-      - master
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_additional_servers.sh"
