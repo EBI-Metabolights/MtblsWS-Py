@@ -1,0 +1,94 @@
+#!/bin/bash
+
+ROOT_PATH={{ ROOT_PATH }}
+STUDY_ID={{ STUDY_ID }}
+FILE_NAME_PATTERN={{ FILE_NAME_PATTERN }}
+PACKAGE_TOOL="zip"
+
+ZIP_TOOL="zip"
+TAR_TOOL="tar"
+
+SEARCH_RESULT_FILE="/tmp/${STUDY_ID}_folders${PACKAGE_TOOL}.txt"
+rm -rf $SEARCH_RESULT_FILE
+find $ROOT_PATH/$STUDY_ID -type d -iname $FILE_NAME_PATTERN > $SEARCH_RESULT_FILE
+
+arr=()
+while IFS= read -r line
+do
+   arr+=("$line")
+done < "$SEARCH_RESULT_FILE"
+
+cat $SEARCH_RESULT_FILE
+
+file_count=0
+converted_count=0
+verified_count=0
+
+for i in ${arr[@]}; do
+   ((file_count++))
+   temp_path="${i}.temp.$PACKAGE_TOOL"
+   final_path="${i}.$PACKAGE_TOOL"
+   final_basename=$(basename "$final_path")
+   if [ -f "$final_path" ]; then
+      if [ "$PACKAGE_TOOL" = "$TAR_TOOL" ]; then
+         tar -tf "$final_path"
+      else
+         unzip -t "$final_path" | grep 'No errors detected in compressed data of'
+      fi
+
+       if [ $? -eq 0 ]; then
+	    ((verified_count++))
+          echo "SUCCESS: $STUDY_ID Current '$final_path' was verified"
+       else
+          echo "ERROR: $STUDY_ID Current '$final_path' was not verified!"
+       fi
+   else
+      echo "$i"
+      basename_path=$(basename "$i")
+      current_path=$ROOT_PATH
+      if [ $? -eq 0 ]; then
+            
+         dirname_path=$(dirname "$i")
+         temp_file_name=$(basename "$temp_path")
+         echo "$PACKAGE_TOOL process is started for file $i"
+         
+         if [ "$PACKAGE_TOOL" = "$TAR_TOOL" ]; then
+            cd "$dirname_path" && tar -cvpf "$temp_file_name" "$basename_path"
+            tar -tvf "$temp_path"
+         else
+            cd "$dirname_path" && zip -0 -r "$temp_file_name" "$basename_path"
+            unzip -t "$temp_path" | grep 'No errors detected in compressed data of'
+         fi
+
+         if [ $? -eq 0 ]; then
+            mv "$temp_path" "$final_path"
+            ((converted_count++))
+            echo "SUCCESS: $STUDY_ID '$i' was verified and converted to '$final_basename'"
+         else
+            echo "ERROR: $STUDY_ID '$i' was not converted to $PACKAGE_TOOL file!"
+         fi
+      else
+      echo  "ERROR: $STUDY_ID '$i' was not verified."
+      fi
+   fi
+done
+
+rm $SEARCH_RESULT_FILE
+
+if [ $file_count -eq 0 ]; then
+   echo "RESULT=SKIPPING $STUDY_ID. No folder"
+   exit 0
+fi
+
+total_success=$(($verified_count + $converted_count))
+
+if [ $file_count -eq $total_success ]; then
+   echo "RESULT=SUCCESS $STUDY_ID. TOTAL $file_count FOLDERS WERE VERIFIED AND CONVERTED SUCCESSFULLY. Verified: $verified_count, Converted: $converted_count"
+   exit 0
+else
+   echo "RESULT=ERROR $STUDY_ID: TOTAL FOLDERS: $file_count. Verified: $verified_count, Converted: $converted_count"
+   exit $(($file_count - $total_success))
+fi
+
+
+

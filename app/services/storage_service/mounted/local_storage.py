@@ -7,6 +7,7 @@ from distutils.dir_util import copy_tree
 from typing import List
 
 from dirsync import sync
+from app.config import get_settings
 
 from app.services.storage_service.exceptions import StorageServiceException
 from app.services.storage_service.models import SyncTaskResult, SyncCalculationTaskResult, SyncCalculationStatus, \
@@ -20,7 +21,7 @@ class LocalStorage(Storage):
 
     def __init__(self, name, remote_folder):
         manager_name = name + '_local_file_manager'
-        local_path = f"/tmp/{name}"
+        local_path = f"{get_settings().server.temp_directory_path}/{name}"
         os.makedirs(local_path, exist_ok=True)
         local_file_manager: MountedVolumeFileManager = MountedVolumeFileManager(manager_name, local_path)
         self.local_file_manager: MountedVolumeFileManager = local_file_manager
@@ -57,7 +58,7 @@ class LocalStorage(Storage):
                 target_file_backup_path = source_path + "_" + target_path_backup_id
                 os.rename(target_file_path, target_file_backup_path)
 
-            shutil.copyfile(source_path, target_file_path)
+            shutil.copy2(source_path, target_file_path)
             return target_file_path
         except Exception:
             if target_file_backup_path:

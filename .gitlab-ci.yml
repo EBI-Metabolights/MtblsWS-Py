@@ -1,0 +1,73 @@
+variables:
+     APP_VERSION: "2.0.0"
+     API_VERSION: "2.0.0"
+     BUILD_SCRIPTS_ROOT_PATH: "/home/gitlab-runner/ci_cd/standalone/mtblsws-py"
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "staging"
+stages:
+  - prepare
+  - build
+  - configure
+  - deploy
+
+
+build_version_files:
+  stage: prepare
+  rules:
+    - if: $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "development-pipeline-test"
+      variables:
+        RELEASE_NAME: dev.${CI_PIPELINE_ID}
+    - if: $CI_COMMIT_BRANCH == "master"
+      variables:
+        RELEASE_NAME: ${CI_PIPELINE_ID}
+    - if: $CI_COMMIT_BRANCH == "test"
+      variables:
+        RELEASE_NAME: test.${CI_PIPELINE_ID}
+    - if: $CI_COMMIT_BRANCH == "staging"
+      variables:
+        RELEASE_NAME: staging.${CI_PIPELINE_ID}
+  script:
+    - echo "PIPELINE_ID ${CI_PIPELINE_ID} and commit ${CI_COMMIT_SHORT_SHA} commit name ${CI_COMMIT_REF_NAME}"
+    - echo "${RELEASE_NAME}-${CI_COMMIT_SHORT_SHA}" > .build_number
+    - echo  "APP_VERSION $APP_VERSION" 
+    - echo  "API_VERSION $API_VERSION" 
+    - echo  "$APP_VERSION" | xargs > app_version
+    - echo  "$API_VERSION" | xargs > api_version
+  artifacts:
+      paths:
+      - app_version
+      - api_version
+      - .build_number
+
+build_docker:
+  stage: build
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/build_sif.sh"
+    
+configure_vm_server:
+  stage: configure
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_server.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_version_files.sh"
+    
+configure_datamover:
+  stage: configure
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_datamover.sh"
+
+run_server:
+  stage: deploy
+  only:
+      - test
+      - staging
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_server.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_datamover.sh"
+
+run_additional_servers:
+  stage: deploy
+  only:
+      - master
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_additional_servers.sh"

@@ -8,7 +8,6 @@ ctfile==0.1.8
 cython==0.29.16
 chardet==3.0.4
 dirsync==2.2.5
-docutils==0.15.2
 Flask==1.1.2
 Flask-Cors==3.0.8
 Flask-RESTful==0.3.8
@@ -39,7 +38,7 @@ pyopenms==2.6.0
 python-Levenshtein==0.12.2
 plotly==4.6.0
 pillow==9.0.1
-requests==2.24.0
+requests==2.27.0
 recommonmark==0.6.0
 xmltodict==0.12.0
 zeep==3.4.0
@@ -47,9 +46,6 @@ pydantic[dotenv]==1.9.0
 Elasticsearch==1.4.0
 Flask-Mail==0.9.1
 SQLAlchemy==1.4.35
-pytest==6.2.5
-pytest-mock==3.7.0
-pytest-cov==3.0.0
 ftputil==5.0.4
 python-jose
 passlib
@@ -57,3 +53,4 @@ tweepy
 celery[redis]
 rdkit==2023.3.3
 chembl-structure-pipeline==1.2.0
+toml

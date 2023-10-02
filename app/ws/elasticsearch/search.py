@@ -64,7 +64,7 @@ class ElasticSearchQuery(Resource):
             user_token = request.headers["user_token"]
         is_curator = False
         try:
-            user = UserService.get_instance(app).validate_user_has_curator_role(user_token)
+            user = UserService.get_instance().validate_user_has_curator_role(user_token)
             is_curator = True
             user_name = user['username']
         except:
@@ -83,6 +83,6 @@ class ElasticSearchQuery(Resource):
             query.searchUser.id = user_name
             query.searchUser.isAdmin = False
 
-        result = ElasticsearchService.get_instance(app).search(query)
+        result = ElasticsearchService.get_instance().search(query)
         
         return jsonify(result)

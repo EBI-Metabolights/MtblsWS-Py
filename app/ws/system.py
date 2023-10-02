@@ -2,7 +2,7 @@
 from flask import current_app as app, request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
-from app.tasks.common.email import send_test_email
+from app.tasks.common_tasks.basic_tasks.email import send_test_email
 
 from app.utils import metabolights_exception_handler
 from app.ws.study.user_service import UserService
@@ -47,6 +47,6 @@ class SystemTestEmail(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"] 
                  
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         inputs = {"user_token": user_token}
         send_test_email.apply_async(kwargs=inputs)

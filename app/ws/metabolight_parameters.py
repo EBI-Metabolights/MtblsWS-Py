@@ -65,8 +65,8 @@ class MetabolightsParameters(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
-        db_session = DBManager.get_instance(app).session_maker()
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        db_session = DBManager.get_instance().session_maker()
         try:
             if name:
                 filter_clause = lambda query: query.filter(MetabolightsParameter.name == name)
@@ -84,9 +84,9 @@ class MetabolightsParameters(Resource):
                 try:
                     with db_session:
                         query = db_session.query(MetabolightsParameter)
-                        db_params: MetabolightsParameter = query.order_by(MetabolightsParameter.name.asc()).all()
+                        db_parameters: MetabolightsParameter = query.order_by(MetabolightsParameter.name.asc()).all()
                         
-                        m_params = [ MetabolightsParameterModel.from_orm(db_param).dict() for db_param in db_params ]
+                        m_params = [ MetabolightsParameterModel.from_orm(db_param).dict() for db_param in db_parameters ]
                         return jsonify({"content": m_params, "message": None, "error": None})
                 except Exception as e:
                     raise MetabolightsDBException(message=f"Error while retreiving parameter from database", exception=e)
@@ -96,6 +96,15 @@ class MetabolightsParameters(Resource):
     
     @swagger.operation(
         summary="Update Metabolights parameter ",
+        notes="""
+        Example parameter data input
+        <code>
+        {
+            "name": "test-param",
+            "value": "test-data"
+        }
+        </code>
+        """,
         parameters=[
             {
                 "name": "name",
@@ -140,14 +149,14 @@ class MetabolightsParameters(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
             
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         user: UserModel = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             param = MetabolightsParameterModel.parse_obj(data_dict)
         except (Exception) as ex:
             raise MetabolightsException(http_code=404, message="Invalid parameter data input", exception=ex)
-        db_session = DBManager.get_instance(app).session_maker()
+        db_session = DBManager.get_instance().session_maker()
         try:
             with db_session:
                 query = db_session.query(MetabolightsParameter)
@@ -172,6 +181,15 @@ class MetabolightsParameters(Resource):
     
     @swagger.operation(
         summary="Add new Metabolights parameter",
+        notes="""
+        Example parameter data input
+        <code>
+        {
+            "name": "test-param",
+            "value": "test-data"
+        }
+        </code>
+        """,
         parameters=[
             {
                 "name": "parameter_data",
@@ -216,7 +234,7 @@ class MetabolightsParameters(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
             
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         param: MetabolightsParameterModel = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
@@ -224,7 +242,7 @@ class MetabolightsParameters(Resource):
                 
         except (Exception) as ex:
             raise MetabolightsException(http_code=400, message="Invalid parameter data input", exception=ex)
-        db_session = DBManager.get_instance(app).session_maker()
+        db_session = DBManager.get_instance().session_maker()
         try:
             with db_session:
                 db_param = MetabolightsParameter()
@@ -292,12 +310,12 @@ class MetabolightsParameters(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         
         try:
             if name:
                 filter_clause = lambda query: query.filter(MetabolightsParameter.name == name)
-                db_session = DBManager.get_instance(app).session_maker()
+                db_session = DBManager.get_instance().session_maker()
                 try:
                     with db_session:
                         query = db_session.query(MetabolightsParameter)

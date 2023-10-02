@@ -21,6 +21,7 @@ import logging
 from flask import request, jsonify, current_app as app
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.ws.cronjob import getGoogleSheet, getWorksheet, update_cell
 from app.ws.db_connection import get_username_by_token
@@ -120,8 +121,8 @@ class curation_log(Resource):
             abort(403)
 
         try:
-            wks = getWorksheet(app.config.get('MTBLS_CURATION_LOG'), 'Studies',
-                               app.config.get('GOOGLE_SHEET_TOKEN'))
+            wks = getWorksheet(get_settings().google.sheets.mtbls_curation_log, 'Studies',
+                               get_settings().google.connection.google_sheet_api)
         except Exception as e:
             logger.info('Fail to load worksheet.', e)
             print('Fail to load worksheet.', e)
@@ -135,8 +136,6 @@ class curation_log(Resource):
         for studyID, fields in data_dict.items():
             try:
                 r = wks.find(studyID).row
-                # r, _ = getCellCoordinate(app.config.get('MTBLS_CURATION_LOG'), 'Studies',
-                #                          app.config.get('GOOGLE_SHEET_TOKEN'), studyID)
             except:
                 logger.info('Can find {studyID} in curation log'.format(studyID=studyID))
                 print('Can find {studyID} in curation log'.format(studyID=studyID))
@@ -145,8 +144,6 @@ class curation_log(Resource):
             for field, value in fields.items():
                 if field in editable_columns:
                     c = wks.find(field).col
-                    # _, c = getCellCoordinate(app.config.get('MTBLS_CURATION_LOG'), 'Studies',
-                    #                          app.config.get('GOOGLE_SHEET_TOKEN'), field)
                     if update_cell(wks, r, c, value):
                         output['success'].append("{user_name} updated {studyID} - {field} to {value}".format(user_name=user_name,
                                                                                                   studyID=studyID,
@@ -284,8 +281,8 @@ class curation_log(Resource):
 
         # Load google sheet
         try:
-            google_df = getGoogleSheet(app.config.get('MTBLS_CURATION_LOG'), 'Studies',
-                                       app.config.get('GOOGLE_SHEET_TOKEN'))
+            google_df = getGoogleSheet(get_settings().google.sheets.mtbls_curation_log, 'Studies',
+                                       get_settings().google.connection.google_sheet_api)
             google_df = google_df.set_index('MTBLS ID')
         except Exception as e:
             logger.info('Fail to load google sheet:', e)

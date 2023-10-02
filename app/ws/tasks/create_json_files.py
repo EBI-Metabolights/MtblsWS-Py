@@ -9,14 +9,15 @@ import time
 from flask import request, current_app as app
 from flask_restful import Resource
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.utils import metabolights_exception_handler, MetabolightsDBException
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyModel
 from app.ws.db.schemes import Study
-from app.ws.db.settings import get_directory_settings
 from app.ws.db.types import StudyStatus
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
 
@@ -112,15 +113,16 @@ class StudyJsonExporter(Resource):
                 return int(study_id)
             return 0
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
-        directory_settings = get_directory_settings(app)
-        study_folders = directory_settings.studies_folder
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        study_settings = get_study_settings()
+        study_folders = study_settings.mounted_paths.study_metadata_files_root_path
         if not json_folder:
             now = datetime.datetime.now()
             dt = time.gmtime(now.timestamp())
             json_folder = time.strftime("%Y%m%d_%H%M%S", dt)
-        json_path = os.path.join(study_folders, "INDEXED_ALL_STUDIES", json_folder)
-        
+
+        json_path = os.path.join(study_settings.mounted_paths.reports_root_path, get_settings().report.report_base_folder_name, "INDEXED_ALL_STUDIES", json_folder)
+
         os.makedirs(json_path, exist_ok=True)
         skip_files = set()
         
@@ -128,7 +130,7 @@ class StudyJsonExporter(Resource):
             if self.validate_json_file(file, True):
                 skip_files.add(file)
         m_study_list = []
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
             if not study_id:
                 query = query.order_by(Study.acc)
@@ -252,9 +254,9 @@ class PublicStudyJsonExporter(Resource):
                 return int(study_id)
             return 0
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         m_study_list = []
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
             if not study_id:
                 query = query.filter(Study.status == StudyStatus.PUBLIC.value).order_by(Study.acc)
@@ -265,8 +267,8 @@ class PublicStudyJsonExporter(Resource):
             if not studies:
                 raise MetabolightsDBException(f"There is no public study")
 
-            directory_settings = get_directory_settings(app)
-            study_folders = directory_settings.studies_folder
+            settings = get_study_settings()
+            study_folders = settings.mounted_paths.study_metadata_files_root_path
             for study in studies:
                 m_study = create_study_model_from_db_study(study)
                 m_study_list.append(m_study)
@@ -274,7 +276,7 @@ class PublicStudyJsonExporter(Resource):
         now = datetime.datetime.now()
         dt = time.gmtime(now.timestamp())
         file_time = time.strftime("%Y-%m-%d_%H%M%S", dt)
-        json_path = os.path.join(study_folders, "INDEXED_PUBLIC_STUDIES", file_time)
+        json_path = os.path.join(settings.mounted_paths.reports_root_path, get_settings().report.report_base_folder_name, "INDEXED_PUBLIC_STUDIES", file_time)
         os.makedirs(json_path, exist_ok=True)
         for m_study in m_study_list:
             update_study_model_from_directory(m_study, study_folders)

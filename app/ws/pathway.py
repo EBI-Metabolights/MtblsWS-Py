@@ -24,6 +24,8 @@ import requests
 from flask import request, jsonify, current_app as app
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
+from app.config import get_settings
+from app.config.utils import get_host_internal_url
 
 from app.ws.cluster_jobs import submit_job
 from app.ws.isaApiClient import IsaApiClient
@@ -269,7 +271,7 @@ class fellaPathway(Resource):
             else:
                 abort(400)
         # module = "module load r-3.6.3-gcc-9.3.0-yb5n44y; module load pandoc-2.7.3-gcc-9.3.0-gctut72;"
-        script = app.config.get('FELLA_PATHWAY_SCRPT')
+        script = get_settings().hpc_cluster.configuration.fella_pathway_script_path
         para = '-s {studyID} -o {organism}'.format(studyID=studyID, organism=org)
 
         command = script + ' ' + para
@@ -317,9 +319,9 @@ def maf_reader(studyID, maf_file_name, sample_df):
     :return:  dict{chebiID:[sampleNames]
     '''
 
-    url = app.config.get("WS_APP_BASE_LINK") + '/ws/studies/{studyID}/{maf_file_name}'.format(studyID=studyID,
+    url = get_host_internal_url() + '/ws/studies/{studyID}/{maf_file_name}'.format(studyID=studyID,
                                                                                                      maf_file_name=maf_file_name)
-    response = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+    response = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
     jsonResponse = response.json()
 
     # get sample columns in maf
@@ -358,10 +360,10 @@ def get_sample_file(studyID, sample_file_name):
     '''
     import io
     try:
-        ws_url = app.config.get("WS_APP_BASE_LINK") + '/ws/studies/{study_id}/sample'.format(study_id=studyID)
-        # ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+        host = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port)
+        ws_url = f'{host}/metabolights/ws/studies/{studyID}/sample'
 
-        resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+        resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                             params={'sample_filename': sample_file_name})
         data = resp.text
         content = io.StringIO(data)
@@ -373,10 +375,10 @@ def get_sample_file(studyID, sample_file_name):
 
 
 def getFileList(studyID):
-    url = app.config.get("WS_APP_BASE_LINK") + '/ws/studies/{study_id}/files?include_raw_data=false'.format(
+    url = get_host_internal_url() + '/ws/studies/{study_id}/files?include_raw_data=false'.format(
         study_id=studyID)
     request_obj = urllib_request.Request(url)
-    request_obj.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+    request_obj.add_header('user_token', get_settings().auth.service_account.api_token)
     response = urllib_request.urlopen(request_obj)
     content = response.read().decode('utf-8')
     j_content = json.loads(content)
@@ -411,8 +413,10 @@ def uniqueOrganism(studyID):
     :return: list of organisms
     '''
     try:
-        url = app.config.get("WS_APP_BASE_LINK") + '/ws/studies/{study_id}/organisms'.format(study_id=studyID)
-        resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+        host = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port)
+
+        url = f'{host}/metabolights/ws/studies/{studyID}/organisms'
+        resp = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
         data = resp.json()
         org = []
         for organism in data['organisms']:

@@ -34,6 +34,8 @@ from flask_restful_swagger import swagger
 from gspread_dataframe import set_with_dataframe
 from oauth2client.service_account import ServiceAccountCredentials
 from owlready2 import get_ontology
+from app.config import get_settings
+from app.config.utils import get_host_internal_url
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -501,7 +503,7 @@ class Placeholder(Resource):
             if query:
                 query = query.strip().lower()
 
-        url = app.config.get('GOOLGE_ZOOMA_SHEET')
+        url = get_settings().google.sheets.zooma_sheet
         sheet_name = ''
         col = []
 
@@ -607,7 +609,7 @@ class Placeholder(Resource):
             if query:
                 query = query.strip().lower()
 
-        google_url = app.config.get('GOOLGE_ZOOMA_SHEET')
+        google_url = get_settings().google.sheets.zooma_sheet
         sheet_name = ''
         col = []
 
@@ -644,7 +646,7 @@ class Placeholder(Resource):
                         'annotationValue'], row['termAccession'], row['superclass'], row['definition']
 
                 source = '/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
-                ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+                ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 if operation.lower() in ['update', 'u', 'add', 'A']:
                     # ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
@@ -680,14 +682,14 @@ class Placeholder(Resource):
 
                         if operation.lower() in ['update', 'u']:  # Update factor
                             response = requests.put(ws_url, params={'name': old_term},
-                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                    headers={'user_token': get_settings().auth.service_account.api_token,
                                                              'save_audit_copy': 'true'}, data=data)
                             logger.info('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.format(
                                 old_term=old_term, matchterm=annotationValue, matchiri=termAccession, studyID=studyID))
 
                         else:  # Add factor
                             response = requests.post(ws_url,
-                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                     headers={'user_token': get_settings().auth.service_account.api_token,
                                                               'save_audit_copy': 'true'}, data=data)
 
                             logger.info('Add {old_term} ({matchiri}) in {studyID}'.format(old_term=old_term,
@@ -707,7 +709,7 @@ class Placeholder(Resource):
                 elif operation.lower() in ['delete', 'D']:
                     try:
                         response = requests.delete(ws_url, params={'name': old_term},
-                                                   headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                   headers={'user_token': get_settings().auth.service_account.api_token,
                                                             'save_audit_copy': 'true'})
 
                         logger.info('delete {old_term} from {studyID}'.format(old_term=old_term, studyID=studyID))
@@ -740,9 +742,9 @@ class Placeholder(Resource):
                         temp["superclass"] = superclass
 
                         data = json.dumps({"ontologyEntity": temp})
-                        ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+                        ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
-                        response = requests.put(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                        response = requests.put(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                                                 data=data)
                         logger.info('add term {newterm} to {superclass} branch'.format(newterm=annotationValue,
                                                                                  superclass=superclass))
@@ -782,7 +784,7 @@ class Placeholder(Resource):
                     'name'], row['matched_iri'], row['superclass'], row['definition']
 
                 source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
-                ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+                ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 # add / update descriptor
                 if operation.lower() in ['update', 'U', 'add', 'A']:
@@ -814,14 +816,14 @@ class Placeholder(Resource):
 
                         if operation.lower() in ['update', 'U']:  # Update descriptor
                             response = requests.put(ws_url, params={'term': old_term},
-                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                    headers={'user_token': get_settings().auth.service_account.api_token,
                                                              'save_audit_copy': 'true'},
                                                     data=data)
                             logger.info('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.
                                   format(old_term=old_term, matchterm=old_term, matchiri=matched_iri, studyID=studyID))
                         else:  # Add descriptor
                             response = requests.post(ws_url,
-                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                     headers={'user_token': get_settings().auth.service_account.api_token,
                                                               'save_audit_copy': 'true'},
                                                      data=data)
                             logger.info('Add {old_term} to ({matchiri}) in {studyID}'.
@@ -842,7 +844,7 @@ class Placeholder(Resource):
                 elif operation.lower() in ['delete', 'D']:
                     try:
                         response = requests.delete(ws_url, params={'term': old_term},
-                                                   headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                   headers={'user_token': get_settings().auth.service_account.api_token,
                                                             'save_audit_copy': 'true'})
                         logger.info('delete {old_term} from in {studyID}'.format(old_term=old_term, studyID=studyID))
 
@@ -874,9 +876,9 @@ class Placeholder(Resource):
                         temp["superclass"] = superclass
 
                         data = json.dumps({"ontologyEntity": temp})
-                        ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+                        ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
-                        response = requests.put(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                        response = requests.put(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                                                 data=data)
                         logger.info('add term {newterm} to {superclass} branch'.format(newterm=term,
                                                                                  superclass=superclass))
@@ -918,7 +920,7 @@ class Placeholder(Resource):
                 superclass, definition = row['superclass'], row['definition']
 
                 source = '/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
-                ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+                ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 list_changes = []
 
@@ -980,7 +982,7 @@ class Placeholder(Resource):
                             response = requests.post(ws_url,
                                                      params={'existing_char_name': change['characteristicsName'],
                                                              'existing_char_value': change['old_term']},
-                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                     headers={'user_token': get_settings().auth.service_account.api_token,
                                                               'save_audit_copy': 'true'},
                                                      data=data)
                             logger.info('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.
@@ -1017,10 +1019,10 @@ class Placeholder(Resource):
                             temp["superclass"] = change['superclass']
 
                             data = json.dumps({"ontologyEntity": temp})
-                            ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+                            ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                             response = requests.put(ws_url,
-                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                    headers={'user_token': get_settings().auth.service_account.api_token},
                                                     data=data)
                             logger.info('add term {newterm} to {superclass} branch'.format(newterm=change['new_term'],
                                                                                      superclass=change['superclass']))
@@ -1176,7 +1178,7 @@ def get_metainfo(query):
     #         return [atoi(c) for c in re.split('(\d+)', text)]
     #
     #     url = 'https://www.ebi.ac.uk/metabolights/webservice/study/list'
-    #     resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+    #     resp = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
     #     studyIDs = resp.json()['content']
     #     studyIDs.sort(key=natural_keys)
     #     return studyIDs
@@ -1188,10 +1190,10 @@ def get_metainfo(query):
     for studyID in studyIDs:
         # print(f'get {query} from {studyID}.')
         if query.lower() == "factor":
-            url = app.config.get("WS_APP_BASE_LINK") + '/ws/studies/{study_id}/factors'.format(study_id=studyID)
+            url = get_host_internal_url() + '/ws/studies/{study_id}/factors'.format(study_id=studyID)
 
             try:
-                resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                resp = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
                 data = resp.json()
 
                 for factor in data["factors"]:
@@ -1209,11 +1211,11 @@ def get_metainfo(query):
                 pass
 
         elif query.lower() == "design descriptor":
-            url = app.config.get("WS_APP_BASE_LINK") + '/ws/studies/{study_id}/descriptors'.format(
+            url = get_host_internal_url() + '/ws/studies/{study_id}/descriptors'.format(
                 study_id=studyID)
 
             try:
-                resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                resp = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
                 data = resp.json()
 
                 for descriptor in data['studyDesignDescriptors']:
@@ -1230,11 +1232,11 @@ def get_metainfo(query):
                 pass
 
         elif query.lower() == "organism":
-            url = app.config.get("WS_APP_BASE_LINK") + '/ws/studies/{study_id}/organisms'.format(
+            url = get_host_internal_url() + '/ws/studies/{study_id}/organisms'.format(
                 study_id=studyID)
 
             try:
-                resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                resp = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
                 data = resp.json()
                 for organism in data['organisms']:
                     temp_dict = {'studyID': studyID,
@@ -1269,7 +1271,7 @@ def insertGoogleSheet(data, url, worksheetName):
     :return: Nan
     '''
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_SHEET_TOKEN'), scope)
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(get_settings().google.connection.google_sheet_api, scope)
     gc = gspread.authorize(credentials)
     try:
         wks = gc.open_by_url(url).worksheet(worksheetName)
@@ -1288,7 +1290,7 @@ def setGoogleSheet(df, url, worksheetName):
     :return: Nan
     '''
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_SHEET_TOKEN'), scope)
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(get_settings().google.connection.google_sheet_api, scope)
     gc = gspread.authorize(credentials)
     try:
         wks = gc.open_by_url(url).worksheet(worksheetName)
@@ -1309,7 +1311,7 @@ def getGoogleSheet(url, worksheetName):
     '''
     try:
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_SHEET_TOKEN'), scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(get_settings().google.connection.google_sheet_api, scope)
         gc = gspread.authorize(credentials)
         wks = gc.open_by_url(url).worksheet(worksheetName)
         content = wks.get_all_records()
@@ -1330,7 +1332,7 @@ def replaceGoogleSheet(df, url, worksheetName):
     '''
     try:
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_SHEET_TOKEN'), scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(get_settings().google.connection.google_sheet_api, scope)
         gc = gspread.authorize(credentials)
         wks = gc.open_by_url(url).worksheet(worksheetName)
         wks.clear()
@@ -1347,7 +1349,7 @@ def addZoomaTerm(studyID, Property_type, Property_value, url):
     :param url: annotation url
     :return: Nan
     '''
-    zooma_path = app.config.get("MTBLS_ZOOMA_FILE")
+    zooma_path = get_settings().file_resources.mtbls_zooma_file
     zooma_df = pd.read_csv(zooma_path, sep='\t')
     lastID = int(zooma_df.iloc[-1]['BIOENTITY'].split('_')[1])
     bioentity = 'metabo_' + str(lastID + 1)
@@ -1383,12 +1385,11 @@ def addEntity(new_term, supclass, definition=None):
         temp = str(int(last[-6:]) + 1).zfill(6)
         id = 'MTBLS_' + temp
         return id
-
+    file = get_settings().file_resources.mtbls_ontology_file
     try:
-        onto = get_ontology(app.config.get('MTBLS_ONTOLOGY_FILE')).load()
+        onto = get_ontology(file).load()
 
     except Exception as e:
-        # print('fail to load MTBLS ontoloty from ' + app.config.get('MTBLS_ONTOLOGY_FILE'))
         logger.info(e.args)
         abort(400)
         return []
@@ -1438,5 +1439,6 @@ def addEntity(new_term, supclass, definition=None):
             logger.info(e.args)
             abort(400)
             return []
+        file = get_settings().file_resources.mtbls_ontology_file
 
-        onto.save(file=app.config.get('MTBLS_ONTOLOGY_FILE'), format='rdfxml')
+        onto.save(file=file, format='rdfxml')

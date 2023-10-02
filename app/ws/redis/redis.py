@@ -1,16 +1,20 @@
 from functools import lru_cache
 import redis
+from app.config import get_settings
 
-from app.ws.settings.redis import RedisSettings
+from app.config.model.redis_cache import RedisConnection
+
 
 class RedisStorage(object):
 
-    def __init__(self):
-        settings = RedisSettings()
-        host = settings.redis_host
-        password = settings.redis_password
-        port = settings.redis_port
-        db = settings.redis_db
+    def __init__(self, connection: RedisConnection=None):
+        self.connection = connection
+        if not connection:
+            self.connection = get_settings().redis_cache.connection
+        host = self.connection.redis_host
+        password = self.connection.redis_password
+        port = self.connection.redis_port
+        db = self.connection.redis_db
         self.redis = redis.Redis(host=host, password=password, port=port, db=db)
 
     def set_value_with_expiration_time(self, key, value, expiration_time):
@@ -29,6 +33,11 @@ class RedisStorage(object):
     def get_value(self, key):
         value = self.redis.get(key)
         return value
+    
+    def search_keys(self, pattern):
+        value = self.redis.keys(pattern)
+        return value
+    
     def delete_value(self, key):
         self.redis.delete(key)
            

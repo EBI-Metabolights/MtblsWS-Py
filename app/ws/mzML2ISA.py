@@ -24,10 +24,12 @@ from lxml import etree
 from flask import request, abort, current_app as app, jsonify
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.utils import metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.user_service import UserService
 from app.ws.utils import convert_to_isa, validate_mzml_files
 
@@ -227,18 +229,17 @@ class ValidateMzML(Resource):
 
         study_id = study_id.upper()
 
-        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         return self.validate_mzml_files(study_id)
 
     def validate_mzml_files(self, study_id):
-
-        schema = app.config.get('MZML_XSD_SCHEMA')
-        studies_folder = app.config.get('STUDY_PATH')
+        settings = get_settings()
+        studies_folder = settings.study.mounted_paths.study_readonly_files_root_path
         study_folder = os.path.join(studies_folder, study_id)
-        xsd_path = os.path.join(schema[1], schema[0])
-
+        xsd_path = settings.file_resources.mzml_xsd_schema_file_path
         xmlschema_doc = etree.parse(xsd_path)
         xmlschema = etree.XMLSchema(xmlschema_doc)
+        
         files = glob.glob(os.path.join(study_folder, '*.mzML'))
         files_in_subfolders = glob.glob(os.path.join(study_folder, '**/*.mzML'), recursive=True)
         files.extend(files_in_subfolders)

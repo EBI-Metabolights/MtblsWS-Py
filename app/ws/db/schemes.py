@@ -95,6 +95,7 @@ class Study(Base):
     validation_status = Column(String)
     status_date = Column(DateTime)
     number_of_files = Column(BigInteger)
+    comment = Column(String)
 
     users = relationship('User', secondary='study_user', back_populates="studies")
 

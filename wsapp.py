@@ -18,12 +18,19 @@
 
 import logging.config
 import os
+import re
+from typing import List
+# import re
 
-from flask import Flask
+
+from flask import Flask, request, session
+from flask_restful import abort
 from jinja2 import Environment, select_autoescape, FileSystemLoader
+from app.config import get_settings
+from app.config.model.server import EndpointDescription, EndpointMethodOption
 
 from app.wsapp_config import initialize_app
-
+from app.ws.redis.redis import get_redis_server
 """
 MTBLS WS-Py
 
@@ -40,17 +47,15 @@ logger = logging.getLogger('wslog')
 
 def setup_logging():
     default_log_dir = os.path.join(current_dir, "logs")
-    if not os.path.exists(default_log_dir):
-        os.makedirs(default_log_dir, exist_ok=True)
+    # if not os.path.exists(default_log_dir):
+    #     os.makedirs(default_log_dir, exist_ok=True)
 
-    logging_config_file_path = None
-    if "LOG_FILE_CONFIG" in os.environ and os.environ["LOG_FILE_CONFIG"]:
-        logging_config_file_path = os.environ["LOG_FILE_CONFIG"]
+    logging_config_file_path = get_settings().server.log.log_config_file_path
 
     if logging_config_file_path and os.path.exists(logging_config_file_path):
         print(f"Using logging config file {logging_config_file_path}")
     else:
-        default_logging_config_file_path = os.path.join(current_dir, f"logging_{hostname}.conf")
+        default_logging_config_file_path = os.path.join(get_settings().server.log.log_path, f"logging_{hostname}.conf")
         logging_config_file_path = default_logging_config_file_path
         if os.path.exists(default_logging_config_file_path):
             print(f"Using default logging config file {default_logging_config_file_path}")
@@ -70,19 +75,66 @@ def setup_logging():
     logging.config.fileConfig(logging_config_file_path)
     print(f"Running on server: '{hostname}' using logging config {logging_config_file_path}")
 
+mtbls_pattern = re.compile(r'MTBLS[1-9][0-9]*')
+MANAGED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"}
+BYPASS_HTTP_METHODS = ("OPTIONS", "HEAD")
+@application.before_request
+def check_study_maintenance_mode():
+    if request.method in BYPASS_HTTP_METHODS:
+        return None
+    settings = get_settings()
+    
+    disabled_endpoints: List[EndpointDescription] = settings.server.service.disabled_endpoints
+    if disabled_endpoints:
+        matched = check_request(request, disabled_endpoints)
+        if matched:
+            abort(503, message=f"This endpoint is disabled and unreachable.")
+        
+    
+    if settings.server.service.maintenance_mode:
+        enabled_endpoints = settings.server.service.enabled_endpoints_under_maintenance
+        if enabled_endpoints:
+            matched = check_request(request, enabled_endpoints)
+            if not matched:
+                abort(503, message=f"This endpoint is under maintenance now. Please try again later.")
+        
+    return None
+
+def check_request(current_request, endpoints: List[EndpointDescription]):
+    if current_request.method not in MANAGED_HTTP_METHODS:
+        abort(400, message=f"{current_request.method} is unexpected request method.")
+        
+    for endpoint in endpoints:
+        pattern = endpoint.path
+        
+        method: EndpointMethodOption = endpoint.method
+        if isinstance(endpoint.method, EndpointMethodOption): 
+            method: EndpointMethodOption = [endpoint.method]
+        accepted_methods = set()
+        for item in method:
+            if item == EndpointMethodOption.ANY:
+                accepted_methods = MANAGED_HTTP_METHODS
+                break
+            accepted_methods.add(item.value)
+        if current_request.method not in accepted_methods:
+            continue
+        result = re.fullmatch(pattern, current_request.path)
+
+        if result:
+            return True
+    return False
 
 def main():
     setup_logging()
     print("Initialising application")
     initialize_app(application)
-    logger.info("Starting server %s v%s", application.config.get('WS_APP_NAME'),
-                application.config.get('WS_APP_VERSION'))
-    # application.run(host="0.0.0.0", port=config.PORT, debug=config.DEBUG, ssl_context=context)
-    print("Starting application on port %s" % str(application.config.get('PORT')))
-    application.run(host="0.0.0.0", port=application.config.get('PORT'), debug=application.config.get('DEBUG'),
+    logger.info("Starting server %s v%s", get_settings().server.description.ws_app_name,
+                get_settings().server.description.ws_app_version)
+    print("Starting application on port %s" % str(get_settings().server.service.rest_api_port))
+    application.run(host="0.0.0.0", port=get_settings().server.service.rest_api_port, debug=get_settings().flask.DEBUG,
                     threaded=True, use_reloader=False)
-    logger.info("Finished server %s v%s", application.config.get('WS_APP_NAME'),
-                application.config.get('WS_APP_VERSION'))
+    logger.info("Finished server %s v%s", get_settings().server.description.ws_app_name,
+                get_settings().server.description.ws_app_version)
 
 
 print("before main")

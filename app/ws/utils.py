@@ -30,6 +30,7 @@ import re
 import shutil
 import string
 import time
+from typing import List, Tuple
 import uuid
 from os.path import normpath, basename
 
@@ -47,8 +48,12 @@ from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
 from pandas import Series
 from dirsync import sync
+from app.config import get_settings
+from app.config.utils import get_host_internal_url
+from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files
 
 from app.ws.mm_models import OntologyAnnotation
+from app.ws.settings.utils import get_study_settings
 
 """
 Utils
@@ -59,6 +64,7 @@ Misc of utils
 logger = logging.getLogger('wslog')
 
 date_format = "%Y%m%d%H%M%S"  # 20180724092134
+date_time_separted_format = "%Y-%m-%d_%H-%M-%S"  # 20180724092134
 file_date_format = "%B %d %Y %H:%M:%S"  # 20180724092134
 isa_date_format = "%Y-%m-%d"
 
@@ -76,6 +82,8 @@ def get_timestamp():
     """
     return time.strftime(date_format)
 
+def get_timestamp_based_folder():
+    return time.strftime(date_time_separted_format)
 
 def get_year_plus_one(todays_date=False, isa_format=False):
     """
@@ -99,7 +107,7 @@ def new_timestamped_folder(path):
     :param path:
     :return:
     """
-    new_folder = os.path.join(path, get_timestamp())
+    new_folder = os.path.join(path, get_timestamp_based_folder())
     try:
         os.makedirs(new_folder)
     except FileExistsError:
@@ -201,32 +209,6 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
         raise
 
 
-def scandir_get_aspera(dir):
-    subfolders, files = [], []
-
-    for f in os.scandir(dir):
-        if f.is_dir():
-            subfolders.append(f.path)
-        if f.is_file():
-            if os.path.splitext(f.name)[1].lower() in ('.partial', '.aspera-ckpt', '.aspx'):
-                files.append(f.path)
-
-    for dir in list(subfolders):
-        sf, f = scandir_get_aspera(dir)
-        subfolders.extend(sf)
-        files.extend(f)
-    return subfolders, files
-
-
-def delete_asper_files(directory):
-    subs, files = scandir_get_aspera(directory)
-    for file_to_delete in files:
-        print("File to delete  : " + file_to_delete)
-        if os.path.exists(file_to_delete):  # First, does the file/folder exist?
-            if os.path.isfile(file_to_delete):  # is it a file?
-                os.remove(file_to_delete)
-
-
 def copy_files_and_folders(source, destination, include_raw_data=True, include_investigation_file=True):
     """
       Make a copy of files/folders from origin to destination. If destination already exists, it will be replaced.
@@ -257,8 +239,8 @@ def copy_files_and_folders(source, destination, include_raw_data=True, include_i
 
 def remove_samples_from_isatab(std_path):
     # dest folder name is a timestamp
-    update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
-    update_path = os.path.join(std_path, update_path_suffix)
+    settings = get_study_settings()
+    update_path = os.path.join(std_path, settings.audit_files_symbolic_link_name, settings.audit_folder_name)
     dest_path = new_timestamped_folder(update_path)
     # check for all samples
     for sample_file in glob.glob(os.path.join(std_path, "s_*.txt")):
@@ -269,7 +251,7 @@ def remove_samples_from_isatab(std_path):
         shutil.move(src_file, dest_file)
 
         # remove tagged lines
-        tag = app.config.get('DELETED_SAMPLES_PREFIX_TAG')
+        tag = get_settings().file_filters.deleted_samples_prefix_tag
         backup_file = dest_file.replace('.txt', '.bak')
         removed_lines = 0
         with open(dest_file, "r") as infile:
@@ -337,7 +319,25 @@ def get_assay_headers_and_protcols(assay_type):
 
     return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, assay_mandatory_type
 
-
+def delete_column_from_tsv_file(file_df: pd.DataFrame, column_name: str):
+    column_index = -1
+    deleted_column_names = [column_name]
+    if column_name in file_df.columns:
+        column_index = file_df.columns.get_loc(column_name)
+    if column_index >= 0:
+        if (column_index + 1) < len(file_df.columns):
+            next_column_name = file_df.columns[column_index + 1]
+            if next_column_name.startswith("Term Source REF") or next_column_name.startswith("Term Accession Number") :
+                deleted_column_names.append(next_column_name)
+            if (column_index + 2) < len(file_df.columns):
+                next_column_name = file_df.columns[column_index + 2]
+                if next_column_name.startswith("Term Source REF") or next_column_name.startswith("Term Accession Number") :
+                    deleted_column_names.append(next_column_name)
+        for column in deleted_column_names:
+            file_df.drop(column, axis=1, inplace=True)
+    else:
+        return False
+    
 def get_table_header(table_df, study_id=None, file_name=None):
     # Get an indexed header row
     df_header = pd.DataFrame(list(table_df))  # Get the header row only
@@ -434,22 +434,21 @@ def totuples(df, text):
 # Allow for a more detailed logging when on DEBUG mode
 def log_request(request_obj):
 
-    if app.config.get('DEBUG'):
-        if not request_obj:
-            logger.error('REQUEST OBJECT is NONE')
-            return
-        if app.config.get('DEBUG_LOG_HEADERS'):
-            logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
-        if app.config.get('DEBUG_LOG_BODY'):
-            logger.debug('REQUEST BODY    -> %s', request_obj.data)
-        if app.config.get('DEBUG_LOG_JSON'):
-            if request_obj.is_json:
-                try:
-                    logger.debug('REQUEST JSON    -> %s', request_obj.json)
-                except Exception as ex:
-                    logger.debug('REQUEST JSON    -> Not Correct format')
-            else:
-                logger.debug('REQUEST JSON    -> EMPTY')
+    if not request_obj:
+        logger.error('REQUEST OBJECT is NONE')
+        return
+    if get_settings().server.log.log_headers:
+        logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
+    if get_settings().server.log.log_body:
+        logger.debug('REQUEST BODY    -> %s', request_obj.data)
+    if get_settings().server.log.log_json:
+        if request_obj.is_json:
+            try:
+                logger.debug('REQUEST JSON    -> %s', request_obj.json)
+            except Exception as ex:
+                logger.debug('REQUEST JSON    -> Not Correct format')
+        else:
+            logger.debug('REQUEST JSON    -> EMPTY')
 
 def read_tsv(file_name, col_names=None):
     table_df = pd.DataFrame()  # Empty file
@@ -648,16 +647,15 @@ def add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, s
 def validate_mzml_files(study_id):
 
     status, result = True, "All mzML files validated in both study and upload folder"
-
+    settings = get_settings()
+    studies_folder = settings.study.mounted_paths.study_readonly_files_root_path
+    study_folder = os.path.join(studies_folder, study_id)
+    xsd_path = settings.file_resources.mzml_xsd_schema_file_path
+    xmlschema_doc = etree.parse(xsd_path)
+    xmlschema = etree.XMLSchema(xmlschema_doc)  
     # Getting xsd schema for validation
-    items = app.config.get('MZML_XSD_SCHEMA')
-    xsd_name = items[0]
-    script_loc = items[1]
-    study_location = os.path.join(app.config.get("STUDY_PATH"), study_id)
-    xmlschema_doc = etree.parse(os.path.join(script_loc, xsd_name))
-    xmlschema = etree.XMLSchema(xmlschema_doc)
 
-    for file_loc in [study_location]:
+    for file_loc in [study_folder]:
         if os.path.isdir(file_loc):  # Only check if the folder exists
             files = glob.iglob(os.path.join(file_loc, '*.mzML'))  # Are there mzML files there?
             if files.gi_yieldfrom is None:  # No files, check sub-folders
@@ -703,44 +701,48 @@ def to_isa_tab(study_id, input_folder, output_folder):
 
     return True, "ISA-Tab files generated for study " + study_id
 
-def create_temp_dir_in_study_folder(study_location: str) -> str:
+def create_temp_dir_in_study_folder(parent_folder: str) -> str:
     date = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
     rand = random.randint(1000, 9999999)
     folder_name = f"{date}-{str(rand)}"
     random_folder_name = hashlib.sha256(bytes(folder_name, 'utf-8')).hexdigest()
-    path = os.path.join(study_location, "audit", "logs", "temp", random_folder_name)
+    path = os.path.join(parent_folder, random_folder_name)
     os.makedirs(path, exist_ok=True)
     
     return path
 
-def collect_all_mzml_files(study_location):
-    folder_name = create_temp_dir_in_study_folder(study_location=study_location)
+def collect_all_mzml_files(study_id, study_metadata_files_folder):
+    settings = get_study_settings()
+    temp_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id, "temp")
+    folder_path = create_temp_dir_in_study_folder(parent_folder=temp_folder)
+    files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
     mzml_files = {}
-    if os.path.exists(study_location) and os.path.isdir(study_location):  # Only check if the folder exists
-        files = glob.iglob(os.path.join(study_location, '*.mzML'))  # Are there mzML files there?
+    if os.path.exists(files_folder) and os.path.isdir(files_folder):  # Only check if the folder exists
+        files = glob.iglob(os.path.join(files_folder, '*.mzML'))  # Are there mzML files there?
         for file in files:
             base_name = os.path.basename(file)
             if base_name not in mzml_files:
                 mzml_files[base_name] = file
-        files = glob.iglob(os.path.join(study_location, '**/*.mzML'), recursive=True)  # Are there mzML files there?
+        files = glob.iglob(os.path.join(files_folder, '**/*.mzML'), recursive=True)  # Are there mzML files there?
         for file in files:
             base_name = os.path.basename(file)
             if base_name not in mzml_files:
                 mzml_files[base_name] = file
     
     for file in mzml_files:
-        target = os.path.join(folder_name, file)
+        target = os.path.join(folder_path, file)
         source = mzml_files[file]
         
         os.symlink(source, target, target_is_directory=False)
     
-    return folder_name + "/"
+    return folder_path + "/"
+
 def convert_to_isa(study_location, study_id):
     input_folder = ""
     try:
-        input_folder = collect_all_mzml_files(study_location=study_location)
+        input_folder = collect_all_mzml_files(study_id, study_metadata_files_folder=study_location)
         output_folder = study_location + "/"
-        status, message = to_isa_tab(study_id, input_folder, output_folder)
+        status, message = to_isa_tab("", input_folder, output_folder)
         return status, message
     finally:
         if input_folder:
@@ -750,14 +752,12 @@ def convert_to_isa(study_location, study_id):
 
 
 def update_correct_sample_file_name(isa_study, study_location, study_id):
-    sample_file_name = isa_study.filename
-    sample_file_name = os.path.join(study_location, sample_file_name)
+    sample_file_path = os.path.join(study_location, isa_study.filename)
     short_sample_file_name = 's_' + study_id.upper() + '.txt'
-    default_sample_file_name = os.path.join(study_location, short_sample_file_name)
-    if os.path.isfile(sample_file_name):
-        if sample_file_name != default_sample_file_name:
-            isa_study.identifier = study_id  # Adding the study identifier
-            os.rename(sample_file_name, default_sample_file_name)  # Rename the sample file
+    default_sample_file_path = os.path.join(study_location, short_sample_file_name)
+    if os.path.isfile(sample_file_path):
+        if sample_file_path != default_sample_file_path:
+            os.rename(sample_file_path, default_sample_file_path)  # Rename the sample file
             isa_study.filename = short_sample_file_name  # Add the new filename to the investigation
 
     return isa_study, short_sample_file_name
@@ -812,8 +812,9 @@ def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, stud
         logger.error("Could not update the ontology value " + old_value + " in all sheets")
 
 
-def create_maf(technology, study_location, assay_file_name, annotation_file_name):
-    resource_folder = os.path.join(os.getcwd(), "resources")
+def create_maf(technology, study_metadata_location, assay_file_name, annotation_file_name):
+    settings = get_settings()
+    
     update_maf = False
 
     if technology is None:
@@ -823,18 +824,18 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
     # Fixed column headers to look for in the MAF, defaults to MS
     sample_name = 'Sample Name'
     assay_name = 'MS Assay Name'
-    annotation_file_template = os.path.join(resource_folder, 'm_metabolite_profiling_mass_spectrometry_v2_maf.tsv')
+    annotation_file_template = settings.file_resources.study_mass_spectrometry_maf_file_template_path
 
     # NMR MAF and assay name
     if technology == "NMR":
-        annotation_file_template = os.path.join(resource_folder, 'm_metabolite_profiling_NMR_spectroscopy_v2_maf.tsv')
+        annotation_file_template = settings.file_resources.study_nmr_spectroscopy_maf_file_template_path
         assay_name = 'NMR Assay Name'
 
     if annotation_file_name is None or len(annotation_file_name) == 0:
         annotation_file_name = get_maf_name_from_assay_name(assay_file_name)
 
-    full_annotation_file_name = os.path.join(study_location, annotation_file_name)
-    assay_file_name = os.path.join(study_location, assay_file_name)
+    full_annotation_file_name = os.path.join(study_metadata_location, annotation_file_name)
+    assay_file_name = os.path.join(study_metadata_location, assay_file_name)
 
     # Get the MAF table or create a new one if it does not already exist
     try:
@@ -911,8 +912,55 @@ def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, o
 
     return isa_inv, onto
 
+def delete_remote_file(root_path: str, file_path: str) -> Tuple[bool, str]:
+    inputs = {"root_path": root_path, "file_paths": file_path}
+    try:
+        task = delete_files.apply_async(kwargs=inputs, expires=20)
+        cluster_settings = get_settings().hpc_cluster.configuration
+        output = task.get(timeout=cluster_settings.task_get_timeout_in_seconds * 2)
+    except Exception as exc:
+        return False, "No response from server."
+    
+    if not output:
+        return False, "No response from server."
 
-def remove_file(file_location, file_name, always_remove=False):
+    for item in output:
+        if "status" in output[item]:
+            message = output[item]["message"] if "message" in output[item]  else ""
+            
+            return output[item]["status"], message
+        
+    return False, "No Files"
+    
+def remove_file(file_location: str, file_name: str, always_remove=False, is_curator=False):
+    settings = get_settings()
+    
+    files_folder_name = settings.study.readonly_files_symbolic_link_name
+    internal_files_folder_name = settings.study.internal_files_symbolic_link_name
+    audit_files_folder_name = settings.study.audit_files_symbolic_link_name
+    
+    if not file_name:
+        return False, "Deleting root folder is not allowed."
+    if file_name.strip(os.sep) in (files_folder_name, internal_files_folder_name, audit_files_folder_name):
+        return False, "Deleting managed folders is not allowed."
+    
+    if (file_name.startswith(internal_files_folder_name)) and not is_curator:
+        return False, "Deleting internal files is not allowed."
+    
+    first_folder = file_name.split(os.sep)[0]
+    
+    if first_folder == files_folder_name:
+        study_id = os.path.basename(file_location)
+        mounted_paths = settings.hpc_cluster.datamover.mounted_paths
+        new_file_relative_path = file_name.replace(f"{files_folder_name}/", "", 1)
+        files_folder_root_path = os.path.join(mounted_paths.cluster_study_readonly_files_root_path, study_id)
+        remote_path = os.path.join(files_folder_root_path, new_file_relative_path)
+
+        try: 
+            result, message = delete_remote_file(files_folder_root_path, remote_path)
+            return result, message
+        except Exception as exc:
+            return False, f"File {file_name} is not deleted. {str(exc)}"
     # Raw files are sometimes actually folders, so need to check if file or folder before removing
     file_to_delete = os.path.join(file_location, file_name)
     # file_status == 'active' of a file is actively used as metadata
@@ -921,17 +969,29 @@ def remove_file(file_location, file_name, always_remove=False):
     try:
         if file_type == 'metadata_investigation' or file_type == 'metadata_assay' or file_type == 'metadata_sample' or file_type == 'metadata_maf':
             if file_status == 'active' and not always_remove:  # If active metadata and "remove anyway" flag if not set
-                return False, "Can not delete any active metadata files " + file_name
+                return False, file_name + " is referenced in metadata file. Referenced files can not be deleted."
         if os.path.exists(file_to_delete):  # First, does the file/folder exist?
-            if os.path.isfile(file_to_delete):  # is it a file?
-                os.remove(file_to_delete)
-            elif os.path.isdir(file_to_delete):  # is it a folder
-                shutil.rmtree(file_to_delete)
+            dirname = os.path.dirname(file_to_delete)
+            mode = os.stat(dirname).st_mode
+            new_mode = mode
+            if mode & 0o700 != 0o700 and always_remove:
+                new_mode = mode | 0o700
+                os.chmod(dirname)
+            try: 
+                if os.path.islink(file_to_delete):
+                    os.unlink(file_to_delete)
+                elif os.path.isfile(file_to_delete):  # is it a file?
+                    os.remove(file_to_delete)
+                elif os.path.isdir(file_to_delete):  # is it a folder
+                    shutil.rmtree(file_to_delete)
+            finally:
+                if mode != new_mode and always_remove:
+                    os.chmod(dirname, mode)    
         else:
             return False, "Can not find file " + file_name
-    except:
-        return False, "Can not delete file " + file_name
-    return True, "File " + file_name + " deleted"
+    except Exception as exc:
+        return False, f"Can not delete file {file_name}. {str(exc)}"
+    return True, "File " + file_name + " is deleted"
 
 
 def map_file_type(file_name, directory, assay_file_list=None):
@@ -943,13 +1003,13 @@ def map_file_type(file_name, directory, assay_file_list=None):
     fname, ext = os.path.splitext(final_filename)
     fname = fname.lower()
     ext = ext.lower()
-    empty_exclusion_list = app.config.get('EMPTY_EXCLUSION_LIST')
-    ignore_file_list = app.config.get('IGNORE_FILE_LIST')
-    raw_files_list = app.config.get('RAW_FILES_LIST')
-    derived_files_list = app.config.get('DERIVED_FILES_LIST')
-    compressed_files_list = app.config.get('COMPRESSED_FILES_LIST')
-    internal_mapping_list = app.config.get('INTERNAL_MAPPING_LIST')
-    derived_data_folder_list = app.config.get('DERIVED_DATA_FOLDER_LST')
+    empty_exclusion_list = get_settings().file_filters.empty_exclusion_list
+    ignore_file_list = get_settings().file_filters.ignore_file_list
+    raw_files_list = get_settings().file_filters.raw_files_list
+    derived_files_list = get_settings().file_filters.derived_files_list
+    compressed_files_list = get_settings().file_filters.compressed_files_list
+    internal_mapping_list = get_settings().file_filters.internal_mapping_list
+    derived_data_folder_list = get_settings().file_filters.derived_data_folder_list
 
     full_path = os.path.join(directory, file_name)
     if os.path.exists(full_path):
@@ -1075,7 +1135,7 @@ def traverse_subfolders(study_location=None, file_location=None, file_list=None,
     if not os.path.isdir(study_location) or not os.path.isdir(file_location):
         return file_list, all_folders
 
-    folder_exclusion_list = app.config.get('FOLDER_EXCLUSION_LIST')
+    folder_exclusion_list = get_settings().file_filters.folder_exclusion_list
 
     if file_location not in all_folders:
         for params in os.walk(file_location):
@@ -1222,7 +1282,7 @@ def track_ga_event(category, action, tracking_id=None, label=None, value=0):
 
 
 def google_analytics():
-    tracking_id = app.config.get('GA_TRACKING_ID')
+    tracking_id = get_settings().google.services.google_analytics_tracking_id
     if tracking_id:
         environ = request.headers.environ
         url = environ['REQUEST_URI']
@@ -1341,13 +1401,14 @@ def clean_json(json_data, studyID):
 
 def get_techniques(studyID=None):
     print('getting techniques.... ')
-    params = app.config.get('DB_PARAMS')
 
     if studyID:
         sql = "select acc,studytype from studies where status= 3 and acc= '{studyid}'".format(studyid=studyID)
     else:
         sql = 'select acc,studytype from studies where status= 3'
 
+    settings = get_settings()
+    params = settings.database.connection.dict()
     with psycopg2.connect(**params) as conn:
         data = pd.read_sql_query(sql, conn)
 
@@ -1372,9 +1433,11 @@ def get_instrument(studyID, assay_name):
     instrument_name = []
     # res.loc[len(res)] = [sheet_name, key, term]
     try:
-        source = '/ws/studies/{study_id}/assay'.format(study_id=studyID)
-        ws_url = app.config.get("WS_APP_BASE_LINK") + source
-        resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+        source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
+        settings = get_settings()
+        service_settings = settings.server.service
+        ws_url = f"{service_settings.mtbls_ws_host}:{service_settings.rest_api_port}{source}"
+        resp = requests.get(ws_url, headers={'user_token': settings.auth.service_account.api_token},
                             params={'assay_filename': assay_name})
         data = resp.text
         content = io.StringIO(data)
@@ -1395,9 +1458,11 @@ def get_instrument(studyID, assay_name):
 def get_orgaisms(studyID, sample_file_name):
     # print('getting organism')
     try:
-        source = '/ws/studies/{study_id}/sample'.format(study_id=studyID)
-        ws_url = app.config.get("WS_APP_BASE_LINK") + source
-        resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+        source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
+        settings = get_settings()
+        service_settings = settings.server.service
+        ws_url = f"{service_settings.mtbls_ws_host}:{service_settings.rest_api_port}{source}"
+        resp = requests.get(ws_url, headers={'user_token': settings.auth.service_account.api_token},
                             params={'sample_filename': sample_file_name})
         data = resp.text
         content = io.StringIO(data)
@@ -1438,9 +1503,9 @@ def get_studytype(studyID=None):
         target = False
 
         source = '/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
-        ws_url = app.config.get("WS_APP_BASE_LINK") + source
+        ws_url = get_host_internal_url()+ source
         try:
-            resp =requests.get(ws_url , headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+            resp =requests.get(ws_url , headers={'user_token': get_settings().auth.service_account.api_token})
             data = resp.json()
             for descriptor in data['studyDesignDescriptors']:
                 term = str(descriptor['annotationValue'])
@@ -1525,9 +1590,10 @@ def get_connection():
     conn = None
     cursor = None
     try:
-        params = app.config.get('DB_PARAMS')
-        conn_pool_min = app.config.get('CONN_POOL_MIN')
-        conn_pool_max = app.config.get('CONN_POOL_MAX')
+        settings = get_settings()
+        params = settings.database.connection.dict()
+        conn_pool_min = settings.database.configuration.conn_pool_min
+        conn_pool_max = settings.database.configuration.conn_pool_max
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
         conn = postgresql_pool.getconn()
         cursor = conn.cursor()
@@ -1570,9 +1636,9 @@ def get_public_review_studies():
 def getFileList(studyID):
     try:
         source = '/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
-        url = app.config.get("WS_APP_BASE_LINK") + source
+        url = get_host_internal_url() + source
         request_obj = urllib_request.Request(url)
-        request_obj.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+        request_obj.add_header('user_token', get_settings().auth.service_account.api_token)
         response = urllib_request.urlopen(request_obj)
         content = response.read().decode('utf-8')
         j_content = json.loads(content)

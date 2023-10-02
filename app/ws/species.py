@@ -5,6 +5,7 @@ from typing import List, Set
 from flask import current_app as app, jsonify
 from flask_restful import Resource
 from flask_restful_swagger import swagger
+from app.config import get_settings
 from app.services.storage_service.storage_service import StorageService
 from app.utils import MetabolightsDBException, metabolights_exception_handler
 from app.ws.db.dbmanager import DBManager
@@ -52,9 +53,10 @@ class SpeciesTree(Resource):
     )
     @metabolights_exception_handler
     def get(self):
+        key = get_settings().redis_cache.configuration.species_tree_cache_key
         try: 
             redis = get_redis_server()
-            tree = redis.get_value("metabolights:species:tree")
+            tree = redis.get_value(key)
             
             if tree:
                 return json.loads(tree)
@@ -67,7 +69,7 @@ class SpeciesTree(Resource):
         groups = {}
         
         try:
-            with DBManager.get_instance(app).session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 result = db_session.query(RefSpeciesGroup).all()
                 
                 if result:
@@ -114,7 +116,7 @@ class SpeciesTree(Resource):
         
         result_dict = tree.dict()
         result_str = json.dumps(result_dict)
-        redis.set_value("metabolights:species:tree", result_str, ex=60*10)
+        redis.set_value(key, result_str, ex=60*10)
         return jsonify(result_dict)
     
     def update_tree(self, tree: SpeciesTreeParent, level: int = 0):

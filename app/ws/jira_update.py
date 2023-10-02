@@ -26,9 +26,11 @@ from flask_restful import Resource
 from flask_restful_swagger import swagger
 from jira import JIRA
 from oauth2client.service_account import ServiceAccountCredentials
+from app.config import get_settings
 
 from app.ws.db_connection import get_all_studies
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.user_service import UserService
 from app.ws.utils import safe_str
 
 # https://jira.readthedocs.io
@@ -84,12 +86,11 @@ class Jira(Resource):
             abort(401)
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions('MTBLS3', user_token)
-        if not is_curator:
-            abort(403)
 
-        status, message, updated_studies_list = update_or_create_jira_issue(user_token, is_curator)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+
+
+        status, message, updated_studies_list = update_or_create_jira_issue(user_token, True)
 
         if status:
             return {'Success': message}
@@ -99,9 +100,9 @@ class Jira(Resource):
 
 def update_or_create_jira_issue(user_token, is_curator):
     try:
-        params = app.config.get('JIRA_PARAMS')
-        user_name = params['username']
-        password = params['password']
+        params = get_settings().jira.connection
+        user_name = params.username
+        password = params.password
         default_curator = 'metabolights-api'
 
         updated_studies = []
@@ -185,7 +186,7 @@ def update_or_create_jira_issue(user_token, is_curator):
                     valid_curator = True
                 elif curator.lower() == 'pamela':
                     jira_curator = 'ppruski'
-                    valid_curator = True
+                    valid_curator = False
                 elif curator.lower() == 'xuefei' or curator.lower() == 'reza' or curator.lower() == 'keeva':
                     jira_curator = default_curator  # We do not have a current curation listed in the log
                     valid_curator = True
@@ -306,68 +307,3 @@ def maintain_jira_labels(issue, study_status, user_name):
         labels.append(metaspace_label)
 
     return labels
-
-
-class GoogleDocs(Resource):
-    @swagger.operation(
-        summary="Read database for curation status (curator only)",
-        notes="Read the database table for curation status",
-        parameters=[
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a valid user token"
-            }
-        ]
-    )
-    def get(self):
-
-        user_token = None
-
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if user_token is None:
-            abort(401)
-
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions('MTBLS1', user_token)
-        if not is_curator:
-            abort(401)
-
-        data = self.get_curation_log()
-
-        return jsonify(data)
-
-    def get_curation_log(self):
-        # Load spreadsheet from Google sheet
-        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        google_creds = app.config.get('GOOGLE_CREDS')
-        google_json = json.loads(google_creds, encoding='utf-8')
-        credentials = ServiceAccountCredentials.from_json_keyfile_dict(google_json, scopes=scope)
-        gc = gspread.authorize(credentials)
-        query_wks = gc.open('MTBLS Curation Status Log').get_worksheet(5)  # "Database query" sheet
-        query_records = query_wks.get_all_records()
-
-        update_wks = gc.open('MTBLS Curation Status Log').get_worksheet(6)  # "Database update" sheet
-        update_records = update_wks.get_all_records()
-        for updates in update_records:
-            print(updates[1])
-
-        df = pd.DataFrame(query_records)
-        return df

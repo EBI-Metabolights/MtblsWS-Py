@@ -1,0 +1,33 @@
+#!/bin/bash
+
+APPDIR="{{ application_deployment_path }}"
+WORKER_NAME="{{ worker_name }}"
+WORKER_QUEUE="{{ worker_queue }}"
+CONDA_ENVIRONMENT="{{ conda_environment }}"
+SERVER_PORT="{{ server_port }}"
+HOST=$(hostname)
+echo "Starting Celery worker worker on host $HOST"
+
+APP_LOG_DIR=$APPDIR/logs
+mkdir -p $APP_LOG_DIR
+export PYTHONPATH="$APPDIR:$PYTHONPATH"
+
+source $APPDIR/.env
+export $(cat $APPDIR/.env | grep -v '#' | xargs)
+
+echo "Python version:" $(python3 --version)
+echo "Host name: $HOST"
+
+eval "$(conda shell.bash hook)"
+conda activate $CONDA_ENVIRONMENT
+cd $APPDIR
+echo "Working directory: $APPDIR"
+export CONFIG_FILE_PATH=$APPDIR/config.yaml
+export SECRETS_PATH=$APPDIR/.secrets
+python3 -m celery -A app.tasks.worker:celery worker -Q ${WORKER_QUEUE} --logfile $APP_LOG_DIR/${WORKER_NAME}_${HOST}_${SERVER_PORT}.log --loglevel info -n ${WORKER_NAME}@%h --detach
+if [ $? -eq 0 ]; then
+    echo "Celery worker is up."
+else
+    echo "Celery worker start task is failed."
+    exit 1
+fi

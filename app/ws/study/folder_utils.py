@@ -10,12 +10,28 @@ from copy import deepcopy
 from operator import itemgetter
 
 from flask import current_app as app
+from app.config import get_settings
+from app.config.utils import get_private_ftp_relative_root_path
 
 from app.file_utils import make_dir_with_chmod
+from app.study_folder_utils import get_all_study_metadata_and_data_files
+from app.ws.db.schemes import Study
+from app.ws.db.types import StudyStatus
+from app.ws.folder_maintenance import StudyFolderMaintenanceTask
+from app.ws.settings.utils import get_study_settings
+from app.ws.study.study_service import StudyService
+from app.ws.study_folder_utils import FileSearchResult, evaluate_files_in_detail, get_referenced_file_set
 from app.ws.utils import date_format, file_date_format, map_file_type, new_timestamped_folder, copy_file
 
 logger = logging.getLogger("wslog")
 
+def get_files_for_validation(study_id, study_metadata_files_path) -> FileSearchResult:
+    study_settings = get_settings().study
+    exclude_list = [study_settings.audit_files_symbolic_link_name, study_settings.internal_files_symbolic_link_name]
+    referenced_files = get_referenced_file_set(study_id=study_id, metadata_path=study_metadata_files_path)
+    metadata_and_data_files = get_all_study_metadata_and_data_files(study_metadata_files_path, exclude_list=exclude_list)
+    search_result = evaluate_files_in_detail(metadata_and_data_files, referenced_files)
+    return search_result
 
 def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, directory=None,
                                   include_raw_data=None, assay_file_list=None, validation_only=False,
@@ -26,9 +42,6 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
 
     start_time = time.time()
     s_start_time = time.time()
-
-    log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
-    make_dir_with_chmod(log_path, 0o777)
 
     study_files, latest_update_time = get_all_files(study_location, directory=directory,
                                                     include_raw_data=include_raw_data,
@@ -46,7 +59,7 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
 
     upload_diff = []
     ftp_private_study_folder = study_id.lower() + "-" + obfuscation_code
-    ftp_private_relative_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+    ftp_private_relative_root_path = get_private_ftp_relative_root_path()
     ftp_private_relative_study_path = os.path.join(ftp_private_relative_root_path, ftp_private_study_folder)
     upload_location = [None, ftp_private_relative_study_path]
     upload_files = []
@@ -78,10 +91,11 @@ def get_file_information(study_location=None, path=None, directory=None, include
                          include_sub_dir=None, static_validation_file=None):
     file_list = []
     file_name = ""
-    ignore_file_list = app.config.get('IGNORE_FILE_LIST')
+    ignore_file_list = get_settings().file_filters.ignore_file_list
     latest_update_time = ""
+    settings = get_study_settings()
     try:
-        timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
+        timeout_secs = settings.files_list_json_file_creation_timeout
         end_time = time.time() + timeout_secs
 
         if directory:
@@ -123,7 +137,7 @@ def get_file_information(study_location=None, path=None, directory=None, include
 
             if time.time() > end_time:
                 logger.error('Listing files in folder %s, timed out after %s seconds', path, timeout_secs)
-                return file_list  # Return after xx seconds regardless
+                return file_list, 0  # Return after xx seconds regardless
 
             if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX:
                 if not include_raw_data:  # Only return metadata files
@@ -239,12 +253,12 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
                      short_format=None, include_sub_dir=None, validation_only=None,
                      static_validation_file=None, include_raw_data=None, ignore_file_list=None):
     static_file_found = False
-    validation_files_list = os.path.join(file_location, 'validation_files.json')
-    folder_exclusion_list = app.config.get('FOLDER_EXCLUSION_LIST')
+    
+    folder_exclusion_list = get_settings().file_filters.folder_exclusion_list
 
-    if os.path.isfile(validation_files_list) and static_validation_file:
+    if static_validation_file and os.path.isfile(static_validation_file):
         try:
-            with open(validation_files_list, 'r', encoding='utf-8') as f:
+            with open(static_validation_file, 'r', encoding='utf-8') as f:
                 validation_files = json.load(f)
                 static_file_found = True
         except Exception as e:
@@ -305,30 +319,79 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
                                                              ignore_file_list=ignore_file_list))
     return dir_list, static_file_found
 
+def sort_file_by_modified_time(path):
+    return os.path.getmtime(path)
 
-def write_audit_files(study_location):
+date_time_separted_format = "%Y-%m-%d_%H-%M-%S"  # 2018-07-24_09-21-34
+
+def write_audit_files(study_location_or_study_id):
     """
     Write back an ISA-API Investigation object directly into ISA-Tab files
     :param study_location: the filesystem where the study is located
     :return:
     """
-    # dest folder name is a timestamp
-    update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
-    update_path = os.path.join(study_location, update_path_suffix)
-    log_path = os.path.join(update_path, 'logs')
-    make_dir_with_chmod(log_path, 0o777)
-
-    dest_path = new_timestamped_folder(update_path)
-
     try:
-        # make a copy of ISA-Tab & MAF
-        for isa_file in glob.glob(os.path.join(study_location, "?_*.t*")):
-            isa_file_name = os.path.basename(isa_file)
-            src_file = isa_file
-            dest_file = os.path.join(dest_path, isa_file_name)
-            logger.info("Copying %s to %s", src_file, dest_file)
-            copy_file(src_file, dest_file)
-    except:
-        return False, dest_path
+        study_id = os.path.basename(study_location_or_study_id)
+        study: Study = StudyService.get_instance().get_study_by_acc(study_id=study_id)
+        study_status = StudyStatus(study.status)
+        public_release_date = study.releasedate
+        submission_date = study.submissiondate
+        maintenance_task = StudyFolderMaintenanceTask(
+                study_id,
+                study_status,
+                public_release_date,
+                submission_date,
+                obfuscationcode=study.obfuscationcode,
+                task_name=None,
+                cluster_execution_mode=False,
+            )
+        last_metadata_signature = maintenance_task.read_hash_file()
+        metadata_files_signature, _ = maintenance_task.calculate_metadata_files_hash()
+        
+        if metadata_files_signature != last_metadata_signature:
+            maintenance_task.create_metadata_files_signature()
+            
+        search_pattern = os.path.join(maintenance_task.study_audit_files_path, "20??-??-??_??-??-??_BACKUP")
+        results = glob.glob(search_pattern, recursive=False)
+        folders = [f for f in results if os.path.isdir(f)]
+        folders.sort(reverse=True)
+        last_audit_folder = None
+        if folders:
+            try:
+                name = os.path.basename(folders[0])
+                datetime.datetime.strptime(name.replace("_BACKUP", ""), date_time_separted_format)
+                last_audit_folder = folders[0]
+            except:
+                pass
+            
+        if last_audit_folder and metadata_files_signature:
+            audit_folder_signature = maintenance_task.read_hash_file(metadata_files_signature_root_path=last_audit_folder)
+            if audit_folder_signature == metadata_files_signature:
+                return False, None
+        dest_path = maintenance_task.create_audit_folder()
+        return  True, dest_path
+    except Exception as ex:
+        return False, None
+    
+    # settings = get_study_settings()
+    # # dest folder name is a timestamp
+    # update_path = os.path.join(study_location, settings.audit_files_symbolic_link_name)
+    # os.makedirs(update_path, exist_ok=True)
+    # log_path = os.path.join(study_location, settings.internal_files_symbolic_link_name, settings.internal_logs_folder_name)
+    # make_dir_with_chmod(log_path, 0o777)
 
-    return True, dest_path
+    # dest_path = new_timestamped_folder(update_path)
+
+    # try:
+    #     # make a copy of ISA-Tab & MAF
+    #     for pattern in ["[asi]_*.txt", "m_*.tsv"]:
+    #         for isa_file in glob.glob(os.path.join(study_location, pattern)):
+    #             isa_file_name = os.path.basename(isa_file)
+    #             src_file = isa_file
+    #             dest_file = os.path.join(dest_path, isa_file_name)
+    #             logger.info("Copying %s to %s", src_file, dest_file)
+    #             copy_file(src_file, dest_file)
+    # except:
+    #     return False, dest_path
+
+    # return True, dest_path

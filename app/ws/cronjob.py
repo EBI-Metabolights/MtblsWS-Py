@@ -36,6 +36,8 @@ from flask_restful_swagger import swagger
 from gspread_dataframe import set_with_dataframe
 from oauth2client.service_account import ServiceAccountCredentials
 from owlready2 import urllib
+from app.config import get_settings
+from app.config.utils import get_host_internal_url
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
@@ -199,7 +201,8 @@ class cronjob(Resource):
             time_stamp = {"created_at": "2020-07-20", "updated_at": datetime.today().strftime('%Y-%m-%d')}
             res = {**time_stamp, **data}
             file_name = 'study_classify.json'
-            file_path = os.path.join(app.config.get('REPORTING_ROOT_PATH'), app.config.get('MARIANA_PATH'))
+            file_path = os.path.join(get_settings().study.mounted_paths.reports_root_path, 
+                                     get_settings().report.mariana_report_folder_name)
             writeDataToFile(file_path + file_name, res, True)
             return jsonify(res)
         elif source == 'ftp file permission':
@@ -220,7 +223,8 @@ class cronjob(Resource):
 
 def curation_log_database_query():
     try:
-        params = app.config.get('DB_PARAMS')
+        settings = get_settings()
+        params = settings.database.connection.dict()
         with psycopg2.connect(**params) as conn:
             sql = open('./resources/updateDB.sql', 'r').read()
             data = pd.read_sql_query(sql, conn)
@@ -230,15 +234,15 @@ def curation_log_database_query():
 
         data.insert(data.shape[1] - 1, column="percentage known", value=percentage_known)
 
-        token = app.config.get('GOOGLE_SHEET_TOKEN')
+        token = get_settings().google.connection.google_sheet_api
 
-        google_df = getGoogleSheet(app.config.get('MTBLS_CURATION_LOG'), 'Database Query',
-                                   app.config.get('GOOGLE_SHEET_TOKEN'))
+        google_df = getGoogleSheet(get_settings().google.sheets.mtbls_curation_log, 'Database Query',
+                                   get_settings().google.connection.google_sheet_api)
 
         data.columns = google_df.columns
 
-        replaceGoogleSheet(data, app.config.get('MTBLS_CURATION_LOG'), 'Database Query',
-                           app.config.get('GOOGLE_SHEET_TOKEN'))
+        replaceGoogleSheet(data, get_settings().google.sheets.mtbls_curation_log, 'Database Query',
+                           get_settings().google.connection.google_sheet_api)
 
     except Exception as e:
         print(e)
@@ -248,7 +252,8 @@ def curation_log_database_query():
 def curation_log_database_update(starting_index, ending_index):
     def execute_query(query):
         try:
-            params = app.config.get('DB_PARAMS')
+            settings = get_settings()
+            params = settings.database.connection.dict()
             conn = psycopg2.connect(**params)
             cursor = conn.cursor()
             cursor.execute(query)
@@ -263,8 +268,8 @@ def curation_log_database_update(starting_index, ending_index):
             print(e.pgerror)
             logger.info(e.pgcode)
 
-    google_df = getGoogleSheet(app.config.get('MTBLS_CURATION_LOG'), 'Database update',
-                               app.config.get('GOOGLE_SHEET_TOKEN'))
+    google_df = getGoogleSheet(get_settings().google.sheets.mtbls_curation_log, 'Database update',
+                               get_settings().google.connection.google_sheet_api)
 
     command_list = google_df['--Updates. Run this in the database on a regular basis'].tolist()
     # empty_study = "update studies set studytype ='', species ='', placeholder ='', curator =''"
@@ -272,7 +277,8 @@ def curation_log_database_update(starting_index, ending_index):
 
     # Find the maximum number of Metlite ID
     try:
-        params = app.config.get('DB_PARAMS')
+        settings = get_settings()
+        params = settings.database.connection.dict()
         connection = psycopg2.connect(**params)
         cursor = connection.cursor()
         select_Query = "select max(lpad(replace(acc, 'MTBLS', ''), 4, '0')) as acc_short from studies order by acc_short"
@@ -345,12 +351,12 @@ def get_empty_studies():
     empty_email = []
     no_email = []
 
-    g_sheet = getGoogleSheet(app.config.get('MTBLS_CURATION_LOG'), 'Empty investigation files',
-                             token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+    g_sheet = getGoogleSheet(get_settings().google.sheets.mtbls_curation_log, 'Empty investigation files',
+                             token_path=get_settings().google.connection.google_sheet_api)
     ignore_studies = g_sheet['studyID'].tolist()
     ignore_submitter = ['MetaboLights', 'Metaspace', 'Metabolon', 'Venkata Chandrasekhar', 'User Cochrane']
-
-    studyInfos = get_study_info(app.config.get('METABOLIGHTS_TOKEN'))
+    
+    studyInfos = get_study_info(get_settings().auth.service_account.api_token)
     keys = ['studyID', 'username', 'status', 'placeholder']
 
     for studyInfo in studyInfos:
@@ -361,10 +367,10 @@ def get_empty_studies():
             continue
 
         source = '/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyInfo[0])
-        ws_url = app.config.get("WS_APP_BASE_LINK") + source
+        ws_url = get_host_internal_url() + source
 
         try:
-            resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+            resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token})
 
             # empty investigation and studyID > MTBLS1700
             if resp.status_code == 200:
@@ -396,6 +402,7 @@ def get_empty_studies():
     # ws response & email
     empty_email.sort(key=natural_keys)
     no_email.sort(key=natural_keys)
+    
     return empty_email, no_email
 
 
@@ -405,16 +412,16 @@ def file_permission(force: bool = False):
     # curation = []
     # review = []
     # public = []
-    # ftp_private_storage = StorageService.get_ftp_private_storage(app)
+    # ftp_private_storage = StorageService.get_ftp_private_storage()
     # files = ftp_private_storage.remote.list_folder('/')
     # files = []
     # study_ids = [x.name.split('-')[0].upper() for x in files if x.name.upper().startswith('MTBLS')]
-    # token = app.config.get('METABOLIGHTS_TOKEN')
-    # UserService.get_instance(app).validate_user_has_curator_role(token)
+    # token = get_settings().auth.service_account.api_token
+    # UserService.get_instance().validate_user_has_curator_role(token)
     # study_obfuscation_code_map = {}
     # study_status_map = {}
     #
-    # with DBManager.get_instance(app).session_maker() as db_session:
+    # with DBManager.get_instance().session_maker() as db_session:
     #     result = db_session.query(Study.acc, Study.obfuscationcode, Study.status).all()
     #     for item in result:
     #         study_obfuscation_code_map[item.acc] = item.obfuscationcode
@@ -491,16 +498,16 @@ def MTBLS_statistics_update():
     logger.info('UPDATE untarget NMR')
     untarget_NMR = extractUntargetStudy(['NMR'])
     res = untarget_NMR[['studyID']]
-    replaceGoogleSheet(df=res, url=app.config.get('MTBLS_STATISITC'), worksheetName='untarget NMR',
-                       token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+    replaceGoogleSheet(df=res, url=get_settings().google.sheets.mtbls_statistics, worksheetName='untarget NMR',
+                       token_path=get_settings().google.connection.google_sheet_api)
 
     ## update untarget LC-MS
     print('-' * 20 + 'UPDATE untarget LC-MS' + '-' * 20)
     logger.info('UPDATE untarget LC-MS')
     untarget_LCMS = extractUntargetStudy(['LC'])
     res = untarget_LCMS[['studyID']]
-    replaceGoogleSheet(df=res, url=app.config.get('MTBLS_STATISITC'), worksheetName='untarget LC-MS',
-                       token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+    replaceGoogleSheet(df=res, url=get_settings().google.sheets.mtbls_statistics, worksheetName='untarget LC-MS',
+                       token_path=get_settings().google.connection.google_sheet_api)
 
     ## update NMR and LC-MS
     print('-' * 20 + 'UPDATE NMR and LC-MS' + '-' * 20)
@@ -508,15 +515,15 @@ def MTBLS_statistics_update():
     studyID, studyType = get_study_by_type(['LC', 'NMR'], publicStudy=False)
     df = pd.DataFrame(columns=['studyID', 'dataType'])
     df.studyID, df.dataType = studyID, studyType
-    replaceGoogleSheet(df=df, url=app.config.get('MTBLS_STATISITC'), worksheetName='both NMR and LCMS',
-                       token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+    replaceGoogleSheet(df=df, url=get_settings().google.sheets.mtbls_statistics, worksheetName='both NMR and LCMS',
+                       token_path=get_settings().google.connection.google_sheet_api)
 
     ## update NMR sample / assay sheet
     print('-' * 20 + 'UPDATE NMR info' + '-' * 20)
     logger.info('UPDATE NMR info')
     df = getNMRinfo()
-    replaceGoogleSheet(df=df, url=app.config.get('MTBLS_STATISITC'), worksheetName='NMR',
-                       token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+    replaceGoogleSheet(df=df, url=get_settings().google.sheets.mtbls_statistics, worksheetName='NMR',
+                       token_path=get_settings().google.connection.google_sheet_api)
 
     ## update MS sample / assay sheet
 
@@ -524,8 +531,8 @@ def MTBLS_statistics_update():
     print('-' * 20 + 'UPDATE LC-MS info' + '-' * 20)
     logger.info('UPDATE LC-MS info')
     df = getLCMSinfo()
-    replaceGoogleSheet(df=df, url=app.config.get('LC_MS_STATISITC'), worksheetName='LCMS samples and assays',
-                       token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+    replaceGoogleSheet(df=df, url=get_settings().google.sheets.lc_ms_statistics, worksheetName='LCMS samples and assays',
+                       token_path=get_settings().google.connection.google_sheet_api)
 
 
 def extractUntargetStudy(studyType=None, publicStudy=True):
@@ -544,10 +551,10 @@ def extractUntargetStudy(studyType=None, publicStudy=True):
 
         for studyID in studyIDs:
             print(studyID)
-            source = '/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
-            ws_url = app.config.get("WS_APP_BASE_LINK") + source
+            source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+            ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
             try:
-                resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token})
                 data = resp.json()
                 for descriptor in data['studyDesignDescriptors']:
                     temp_dict = {'studyID': studyID,
@@ -612,7 +619,6 @@ def getNMRinfo():
         # ------------------------ SAMPLE FILE ----------------------------------------
         #
         sample_temp = get_sample_file(studyID, sample_file)
-        # sample_temp2 = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + sample_file)
         sample_temp.insert(0, 'Study', studyID)
         sample_temp = DataFrameUtils.sample_cleanup(sample_temp)
 
@@ -622,7 +628,6 @@ def getNMRinfo():
 
         # ------------------------ ASSAY FILE -----------------------------------------
         for assay in assay_file:
-            # assay_temp = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + assay)
             assay_temp = get_assay_file(studyID, assay)
             if 'Acquisition Parameter Data File' not in list(assay_temp.columns):
                 continue
@@ -710,11 +715,11 @@ def getLCMSinfo():
 
 
 def getFileList2(studyID):
-    source = '/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
-    ws_url = app.config.get("WS_APP_BASE_LINK") + source
+    source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
+    ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
     try:
         request = urllib.request.Request(ws_url)
-        request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+        request.add_header('user_token', get_settings().auth.service_account.api_token)
         response = urllib.request.urlopen(request)
         content = response.read().decode('utf-8')
         j_content = json.loads(content)
@@ -749,9 +754,9 @@ def getFileList2(studyID):
 def getFileList(studyID):
     try:
         source = '/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
-        url = app.config.get("WS_APP_BASE_LINK") + source
+        url = get_host_internal_url() + source
         request = urllib.request.Request(url)
-        request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+        request.add_header('user_token', get_settings().auth.service_account.api_token)
         response = urllib.request.urlopen(request)
         content = response.read().decode('utf-8')
         j_content = json.loads(content)
@@ -792,10 +797,10 @@ def get_sample_file(studyID, sample_file_name):
     '''
     import io
     try:
-        source = '/ws/studies/{study_id}/sample'.format(study_id=studyID)
-        ws_url = app.config.get("WS_APP_BASE_LINK") + source
+        source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
+        ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
-        resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+        resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                             params={'sample_filename': sample_file_name})
         data = resp.text
         content = io.StringIO(data)
@@ -816,10 +821,10 @@ def get_assay_file(studyID, assay_file_name):
     '''
     import io
     try:
-        source = '/ws/studies/{study_id}/assay'.format(study_id=studyID)
-        ws_url = app.config.get("WS_APP_BASE_LINK") + source
+        source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
+        ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
-        resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+        resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                             params={'assay_filename': assay_file_name})
         data = resp.text
         content = io.StringIO(data)
@@ -839,10 +844,10 @@ def assay_sample_list(studyID):
     import io
 
     try:
-        source = '/ws/studies/{study_id}/investigation'.format(study_id=studyID)
-        ws_url = app.config.get('WS_APP_BASE_LINK') + source
+        source = '/metabolights/ws/studies/{study_id}/investigation'.format(study_id=studyID)
+        ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
-        resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+        resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token})
         buf = io.StringIO(resp.text)
 
         assay_list, sample_file = [], ''
@@ -883,8 +888,9 @@ def uniqueOrganism(studyID):
     :return: list of organisms
     '''
     try:
-        url = app.config.get("WS_APP_BASE_LINK") + '/ws/studies/{study_id}/organisms'.format(study_id=studyID)
-        resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+        host = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port)
+        url = f'{host}/{studyID}/organisms'
+        resp = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
         data = resp.json()
         org = []
         for organism in data['organisms']:

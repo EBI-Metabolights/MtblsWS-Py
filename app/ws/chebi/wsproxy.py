@@ -28,8 +28,7 @@ def ws_fault_exception_handler(func):
 
 class ChebiWsProxy(object):
 
-    def __init__(self, settings: ChebiWsSettings=None, flask_app=None):
-        self.app = flask_app
+    def __init__(self, settings: ChebiWsSettings=None):
         self.settings = settings
         self._service = None
 
@@ -41,10 +40,8 @@ class ChebiWsProxy(object):
     service = property(get_service)
 
     def setup(self):
-        if not self.app:
-            self.app = app
         if not self.settings:
-            self.settings = get_chebi_ws_settings(app)
+            self.settings = get_chebi_ws_settings()
         if self.settings.chebi_ws_service_binding_log_level == "WARNING":
             zeep_operation_log_level = logging.WARNING
         elif self.settings.chebi_ws_service_binding_log_level == "ERROR":
@@ -138,5 +135,5 @@ class ChebiWsProxy(object):
 
 
 @lru_cache(1)
-def get_chebi_ws_proxy(flask_app=None):
-    return ChebiWsProxy(settings=None, flask_app=flask_app)
+def get_chebi_ws_proxy():
+    return ChebiWsProxy()

@@ -22,6 +22,7 @@ import os
 from flask import request
 from flask_restful import Resource, fields, marshal_with
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.utils import metabolights_exception_handler
 from app.ws.isaAssay import log_request
@@ -34,32 +35,11 @@ Basic description of the Web Service
 
 logger = logging.getLogger('wslog')
 
-app_fields = {
-    'WsName': fields.String,
-    'WsVersion': fields.String,
-    'WsDescription': fields.String,
-    'WsURL': fields.String,
-}
-
-api_fields = {
-    'ApiVersion': fields.String,
-    'ApiDocumentation': fields.String,
-    'ApiSpecification': fields.String,
-    'IsatoolsApi': fields.String,
-    'METASPACE-Api': fields.String,
-    'mzml2isa': fields.String
-}
-
-about_fields = {
-    'WsApp': fields.Nested(app_fields),
-    'WsApi': fields.Nested(api_fields),
-}
-
 
 class About(Resource):
     """Basic description of the Web Service"""
     @swagger.operation(
-        summary="About this Web Service",
+        summary="About MetaboLights Web Service",
         notes="Basic description of the Web Service",
         nickname="about",
         responseMessages=[
@@ -69,35 +49,33 @@ class About(Resource):
             }
         ]
     )
-    @marshal_with(about_fields, envelope='AboutWS')
     def get(self):
 
         from flask import current_app as app
 
         """Get a basic description of the Web Service"""
         logger.info('Getting WS-about onto_information')
-        api = {"ApiVersion": app.config.get('API_VERSION'),
-               "ApiDocumentation": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".html",
-               "ApiSpecification": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".json",
-               "IsatoolsApi": app.config.get('ISA_API_VERSION'),
-               "METASPACE-Api": app.config.get('METASPACE_API_VERSION'),
-               "mzml2isa": app.config.get('MZML2ISA_VERSION')
+        api = {"version": get_settings().server.description.metabolights_api_version,
+               "documentation": get_settings().server.service.app_host_url + get_settings().server.service.api_doc + ".html",
+               "specification": get_settings().server.service.app_host_url + get_settings().server.service.api_doc + ".json",
+               "isatoolsApi": get_settings().server.description.isa_api_version,
+               "metaspaceApi": get_settings().server.description.metaspace_api_version,
+               "mzml2isa": get_settings().server.description.mzml2isa_api_version
                }
-        appl = {"WsName": app.config.get('WS_APP_NAME'),
-                "WsVersion": app.config.get('WS_APP_VERSION'),
-                "WsDescription": app.config.get('WS_APP_DESCRIPTION'),
-                "WsURL": app.config.get('WS_APP_BASE_LINK') + app.config.get('RESOURCES_PATH')
+        app = {"name": get_settings().server.description.ws_app_name,
+                "version": get_settings().server.description.ws_app_version,
+                "description": get_settings().server.description.ws_app_description,
+                "url": get_settings().server.service.app_host_url + get_settings().server.service.resources_path 
                 }
-        about = {'WsApp': appl, 'WsApi': api}
+        about = {"about": {'app': app, 'api': api}}
         return about
 
 
 class AboutServer(Resource):
     """Basic description of the Web Service host"""
     @swagger.operation(
-        summary="About this Web Service host",
-        notes="Basic description of the Web Service service",
-        nickname="about service",
+        summary="Name of the Web Service host.",
+        nickname="Web server host name",
         parameters=[
         ],
         responseMessages=[

@@ -3,11 +3,14 @@ import logging
 import os
 
 from flask import abort, current_app as app
+from app.config import get_settings
+from app.config.utils import get_private_ftp_relative_root_path
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
 from app.ws.db_connection import check_access_rights, get_submitted_study_ids_for_user, get_email, \
     query_study_submitters, get_public_studies, get_private_studies, get_study_by_type, get_all_non_public_studies
+from app.ws.settings.utils import get_study_settings
 
 logger = logging.getLogger('wslog')
 
@@ -64,13 +67,6 @@ def get_all_studies_for_user(user_token):
     return text_resp
 
 
-def get_queue_folder():
-    # Updated to remove Java WS /study/getQueueFolder dependency
-    queue_folder = app.config.get('STUDY_QUEUE_FOLDER')
-    logger.info('Found queue upload folder for this server as:' + queue_folder)
-    return queue_folder
-
-
 def get_permissions(study_id, user_token, obfuscation_code=None):
     """
     Check MTBLS-WS for permissions on this Study for this user
@@ -118,9 +114,8 @@ def get_study_location(study_id, user_token):
         get_permissions(study_id, user_token)
     if not read_access:
         abort(403)
-
-    location = os.path.join(app.config.get('STUDY_PATH'), study_id.upper())
-    location = os.path.join(app.config.get('DEBUG_STUDIES_PATH'), location.strip('/'))
+    settings = get_study_settings()
+    location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id.upper())
     if not os.path.isdir(location):
         abort(404, 'There is no path for %s' % (study_id,))
     logger.info('... found study folder %s', location)
@@ -128,7 +123,7 @@ def get_study_location(study_id, user_token):
 
 
 def create_ftp_folder(study_id, obfuscation_code, user_token, email_service=None, send_email=True):
-    private_ftp_sm = StorageService.get_ftp_private_storage(app)
+    private_ftp_sm = StorageService.get_ftp_private_storage()
     new_folder_name = study_id.lower() + '-' + obfuscation_code
 
     new_folder = False
@@ -142,7 +137,7 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service=None
         private_ftp_sm.remote.create_folder(folders, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
         new_folder = True
 
-    relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+    relative_studies_root_path = get_private_ftp_relative_root_path()
     relative_study_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), new_folder_name)
 
     if new_folder and send_email:
