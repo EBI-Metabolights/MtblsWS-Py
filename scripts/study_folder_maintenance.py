@@ -98,7 +98,7 @@ def maintain_folders(
     delete_unreferenced_metadata_files=False,
     apply_future_actions=False,
     cluster_mode:bool=False,
-    skip_if_metadata_is_sync:bool=True,
+    skip_if_metadata_is_sync: bool=True,
     check_ftp_folders=True
 ):
     if not target:
@@ -339,8 +339,12 @@ if __name__ == "__main__":
 
     check_ftp_folders = True
     if len(sys.argv) > 7 and sys.argv[7]:
-        cluster_mode = False if sys.argv[6].lower().startswith("false") else True
-            
+        cluster_mode = False if sys.argv[7].lower().startswith("false") else True
+
+    skip_if_metadata_is_sync = False
+    if len(sys.argv) > 8 and sys.argv[8]:
+        skip_if_metadata_is_sync = False if sys.argv[8].lower().startswith("false") else True
+                    
     items = set()
     if not study_ids:
         studies = StudyService.get_instance().get_all_study_ids()
@@ -366,7 +370,7 @@ if __name__ == "__main__":
         apply_future_actions=apply_future_actions,
         cluster_mode=cluster_mode,
         check_ftp_folders=check_ftp_folders,
-        skip_if_metadata_is_sync=True
+        skip_if_metadata_is_sync=skip_if_metadata_is_sync
     )
 
     print("end")

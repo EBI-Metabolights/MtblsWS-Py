@@ -1547,16 +1547,14 @@ class StudyFolderMaintenanceTask(object):
         log_path = os.path.join(internal_file_path, study_settings.internal_logs_folder_name)
         self._create_rw_storage_folder(log_path, 0o777, task_temp_path)
 
-
-        read_only_files_path = os.path.join(settings.study_readonly_files_root_path, study_id)
-        # self._create_rw_storage_folder(read_only_files_path, 0o755, task_temp_path)
+        self._create_rw_storage_folder(settings.study_readonly_files_root_path, 0o755, task_temp_path)
         readonly_files_symbolic_link_path = os.path.join(
             settings.study_metadata_files_root_path, study_id, study_settings.readonly_files_symbolic_link_name
         )        
         read_only_files_actual_path = os.path.join(settings.study_readonly_files_actual_root_path, study_id)
         legacy_study_files_path = os.path.join(settings.study_legacy_study_files_root_path, study_id)
         read_only_audit_files_path = os.path.join(settings.study_readonly_audit_files_root_path, study_id)
-        # self._create_rw_storage_folder(read_only_audit_files_path, 0o755, task_temp_path)
+        self._create_rw_storage_folder(settings.study_readonly_audit_files_root_path, 0o755, task_temp_path)
 
         audit_folder_symbolic_link_path: str = os.path.join(
             settings.study_metadata_files_root_path, study_id, study_settings.audit_files_symbolic_link_name
@@ -1583,6 +1581,7 @@ class StudyFolderMaintenanceTask(object):
         #         self.maintain_study_symlinks(legacy_study_files_path, read_only_files_path)
         # else:
         logger.info(f"{read_only_files_actual_path} folder will be used for study data files")
+        read_only_files_path = os.path.join(settings.study_readonly_files_root_path, study_id)
         self.maintain_study_symlinks(read_only_files_actual_path, read_only_files_path)
                 
         # if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists and os.path.exists(legacy_study_audit_path):
