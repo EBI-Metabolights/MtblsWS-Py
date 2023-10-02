@@ -36,6 +36,7 @@ from app.tasks.bash_client import BashClient
 from app.tasks.datamover_tasks.basic_tasks.execute_commands import execute_bash_command
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
 from app.tasks.lsf_client import LsfClient
+from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.cluster_jobs import submit_job
 from app.ws.db_connection import get_user_email
 from app.ws.isaApiClient import IsaApiClient
@@ -580,8 +581,12 @@ def search_and_update_maf(study_id: str, study_metadata_location: str, annotatio
     chebi_search_status = check_chebi_api()
     classyfire_search_status = check_classyfire_api()
     chebi_master_list_initialised = 'No'
-    if wsc.search_manager.curated_metabolite_table.initialized:
+    curated_metabolite_table: CuratedMetaboliteTable = CuratedMetaboliteTable.get_instance()
+    curated_metabolite_table.initialize_df()
+    if curated_metabolite_table.initialized:
         chebi_master_list_initialised = 'Yes'
+    else:
+        chebi_master_list_initialised = 'No'
     
     first_start_time = time.time()
     # Please note that the original MAF must exist without the _pubchem.tsv extension!!

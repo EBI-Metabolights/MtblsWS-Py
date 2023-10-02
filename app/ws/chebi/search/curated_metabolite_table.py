@@ -3,6 +3,7 @@ import math
 
 import numpy as np
 import pandas as pd
+from app.config import get_settings
 
 from app.ws.chebi.search.models import CuratedMetabolitesFileColumn
 from app.ws.chebi.search.utils import remove_few_characters_for_consistency, safe_split_string
@@ -29,19 +30,22 @@ class CuratedMetaboliteTable(object):
 
     def __init__(self, file_path=None):
         self.file_path = file_path
+        if not self.file_path:
+            self.file_path = get_settings().chebi.pipeline.curated_metabolite_list_file_location
         self.df = None
         self.initialized = False
         self.priority_row_set = set()
-        self.initialize_df()
 
     def initialize_df(self):
+        if self.initialized:
+            return
         try:
-            self.df: pd.DataFrame = pd.read_table(self.file_path, engine='python', header=None, dtype=str)
-            self.df = self.df.replace(np.nan, '', regex=True)
+            self.df: pd.DataFrame = pd.read_table(self.file_path, engine='python', header=None)
             self.df[self.COMPOUND_INDEX] = self.df[self.COMPOUND_INDEX].str.replace('\"', '', regex=True)
             logger.info(f"Curated table is loaded. Current row count is {len(self.df.index)}.")
             priority_row_list = self.df.index[self.df[self.PRIORITY_INDEX] >= 1].to_list()
             self.priority_row_set = set(priority_row_list)
+            self.df = self.df.replace(np.nan, '', regex=True)
             self.initialized = True
         except Exception as e:
             logger.warning(f"Error while reading curated metabolite table file {self.file_path}.")
@@ -49,7 +53,8 @@ class CuratedMetaboliteTable(object):
     def get_matching_rows(self, column_index: int, value: str):
         if self.df is None:
             return self.EMPTY_LIST
-
+        self.initialize_df()
+        
         input_value = ''.join(value.split())
         input_value = remove_few_characters_for_consistency(input_value).lower()
         search_column = self.df[column_index]
