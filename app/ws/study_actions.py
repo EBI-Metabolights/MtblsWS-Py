@@ -151,7 +151,7 @@ class StudyStatus(Resource):
         elif write_access:
             if db_study_status.lower() != 'submitted':  # and study_status != 'In Curation':
                 abort(403, "You can not change the study to this status")
-            validation_report: ValidationReportFile = get_validation_report()
+            validation_report: ValidationReportFile = get_validation_report(study_id=study_id)
 
             if validation_report.validation.status in ("success", "warning", "info"):
                 self.update_status(study_id, study_status, is_curator=is_curator,
