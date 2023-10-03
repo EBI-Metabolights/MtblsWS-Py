@@ -26,9 +26,9 @@ def get_studies(status_code: StudyStatus = None):
         cursor = connection.cursor()
         # Your SQL query
         if status_code:
-            sql_query = f"SELECT acc, obfuscationcode, status FROM studies where status = {status_code.value}"
+            sql_query = f"SELECT acc, obfuscationcode, status, submissiondate, releasedate  FROM studies where status = {status_code.value}"
         else:
-            sql_query = f"SELECT acc, obfuscationcode, status FROM studies"
+            sql_query = f"SELECT acc, obfuscationcode, status, submissiondate, releasedate FROM studies"
             
         # Execute the query
         cursor.execute(sql_query)

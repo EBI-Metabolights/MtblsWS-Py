@@ -3,6 +3,7 @@
 ROOT_PATH={{ ROOT_PATH }}
 STUDY_ID={{ STUDY_ID }}
 FILE_NAME_PATTERN={{ FILE_NAME_PATTERN }}
+VERIFY="FALSE"
 PACKAGE_TOOL="zip"
 
 ZIP_TOOL="zip"
@@ -23,25 +24,31 @@ cat $SEARCH_RESULT_FILE
 file_count=0
 converted_count=0
 verified_count=0
+skipped_count=0
 
-for i in ${arr[@]}; do
+for i in "${arr[@]}"; do
    ((file_count++))
    temp_path="${i}.temp.$PACKAGE_TOOL"
    final_path="${i}.$PACKAGE_TOOL"
    final_basename=$(basename "$final_path")
    if [ -f "$final_path" ]; then
-      if [ "$PACKAGE_TOOL" = "$TAR_TOOL" ]; then
-         tar -tf "$final_path"
-      else
-         unzip -t "$final_path" | grep 'No errors detected in compressed data of'
-      fi
+      if [ "$VERIFY" = "TRUE" ]; then
+         if [ "$PACKAGE_TOOL" = "$TAR_TOOL" ]; then
+            tar -tf "$final_path"
+         else
+            unzip -t "$final_path" | grep 'No errors detected in compressed data of'
+         fi
 
-       if [ $? -eq 0 ]; then
-	    ((verified_count++))
-          echo "SUCCESS: $STUDY_ID Current '$final_path' was verified"
-       else
-          echo "ERROR: $STUDY_ID Current '$final_path' was not verified!"
-       fi
+          if [ $? -eq 0 ]; then
+          ((verified_count++))
+             echo "SUCCESS: $STUDY_ID Current '$final_path' was verified"
+          else
+             echo "ERROR: $STUDY_ID Current '$final_path' was not verified!"
+          fi
+      else
+         ((skipped_count++))
+         echo "SKIP: $STUDY_ID Current '$final_path' exists."
+      fi
    else
       echo "$i"
       basename_path=$(basename "$i")
@@ -80,13 +87,13 @@ if [ $file_count -eq 0 ]; then
    exit 0
 fi
 
-total_success=$(($verified_count + $converted_count))
+total_success=$(($verified_count + $converted_count + $skipped_count))
 
 if [ $file_count -eq $total_success ]; then
-   echo "RESULT=SUCCESS $STUDY_ID. TOTAL $file_count FOLDERS WERE VERIFIED AND CONVERTED SUCCESSFULLY. Verified: $verified_count, Converted: $converted_count"
+   echo "RESULT=SUCCESS $STUDY_ID TOTAL $file_count FOLDERS WERE PROCESSED SUCCESSFULLY. Verified: $verified_count, Converted: $converted_count, Skipped: $skipped_count"
    exit 0
 else
-   echo "RESULT=ERROR $STUDY_ID: TOTAL FOLDERS: $file_count. Verified: $verified_count, Converted: $converted_count"
+   echo "RESULT=ERROR $STUDY_ID TOTAL FOLDERS: $file_count. Verified: $verified_count, Converted: $converted_count, Skipped: $skipped_count"
    exit $(($file_count - $total_success))
 fi
 
