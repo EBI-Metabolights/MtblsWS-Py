@@ -1961,7 +1961,8 @@ def create_pubchem_df(maf_df):
 def check_chebi_api():
     status = 'Failure'
     try:
-        url = get_settings().chebi.pipeline.chebi_pipeline_url
+        url = get_settings().chebi.service.connection.chebi_ws_wsdl
+        
         print_log("Checking CHEBI API...   ", mode='info')
         resp = requests.get(url, timeout=10)
         if resp.status_code == 200:
