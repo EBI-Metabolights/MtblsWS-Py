@@ -942,9 +942,9 @@ def is_valid_raw_file_column_entry(value: str) -> bool:
     :return: bool value indicating whether the entry is valid.
 
     """
-    valid_filetypes = get_settings().file_filters.raw_files_list
+    valid_filetypes = [x.lower() for x in get_settings().file_filters.raw_files_list]
     for filetype in valid_filetypes:
-        if value.endswith(filetype) and len(value) > len(filetype):
+        if value.lower().endswith(filetype) and len(value) > len(filetype):
             return True
     return False
 
@@ -963,10 +963,10 @@ def is_valid_derived_column_entry(value: str) -> dict:
         'valid': False,
         'is_text_file': False
     }
-    valid_filetypes = get_settings().file_filters.derived_files_list
+    valid_filetypes = [x.lower() for x in get_settings().file_filters.derived_files_list]
     valid_filetypes.append('.txt')
     for filetype in valid_filetypes:
-        if value.endswith(filetype):
+        if value.lower().endswith(filetype):
             result_dict['valid'] = True
             if filetype == '.txt':
                 result_dict['is_text_file'] = True
@@ -2041,7 +2041,7 @@ def job_status(job_id):
 
 def submitJobToCluser(command, section, study_internal_files_folder):
     logger.info("Starting cluster job for Validation : " + command)
-    status, message, job_out, job_err, log_file = submit_job(True, account=None, job_cmd=command, job_params=None, submitter=None, log=False)
+    status, message, job_out, job_err, log_file = submit_job(True, account=None, job_cmd=command, job_params=None, log=False)
 
     if status:
         start = 'Job <'
