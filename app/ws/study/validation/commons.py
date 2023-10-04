@@ -25,6 +25,7 @@ import re
 import subprocess
 import time
 import traceback
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -33,7 +34,7 @@ from app.config import get_settings
 
 from app.ws.cluster_jobs import submit_job
 from app.ws.db.schemes import Study
-from app.ws.db_connection import  update_validation_status, query_comments
+from app.ws.db_connection import  update_validation_status
 from app.ws.isaApiClient import IsaApiClient
 from app.config.model.study import StudySettings
 from app.ws.settings.utils import get_study_settings
@@ -837,7 +838,10 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
      referenced in the assay.
 
     """
-
+    settings = get_settings()
+    valid_derived_filetypes = [x.lower() for x in settings.file_filters.derived_files_list]
+    valid_raw_filetypes = [x.lower() for x in settings.file_filters.raw_files_list]
+    
     all_file_columns = []
     missing_all_rows = []
     all_assay_raw_files = []
@@ -894,14 +898,14 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
                     if value:
                         all_assay_raw_files.append(value)
                         raw_found = True
-                        raw_valid = is_valid_raw_file_column_entry(value)
+                        raw_valid = is_valid_raw_file_column_entry(value, valid_filetypes=valid_raw_filetypes)
                         raw_value = value
                 elif header == derived_file:
                     derived_tested = True
                     if value:
                         all_assay_derived_files.append(value)
                         derived_found = True
-                        derived_valid = is_valid_derived_column_entry(value)
+                        derived_valid = is_valid_derived_column_entry(value, valid_filetypes=valid_derived_filetypes)
                 else:
                     if not value:
                         val_type = error
@@ -933,7 +937,7 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
     return validations, all_assay_raw_files
 
 
-def is_valid_raw_file_column_entry(value: str) -> bool:
+def is_valid_raw_file_column_entry(value: str, valid_filetypes: List[str]=None) -> bool:
     """
     Checks whether the given value for the raw file is valid. Iterates over the list of valid filetypes, and if the
     value string contains a valid filetype, the loop breaks and returns true.
@@ -942,14 +946,15 @@ def is_valid_raw_file_column_entry(value: str) -> bool:
     :return: bool value indicating whether the entry is valid.
 
     """
-    valid_filetypes = [x.lower() for x in get_settings().file_filters.raw_files_list]
+    if not valid_filetypes:
+        valid_filetypes = [x.lower() for x in get_settings().file_filters.raw_files_list]
     for filetype in valid_filetypes:
         if value.lower().endswith(filetype) and len(value) > len(filetype):
             return True
     return False
 
 
-def is_valid_derived_column_entry(value: str) -> dict:
+def is_valid_derived_column_entry(value: str, valid_filetypes: List[str]=None) -> dict:
     """
     Checks whether the given value for the Derived Spectral Data File column is valid.Iterates over the list of valid
     filetypes, and if the value string contains a valid filetype, the loop breaks and returns true. It also checks
@@ -963,7 +968,8 @@ def is_valid_derived_column_entry(value: str) -> dict:
         'valid': False,
         'is_text_file': False
     }
-    valid_filetypes = [x.lower() for x in get_settings().file_filters.derived_files_list]
+    if not valid_filetypes:
+        valid_filetypes = [x.lower() for x in get_settings().file_filters.derived_files_list]
     valid_filetypes.append('.txt')
     for filetype in valid_filetypes:
         if value.lower().endswith(filetype):
