@@ -1,10 +1,10 @@
 variables:
-     APP_VERSION: "2.0.0"
-     API_VERSION: "2.0.0"
+     APP_VERSION: "2.1.0"
+     API_VERSION: "2.1.0"
      BUILD_SCRIPTS_ROOT_PATH: "/home/gitlab-runner/ci_cd/standalone/mtblsws-py"
 workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "staging"
 stages:
   - prepare
   - build
@@ -15,9 +15,6 @@ stages:
 build_version_files:
   stage: prepare
   rules:
-    - if: $CI_COMMIT_BRANCH == "development"
-      variables:
-        RELEASE_NAME: dev.${CI_PIPELINE_ID}
     - if: $CI_COMMIT_BRANCH == "master"
       variables:
         RELEASE_NAME: ${CI_PIPELINE_ID}
