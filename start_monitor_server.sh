@@ -50,7 +50,7 @@ fi
 PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log" | grep -v "grep" | awk '{ print $2 }' |  tr '\n' ' ')
 if [ -z "$PROCESS_ID" ]; then
     echo "CELERY BEAT will be started"
-    python3 -m celery -A app.tasks.worker:celery beat --logfile $LOG_PATH/celery_beat_${HOST}.log --loglevel info --detach
+    python3 -m celery -A app.tasks.worker:celery beat --logfile $LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log --loglevel info --detach
     if [ $? -eq 0 ]; then
         echo "Celery beat worker is up."
     else

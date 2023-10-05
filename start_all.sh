@@ -48,7 +48,7 @@ if [ -z "$PROCESS_ID" ]; then
     if [ $? -eq 0 ]; then
         echo "Celery monitor worker is up."
     else
-        echo "Celery monitor start task is failed."
+        echo "Celery monitor worker start task is failed."
         exit 1
     fi
 else
