@@ -5,6 +5,7 @@ api_version
 .secrets/
 .test_data
 .old/
+x_*/
 configs
 celerybeat-*
 .RData

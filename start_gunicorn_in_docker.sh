@@ -1,12 +1,6 @@
 #!/bin/bash
-
-HOST=$(hostname)
-echo "Starting Green Unicorn server on host $HOST "
-
-APPDIR=$PWD
-if [ -z "$LOGS_PATH" ]; then
-    LOGS_PATH=$APPDIR/logs
-fi
+SERVER_PORT=7007
+APPDIR="/app-root"
 
 if [ -z "$CONFIG_FILE_PATH" ]; then
     CONFIG_FILE_PATH="$APPDIR/config.yaml"
@@ -16,9 +10,11 @@ if [ -z "$SECRETS_PATH" ]; then
     SECRETS_PATH="$APPDIR/.secrets"
 fi
 
-export PYTHONPATH="$APPDIR:$PYTHONPATH"
+HOST=$(hostname)
+echo $HOST
 
-LOG=$LOGS_PATH/gunicorn_$HOST
+LOG_PATH=$APPDIR/logs
 
-#launch WS
-gunicorn --workers 3 --threads 2 -b 0.0.0.0:5000 --worker-class gevent --pid $LOGS_PATH/app_$HOST.pid --preload wsapp:app
+cd $APPDIR
+
+gunicorn -b 0.0.0.0:$SERVER_PORT --worker-class gevent --preload wsapp:app --workers 1 --threads 3 --pid $LOG_PATH/app_${HOST}_${SERVER_PORT}.pid  --log-level info
