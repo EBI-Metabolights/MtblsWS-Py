@@ -158,21 +158,12 @@ class cronjob(Resource):
             abort(403)
 
         if source == 'curation log-Database Query':
-            try:
-                logger.info('Updating curation log-Database Query')
-                curation_log_database_query()
-                return jsonify({'curation log update': True})
-            except Exception as e:
-                logger.info(e)
-                print(e)
+            logger.info('Updating curation log-Database Query')
+            return curation_log_database_query()
         elif source == 'curation log-Database update':
-            try:
-                logger.info('Updating curation log-Database update')
-                res = curation_log_database_update(starting_index, ending_index)
-                return jsonify(res)
-            except Exception as e:
-                logger.info(e)
-                print(e)
+            logger.info('Updating curation log-Database Update')
+            return curation_log_database_update(starting_index, ending_index)
+                
         elif source == 'MTBLS statistics':
             try:
                 logger.info('Updating MTBLS statistics')
@@ -234,125 +225,136 @@ def curation_log_database_query():
 
         data.insert(data.shape[1] - 1, column="percentage known", value=percentage_known)
 
-        token = get_settings().google.connection.google_sheet_api
+        google_sheet_api = get_settings().google.connection.google_sheet_api
+        google_sheet_api_dict = google_sheet_api.__dict__
 
         google_df = getGoogleSheet(get_settings().google.sheets.mtbls_curation_log, 'Database Query',
-                                   get_settings().google.connection.google_sheet_api)
+                                   google_sheet_api_dict)
 
         data.columns = google_df.columns
 
         replaceGoogleSheet(data, get_settings().google.sheets.mtbls_curation_log, 'Database Query',
-                           get_settings().google.connection.google_sheet_api)
+                           google_sheet_api_dict)
+        return jsonify({'curationlog sheet update': "Success"})
 
     except Exception as e:
         print(e)
         logger.error(e)
+        return jsonify({'curationlog sheet update': "Failed"})
+        
 
 
 def curation_log_database_update(starting_index, ending_index):
-    def execute_query(query):
+    try:
+        def execute_query(query):
+            try:
+                settings = get_settings()
+                params = settings.database.connection.dict()
+                conn = psycopg2.connect(**params)
+                cursor = conn.cursor()
+                cursor.execute(query)
+                conn.commit()
+                conn.close()
+
+            except psycopg2.Error as e:
+                print("Unable to connect to the database")
+                logger.info("Unable to connect to the database")
+                print(e.pgcode)
+                logger.info(e.pgcode)
+
+        google_sheet_api = get_settings().google.connection.google_sheet_api
+        google_sheet_api_dict = google_sheet_api.__dict__
+        
+        google_df = getGoogleSheet(get_settings().google.sheets.mtbls_curation_log, 'Database update',
+                                google_sheet_api_dict)
+
+        command_list = google_df['--Updates. Run this in the database on a regular basis'].tolist()
+        # empty_study = "update studies set studytype ='', species ='', placeholder ='', curator =''"
+        # command_list = [x for x in command_list if empty_study not in x]
+
+        # Find the maximum number of Metlite ID
         try:
             settings = get_settings()
             params = settings.database.connection.dict()
-            conn = psycopg2.connect(**params)
-            cursor = conn.cursor()
-            cursor.execute(query)
-            conn.commit()
-            conn.close()
+            connection = psycopg2.connect(**params)
+            cursor = connection.cursor()
+            select_Query = "select max(lpad(replace(acc, 'MTBLS', ''), 4, '0')) as acc_short from studies order by acc_short"
+            cursor.execute(select_Query)
+            result = cursor.fetchone()
+            max_acc_short = int(result[0])
+            logger.info(f'max_acc_short - {max_acc_short}')
+        except Exception as e:
+            logger.error("Retrieving acc from DB failed " + str(e))
+        res = []
+        e = 0
+        length_of_list = len(command_list)
+        logger.info(f'Length of  command_list- {length_of_list}')
+        # starting_index = 7300
+        # ending_index = 7316
+        logger.info(f'starting_index from request - {starting_index}')
+        logger.info(f'ending_index from request - {ending_index}')
 
-        except psycopg2.Error as e:
-            print("Unable to connect to the database")
-            logger.info("Unable to connect to the database")
-            print(e.pgcode)
-            logger.info(e.pgcode)
-            print(e.pgerror)
-            logger.info(e.pgcode)
-
-    google_df = getGoogleSheet(get_settings().google.sheets.mtbls_curation_log, 'Database update',
-                               get_settings().google.connection.google_sheet_api)
-
-    command_list = google_df['--Updates. Run this in the database on a regular basis'].tolist()
-    # empty_study = "update studies set studytype ='', species ='', placeholder ='', curator =''"
-    # command_list = [x for x in command_list if empty_study not in x]
-
-    # Find the maximum number of Metlite ID
-    try:
-        settings = get_settings()
-        params = settings.database.connection.dict()
-        connection = psycopg2.connect(**params)
-        cursor = connection.cursor()
-        select_Query = "select max(lpad(replace(acc, 'MTBLS', ''), 4, '0')) as acc_short from studies order by acc_short"
-        cursor.execute(select_Query)
-        result = cursor.fetchone()
-        max_acc_short = int(result[0])
-        logger.info(f'max_acc_short - {max_acc_short}')
-    except Exception as e:
-        logger.error("Retrieving acc from DB failed " + str(e))
-    res = []
-    e = 0
-    length_of_list = len(command_list)
-    logger.info(f'Length of  command_list- {length_of_list}')
-    # starting_index = 7300
-    # ending_index = 7316
-    logger.info(f'starting_index from request - {starting_index}')
-    logger.info(f'ending_index from request - {ending_index}')
-
-    if starting_index is None or starting_index.isnumeric() is False:
-        start_index = 0
-    else:
-        start_index = int(starting_index)
-
-    if ending_index is None or ending_index.isnumeric() is False:
-        end_index = length_of_list-1
-    else:
-        end_index = int(ending_index)
-
-    if start_index > end_index or start_index >= length_of_list:
-        start_index = 0
-
-    if end_index >= length_of_list:
-        max_of_itr = length_of_list - start_index - 1
-        end_index = length_of_list - 1
-    else:
-        max_of_itr = end_index - start_index
-
-    logger.info(f'starting_index for processing - {start_index}')
-    logger.info(f'ending_index for processing - {end_index}')
-    logger.info(f'maximum of iteration count- {max_of_itr}')
-
-    start_line = command_list[start_index]
-    end_line = command_list[end_index]
-    starting_study_acc = re.search("acc = '(.*?)'", start_line)[1]
-    ending_study_acc = re.search("acc = '(.*?)'", end_line)[1]
-    logger.info(f'starting_study_acc - {starting_study_acc}')
-    logger.info(f'ending_study_acc - {ending_study_acc}')
-
-    for x in range(length_of_list):
-        get_index = x + start_index
-        line = command_list[get_index]
-        if line and line.strip() != '':
-            organism = update_species(line)
-            if organism != '':
-                res.append(organism)
+        if starting_index is None or starting_index.isnumeric() is False:
+            start_index = 0
         else:
-            e = e + 1
-        if x == max_of_itr:
-            break
+            start_index = int(starting_index)
 
-    res += ['commit;']
-    sql = ''.join(res)
-    execute_query(sql)
-    logger.info("Query executed successfully!!")
-    response = {"number_studies_updated": len(res), "empty_rows": e}
-    return response
+        if ending_index is None or ending_index.isnumeric() is False:
+            end_index = length_of_list-1
+        else:
+            end_index = int(ending_index)
 
+        if start_index > end_index or start_index >= length_of_list:
+            start_index = 0
+
+        if end_index >= length_of_list:
+            max_of_itr = length_of_list - start_index - 1
+            end_index = length_of_list - 1
+        else:
+            max_of_itr = end_index - start_index
+
+        logger.info(f'starting_index for processing - {start_index}')
+        logger.info(f'ending_index for processing - {end_index}')
+        logger.info(f'maximum of iteration count- {max_of_itr}')
+
+        start_line = command_list[start_index]
+        end_line = command_list[end_index]
+        starting_study_acc = re.search("acc = '(.*?)'", start_line)[1]
+        ending_study_acc = re.search("acc = '(.*?)'", end_line)[1]
+        logger.info(f'starting_study_acc - {starting_study_acc}')
+        logger.info(f'ending_study_acc - {ending_study_acc}')
+
+        for x in range(length_of_list):
+            get_index = x + start_index
+            line = command_list[get_index]
+            if line and line.strip() != '':
+                organism = update_species(line)
+                if organism != '':
+                    res.append(organism)
+            else:
+                e = e + 1
+            if x == max_of_itr:
+                break
+
+        res += ['commit;']
+        sql = ''.join(res)
+        execute_query(sql)
+        logger.info("Query executed successfully!!")
+        response = {"number_studies_updated": len(res), "empty_rows": e}
+        return response
+    except Exception as e:
+            logger.error("Exception while updating Study Metadata to DB " + str(e))
+            response = {"Study Metadata to DB update": "Failed"}
+            return response
 
 def get_empty_studies():
     empty_email = []
     no_email = []
 
+    google_sheet_api = get_settings().google.connection.google_sheet_api
+    google_sheet_api_dict = google_sheet_api.__dict__
     g_sheet = getGoogleSheet(get_settings().google.sheets.mtbls_curation_log, 'Empty investigation files',
-                             token_path=get_settings().google.connection.google_sheet_api)
+                             google_sheet_api_dict)
     ignore_studies = g_sheet['studyID'].tolist()
     ignore_submitter = ['MetaboLights', 'Metaspace', 'Metabolon', 'Venkata Chandrasekhar', 'User Cochrane']
     
@@ -935,7 +937,7 @@ def setGoogleSheet(df, url, worksheetName, token_path):
     set_with_dataframe(wks, df)
 
 
-def getGoogleSheet(url, worksheetName, token_path):
+def getGoogleSheet(url, worksheetName, googlesheet_key_dict):
     '''
     get google sheet
     :param url: url of google sheet
@@ -943,7 +945,7 @@ def getGoogleSheet(url, worksheetName, token_path):
     :return: data frame
     '''
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(token_path, scope)
+    credentials = ServiceAccountCredentials.from_json_keyfile_dict(keyfile_dict=googlesheet_key_dict, scopes=scope)
     gc = gspread.authorize(credentials)
     # wks = gc.open('Zooma terms').worksheet('temp')
     wks = gc.open_by_url(url).worksheet(worksheetName)
@@ -953,7 +955,7 @@ def getGoogleSheet(url, worksheetName, token_path):
     return df
 
 
-def replaceGoogleSheet(df, url, worksheetName, token_path):
+def replaceGoogleSheet(df, url, worksheetName, googlesheet_key_dict):
     '''
     replace the old google sheet with new data frame, old sheet will be clear
     :param df: dataframe
@@ -962,7 +964,7 @@ def replaceGoogleSheet(df, url, worksheetName, token_path):
     :return: Nan
     '''
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(token_path, scope)
+    credentials = ServiceAccountCredentials.from_json_keyfile_dict(keyfile_dict=googlesheet_key_dict, scopes=scope)
     gc = gspread.authorize(credentials)
     wks = gc.open_by_url(url).worksheet(worksheetName)
     wks.clear()
