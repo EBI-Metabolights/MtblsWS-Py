@@ -196,11 +196,12 @@ class PublicStudyTweet(Resource):
     def twitter_client(twitter_credentials=None):
         if not twitter_credentials:
             twitter_credentials = get_settings().twitter.connection
-
-        consumer_key = twitter_credentials["consumer_key"]
-        consumer_secret = twitter_credentials["consumer_secret"]
-        access_token = twitter_credentials["token"]
-        access_token_secret = twitter_credentials["token_secret"]
+        
+        twitter_credentials_dict = twitter_credentials.__dict__
+        consumer_key = twitter_credentials_dict["consumer_key"]
+        consumer_secret = twitter_credentials_dict["consumer_secret"]
+        access_token = twitter_credentials_dict["token"]
+        access_token_secret = twitter_credentials_dict["token_secret"]
         client = tweepy.Client(consumer_key=consumer_key,
                        consumer_secret=consumer_secret,
                        access_token=access_token,
