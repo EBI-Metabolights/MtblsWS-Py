@@ -2,7 +2,7 @@ FROM python:3.8-slim-buster as compiler
 LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
 
 RUN apt-get clean && apt-get -y update
-RUN apt-get -y install build-essential python3-dev python3-pip libpq-dev libglib2.0-0 \
+RUN apt-get -y install build-essential python3-dev python3-pip libpq-dev libglib2.0-0 libsm6 libxrender1 libxext6 \
     && pip3 install --upgrade pip \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get -y autoremove --purge
@@ -21,7 +21,7 @@ RUN pip3 install -r requirements.txt
 
 FROM python:3.8-slim-buster as runner
 RUN apt-get -y update \
-    && apt-get -y install wget curl zip git p7zip-full bzip2 pigz pbzip2 zstd rsync openssh-client \
+    && apt-get -y install wget curl zip git p7zip-full bzip2 pigz pbzip2 zstd rsync openssh-client libglib2.0-0 libsm6 libxrender1 libxext6 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get -y autoremove --purge
 
@@ -30,7 +30,7 @@ ENV PYTHONUNBUFFERED 1
 
 COPY --from=compiler /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN apt-get -y update && apt-get -y libglib2.0-0
+RUN apt-get install -y libglib2.0-0 libsm6 libxrender1 libxext6
 ARG GROUP1_ID=2222
 ARG GROUP2_ID=2223
 ARG USER_ID=2222
