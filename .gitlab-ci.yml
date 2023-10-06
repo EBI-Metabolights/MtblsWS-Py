@@ -39,7 +39,7 @@ configure_deployment_files:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/prepare_deployment_files.sh"
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/deploy.sh"
 
-configure_datammover_environment:
+configure_datamover:
   stage: deploy
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/configure_datamover.sh"

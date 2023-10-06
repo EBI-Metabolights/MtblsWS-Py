@@ -54,3 +54,4 @@ celery[redis]
 rdkit==2023.3.3
 chembl-structure-pipeline==1.2.0
 toml
+Unidecode==1.3.7
