@@ -180,7 +180,8 @@ def get_referenced_file_set(study_id, metadata_path: str) -> Set[str]:
                     referenced_files.add(assay.filename)
                     assay_file_path = os.path.join(metadata_path, assay.filename)
                     if os.path.exists(assay_file_path):
-                        df: pd.DataFrame = pd.read_csv(assay_file_path, delimiter="\t", header=0, dtype=str)
+                        with open(assay_file_path, encoding="utf-8", errors="ignore") as fp:
+                            df: pd.DataFrame = pd.read_csv(fp, delimiter="\t", header=0, dtype=str)
                         if df is not None:
                             df = df.fillna("")
                         referenced_file_columns: List[str] = []
