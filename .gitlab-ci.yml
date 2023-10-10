@@ -42,6 +42,9 @@ build_singularity:
 deployment_files:
   stage: deploy
   rules:
+    - if: $K8S_DEPLOYMENT == "1"
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
     - if: $CI_COMMIT_BRANCH == "master"
       when: manual
       allow_failure: false
@@ -51,9 +54,6 @@ deployment_files:
       when: on_success
     - if: $CI_COMMIT_BRANCH == "development"
       when: on_success
-    - if: $K8S_DEPLOYMENT == "1"
-      variables:
-        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/prepare_deployment_files.sh"
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/deploy.sh"
@@ -66,3 +66,53 @@ configure_datamover:
         BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/configure_datamover.sh"
+
+  
+# standalone build
+
+standalone_build_docker:
+  stage: build
+  rules:
+    - if: $K8S_DEPLOYMENT != "1"
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/build_container.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/build_sif.sh"
+    
+standalone_configure_vm_server:
+  stage: build
+  rules:
+    - if: $K8S_DEPLOYMENT != "1"
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_server.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_version_files.sh"
+    
+standalone_configure_datamover:
+  stage: configure
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_datamover.sh"
+
+standalone_run_server:
+  stage: deploy
+  rules:
+    - if: $K8S_DEPLOYMENT != "1"
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: manual
+      allow_failure: false
+    - if: $CI_COMMIT_BRANCH == "staging"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == "test"
+      when: on_success
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_server.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_datamover.sh"
+
+standalone_un_additional_servers:
+  rules:
+    - if: $K8S_DEPLOYMENT != "1"
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: manual
+      allow_failure: true
+    - when: never
+  stage: deploy
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_additional_servers.sh"
