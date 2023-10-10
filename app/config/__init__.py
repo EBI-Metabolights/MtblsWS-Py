@@ -71,7 +71,7 @@ def get_settings():
         _last_update_check_timestamp = now
     
     if not _application_settings:
-        print("Configuration file will be updated.")
+        # print("Configuration file will be updated.")
         try:
             _application_settings = ApplicationSettings()
         except Exception as ex:

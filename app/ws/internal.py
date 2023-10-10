@@ -30,13 +30,13 @@ def get_banner():
         _last_banner_check_timestamp = now
     
     if not _banner:
-        print("Banner will be checked.")
+        # print("Banner will be checked.")
         try:
             redis = get_redis_server()
             new_banner = redis.get_value("metabolights:banner:message")
             if new_banner:
                 new_banner = new_banner.decode("utf-8")
-                if new_banner != _banner:
+                if new_banner != current_banner:
                     _banner = new_banner
                     print(f"Banner is updated. New banner message: {_banner}")
         except Exception as ex:
