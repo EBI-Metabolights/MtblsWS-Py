@@ -17,7 +17,7 @@ from app.ws.study.user_service import UserService
 settings: CelerySettings = get_settings().celery
 
 rs: RedisConnection = settings.broker
-broker_url = f'sentinel://{rs.redis_host}:{rs.redis_port}'
+broker_url = f'sentinel://{rs.redis_host}:{rs.redis_port}/{rs.redis_db}'
 
 
 # broker_url = f"redis://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}"
