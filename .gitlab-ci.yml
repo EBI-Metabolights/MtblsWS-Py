@@ -96,12 +96,14 @@ standalone_run_server:
   stage: deploy
   rules:
     - if: $K8S_DEPLOYMENT != "1"
-    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_COMMIT_BRANCH == "master" && $K8S_DEPLOYMENT != "1"
       when: manual
       allow_failure: false
-    - if: $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "staging" && $K8S_DEPLOYMENT != "1"
       when: on_success
-    - if: $CI_COMMIT_BRANCH == "test"
+    - if: $CI_COMMIT_BRANCH == "test" && $K8S_DEPLOYMENT != "1"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == "development" && $K8S_DEPLOYMENT != "1"
       when: on_success
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/restart_server.sh"
