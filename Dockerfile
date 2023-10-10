@@ -30,7 +30,7 @@ ENV PYTHONUNBUFFERED 1
 
 COPY --from=compiler /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN apt-get install -y libglib2.0-0 libsm6 libxrender1 libxext6
+
 ARG GROUP1_ID=2222
 ARG GROUP2_ID=2223
 ARG USER_ID=2222

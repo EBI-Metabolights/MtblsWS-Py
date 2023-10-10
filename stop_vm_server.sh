@@ -5,13 +5,6 @@ if [ -z "$SERVER_PORT" ]; then
     echo "SERVER PORT parameter is not defined. execute with port number"
     exit 1
 fi
-if [ -z "$CONFIG_FILE_PATH" ]; then
-    CONFIG_FILE_PATH="$APPDIR/config.yaml"
-fi
-
-if [ -z "$SECRETS_PATH" ]; then
-    SECRETS_PATH="$APPDIR/.secrets"
-fi
 
 HOST=$(hostname)
 APPDIR=$(pwd -P)

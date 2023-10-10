@@ -4,7 +4,7 @@ variables:
      BUILD_SCRIPTS_ROOT_PATH: "/home/gitlab-runner/ci_cd/k8s"
 workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development"
 stages:
   - configure
   - build
@@ -25,7 +25,7 @@ build_singularity:
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_sif.sh"
     
-configure_deployment_files:
+deployment_files:
   stage: deploy
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
@@ -34,6 +34,8 @@ configure_deployment_files:
     - if: $CI_COMMIT_BRANCH == "staging"
       when: on_success
     - if: $CI_COMMIT_BRANCH == "test"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == "development"
       when: on_success
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/prepare_deployment_files.sh"
