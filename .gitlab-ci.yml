@@ -87,7 +87,7 @@ standalone_configure_vm_server:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/update_version_files.sh"
     
 standalone_configure_datamover:
-  stage: configure
+  stage: build
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/update_datamover.sh"
 
