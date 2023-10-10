@@ -10,6 +10,7 @@ workflow:
 stages:
   - configure
   - build
+  - update_server
   - deploy
 
 checkout_configs:
@@ -75,21 +76,21 @@ standalone_build_docker:
   rules:
     - if: $K8S_DEPLOYMENT != "1"
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/build_container.sh"
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/build_sif.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_container.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_sif.sh"
     
 standalone_configure_vm_server:
-  stage: build
+  stage: update_server
   rules:
     - if: $K8S_DEPLOYMENT != "1"
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_server.sh"
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_version_files.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/update_server.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/update_version_files.sh"
     
 standalone_configure_datamover:
-  stage: build
+  stage: update_server
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_datamover.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/update_datamover.sh"
 
 standalone_run_server:
   stage: deploy
@@ -103,8 +104,8 @@ standalone_run_server:
     - if: $CI_COMMIT_BRANCH == "test"
       when: on_success
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_server.sh"
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_datamover.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/restart_server.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/restart_datamover.sh"
 
 standalone_un_additional_servers:
   rules:
@@ -115,4 +116,4 @@ standalone_un_additional_servers:
     - when: never
   stage: deploy
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_additional_servers.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/restart_additional_servers.sh"
