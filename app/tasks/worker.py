@@ -41,8 +41,7 @@ celery = Celery(
     ],
 )
 
-celery.conf.broker_transport_options = { 'master_name': "master-redis-ws" }
-celery.conf.broker_transport_options = { 'sentinel_kwargs': { 'password': rs.redis_password } }
+celery.conf.broker_transport_options = { 'master_name': "master-redis-ws", 'sentinel_kwargs': { 'password': rs.redis_password } }
 @lru_cache(1)
 def get_flask_app():
     flask_app = Flask(__name__)
