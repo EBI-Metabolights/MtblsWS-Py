@@ -1,7 +1,9 @@
 variables:
      APP_VERSION: "2.1.0"
      API_VERSION: "2.1.0"
-     BUILD_SCRIPTS_ROOT_PATH: "/home/gitlab-runner/ci_cd/k8s"
+     K8S_DEPLOYMENT: "0"
+     CICD_SCRIPTS_ROOT_PATH: "/home/gitlab-runner/ci_cd"
+     BUILD_SCRIPTS_ROOT_PATH: "$CICD_SCRIPTS_ROOT_PATH/standalone"
 workflow:
   rules:
     - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development"
@@ -12,16 +14,28 @@ stages:
 
 checkout_configs:
   stage: configure
+  rules:
+    - if: $K8S_DEPLOYMENT == "1"
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/checkout_configs.sh"
 
 build_docker:
   stage: build
+  rules:
+    - if: $K8S_DEPLOYMENT == "1"
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_container.sh"
 
 build_singularity:
   stage: build
+  rules:
+    - if: $K8S_DEPLOYMENT == "1"
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_sif.sh"
     
@@ -37,11 +51,18 @@ deployment_files:
       when: on_success
     - if: $CI_COMMIT_BRANCH == "development"
       when: on_success
+    - if: $K8S_DEPLOYMENT == "1"
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/prepare_deployment_files.sh"
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/deploy.sh"
 
 configure_datamover:
   stage: deploy
+  rules:
+    - if: $K8S_DEPLOYMENT == "1"
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/configure_datamover.sh"
