@@ -369,8 +369,8 @@ def getZoomaTerm(keyword, mapping=''):
 
     try:
         # url = 'http://snarf.ebi.ac.uk:8480/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ',"+")
-        url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
-        # url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
+        uri = 'services/annotate?propertyValue=' + keyword.replace(' ', "+")
+        url = os.path.join(get_settings().external_dependencies.api.zooma_api_url, uri)
         ssl._create_default_https_context = ssl._create_unverified_context
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf8')
@@ -420,9 +420,11 @@ def getBioportalTerm(keyword, ontology=''):
 
     try:
         if 'http:' in keyword:
-            url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+") + '&require_exact_match=true'
+            uri = 'search?q=' + keyword.replace(' ', "+") + '&require_exact_match=true'
         else:
-            url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+")
+            uri = 'search?q=' + keyword.replace(' ', "+")
+        
+        url = os.path.join(get_settings().external_dependencies.api.bioontology_api_url, uri)
 
         if ontology:
             ontology = [x.upper() for x in ontology]
@@ -468,8 +470,9 @@ def getWormsTerm(keyword):
         return res
 
     try:
-        url = 'http://www.marinespecies.org/rest/AphiaRecordsByName/{keyword}?like=true&marine_only=true&offset=1'.format(
+        uri = 'AphiaRecordsByName/{keyword}?like=true&marine_only=true&offset=1'.format(
             keyword=keyword.replace(' ', '%20'))
+        url = os.path.join(get_settings().external_dependencies.api.marine_species_api_url, uri)
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
@@ -496,7 +499,8 @@ def getWormsTerm(keyword):
 
 def getWoRMsID(term):
     try:
-        url = 'http://www.marinespecies.org/rest/AphiaIDByName/' + term.replace(' ', '%20') + "?marine_only=true"
+        uri = 'AphiaIDByName/' + term.replace(' ', '%20') + "?marine_only=true"
+        url = os.path.join(get_settings().external_dependencies.api.marine_species_api_url, uri)
         fp = urllib.request.urlopen(url)
         AphiaID = fp.read().decode('utf-8')
         if AphiaID != '-999':
