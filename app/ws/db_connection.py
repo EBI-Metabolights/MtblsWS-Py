@@ -109,39 +109,44 @@ query_submitted_study_ids_for_user = """
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(user_token)s and s.status=0;
     """
 
-get_next_mtbls_id = """
-select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s;
-"""
-
 insert_empty_study = """   
     insert into studies (id, acc, obfuscationcode, releasedate, status, studysize, submissiondate, 
     updatedate, validations, validation_status) 
     values ( 
-        (select nextval('hibernate_sequence')),
+        %(new_unique_id)s,
         %(acc)s, 
         %(obfuscationcode)s,
         %(releasedate)s,
         0, 0, current_timestamp, 
         current_timestamp, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
+    insert into study_user(userid, studyid) values (%(userid)s, %(new_unique_id)s);
+    LOCK TABLE stableid IN ACCESS EXCLUSIVE MODE;
+    update stableid set seq = (select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s)  
+    where prefix = %(stable_id_prefix)s; 
+    update studies set acc = 'MTBLS' || (select seq as current_acc from stableid where prefix = %(stable_id_prefix)s) 
+    where id = %(new_unique_id)s;
 """
 
-update_metaboligts_id_sequence = """
-    update stableid set seq = (select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s) 
-    where prefix = %(stable_id_prefix)s;
+
+insert_empty_study_with_study_id = """   
+    insert into studies (id, acc, obfuscationcode, releasedate, status, studysize, submissiondate, 
+    updatedate, validations, validation_status) 
+    values ( 
+        %(new_unique_id)s,
+        %(acc)s, 
+        %(obfuscationcode)s,
+        %(releasedate)s,
+        0, 0, current_timestamp, 
+        current_timestamp, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
+    insert into study_user(userid, studyid) values (%(userid)s, %(new_unique_id)s);
 """
-link_study_with_user = """
-insert into study_user(userid, studyid) values (%(userid)s, %(studyid)s);
+
+get_study_id_sql = """
+select acc from studies where id = %(unique_id)s;
 """
 
 get_user_id_sql = """
-select id from users where  lower(email) = %(email)s;
-"""
-get_study_id_sql = """
-select id from studies where  acc = %(acc)s;
-"""
-
-select_study_user_sql = """
-select * from study_user where userid = %(userid)s and studyid = %(userid)s;
+select id from users where lower(username)=%(username)s;
 """
 
 query_user_access_rights = """
@@ -806,65 +811,51 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
     conn = None
     postgresql_pool = None
     acc = study_id
+    releasedate = (datetime.datetime.today() + datetime.timedelta(days=365))
+    if not obfuscationcode:
+        obfuscationcode = str(uuid.uuid4())
     try:
         postgresql_pool, conn, cursor = get_connection()
         if not cursor:
             raise MetabolightsDBException(http_code=503, message="There is no database connection")
-        
-        stable_id_input = {"stable_id_prefix": "MTBLS"}
-        if not study_id:
-            cursor.execute(get_next_mtbls_id, stable_id_input)
-            result = cursor.fetchone()
-            if not result:
-                logger.error("There is not data prefix with MTBLS in stableid table")
-                raise ValueError()
-            data = result[0]
-            acc = f"MTBLS{data}"
-        if not obfuscationcode:
-            obfuscationcode = str(uuid.uuid4())
-        releasedate = (datetime.datetime.today() + datetime.timedelta(days=365))
-        content = {"acc": acc,
-                   "obfuscationcode": obfuscationcode,
-                   "releasedate": releasedate,
-                   "email": email}
-        cursor.execute(insert_empty_study, content)
+
         user_id = None
-        study_id = None
-        user_id_result = cursor.execute(get_user_id_sql, {"email": email})
-        if user_id_result:
-            result = user_id_result.fetchone()
+        cursor.execute(get_user_id_sql, {"username": email})
+        result = cursor.fetchone()
+        if result:
             user_id = result[0] if result else None
+
         if not user_id:
             message = f"User detail for {email} is not fetched."
             logger.error(message)
             raise MetabolightsDBException(http_code=501, message=message)
         
-        study_id_result = cursor.execute(get_study_id_sql, {"acc": acc})
-        if study_id_result:
-            result = study_id_result.fetchone()
-            study_id = result[0] if result else None
-        
-        if not study_id:
-            message = f"Study {acc} is not fetched."
-            logger.error(message)
-            raise MetabolightsDBException(http_code=501, message=message)
-        
-        cursor.execute(link_study_with_user, {"userid": user_id, "studyid": study_id})
-
-        study_user_result = cursor.execute(select_study_user_sql, {"userid": user_id, "studyid": study_id})
-        if study_user_result:
-            result = study_user_result.fetchone()
-            if not result:
-                message = f"Study {study_id} is not assigned to {email}."
-                raise MetabolightsDBException(http_code=501, message=message)
-        
-        cursor.execute(update_metaboligts_id_sequence, stable_id_input)
-
+        cursor.execute(f"SELECT nextval('hibernate_sequence')")
+        new_unique_id = cursor.fetchone()[0]
         conn.commit()
-        return acc
+        
+        content = {"acc": acc,
+                   "obfuscationcode": obfuscationcode,
+                   "releasedate": releasedate,
+                   "email": email,
+                   "new_unique_id": new_unique_id,
+                   "userid": user_id,
+                   "stable_id_prefix": "MTBLS"
+                   }
+        if not study_id:
+            cursor.execute(insert_empty_study, content)
+        else:
+            cursor.execute(insert_empty_study_with_study_id, content)
+        conn.commit()
+        cursor.execute(get_study_id_sql, {"unique_id": new_unique_id})
+        fetched_study = cursor.fetchone()
+        return fetched_study[0]
+        
     except Exception as ex:
         if conn:
             conn.rollback()
+        if isinstance(ex, MetabolightsDBException):
+            raise ex
         raise MetabolightsDBException(http_code=501, message="Error while creating study. Try later.", exception=ex)
     finally:
         if postgresql_pool and conn:

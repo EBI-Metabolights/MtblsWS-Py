@@ -2,7 +2,7 @@
 .build_number
 app_version
 api_version
-.secrets/
+.secrets*
 .test_data
 .old/
 x_*/

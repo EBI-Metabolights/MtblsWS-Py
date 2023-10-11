@@ -156,7 +156,7 @@ class ChEBIPipeLine(Resource):
 
         # param validation
         if study_id is None:
-            abort(404, messge='Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
         study_id = study_id.upper()
         # User authentication
         user_token = None
@@ -398,7 +398,7 @@ class SplitMaf(Resource):
 
         # param validation
         if study_id is None:
-            abort(404, messge='Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
 
         # User authentication
         user_token = None
@@ -439,7 +439,7 @@ class SplitMaf(Resource):
         else:
 
             if not annotation_file_name.endswith('_maf.tsv') and not annotation_file_name.endswith('_pubchem.tsv'):
-                abort(404, messge="Annotation file name must end with '_maf.tsv' or '_pubchem.tsv'")
+                abort(404, message="Annotation file name must end with '_maf.tsv' or '_pubchem.tsv'")
 
             maf_df, maf_len, new_maf_df, new_maf_len, split_file_name = \
                 check_maf_for_pipes(study_metdata_location, annotation_file_name)

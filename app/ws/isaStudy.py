@@ -3026,8 +3026,8 @@ class StudyDescriptors(Resource):
                 isa_study.design_descriptors[index] = updated_descriptor
                 break
         if not found:
-            abort(404, message='The descriptor %s was not found in this study, can not update.', descriptor_term)
-        logger.info("A copy of the previous files will %s saved", save_msg_str)
+            abort(404, message=f"The descriptor %s was not found in this study, can not update. {descriptor_term}")
+            logger.info("A copy of the previous files will %s saved. " + save_msg_str)
 
         # Check that the ontology is referenced in the investigation
         term_source = updated_descriptor.term_source
