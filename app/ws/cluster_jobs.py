@@ -19,10 +19,9 @@
 import subprocess
 import logging
 import os
-from flask_restful import Resource, reqparse
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
-from flask import request, abort
-from flask import current_app as app
+from flask import request
 from datetime import datetime
 from app.config import get_settings
 from app.ws.db_connection import check_access_rights

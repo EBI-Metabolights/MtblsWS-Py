@@ -22,8 +22,8 @@ import os
 
 import numpy as np
 import pandas as pd
-from flask import request, abort, current_app as app
-from flask_restful import Resource, reqparse
+from flask import request
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from app.config import get_settings
 
@@ -81,7 +81,7 @@ def get_dataframe(filename, file_path) -> pd.DataFrame:
                 file_df = read_tsv(file_path)
             return file_df
         except Exception:
-            abort(400, "The file name was not found")
+            abort(400, message="The file name was not found")
 
 class SimpleColumns(Resource):
     @swagger.operation(
@@ -174,17 +174,17 @@ class SimpleColumns(Resource):
             new_column_default_value = args['new_column_default_value']
 
         if new_column_name is None:
-            abort(404, "Please provide valid name for the new column")
+            abort(404, message="Please provide valid name for the new column")
 
         # param validation
         if study_id is None or file_name is None:
-            abort(404, 'Please provide valid parameters for study identifier and file name')
+            abort(404, message='Please provide valid parameters for study identifier and file name')
         study_id = study_id.upper()
 
         fname, ext = os.path.splitext(file_name)
         ext = ext.lower()
         if ext not in ('.tsv', '.csv', '.txt'):
-            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+            abort(400, message="The file " + file_name + " is not a valid TSV or CSV file")
 
         # User authentication
         user_token = None
@@ -201,7 +201,7 @@ class SimpleColumns(Resource):
         try:
             table_df = read_tsv(file_name)
         except FileNotFoundError:
-            abort(400, "The file " + file_name + " was not found")
+            abort(400, message="The file " + file_name + " was not found")
 
         audit_status, dest_path = write_audit_files(study_location)
 
@@ -292,18 +292,17 @@ class ComplexColumns(Resource):
             new_columns = None
 
         if new_columns is None:
-            abort(417, "Please provide valid key-value pairs for the new columns."
-                       "The JSON string has to have a 'data' element")
+            abort(417, message="Please provide valid key-value pairs for the new columns. The JSON string has to have a 'data' element")
 
         # param validation
         if study_id is None or file_name is None:
-            abort(404, 'Please provide valid parameters for study identifier and/or file name')
+            abort(404, message='Please provide valid parameters for study identifier and/or file name')
         study_id = study_id.upper()
 
         fname, ext = os.path.splitext(file_name)
         ext = ext.lower()
         if ext not in ('.tsv', '.csv', '.txt'):
-            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+            abort(400, message="The file " + file_name + " is not a valid TSV or CSV file")
 
         # User authentication
         user_token = None
@@ -320,7 +319,7 @@ class ComplexColumns(Resource):
         try:
             table_df = read_tsv(file_name)
         except FileNotFoundError:
-            abort(400, "The file " + file_name + " was not found")
+            abort(400, message="The file " + file_name + " was not found")
 
         audit_status, dest_path = write_audit_files(study_location)
 
@@ -437,23 +436,23 @@ class ComplexColumns(Resource):
 
         # param validation
         if study_id is None or file_name is None:
-            abort(417, "Please provide a study id and TSV file name")
+            abort(417, message="Please provide a study id and TSV file name")
 
         fname, ext = os.path.splitext(file_name)
         ext = ext.lower()
         if ext not in ('.tsv', '.csv', '.txt'):
-            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+            abort(400, message="The file " + file_name + " is not a valid TSV or CSV file")
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             delete_columns = data_dict['data']
         except Exception as e:
-            abort(417, str(e))
+            abort(417, message=str(e))
 
         # param validation
         columns = delete_columns['columns']
         if columns is None:
-            abort(417, 'Please ensure the JSON contains a "columns" element')
+            abort(417, message='Please ensure the JSON contains a "columns" element')
 
         # User authentication
         user_token = None
@@ -471,7 +470,7 @@ class ComplexColumns(Resource):
         
         tsv_file = os.path.join(study_location, file_name)
         if not os.path.isfile(tsv_file):
-            abort(406, "File " + file_name + " does not exist")
+            abort(406, message="File " + file_name + " does not exist")
         else:
             file_df = read_tsv(tsv_file)
             try:
@@ -576,17 +575,17 @@ class ColumnsRows(Resource):
             columns_rows = None
 
         if columns_rows is None:
-            abort(404, "Please provide valid key-value pairs for the cell value."
+            abort(404, message="Please provide valid key-value pairs for the cell value."
                        "The JSON string has to have a 'data' element")
 
         # param validation
         if study_id is None or file_name is None:
-            abort(404, 'Please provide valid parameters for study identifier and/or file name')
+            abort(404, message='Please provide valid parameters for study identifier and/or file name')
 
         fname, ext = os.path.splitext(file_name)
         ext = ext.lower()
         if ext not in ('.tsv', '.csv', '.txt'):
-            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+            abort(400, message="The file " + file_name + " is not a valid TSV or CSV file")
 
         study_id = study_id.upper()
 
@@ -605,7 +604,7 @@ class ColumnsRows(Resource):
         try:
             table_df = read_tsv(file_name)
         except FileNotFoundError:
-            abort(400, "The file " + file_name + " was not found")
+            abort(400, message="The file " + file_name + " was not found")
 
         for column in columns_rows:
             cell_value = column['value']
@@ -618,12 +617,12 @@ class ColumnsRows(Resource):
             except ValueError as e:
                 logger.error("(ValueError) Unable to find the required 'value', 'row' and 'column' values. Value: "
                              + cell_value + ", row: " + row_index + ", column: " + column + ". " + str(e))
-                abort(417, "(ValueError) Unable to find the required 'value', 'row' and 'column' values. Value: "
+                abort(417, message="(ValueError) Unable to find the required 'value', 'row' and 'column' values. Value: "
                       + cell_value + ", row: " + row_index + ", column: " + column)
             except IndexError:
                 logger.error("(IndexError) Unable to find the required 'value', 'row' and 'column' values. Value: "
                              + cell_value + ", row: " + row_index + ", column: " + column + ". " + str(e))
-                abort(417, "(IndexError) Unable to find the required 'value', 'row' and 'column' values. Value: "
+                abort(417, message="(IndexError) Unable to find the required 'value', 'row' and 'column' values. Value: "
                       + cell_value + ", row: " + row_index + ", column: " + column)
 
         # Write the new row back in the file
@@ -725,7 +724,7 @@ class AddRows(Resource):
             data = None
 
         if new_row is None:
-            abort(417, "Please provide valid data for updated new row(s). The JSON string has to have a 'rows' element")
+            abort(417, message="Please provide valid data for updated new row(s). The JSON string has to have a 'rows' element")
 
         try:
             for element in new_row:
@@ -735,12 +734,12 @@ class AddRows(Resource):
 
         # param validation
         if study_id is None or file_name is None:
-            abort(404, 'Please provide valid parameters for study identifier and TSV file name')
+            abort(404, message='Please provide valid parameters for study identifier and TSV file name')
 
         fname, ext = os.path.splitext(file_name)
         ext = ext.lower()
         if ext not in ('.tsv', '.csv', '.txt'):
-            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+            abort(400, message="The file " + file_name + " is not a valid TSV or CSV file")
 
         study_id = study_id.upper()
 
@@ -765,12 +764,12 @@ class AddRows(Resource):
         try:
             file_df = read_tsv(file_name)
         except FileNotFoundError:
-            abort(400, "The file name was not found")
+            abort(400, message="The file name was not found")
 
         # Validate column names in new rows
         valid_column_name, message = validate_row(file_df, new_row, "post")
         if not valid_column_name:
-            abort(417, message)
+            abort(417, message=message)
 
         if data:
             try:
@@ -808,7 +807,7 @@ class AddRows(Resource):
         try:
             df_data_dict = totuples(get_dataframe(file_basename, file_name), 'rows')
         except FileNotFoundError:
-            abort(400, "The file " + file_name + " was not found")
+            abort(400, message="The file " + file_name + " was not found")
         df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
         return {'header': df_header, 'data': df_data_dict, 'message': message}
 
@@ -891,12 +890,12 @@ class AddRows(Resource):
     def put(self, study_id, file_name):
         # param validation
         if study_id is None or file_name is None:
-            abort(406, 'Please provide valid parameters for study identifier and TSV file name')
+            abort(406, message='Please provide valid parameters for study identifier and TSV file name')
 
         fname, ext = os.path.splitext(file_name)
         ext = ext.lower()
         if ext not in ('.tsv', '.csv', '.txt'):
-            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+            abort(400, message="The file " + file_name + " is not a valid TSV or CSV file")
 
         study_id = study_id.upper()
 
@@ -907,7 +906,7 @@ class AddRows(Resource):
             new_rows = None
 
         if new_rows is None:
-            abort(404, "Please provide valid data for updated new row(s). "
+            abort(404, message="Please provide valid data for updated new row(s). "
                        "The JSON string has to have a 'data' element")
 
         for row in new_rows:
@@ -917,7 +916,7 @@ class AddRows(Resource):
                 row_index = None
 
             if new_rows is None or row_index is None:
-                abort(404, "Please provide valid data for the updated row(s). "
+                abort(404, message="Please provide valid data for the updated row(s). "
                            "The JSON string has to have an 'index:n' element in each (JSON) row. "
                            "The header row can not be updated")
 
@@ -937,7 +936,7 @@ class AddRows(Resource):
         try:
             file_df = read_tsv(file_name)
         except FileNotFoundError:
-            abort(400, "The file " + file_name + " was not found")
+            abort(400, message="The file " + file_name + " was not found")
 
         for row in new_rows:
             try:
@@ -1036,7 +1035,7 @@ class AddRows(Resource):
         fname, ext = os.path.splitext(file_name)
         ext = ext.lower()
         if ext not in ('.tsv', '.csv', '.txt'):
-            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+            abort(400, message="The file " + file_name + " is not a valid TSV or CSV file")
 
         study_id = study_id.upper()
 
@@ -1055,7 +1054,7 @@ class AddRows(Resource):
         try:
             file_df = read_tsv(file_name)
         except FileNotFoundError:
-            abort(400, "The file " + file_name + " was not found")
+            abort(400, message="The file " + file_name + " was not found")
 
         row_nums = row_num.split(",")
 
@@ -1071,7 +1070,7 @@ class AddRows(Resource):
         try:
             file_df = read_tsv(file_name)
         except FileNotFoundError:
-            abort(400, "The file " + file_name + " was not found")
+            abort(400, message="The file " + file_name + " was not found")
 
         df_data_dict = totuples(file_df.reset_index(), 'rows')
 
@@ -1151,7 +1150,7 @@ class AddRows(Resource):
         fname, ext = os.path.splitext(file_name)
         ext = ext.lower()
         if ext not in ('.tsv', '.csv', '.txt'):
-            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+            abort(400, message="The file " + file_name + " is not a valid TSV or CSV file")
 
         study_id = study_id.upper()
 
@@ -1170,7 +1169,7 @@ class AddRows(Resource):
         try:
             file_df = read_tsv(file_name)
         except FileNotFoundError:
-            abort(400, "The file " + file_name + " was not found")
+            abort(400, message="The file " + file_name + " was not found")
 
         row_nums = row_num.split(",")
             
@@ -1258,7 +1257,7 @@ class GetTsvFile(Resource):
         fname, ext = os.path.splitext(file_name)
         ext = ext.lower()
         if ext not in ('.tsv', '.csv', '.txt'):
-            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+            abort(400, message="The file " + file_name + " is not a valid TSV or CSV file")
 
         study_id = study_id.upper()
         file_name_param = file_name  # store the passed filename for simplicity
@@ -1308,7 +1307,7 @@ class GetTsvFile(Resource):
             else:
                 file_df = read_tsv(file_name)
         except FileNotFoundError:
-            abort(400, "The file " + file_name + " was not found")
+            abort(400, message="The file " + file_name + " was not found")
 
         df_data_dict = totuples(file_df.reset_index(), 'rows')
 
@@ -1423,7 +1422,7 @@ class GetAssayMaf(Resource):
         try:
             file_df = read_tsv_with_filter(maf_file_path)
         except FileNotFoundError:
-            abort(400, "The file " + maf_file_path + " was not found")
+            abort(400, message="The file " + maf_file_path + " was not found")
 
         df_data_dict = totuples(file_df.reset_index(), 'rows')
         result = {'content': {'metaboliteAssignmentFileName': maf_file, 'data': df_data_dict}, 'message': None, "err": None}

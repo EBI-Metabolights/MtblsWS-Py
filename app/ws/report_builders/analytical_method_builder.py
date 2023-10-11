@@ -8,7 +8,7 @@ import pandas
 import numpy
 from pandas import DataFrame
 
-from flask import current_app as app, abort
+from flask_restful import abort
 from oauth2client.service_account import ServiceAccountCredentials
 from googleapiclient.discovery import build
 from app.config import get_settings
@@ -260,13 +260,13 @@ class AnalyticalMethodBuilder:
             except Exception as e:
                 message = f'Problem with writing report to csv file: {str(e)}'
                 logger.error(message)
-                abort(500, message)
+                abort(500, message=message)
         else:
             message = 'Unexpected error in concatenating dataframes - end result is empty. Check the globals.json file ' \
                   'exists and if so, has been recently generated. Check the spelling of the study type given as a '\
                   'parameter'
             logger.error(message)
-            abort(500, message)
+            abort(500, message=message)
 
         if self.g_drive:
             # there is a bunch of stuff here that would be good to write into a little google interface class,
@@ -336,7 +336,7 @@ class AnalyticalMethodBuilder:
                 msg = f'The queried study type {self.studytype} is invalid. Check spelling and punctuation including ' \
                       f'hyphens: {str(e)}'
                 logger.error(msg)
-                abort(400, msg)
+                abort(400, message=msg)
         return specified_study_data
 
     def _builder_report(self) -> str:

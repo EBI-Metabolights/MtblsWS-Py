@@ -2,8 +2,7 @@ import json
 import logging
 import os
 
-from flask import abort, current_app as app
-from app.config import get_settings
+from flask_restful import abort
 from app.config.utils import get_private_ftp_relative_root_path
 
 from app.services.storage_service.acl import Acl
@@ -117,8 +116,8 @@ def get_study_location(study_id, user_token):
     settings = get_study_settings()
     location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id.upper())
     if not os.path.isdir(location):
-        abort(404, 'There is no path for %s' % (study_id,))
-    logger.info('... found study folder %s', location)
+        abort(404, message='There is no path for %s' % (study_id,))
+    logger.debug('... found study folder %s', location)
     return location
 
 

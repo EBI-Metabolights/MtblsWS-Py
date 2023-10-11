@@ -18,8 +18,6 @@
 
 import logging
 
-from flask import abort
-from flask import current_app as app
 from flask import request
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger

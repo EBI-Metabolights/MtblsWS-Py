@@ -16,16 +16,14 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import json
 import logging
 
-import gspread
 import pandas as pd
-from flask import request, abort, current_app as app, jsonify
-from flask_restful import Resource
+from flask import request
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from jira import JIRA
-from oauth2client.service_account import ServiceAccountCredentials
+
 from app.config import get_settings
 
 from app.ws.db_connection import get_all_studies

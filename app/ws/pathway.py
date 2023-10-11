@@ -21,7 +21,7 @@ from urllib import request as urllib_request
 
 import pandas as pd
 import requests
-from flask import request, jsonify, current_app as app
+from flask import request, jsonify
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from app.config import get_settings

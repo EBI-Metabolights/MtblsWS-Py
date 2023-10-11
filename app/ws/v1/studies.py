@@ -1,7 +1,7 @@
 
 import logging
 
-from flask import current_app as app, request
+from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 
@@ -82,7 +82,7 @@ class V1StudyDetail(Resource):
                 if user_token:
                     UserService.get_instance().validate_user_has_write_access(user_token, study_id)
                 else:
-                    abort(http_status_code=403)
+                    abort(403)
                     
             study_settings = get_study_settings()
             study_folders = study_settings.mounted_paths.study_metadata_files_root_path

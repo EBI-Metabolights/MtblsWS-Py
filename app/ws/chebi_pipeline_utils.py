@@ -21,9 +21,8 @@ import pronto
 import pubchempy as pcp
 import requests
 import subprocess
-from flask import request, abort, current_app as app, Flask
-from flask_restful import Resource, reqparse
-from flask_restful_swagger import swagger
+from flask import Flask
+from flask_restful import abort
 from pubchempy import get_compounds
 from zeep import Client
 from unidecode import unidecode
@@ -32,20 +31,17 @@ from app.config import get_settings
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage import Storage
 from app.services.storage_service.storage_service import StorageService
-from app.tasks.bash_client import BashClient
 from app.tasks.datamover_tasks.basic_tasks.execute_commands import execute_bash_command
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
-from app.tasks.lsf_client import LsfClient
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.cluster_jobs import submit_job
 from app.ws.db_connection import get_user_email
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
-from app.ws.study.folder_utils import write_audit_files, get_all_files_from_filesystem
+from app.ws.study.folder_utils import  get_all_files_from_filesystem
 from app.ws.study.study_service import StudyService
-from app.ws.study.user_service import UserService
-from app.ws.utils import read_tsv, write_tsv, get_assay_file_list, safe_str
+from app.ws.utils import read_tsv, write_tsv, safe_str
 from chembl_structure_pipeline.standardizer import parse_molblock, update_mol_valences
 from rdkit import Chem
 
@@ -314,9 +310,9 @@ def check_maf_for_pipes(study_location, annotation_file_name):
     try:
         maf_df = read_tsv(annotation_file)
     except FileNotFoundError:
-        abort(400, "The file " + annotation_file + " was not found")
+        abort(400, message="The file " + annotation_file + " was not found")
     except Exception as e:
-        abort(400, "Errors reading file " + annotation_file + " " + str(e))
+        abort(400, message="Errors reading file " + annotation_file + " " + str(e))
     maf_len = len(maf_df.index)
 
     # Any rows to split?
@@ -424,10 +420,10 @@ def get_sample_details(study_id, user_token, study_location):
             sample_df = read_tsv(os.path.join(study_location, sample_file))
     except FileNotFoundError:
         print_log("Error: Could not find ISA-Tab metadata files", mode='error')
-        abort(500, 'Error: Could not find ISA-Tab metadata files')
+        abort(500, message='Error: Could not find ISA-Tab metadata files')
     except Exception as e:
         print_log("Error: Parsing ISA-Tab metadata files " + str(e), mode='error')
-        abort(500, "Error: Parsing ISA-Tab metadata files" + str(e))
+        abort(500, message="Error: Parsing ISA-Tab metadata files" + str(e))
 
     print_log("Reading ISA-Tab sample file took %s seconds" % round(time.time() - start_time, 2))
 
@@ -613,7 +609,7 @@ def search_and_update_maf(study_id: str, study_metadata_location: str, annotatio
         maf_df = read_tsv(annotation_file_name)
         maf_len = len(maf_df.index)
     except FileNotFoundError:
-        abort(400, "The file " + annotation_file_name + " was not found")
+        abort(400, message="The file " + annotation_file_name + " was not found")
     # CHEBI-PIPELINE annotation folder creation remotely
     
     if obfuscation_code:  # So the curators can FTP new files into the private upload folder for the study
@@ -1797,7 +1793,7 @@ def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_t
     client = get_chebi_client()
     if not client:
         print_log("    -- Could not set up any ChEBI webservice calls. ")
-        abort(500, 'ERROR: Could not set up any direct ChEBI webservice calls, ChEBI WS may be down?')
+        abort(500, message='ERROR: Could not set up any direct ChEBI webservice calls, ChEBI WS may be down?')
         return chebi_id, inchi, inchikey, name, smiles, formula, search_type
 
     try:

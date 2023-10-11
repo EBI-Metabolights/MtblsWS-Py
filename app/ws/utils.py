@@ -40,8 +40,6 @@ import psycopg2
 import requests
 
 from urllib import request as urllib_request
-from flask import current_app as app
-from flask import request, abort
 from flask_restful import abort
 from isatools.model import Protocol, ProtocolParameter, OntologySource
 from lxml import etree
@@ -1306,8 +1304,8 @@ def safe_str(obj):
 
 def val_email(email=None):
     email_username_pattern = '^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$'
-    if not re.search(email_username_pattern, email):
-        abort(406, "Incorrect email " + email)
+    if not email or not re.search(email_username_pattern, email):
+        abort(406, message="Incorrect email " + email)
 
 
 def get_new_password_and_api_token():

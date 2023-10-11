@@ -21,7 +21,7 @@ import os
 
 from lxml import etree
 
-from flask import request, abort, current_app as app, jsonify
+from flask import request, jsonify
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from app.config import get_settings
@@ -106,7 +106,7 @@ class Convert2ISAtab(Resource):
         status, message = convert_to_isa(study_location, study_id)
 
         if not status:
-            abort(417, message)
+            abort(417, message=message)
         return message
 
 

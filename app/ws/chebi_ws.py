@@ -2,8 +2,8 @@ import logging
 import os
 import io
 import requests
-from flask import request, abort, Response, current_app as app
-from flask_restful import Resource
+from flask import request, Response
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from app.config import get_settings
 
@@ -56,10 +56,10 @@ class ChebiLiteEntity(Resource):
         log_request(request)
 
         if not compound_name:
-            abort(400, "Invalid compound name")
+            abort(400, messge="Invalid compound name")
 
         if not get_chebi_ws_proxy():
-            abort(501, "Remote server error")
+            abort(501, messge="Remote server error")
 
         try:
             search_result = get_chebi_ws_proxy().get_lite_entity_list(compound_name.lower(),
@@ -67,14 +67,14 @@ class ChebiLiteEntity(Resource):
                                                                          StarsCategory.ALL)
 
             if not search_result:
-                return abort(404, f"Entity not found with name {compound_name}")
+                return abort(404, messge=f"Entity not found with name {compound_name}")
 
             result = list()
             for search in search_result:
                 result.append(search.dict())
             return result
         except ChebiWsException as e:
-            abort(501, "Remote server error")
+            abort(501, messge="Remote server error")
 
 
 class ChebiEntity(Resource):
@@ -98,20 +98,20 @@ class ChebiEntity(Resource):
         log_request(request)
 
         if not chebi_id:
-            abort(400, "Invalid ChEBI id")
+            abort(400, messge="Invalid ChEBI id")
 
         if not get_chebi_ws_proxy():
-            abort(501, "Remote server error")
+            abort(501, messge="Remote server error")
 
         try:
             search_result = get_chebi_ws_proxy().get_complete_entity(chebi_id)
 
             if not search_result:
-                return abort(404, f"Entity not found with ChEBI id {chebi_id}")
+                return abort(404, messge=f"Entity not found with ChEBI id {chebi_id}")
 
             return search_result.dict()
         except ChebiWsException as e:
-            abort(501, "Remote server error", e.message)
+            abort(501, messge="Remote server error", e.message)
 
 
 class ChebiImageProxy(Resource):
@@ -137,7 +137,7 @@ class ChebiImageProxy(Resource):
         chebiIdentifier = chebiIdentifier.replace(".png", "")
         
         if not chebiIdentifier.isnumeric() or len(chebiIdentifier) > 8:
-            abort(404, "invalid chebi id")
+            abort(404,messge= "invalid chebi id")
         chebi_url = "https://www.ebi.ac.uk/chebi/displayImage.do"
         default_params = "defaultImage=true&imageIndex=0&dimensions=500&scaleMolecule=false"
         chebi_id_param = f"chebiId=CHEBI:{chebiIdentifier}"
@@ -154,4 +154,4 @@ class ChebiImageProxy(Resource):
                 return Response(bytes, mimetype="image/png", direct_passthrough=True)
 
         except Exception as exc:
-            abort(404, f"{str(exc)}")
+            abort(404, messge=f"{str(exc)}")

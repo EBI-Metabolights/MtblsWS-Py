@@ -101,7 +101,7 @@ class MetaspacePipeLine(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
         study_id = study_id.upper()
 
         # User authentication
@@ -155,7 +155,7 @@ class MetaspacePipeLine(Resource):
                     elif metaspace_password and metaspace_email:
                         sm.login(email=metaspace_email, password=metaspace_password, api_key=None)
                     else:
-                        abort(406, "No METASPACE API key or username/password provided.")
+                        abort(406, message="No METASPACE API key or username/password provided.")
 
                     if not os.path.isdir(study_location):
                         os.makedirs(study_location, exist_ok=True)
@@ -174,9 +174,9 @@ class MetaspacePipeLine(Resource):
                                                      obfuscation_code=obfuscation_code,
                                                      sm_instance=sm)
             except KeyError:
-                abort(406, "No 'project' parameter was provided.")
+                abort(406, message="No 'project' parameter was provided.")
             except AttributeError as e:
-                abort(417, "Missing attribute/element in JSON string" + str(e))
+                abort(417, message="Missing attribute/element in JSON string" + str(e))
             except Exception as e:
                 abort(417, str(e))
 

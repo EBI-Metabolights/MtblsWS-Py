@@ -21,9 +21,8 @@ import os
 import numpy as np
 import pandas as pd
 
-from flask import request, abort
-from flask.json import jsonify
-from flask_restful import Resource, reqparse
+from flask import request
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from app.utils import metabolights_exception_handler
 from app.ws.mtblsWSclient import WsClient
@@ -144,13 +143,13 @@ class CompareTsvFiles(Resource):
             filename2 = args['filename2']if args['filename2'] else None
         if not filename1 or not filename2:
             logger.warning("Missing TSV filenames.")
-            abort(404, "Missing TSV filenames.")
+            abort(404, messge="Missing TSV filenames.")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
-            abort(401, "Study does not exist or your do not have access to this study.")
+            abort(401, messge="Study does not exist or your do not have access to this study.")
         df1 = read_tsv(str(os.path.join(study_location, filename1)))
         df2 = read_tsv(str(os.path.join(study_location, filename2)))
         diff_df = diff_pd(df1, df2)

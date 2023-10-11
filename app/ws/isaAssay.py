@@ -24,7 +24,7 @@ import os
 import os.path
 from typing import Dict, List, Set, Tuple
 
-from flask import request, current_app as app
+from flask import request
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from isatools.model import Extract, Sample, OntologyAnnotation, Assay, Protocol, Study, ProtocolParameter
@@ -519,7 +519,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                 abort(412)
 
         except (ValidationError, Exception):
-            abort(400, 'Incorrect JSON provided')
+            abort(400, message='Incorrect JSON provided')
         study_metadata_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, study_id)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
                                                          skip_load_tables=True, study_location=study_metadata_location)
@@ -631,7 +631,7 @@ def create_assay(assay_type, columns, study_id, ontology, output_folder=None):
         writer.writerow(tidy_data_row)
         file.close()
     except (FileNotFoundError, Exception):
-        abort(500, 'Could not write the assay file')
+        abort(500, message='Could not write the assay file')
 
     return file_name, assay, protocols, overall_technology
 
@@ -701,7 +701,7 @@ def update_assay_column_values(columns, assay_file_name, maf_file_name=None):
     try:
         table_df = read_tsv(assay_file_name)
     except FileNotFoundError:
-        abort(400, "The file " + assay_file_name + " was not found")
+        abort(400, message="The file " + assay_file_name + " was not found")
 
     for key_val in columns:  # These are the values from the JSON passed
         column_header = key_val['name']
@@ -738,7 +738,7 @@ def update_cell(table_df, column_index, cell_value):
         for row_val in range(table_df.shape[0]):
             table_df.iloc[int(0), int(column_index)] = cell_value
     except ValueError:
-        abort(417, "Unable to find the required 'value', 'row' and 'column' values")
+        abort(417, message="Unable to find the required 'value', 'row' and 'column' values")
 
 
 class AssayProcesses(Resource):
@@ -1245,7 +1245,7 @@ class AssaySamples(Resource):
                 abort(400)
         except (ValidationError, Exception) as err:
             logger.warning("Bad format JSON request.", err)
-            abort(400, err)
+            abort(400, message=str(err))
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
@@ -1267,7 +1267,7 @@ class AssaySamples(Resource):
         if sample_name:
             if len(sample_list) > 1:
                 logger.warning("Requesting name update for more than one sample")
-                abort(400, "Requesting name update for more than one sample")
+                abort(400, message="Requesting name update for more than one sample")
             sample = sample_list[0]
             if self.update_sample(isa_study, sample_name, sample):
                 updated_samples.append(sample)

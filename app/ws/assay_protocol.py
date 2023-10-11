@@ -19,8 +19,7 @@
 import logging
 import os
 
-from flask import abort, jsonify
-from flask import request
+from flask import request, jsonify
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 
@@ -115,7 +114,7 @@ class GetProtocolForAssays(Resource):
                 try:
                     file_df = read_tsv(file_name)
                 except FileNotFoundError:
-                    abort(400, "The file " + file_name + " was not found")
+                    abort(400, message="The file " + file_name + " was not found")
 
                 all_rows_dict = totuples(file_df.reset_index(), 'rows')
                 all_rows = all_rows_dict['rows']

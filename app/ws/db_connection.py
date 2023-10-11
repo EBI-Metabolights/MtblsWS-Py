@@ -25,7 +25,6 @@ from typing import Optional
 
 import psycopg2
 import psycopg2.extras
-from flask import current_app as app, abort
 from psycopg2 import pool
 from app.config import get_settings
 from app.utils import MetabolightsDBException
@@ -131,7 +130,18 @@ update_metaboligts_id_sequence = """
     where prefix = %(stable_id_prefix)s;
 """
 link_study_with_user = """
-insert into study_user(userid, studyid) select u.id, s.id from users u, studies s where lower(u.email) = %(email)s and acc=%(acc)s;
+insert into study_user(userid, studyid) values (%(userid)s, %(studyid)s);
+"""
+
+get_user_id_sql = """
+select id from users where  lower(email) = %(email)s;
+"""
+get_study_id_sql = """
+select id from studies where  acc = %(acc)s;
+"""
+
+select_study_user_sql = """
+select * from study_user where userid = %(userid)s and studyid = %(userid)s;
 """
 
 query_user_access_rights = """
@@ -285,15 +295,15 @@ def get_user(username):
         data = [dict((cursor.description[i][0], value) for i, value in enumerate(row)) for row in cursor.fetchall()]
     except Exception as e:
         logger.error('An error occurred while retrieving user {0}: {1}'.format(username, e))
-        abort(500)
+        raise MetabolightsDBException(exception=e, http_code=500, message=f'An error occurred while retrieving user {username}')
     finally:
         release_connection(postgresql_pool, conn)
 
     if data:
         return {'user': fixUserDictKeys(data[0])}
     else:
-        # no user found by that username, abort with 404
-        abort(404, 'User with username {0} not found.'.format(username))
+        # no user found by that username, fail with 404
+        raise MetabolightsDBException(http_code=404, message=f'username {username} not found.')
 
 
 def get_all_private_studies_for_user(user_token):
@@ -630,7 +640,7 @@ def mtblc_on_chebi_accession(chebi_id):
 
     if not chebi_id.startswith('CHEBI'):
         logger.error("Incorrect ChEBI accession number string pattern")
-        abort(406, "%s incorrect ChEBI accession number string pattern" % chebi_id)
+        raise MetabolightsDBException(message=f"{chebi_id} is incorrect ChEBI accession number string pattern", http_code=406)
 
     # Default query to get the biosd accession
     query = "select acc from ref_metabolite where temp_id = %(chebi_id)s;"
@@ -767,11 +777,14 @@ def get_user_email(user_token):
     input = "select lower(email) from users where apitoken = %(apitoken)s;"
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(input, {'apitoken': user_token})
-        data = cursor.fetchone()[0]
-        release_connection(postgresql_pool, conn)
-        return data
+        if cursor:
+            cursor.execute(input, {'apitoken': user_token}) 
+            data = cursor.fetchone()[0]
+            release_connection(postgresql_pool, conn)
+            return data
+        return False
     except Exception as e:
+        logger.warning(f"User is not fetched for token {user_token}")
         return False
 
 
@@ -792,9 +805,12 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
     email = email.lower()
     conn = None
     postgresql_pool = None
+    acc = study_id
     try:
         postgresql_pool, conn, cursor = get_connection()
-        acc = study_id
+        if not cursor:
+            raise MetabolightsDBException(http_code=503, message="There is no database connection")
+        
         stable_id_input = {"stable_id_prefix": "MTBLS"}
         if not study_id:
             cursor.execute(get_next_mtbls_id, stable_id_input)
@@ -812,18 +828,47 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
                    "releasedate": releasedate,
                    "email": email}
         cursor.execute(insert_empty_study, content)
+        user_id = None
+        study_id = None
+        user_id_result = cursor.execute(get_user_id_sql, {"email": email})
+        if user_id_result:
+            result = user_id_result.fetchone()
+            user_id = result[0] if result else None
+        if not user_id:
+            message = f"User detail for {email} is not fetched."
+            logger.error(message)
+            raise MetabolightsDBException(http_code=501, message=message)
+        
+        study_id_result = cursor.execute(get_study_id_sql, {"acc": acc})
+        if study_id_result:
+            result = study_id_result.fetchone()
+            study_id = result[0] if result else None
+        
+        if not study_id:
+            message = f"Study {acc} is not fetched."
+            logger.error(message)
+            raise MetabolightsDBException(http_code=501, message=message)
+        
+        cursor.execute(link_study_with_user, {"userid": user_id, "studyid": study_id})
+
+        study_user_result = cursor.execute(select_study_user_sql, {"userid": user_id, "studyid": study_id})
+        if study_user_result:
+            result = study_user_result.fetchone()
+            if not result:
+                message = f"Study {study_id} is not assigned to {email}."
+                raise MetabolightsDBException(http_code=501, message=message)
+        
         cursor.execute(update_metaboligts_id_sequence, stable_id_input)
-        cursor.execute(link_study_with_user, content)
+
         conn.commit()
         return acc
     except Exception as ex:
         if conn:
             conn.rollback()
-        raise MetabolightsDBException(http_code=501, message="Error while creating DB", exception=ex)
+        raise MetabolightsDBException(http_code=501, message="Error while creating study. Try later.", exception=ex)
     finally:
         if postgresql_pool and conn:
             release_connection(postgresql_pool, conn)
-
 
 def execute_select_with_params(query, params):
     conn = None
@@ -1153,6 +1198,9 @@ def get_connection():
         logger.error("Could not query the database " + str(e))
         if postgresql_pool:
             postgresql_pool.closeall()
+            postgresql_pool = None
+            conn = None
+            cursor = None
     return postgresql_pool, conn, cursor
 
 
@@ -1237,11 +1285,13 @@ def val_acc(study_id=None):
     if study_id:
         if not study_id.startswith("MTBLS") or study_id.lower() in stop_words:
             logger.error("Incorrect accession number string pattern")
-            abort(406, "'%s' incorrect accession number string pattern" % study_id)
+            raise MetabolightsDBException(message=f"{study_id} is incorrect accession number string pattern", http_code=406)
+
 
 
 def val_query_params(text_to_val):
     if text_to_val:
         for word in str(text_to_val).split():
             if word.lower() in stop_words:
-                abort(406, "'" + text_to_val + "' not allowed.")
+                raise MetabolightsDBException(message=f"{text_to_val} not allowed.", http_code=406)
+

@@ -28,8 +28,8 @@ import numpy as np
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-from flask import request, abort, jsonify, current_app as app
-from flask_restful import Resource, reqparse
+from flask import request, jsonify
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from gspread_dataframe import set_with_dataframe
 from oauth2client.service_account import ServiceAccountCredentials

@@ -22,7 +22,6 @@ import logging
 import os
 from datetime import datetime
 
-from flask import current_app as app
 from flask import jsonify, request, send_file
 from flask_restful import Resource, abort, reqparse
 from flask_restful_swagger import swagger
@@ -50,7 +49,7 @@ from app.utils import MetabolightsDBException, MetabolightsException, metaboligh
 from app.ws import db_connection as db_proxy
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyTaskModel
-from app.ws.db.schemes import Study, StudyTask
+from app.ws.db.schemes import Study, StudyTask, User
 from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus, UserRole
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
 from app.ws.db_connection import (
@@ -1075,7 +1074,7 @@ class CreateAccession(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
+        user: User = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
         studies = UserService.get_instance().get_user_studies(user.apitoken)
         submitted_studies = []
         last_study_datetime = datetime.fromtimestamp(0)
@@ -1122,19 +1121,19 @@ class CreateAccession(Resource):
         study: Study = None
         try:
             study_acc = create_empty_study(user_token, study_id=study_acc)
-            study = StudyService.get_instance().get_study_by_acc(study_id=study_acc)
+            # study = StudyService.get_instance().get_study_by_acc(study_id=study_acc)
 
-            if study and study.acc:
+            if study_acc:
                 logger.info(f"Step 2: Study id {study_acc} is created on DB.")
             else:
                 raise MetabolightsException(message="Could not create a new study in db", http_code=503)
         except Exception as exc:
             inputs = {
                 "subject": "Study id creation on DB was failed.",
-                "body": f"Study id on db creation was failed: folder: {folder_name}, user: {user.username} <p> {str(exc)}",
+                "body": f"Study id on db creation was failed: folder: {study_acc}, user: {user.username} <p> {str(exc)}",
             }
             send_technical_issue_email.apply_async(kwargs=inputs)
-            logger.error(f"Study id creation on DB was failed. Temp folder: {folder_name}. {str(inputs)}")
+            logger.error(f"Study id creation on DB was failed. Temp folder: {study_acc}. {str(inputs)}")
             if isinstance(exc, MetabolightsException):
                 raise exc
             else:

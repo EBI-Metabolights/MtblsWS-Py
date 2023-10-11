@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 import psycopg2
 import requests
-from flask import jsonify, request, current_app as app
+from flask import jsonify, request
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from gspread_dataframe import set_with_dataframe

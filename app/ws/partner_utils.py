@@ -20,9 +20,9 @@ import glob
 import logging
 import os
 
-from flask import current_app as app, request, abort
+from flask import request
 from flask.json import jsonify
-from flask_restful import Resource
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from app.tasks.common_tasks.curation_tasks.metabolon import metabolon_confirm
 from app.utils import MetabolightsException
