@@ -19,6 +19,7 @@
 from functools import lru_cache
 import json
 import logging
+import os
 import ssl
 import urllib
 from urllib.parse import quote_plus
@@ -232,13 +233,13 @@ def getOLSTerm(keyword, map, ontology=''):
         return res
 
     try:
-        # https://www.ebi.ac.uk/ols/api/search?q=lung&groupField=true&queryFields=label,synonym&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix
-        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword.replace(' ', "+") + \
-              '&groupField=true' \
+        # https://www.ebi.ac.uk/ols4/api/search?q=lung&queryFields=label,synonym&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix
+        uri = 'search?q=' + keyword.replace(' ', "+") + \
               '&queryFields=label,synonym' \
               '&type=class' \
               '&fieldList=iri,label,short_form,ontology_name,description,ontology_prefix' \
               '&rows=30'  # &exact=true
+        url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
         if map == 'exact':
             url += '&exact=true'
 
@@ -285,7 +286,8 @@ def OLSbranchSearch(keyword, branchName, ontoName):
         return res
 
     def getStartIRI(start, ontoName):
-        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + start + '&ontology=' + ontoName + '&queryFields=label'
+        uri = 'search?q=' + start + '&ontology=' + ontoName + '&queryFields=label'
+        url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         json_str = json.loads(content)
@@ -294,7 +296,8 @@ def OLSbranchSearch(keyword, branchName, ontoName):
 
     branchIRI = getStartIRI(branchName, ontoName)
     keyword = keyword.replace(' ', '%20')
-    url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword + '&rows=10&ontology=' + ontoName + '&allChildrenOf=' + branchIRI
+    uri = 'search?q=' + keyword + '&rows=10&ontology=' + ontoName + '&allChildrenOf=' + branchIRI
+    url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
     # print(url)
     fp = urllib.request.urlopen(url)
     content = fp.read().decode('utf-8')
@@ -507,13 +510,16 @@ def getOLSTermInfo(iri):
     # enti = entity(name=name, iri=term['iri'], definition=definition, ontoName=ontoName, provenance_name=provenance_name)
 
     try:
-        url = 'https://www.ebi.ac.uk/ols/api/terms/findByIdAndIsDefiningOntology?iri=' + iri
+        uri = 'terms/findByIdAndIsDefiningOntology?iri=' + iri
+        url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
 
         label = j_content['_embedded']['terms'][0]['label']
         definition = j_content['_embedded']['terms'][0]["description"]
+        if definition is None:
+            definition = ''
         ontoName = j_content['_embedded']['terms'][0]['ontology_prefix']
 
         return label, definition, ontoName
@@ -528,7 +534,8 @@ def getOnto_info(pre_fix):
      :return: "ontology iri", "version", "ontology description"
      '''
     try:
-        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
+        uri = 'ontologies/' + pre_fix
+        url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
@@ -546,7 +553,8 @@ def getOnto_info(pre_fix):
 def getOnto_Name(iri):
     # get ontology name by giving iri of entity
     try:
-        url = 'http://www.ebi.ac.uk/ols/api/terms/findByIdAndIsDefiningOntology?iri=' + iri
+        uri = 'terms/findByIdAndIsDefiningOntology?iri=' + iri
+        url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
@@ -569,7 +577,8 @@ def getOnto_Name(iri):
 
 def getOnto_version(pre_fix):
     try:
-        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
+        uri = 'ontologies/' + pre_fix
+        url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
@@ -580,7 +589,8 @@ def getOnto_version(pre_fix):
 
 def getOnto_url(pre_fix):
     try:
-        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
+        uri = 'ontologies/' + pre_fix
+        url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
@@ -631,5 +641,6 @@ def removeDuplicated(res_list):
 
 def getDescriptionURL(ontoName, iri):
     ir = quote_plus(quote_plus(iri))
-    url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + ontoName + '/terms/' + ir
+    uri = 'ontologies/' + ontoName + '/terms/' + ir
+    url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
     return url
