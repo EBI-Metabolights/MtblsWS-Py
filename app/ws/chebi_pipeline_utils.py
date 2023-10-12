@@ -1114,30 +1114,29 @@ def search_and_update_maf(study_id: str, study_metadata_location: str, annotatio
     print_log(f"Classyfire SDF file downloaded : {str(classy_file_downoaded)}")
     print_log(f"Chebi API status : {str(chebi_search_status)}")
     print_log(f"ChEBI pipeline Done. Overall it took %s seconds" % round(time.time() - first_start_time, 2))
-   
-    if obfuscation_code:
-        folder_name = get_settings().chebi.pipeline.chebi_annotation_sub_folder
-        internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
-        compressed_chebi_annotations_file_path = f"{anno_sub_folder_path}.zip"
-        
-        try:
-            target_path = os.path.join(anno_sub_folder_path, f"{folder_name}.zip")
-            if os.path.exists(target_path):
-                shutil.move(target_path, target_path, f"{anno_sub_folder_path}_old.zip")
-            with zipfile.ZipFile(compressed_chebi_annotations_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                for foldername, subfolders, filenames in os.walk(anno_sub_folder_path):
-                    for filename in filenames:
-                        file_path = os.path.join(foldername, filename)
-                        rel_path = os.path.relpath(file_path, anno_sub_folder_path)
-                        zipf.write(file_path, rel_path)
+
+    folder_name = get_settings().chebi.pipeline.chebi_annotation_sub_folder
+    internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
+    zip_file_folder_path  = os.path.dirname(anno_sub_folder_path)
+    compressed_chebi_annotations_folder_path = os.path.join(zip_file_folder_path, f"{folder_name}.zip")
+    try:
+        if os.path.exists(compressed_chebi_annotations_folder_path):
+            compressed_chebi_annotations_folder_path = os.path.join(zip_file_folder_path, f"{folder_name}_old.zip")
+            shutil.move(compressed_chebi_annotations_folder_path, f"{anno_sub_folder_path}_old.zip")
             
-            shutil.move(compressed_chebi_annotations_file_path, target_path)
-        except Exception as e:
-            logger.error("chebi folder zip error")
-            print(f"An error occurred: {e}")
+        with zipfile.ZipFile(compressed_chebi_annotations_folder_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for foldername, subfolders, filenames in os.walk(anno_sub_folder_path):
+                for filename in filenames:
+                    file_path = os.path.join(foldername, filename)
+                    rel_path = os.path.relpath(file_path, anno_sub_folder_path)
+                    zipf.write(file_path, rel_path)
+    except Exception as e:
+        logger.error("chebi folder zip error")
+        print(f"An error occurred: {e}")
+            
+    if obfuscation_code:
 
         ftp_private_folder = os.path.join(study_id.lower() + "-" + obfuscation_code)
-        
         
         pipeline_settings = get_settings().chebi.pipeline
         target_ftp_path = os.path.join(get_settings().hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path, ftp_private_folder, settings.internal_files_symbolic_link_name)
