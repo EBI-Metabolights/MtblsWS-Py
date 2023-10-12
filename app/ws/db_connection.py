@@ -109,7 +109,7 @@ query_submitted_study_ids_for_user = """
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(user_token)s and s.status=0;
     """
 
-insert_empty_study = """   
+insert_study_with_study_id = """   
     insert into studies (id, acc, obfuscationcode, releasedate, status, studysize, submissiondate, 
     updatedate, validations, validation_status) 
     values ( 
@@ -120,26 +120,16 @@ insert_empty_study = """
         0, 0, current_timestamp, 
         current_timestamp, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
     insert into study_user(userid, studyid) values (%(userid)s, %(new_unique_id)s);
+"""
+
+update_study_id_sql = """  
     LOCK TABLE stableid IN ACCESS EXCLUSIVE MODE;
     update stableid set seq = (select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s)  
     where prefix = %(stable_id_prefix)s; 
     update studies set acc = 'MTBLS' || (select seq as current_acc from stableid where prefix = %(stable_id_prefix)s) 
     where id = %(new_unique_id)s;
 """
-
-
-insert_empty_study_with_study_id = """   
-    insert into studies (id, acc, obfuscationcode, releasedate, status, studysize, submissiondate, 
-    updatedate, validations, validation_status) 
-    values ( 
-        %(new_unique_id)s,
-        %(acc)s, 
-        %(obfuscationcode)s,
-        %(releasedate)s,
-        0, 0, current_timestamp, 
-        current_timestamp, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
-    insert into study_user(userid, studyid) values (%(userid)s, %(new_unique_id)s);
-"""
+insert_empty_study = f"{insert_study_with_study_id}\n{update_study_id_sql}"
 
 get_study_id_sql = """
 select acc from studies where id = %(unique_id)s;
@@ -845,7 +835,7 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
         if not study_id:
             cursor.execute(insert_empty_study, content)
         else:
-            cursor.execute(insert_empty_study_with_study_id, content)
+            cursor.execute(insert_study_with_study_id, content)
         conn.commit()
         cursor.execute(get_study_id_sql, {"unique_id": new_unique_id})
         fetched_study = cursor.fetchone()
