@@ -2,7 +2,7 @@ from pathlib import Path
 
 application_path = Path(__file__).parent.parent
 
-build_number_file = application_path / Path(".build_number")
+build_number_file = application_path / Path("build_number")
 __build_number__ = ""
 if build_number_file.exists():
     __build_number__ = build_number_file.read_text(encoding="utf-8").replace("\n", "").strip()

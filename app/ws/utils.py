@@ -41,6 +41,7 @@ import requests
 
 from urllib import request as urllib_request
 from flask_restful import abort
+from flask import request
 from isatools.model import Protocol, ProtocolParameter, OntologySource
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
