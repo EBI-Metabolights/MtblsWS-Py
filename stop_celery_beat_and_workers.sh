@@ -48,6 +48,6 @@ celery -A app.tasks.worker:celery control shutdown
 if [ $? -eq 0 ]; then
     echo "Shutdown signal was sent to all workers"
 else
-    echo "Shutdown signal task is failed."
+    echo "Shutdown signal task failed."
     exit 1
 fi

@@ -1107,7 +1107,7 @@ class CreateAccession(Resource):
 
         logger.info(f"Step 1: New study creation request is received from user {user.username}")
         new_accession_number = True
-        study_acc = None
+        study_acc: str = None
         if "study_id" in request.headers:
             requested_study_id = request.headers["study_id"]
             study_acc = self.validate_requested_study_id(requested_study_id, user_token)
@@ -1116,9 +1116,7 @@ class CreateAccession(Resource):
                 logger.warning(
                     f"A previous study creation request from the user {user.username}. The study {study_acc} will be created."
                 )
-        folder_name = study_acc
 
-        study: Study = None
         try:
             study_acc = create_empty_study(user_token, study_id=study_acc)
             # study = StudyService.get_instance().get_study_by_acc(study_id=study_acc)
@@ -1194,14 +1192,29 @@ class CreateAccession(Resource):
         # maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
         # result = maintenance_task.execute_future_actions()
         # maintenance_task.future_actions.clear()
-        inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False, "task_name": "INITIAL"}
+        inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False, "task_name": "INITIAL_METADATA", 
+                  "maintain_metadata_storage": True, "maintain_data_storage": False, "maintain_private_ftp_storage": False}
+    
         create_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
-        logger.info(f"Step 4: Create initial files and folders task has been started for study {study_acc} with task id: {create_folders_task.id}")
+        logger.info(f"Step 4.1: 'Create initial files and folders' task has been started for study {study_acc} with task id: {create_folders_task.id}")
         # wait for a while to complete task
-        _ = create_folders_task.get(timeout=get_settings().hpc_cluster.configuration.task_get_timeout_in_seconds)
+        
+        # wait for a while to complete task
+        try:
+            _ = create_folders_task.get(timeout=get_settings().hpc_cluster.configuration.task_get_timeout_in_seconds)
+        except Exception as ex:
+            raise MetabolightsException(message="Study folder creation failed. Try later", http_code=500, exception=ex)
         # Start ftp folder creation task
+        inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": True, "maintain_private_ftp_storage": False,  "task_name": "INITIAL_DATA"})
+        create_study_data_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
+        logger.info(f"Step 4.2: 'Create study data files and folders' task has been started for study {study_acc} with task id: {create_study_data_folders_task.id}")
+        
+        inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": False, "maintain_private_ftp_storage": True,  "task_name": "INITIAL_DATA"})
+        create_ftp_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
+        logger.info(f"Step 4.3: 'Create study FTP folders' task has been started for study {study_acc} with task id: {create_ftp_folders_task.id}")
 
         if new_accession_number:
+            study: Study = StudyService.get_instance().get_study_by_acc(study_acc)
             ftp_folder_name = study_acc.lower() + "-" + study.obfuscationcode
             inputs = {"user_token": user_token, "study_id": study_acc, "folder_name": ftp_folder_name}
             send_email_for_private_ftp_folder.apply_async(kwargs=inputs)

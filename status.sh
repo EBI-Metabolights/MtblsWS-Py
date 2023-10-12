@@ -46,4 +46,4 @@ cd $APPDIR
 
 eval "$(conda shell.bash hook)"
 conda activate python38-MtblsWS
-(celery  -A app.tasks.worker:celery inspect stats | grep @) || echo "No workers"
+(celery  -A app.tasks.worker:celery inspect active) || echo "No workers"
