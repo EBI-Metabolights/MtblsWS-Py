@@ -12,6 +12,10 @@ stages:
   - build
   - update_server
   - deploy
+  - build_docker
+  - deploy_docker
+  - build_sif
+  - configure_datamover
 
 checkout_configs:
   stage: configure
@@ -23,25 +27,16 @@ checkout_configs:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/checkout_configs.sh"
 
 build_docker:
-  stage: build
+  stage: build_docker
   rules:
     - if: $K8S_DEPLOYMENT == "1"
       variables:
         BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_container.sh"
-
-build_singularity:
-  stage: build
-  rules:
-    - if: $K8S_DEPLOYMENT == "1"
-      variables:
-        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
-  script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_sif.sh"
     
-deployment_files:
-  stage: deploy
+deploy_on_k8s:
+  stage: deploy_docker
   rules:
     - if: $K8S_DEPLOYMENT == "1"
       variables:
@@ -59,8 +54,17 @@ deployment_files:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/prepare_deployment_files.sh"
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/deploy.sh"
 
+build_singularity:
+  stage: build_sif
+  rules:
+    - if: $K8S_DEPLOYMENT == "1"
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_sif.sh"
+
 configure_datamover:
-  stage: deploy
+  stage: configure_datamover
   rules:
     - if: $K8S_DEPLOYMENT == "1"
       variables:
@@ -89,6 +93,8 @@ standalone_configure_vm_server:
     
 standalone_configure_datamover:
   stage: update_server
+  rules:
+  - if: $K8S_DEPLOYMENT != "1"
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/update_datamover.sh"
 
@@ -109,7 +115,7 @@ standalone_run_server:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/restart_server.sh"
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/restart_datamover.sh"
 
-standalone_un_additional_servers:
+standalone_deploy_additional_servers:
   rules:
     - if: $K8S_DEPLOYMENT != "1"
     - if: $CI_COMMIT_BRANCH == "master"

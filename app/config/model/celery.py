@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from app.config.model.redis_cache import RedisConnection
+from app.config.model import redis_cache
 
 
 class CeleryConfiguration(BaseModel):
@@ -19,6 +19,6 @@ class CeleryPeriodicTaskConfiguration(BaseModel):
 
 
 class CelerySettings(BaseModel):
-    broker: RedisConnection
+    broker: redis_cache.RedisConnection
     configuration: CeleryConfiguration
     periodic_task_configuration: CeleryPeriodicTaskConfiguration

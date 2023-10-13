@@ -7,7 +7,7 @@ from flask import Flask
 from flask_mail import Mail
 from app.config import get_settings
 from app.config.model.celery import CelerySettings
-from app.config.model.redis_cache import RedisConnection
+from app.config.model import redis_cache
 
 from app.utils import MetabolightsException, ValueMaskUtility
 from app.ws.email.email_service import EmailService
@@ -16,12 +16,22 @@ from app.ws.study.user_service import UserService
 
 settings: CelerySettings = get_settings().celery
 
-rs: RedisConnection = settings.broker
+rs: redis_cache.RedisConnection = settings.broker
 #broker_url = f'redis+sentinel://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}'
-
-
-broker_url = f"redis://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}"
-result_backend = broker_url
+broker_url = None
+broker_transport_options = None
+result_backend_transport_options = None
+if rs.connection_type == "redis":
+    rc = rs.redis_connection
+    broker_url = f"redis://:{rs.redis_password}@{rc.redis_host}:{rc.redis_port}/{rs.redis_db}"
+    result_backend = broker_url
+else:
+    sc = rs.sentinel_connection
+    broker_url = ";".join([f"sentinel://:{rs.redis_password}@{host.name}:{host.port}" for host in sc.hosts])
+    broker_transport_options = {"master_name": sc.master_name, "sentinel_kwargs": { "password": rs.redis_password }}
+    result_backend_transport_options = broker_transport_options
+    result_backend = broker_url
+    
 celery = Celery(
     __name__,
     include=[
@@ -86,6 +96,10 @@ celery.conf.update(
     result_expires=settings.configuration.celery_result_expires,
 )
 
+if broker_transport_options:
+    celery.conf.update(broker_transport_options=broker_transport_options)
+if result_backend_transport_options:
+    celery.conf.update(result_backend_transport_options=result_backend_transport_options)
 
 @after_task_publish.connect
 def update_task_was_sent_state(sender=None, headers=None, **kwargs):

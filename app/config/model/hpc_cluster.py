@@ -48,6 +48,7 @@ class DataMoverPathConfiguration(BaseModel):
 
     
 class HpcDataMoverSettings(BaseModel):
+    run_ssh_on_hpc_compute: bool
     connection: HpcConnection
     queue_name: str
     cluster_private_ftp_user_home_path: str

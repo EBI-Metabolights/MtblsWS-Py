@@ -74,8 +74,7 @@ class LsfClient(object):
             
     def kill_jobs(self, job_id_list: List[str], failing_gracefully=False, timeout: Union[None, float]=15.0):
         kill_command = f"{self.cluster_settings.job_kill_command} {' '.join(job_id_list)}"
-        ssh_command = BashClient.build_ssh_command(hostname=self.settings.hpc_cluster.datamover.connection.host, username=self.settings.hpc_cluster.datamover.connection.username)       
-        command = f"{ssh_command} {kill_command}"  
+        command = self._get_hpc_ssh_command(kill_command)
         result: CapturedBashExecutionResult = BashClient.execute_command(command, timeout=timeout)
         pattern = re.compile('Job <(.+)>.*', re.IGNORECASE)
         lines = result.stdout
@@ -131,18 +130,26 @@ class LsfClient(object):
         
     def _get_job_status_command(self):
         command = f"{self.cluster_settings.job_running_command} -noheader -w -P {self.cluster_settings.job_project_name}"
-        ssh_command = BashClient.build_ssh_command(hostname=self.settings.hpc_cluster.datamover.connection.host, username=self.settings.hpc_cluster.datamover.connection.username)
-        
-        return f"{ssh_command} {command}"        
-        
+        return self._get_hpc_ssh_command(command)
+
+    def _get_hpc_ssh_command(self, submission_command: str) -> int:
+        if self.submit_with_ssh:
+            settings = get_settings()
+            dmc = self.settings.hpc_cluster.datamover.connection
+            datamover_ssh_command: str = BashClient.build_ssh_command(hostname=dmc.host, username=dmc.username)
+            if settings.hpc_cluster.datamover.run_ssh_on_hpc_compute:
+                cc = self.settings.hpc_cluster.compute.connection
+                compute_ssh_command: str = BashClient.build_ssh_command(hostname=cc.host, username=cc.username)
+                return f"{compute_ssh_command} {datamover_ssh_command} {submission_command}" 
+            else:
+                return f"{datamover_ssh_command} {submission_command}"
+        return f"{submission_command}"
+    
+    
     def _get_submit_command(self, script: str, job_name: str, queue=None, output_file=None, error_file=None, account=None) -> int:
         script_file_path = self._prepare_script_to_submit_on_lsf(script, queue, job_name, output_file, error_file, account)
         submission_command = f"bsub < {script_file_path}"
-        
-        if self.submit_with_ssh:
-            ssh_command = BashClient.build_ssh_command(hostname=self.settings.hpc_cluster.datamover.connection.host, username=self.settings.hpc_cluster.datamover.connection.username)
-            return f"{ssh_command} {submission_command}"
-        return f"{submission_command}"
+        return self._get_hpc_ssh_command(submission_command)
     
     def _build_sub_command(self, command: str, job_name: str, queue=None, output_file=None, error_file=None, account=None):
         bsub_command = [self.settings.hpc_cluster.configuration.job_submit_command]
@@ -272,6 +279,7 @@ class LsfClient(object):
             hostname=self.settings.hpc_cluster.datamover.connection.host
             target_path = os.path.join(worker_config.worker_deployment_root_path, f"run_singularity_{task_name}.sh")
             copy_singularity_run_script = f"scp {script_path} {hostname}:{target_path}"
+            
             BashClient.execute_command(copy_singularity_run_script)
             
             messages.append(f"New job was submitted with job id {job_id} for {task_name}")

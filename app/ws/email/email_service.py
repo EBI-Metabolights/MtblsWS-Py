@@ -26,18 +26,19 @@ class EmailService(object):
     def get_instance(cls, app=None, mail=None):
         if app and not cls.email_service:
             settings = get_settings().email
-            if not mail:
-                app.config.update(
-                    {
-                        "MAIL_SERVER": settings.email_service.connection.host,
-                        "MAIL_PORT": settings.email_service.connection.port,
-                        "MAIL_USERNAME": settings.email_service.connection.username,
-                        "MAIL_PASSWORD": settings.email_service.connection.password,
-                        "MAIL_USE_TLS": settings.email_service.connection.use_tls,
-                        "MAIL_USE_SSL": settings.email_service.connection.use_ssl,
-                    }
-                )
-                mail = Mail(app)
+            configs =  {
+                "MAIL_SERVER": settings.email_service.connection.host,
+                "MAIL_PORT": settings.email_service.connection.port,
+                "MAIL_USERNAME": settings.email_service.connection.username,
+                "MAIL_PASSWORD": settings.email_service.connection.password,
+                "MAIL_USE_TLS": settings.email_service.connection.use_tls,
+                "MAIL_USE_SSL": settings.email_service.connection.use_ssl,
+            }
+            for item in configs:
+                if configs[item]:
+                    app.config[item] = configs[item]
+
+            mail = Mail(app)
             cls.email_service = EmailService(settings, mail)
         return cls.email_service
 
