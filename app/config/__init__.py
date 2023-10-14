@@ -1,4 +1,3 @@
-from datetime import datetime
 import logging
 
 from app.config.model.auth import AuthSettings
@@ -24,6 +23,7 @@ from app.config.model.study import StudySettings
 from app.config.model.twitter import TwitterSettings
 from app.config.base import ApplicationBaseSettings
 from app.config.model.worker import WorkerSettings
+from app.utils import current_time
 
 logger = logging.getLogger('wslog')
 
@@ -66,7 +66,7 @@ def get_settings():
     update_check_time_delta = 60
     if _application_settings:
         update_check_time_delta = _application_settings.server.service.config_file_check_period_in_seconds    
-    now = int(datetime.now().timestamp())
+    now = int(current_time().timestamp())
     current_settings = _application_settings
     if now - _last_update_check_timestamp > update_check_time_delta:
         _application_settings = None

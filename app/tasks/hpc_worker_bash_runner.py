@@ -8,7 +8,7 @@ from app.tasks.bash_client import BashExecutionResult, CapturedBashExecutionResu
 from app.tasks.datamover_tasks.basic_tasks.execute_commands import execute_bash_command
 from app.tasks.worker import celery
 from celery.result import AsyncResult
-from app.utils import MetabolightsException
+from app.utils import MetabolightsException, current_time
 
 
 from app.ws.redis.redis import RedisStorage, get_redis_server
@@ -86,7 +86,7 @@ class HpcWorkerBashRunner:
                 desc.task_id = result.task_id
                 
                 desc.last_status = result.state
-                desc.last_update_time = datetime.datetime.now(datetime.timezone.utc).timestamp()
+                desc.last_update_time = current_time().timestamp()
                 desc.task_done_time  = result.date_done.timestamp() if result.date_done else 0
                 
             if result and result.state != "PENDING" and result.state != "REVOKED":
@@ -107,7 +107,7 @@ class HpcWorkerBashRunner:
                         desc.task_done_time = result.date_done.timestamp()
                 task_status.description = desc
                 desc.task_id = result.task_id
-                # desc.last_update_time = datetime.datetime.now(datetime.timezone.utc).timestamp()
+                # desc.last_update_time = current_time().timestamp()
                 desc.last_status = result.state
                 desc.stderr_log_filename = (
                     os.path.basename(self.stderr_log_file_path) if self.stderr_log_file_path else ""
@@ -136,7 +136,7 @@ class HpcWorkerBashRunner:
         task_id = task.id
         if task_id:
             result: AsyncResult = celery.AsyncResult(task_id)
-            now = datetime.datetime.now(datetime.timezone.utc).timestamp()
+            now = current_time().timestamp()
             state = result.state
             stderr_log_filename = os.path.basename(self.stderr_log_file_path) if stderr_log_file_path else ""
             stdout_log_filename = os.path.basename(self.stdout_log_file_path) if stdout_log_file_path else ""
@@ -156,7 +156,7 @@ class HpcWorkerBashRunner:
         raise MetabolightsException(http_code=501, message="Task can not be started")
 
     def get_wait_time(self, last_update_time: float):
-        now = datetime.datetime.now(datetime.timezone.utc).timestamp()
+        now = current_time().timestamp()
         elapsed_time = now - last_update_time
         if elapsed_time < 0:
             elapsed_time = 0

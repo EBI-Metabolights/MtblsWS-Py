@@ -11,7 +11,7 @@ from flask_restful import Resource
 from flask_restful_swagger import swagger
 from app.config import get_settings
 
-from app.utils import metabolights_exception_handler, MetabolightsDBException
+from app.utils import current_time, metabolights_exception_handler, MetabolightsDBException
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyModel
 from app.ws.db.schemes import Study
@@ -117,7 +117,7 @@ class StudyJsonExporter(Resource):
         study_settings = get_study_settings()
         study_folders = study_settings.mounted_paths.study_metadata_files_root_path
         if not json_folder:
-            now = datetime.datetime.now()
+            now = current_time()
             dt = time.gmtime(now.timestamp())
             json_folder = time.strftime("%Y%m%d_%H%M%S", dt)
 
@@ -273,7 +273,7 @@ class PublicStudyJsonExporter(Resource):
                 m_study = create_study_model_from_db_study(study)
                 m_study_list.append(m_study)
         m_study_list.sort(key=get_study_id)
-        now = datetime.datetime.now()
+        now = current_time()
         dt = time.gmtime(now.timestamp())
         file_time = time.strftime("%Y-%m-%d_%H%M%S", dt)
         json_path = os.path.join(settings.mounted_paths.reports_root_path, get_settings().report.report_base_folder_name, "INDEXED_PUBLIC_STUDIES", file_time)

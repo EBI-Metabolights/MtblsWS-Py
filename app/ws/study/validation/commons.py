@@ -31,6 +31,7 @@ import numpy as np
 import pandas as pd
 import requests
 from app.config import get_settings
+from app.utils import current_time
 
 from app.ws.cluster_jobs import submit_job
 from app.ws.db.schemes import Study
@@ -574,7 +575,7 @@ def validate_study(study_id, study_location_old, user_token, obfuscation_code,
 
     """
     start_time = time.time()
-    last_update_time = datetime.datetime.now()
+    last_update_time = current_time()
     last_update_timestamp = last_update_time.timestamp()
     last_update_time_str = last_update_time.strftime('%Y-%m-%d-%H:%M')
     all_validations = []

@@ -12,6 +12,7 @@ from flask_restful import abort
 from oauth2client.service_account import ServiceAccountCredentials
 from googleapiclient.discovery import build
 from app.config import get_settings
+from app.utils import current_time
 
 from app.ws.mtbls_maf import totuples
 from app.ws.performance_and_metrics.builder_performance_tracker import BuilderPerformanceTracker
@@ -250,7 +251,7 @@ class AnalyticalMethodBuilder:
         token_path = settings.google.connection.google_sheet_api
         mariana_folder_id = settings.google.services.google_mariana_drive_id
 
-        title = f'{self.studytype} {str(datetime.datetime.now())}'
+        title = f'{self.studytype} {str(current_time())}'
 
 
         if not result.empty:
@@ -356,7 +357,7 @@ class AnalyticalMethodBuilder:
             timer_message = '\n '.join(self.tracker.report_all_timers())
             total_time = "\n ".join((time_str, timer_message))
 
-            general_report_str = f'Results from AnalyticalMethodBuilder {str(datetime.datetime.now())}: \n'
+            general_report_str = f'Results from AnalyticalMethodBuilder {str(current_time())}: \n'
             general_message = '\n '.join((general_report_str, base_message))
 
             tracking_variables_str = f'Output from tracking variables \n'

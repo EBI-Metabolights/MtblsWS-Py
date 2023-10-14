@@ -1875,6 +1875,7 @@ class StudyFolderMaintenanceTask(object):
         return cleantext.strip()
 
     def backup_file(self, file_path, reason=None, prefix=None, backup_path=None, force_delete=True, keep_file_on_folder: bool=False):
+        target_path = None
         if os.path.exists(file_path):
             basename = os.path.basename(file_path)
             if self.delete_unreferenced_metadata_files or force_delete:

@@ -19,15 +19,17 @@
 import datetime
 import json
 import logging
+import os
 
 from flask import current_app as app
 from flask import request, abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
-from app.utils import metabolights_exception_handler, MetabolightsException
+from app.utils import current_time, metabolights_exception_handler, MetabolightsException
 from app.ws.db_connection import update_study_status, update_study_status_change_date
 from app.ws.ftp.ftp_utils import get_ftp_folder_access_status, toogle_ftp_folder_permission
 from app.ws.isaApiClient import IsaApiClient
@@ -127,18 +129,20 @@ class StudyStatus(Resource):
         ftp_private_study_folder = study_id.lower() + '-' + obfuscation_code
 
         # Update the last status change date field
-        status_date_logged = update_study_status_change_date(study_id)
+        status_date_logged = update_study_status_change_date(study_id, current_time())
         if not status_date_logged:
             logger.error("Could not update the status_date column for " + study_id)
-
+        inv_file_path = os.path.join(study_location, get_settings().study.investigation_file_name)
+        if not os.path.exists(inv_file_path):
+            abort(404, message="There is no investigation file.")
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
                                                          study_location=study_location)
 
         if is_curator:  # Curators can change the date to current date, submitters can not!
-            new_date = datetime.datetime.now()
+            new_date = current_time()
         else:
-            new_date = datetime.datetime.now() + datetime.timedelta(+28)
+            new_date = current_time() + datetime.timedelta(+28)
         new_date = new_date.strftime('%Y-%m-%d')
 
         if is_curator:  # User is a curator, so just update status without any further checks

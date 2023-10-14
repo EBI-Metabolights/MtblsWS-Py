@@ -8,7 +8,7 @@ from app.config import get_settings
 from app.config.model.elasticsearch import ElasticsearchSettings
 from app.config.model.study import StudySettings
 
-from app.utils import MetabolightsDBException, MetabolightsException
+from app.utils import MetabolightsDBException, MetabolightsException, current_time
 from app.ws.db import models
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefMetabolite, StudyTask
@@ -308,7 +308,7 @@ class ElasticsearchService(object):
             if tasks:
                 task = tasks[0]
             else:
-                now = datetime.now()
+                now = current_time()
                 task = StudyTask()
                 task.study_acc = study_id
                 task.task_name = task_name
@@ -341,11 +341,11 @@ class ElasticsearchService(object):
                 message = f'{study_id} is indexed.'
                 tasks = StudyService.get_instance().get_study_tasks(study_id=study_id, task_name=task_name)
                 if tasks:
-                    task = tasks[0]
+                    task: StudyTask = tasks[0]
                     with self.db_manager.session_maker() as db_session:
-                        task.last_request_time = datetime.now()
+                        task.last_request_time = current_time()
                         task.last_execution_status = StudyTaskStatus.EXECUTION_SUCCESSFUL
-                        task.last_execution_time = datetime.now()
+                        task.last_execution_time = current_time()
                         task.last_execution_message = message
                         db_session.add(task)
                         db_session.commit()
@@ -357,9 +357,9 @@ class ElasticsearchService(object):
                 if tasks:
                     task = tasks[0]
                     with self.db_manager.session_maker() as db_session:
-                        task.last_request_time = datetime.now()
+                        task.last_request_time = current_time()
                         task.last_execution_status = StudyTaskStatus.EXECUTION_FAILED
-                        task.last_execution_time = datetime.now()
+                        task.last_execution_time = current_time()
                         task.last_execution_message = message
                         db_session.add(task)
                         db_session.commit()

@@ -1,12 +1,12 @@
 import os
 import time
-from datetime import datetime
 from typing import List, Union
 from app.config import get_settings
 
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult, CommandOutput, \
     SyncTaskStatus, SyncCalculationStatus
+from app.utils import current_time
 from app.ws.cluster_jobs import submit_job, list_jobs
 import logging
 from app.ws.settings.utils import get_cluster_settings,get_study_settings
@@ -359,21 +359,21 @@ class DataMoverAvailableStorage(object):
                 status = self._sync_analysis_metafiles(source_ftp_folder, ignore_list)
                 if status:
                     result.status = SyncCalculationStatus.CALCULATING
-                    result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+                    result.last_update_time = current_time().strftime("%d/%m/%y %H:%M:%S.%f")
                 else:
                     result.status = SyncCalculationStatus.UNKNOWN
-                    result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+                    result.last_update_time = current_time().strftime("%d/%m/%y %H:%M:%S.%f")
             else :
                 status = self._sync_analysis_rdfiles(source_ftp_folder, ignore_list)
                 if status:
                     result.status = SyncCalculationStatus.CALCULATING
-                    result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+                    result.last_update_time = current_time().strftime("%d/%m/%y %H:%M:%S.%f")
                 else:
                     result.status = SyncCalculationStatus.UNKNOWN
-                    result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+                    result.last_update_time = current_time().strftime("%d/%m/%y %H:%M:%S.%f")
         except Exception as e:
             result.status = SyncCalculationStatus.UNKNOWN
-            result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+            result.last_update_time = current_time().strftime("%d/%m/%y %H:%M:%S.%f")
             # raise MetabolightsException(message="Error while calculating ftp folder sync status", http_code=500, exception=e)
         return result
 
@@ -384,7 +384,7 @@ class DataMoverAvailableStorage(object):
         if not job_found:
             # check for one day case
             logfile_time = os.path.getmtime(calc_log_file)
-            seconds_since_epoch = datetime.now().timestamp()
+            seconds_since_epoch = current_time().timestamp()
             difference = seconds_since_epoch - logfile_time
             if difference > 86400:
                 # More than day since log updated

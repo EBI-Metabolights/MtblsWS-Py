@@ -16,6 +16,7 @@ from app.tasks.datamover_tasks.basic_tasks.execute_commands import execute_bash_
 from app.tasks.datamover_tasks.basic_tasks.file_management import create_folders
 from app.tasks.hpc_worker_bash_runner import BashExecutionTaskStatus, HpcWorkerBashRunner, TaskDescription
 from app.tasks.utils import get_current_utc_time_string, get_utc_time_string_from_timestamp
+from app.utils import current_time
 
 
 class RsyncResult(BaseModel):
@@ -116,7 +117,7 @@ class HpcRsyncWorker:
         task_description = task_status.description
         sync_required = False
         
-        last_upate_time_val = datetime.datetime.now(datetime.timezone.utc)
+        last_upate_time_val = current_time()
         last_update_time = last_upate_time_val.strftime(UTC_SIMPLE_DATE_FORMAT)
         last_update_timestamp = last_upate_time_val.timestamp()
         calc_result = SyncCalculationTaskResult()

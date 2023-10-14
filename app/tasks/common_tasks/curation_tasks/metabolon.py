@@ -9,6 +9,7 @@ import celery
 from app.config import get_settings
 from app.tasks.worker import (MetabolightsTask, celery, send_email)
 from app.tasks.worker import MetabolightsTask
+from app.utils import current_time
 
 from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
@@ -111,7 +112,7 @@ def metabolon_confirm(self, study_id: str, study_location: str, user_token, emai
             "result": message,
             "start_time": datetime.datetime.fromtimestamp(start).strftime("%Y-%m-%d %H:%M:%S"),
             "end_time": datetime.datetime.fromtimestamp(end).strftime("%Y-%m-%d %H:%M:%S"),
-            "report_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "report_time": current_time().strftime("%Y-%m-%d %H:%M:%S"),
             "executed_on":  os.uname().nodename
             }
         

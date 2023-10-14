@@ -3,6 +3,7 @@ import os
 from smtplib import SMTP
 from app.config import get_settings
 from app.services.storage_service.storage_service import StorageService
+from app.utils import current_time
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.study.user_service import UserService
 from app.tasks.worker import celery
@@ -88,4 +89,4 @@ def check_integrations():
             # send_technical_issue_email("Integration Check Failure", str(test_results))
             break
         
-        return {"status": status, "executed_on":  os.uname().nodename, "time": int(datetime.datetime.now().timestamp()) , "test_results": test_results}
+        return {"status": status, "executed_on":  os.uname().nodename, "time": int(current_time().timestamp()) , "test_results": test_results}

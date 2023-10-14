@@ -1,6 +1,13 @@
+import datetime
 from flask import make_response
 import re
 
+
+def current_time():
+    return datetime.datetime.utcnow()
+
+def current_utc_time_without_timezone():
+    return datetime.datetime.utcnow().replace(tzinfo=None)
 
 def metabolights_exception_handler(func):
     def exception_handler(*args, **kwargs):

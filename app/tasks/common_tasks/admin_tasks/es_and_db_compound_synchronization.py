@@ -4,7 +4,7 @@ import logging
 import os
 
 from app.tasks.worker import (MetabolightsTask, celery, send_email)
-from app.utils import MetabolightsDBException
+from app.utils import MetabolightsDBException, current_time
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefMetabolite, User
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
@@ -94,7 +94,7 @@ def sync_compound_on_es_and_db(user_token: str, send_email_to_submitter=False):
         except Exception as exc:
             raise exc
         status = "UPDATED" if out_of_date_compounds or unindexed_compounds or compounds_not_in_db else "NO CHANGE"
-        result = {"time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        result = {"time": current_time().strftime("%Y-%m-%d %H:%M:%S"),
                   "status": status,
                   "executed_on":  os.uname().nodename,
                   "reindexed_compounds": str(out_of_date_compounds),

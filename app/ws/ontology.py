@@ -36,6 +36,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from owlready2 import get_ontology
 from app.config import get_settings
 from app.config.utils import get_host_internal_url
+from app.utils import current_time
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -356,7 +357,7 @@ class Ontology(Resource):
                 pass
 
             if cls.provenance_name == 'metabolights-zooma':
-                d['termSource']['version'] = str(datetime.datetime.now().date())
+                d['termSource']['version'] = str(current_time().date())
             response.append(d)
 
         # response = [{'SubClass': x} for x in res]
@@ -1353,7 +1354,7 @@ def addZoomaTerm(studyID, Property_type, Property_value, url):
     zooma_df = pd.read_csv(zooma_path, sep='\t')
     lastID = int(zooma_df.iloc[-1]['BIOENTITY'].split('_')[1])
     bioentity = 'metabo_' + str(lastID + 1)
-    t = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+    t = current_time().strftime("%d/%m/%Y %H:%M")
     temp = {'STUDY': studyID, 'BIOENTITY': bioentity, 'PROPERTY_TYPE': Property_type, 'PROPERTY_VALUE': Property_value,
             'SEMANTIC_TAG': url, 'ANNOTATOR': 'Jiakang Chang', 'ANNOTATION_DATE': t}
     zooma_df = zooma_df.append(temp, ignore_index=True)

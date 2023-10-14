@@ -405,14 +405,14 @@ class UserAccounts(Resource):
                     with db_session:
                         query = db_session.query(User)
                         db_user: User = filter_clause(query).first()
-                        username = db_user.username
-                        user_id = db_user.id
+
                         if db_user:
                             db_session.delete(db_user)
                             db_session.commit()
                         else:
-                            raise MetabolightsDBException(http_code=404, message=f"User is not found.")
-                        
+                            raise MetabolightsDBException(http_code=404, message=f"Not a valid user.")
+                        username = db_user.username
+                        user_id = db_user.id                        
                         return jsonify({"content": f"The selected user is deleted. Deleted user's username: {username}, id: {user_id}", "message": None, "error": None})
                 except Exception as e:
                     raise MetabolightsDBException(message=f"Error while retreiving user from database", exception=e)

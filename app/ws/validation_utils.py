@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from app.tasks.common_tasks.curation_tasks.validation import update_validation_files
 from app.tasks.worker import celery
 from celery.result import AsyncResult
+from app.utils import current_time
 from app.ws.redis.redis import RedisStorage, get_redis_server
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.validation.model import ValidationReportFile, ValidationTaskDescription, validation_message_sorter
@@ -105,7 +106,7 @@ def update_validation_files_task(study_id, user_token, force_to_start=True):
     else:
         result: AsyncResult = celery.AsyncResult(desc.task_id)
         if result and result.state != "PENDING":
-            now = datetime.datetime.now(datetime.timezone.utc)
+            now = current_time()
             last_update_time_str = now.strftime(UTC_SIMPLE_DATE_FORMAT)
             done_time = result.date_done.timestamp() if result.date_done else 0
             task_done_time_str = result.date_done.strftime(UTC_SIMPLE_DATE_FORMAT) if result.date_done else ""
@@ -137,7 +138,7 @@ def update_validation_files_task(study_id, user_token, force_to_start=True):
         result: AsyncResult = celery.AsyncResult(task.id)
         
         message = f"New task is started."
-        now = datetime.datetime.now()
+        now = current_time()
         last_update_time_str = now.strftime(UTC_SIMPLE_DATE_FORMAT)
         done_time = result.date_done.timestamp() if result.date_done else 0
         task_done_time_str = result.date_done.strftime(UTC_SIMPLE_DATE_FORMAT) if result.date_done else ""

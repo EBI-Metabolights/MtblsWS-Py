@@ -10,6 +10,7 @@ from fuzzywuzzy import fuzz
 from flask_restful import abort
 from typing import List, Union
 from app.config import get_settings
+from app.utils import current_time
 
 from app.ws.cronjob import setGoogleSheet
 from app.ws.isaApiClient import IsaApiClient
@@ -196,7 +197,7 @@ class EuropePmcReportBuilder:
         if 'printPublicationDate' in europe_pmc_publication:
             journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%m-%d')
             logger.info('ASSESSIF' + str(journal_publication_date))
-            now = datetime.now()
+            now = current_time()
             return status.upper() != 'PUBLIC' and now > journal_publication_date
         else:
             return 'No publication date given.'

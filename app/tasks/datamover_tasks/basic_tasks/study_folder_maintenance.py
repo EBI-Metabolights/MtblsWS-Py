@@ -6,7 +6,7 @@ import os
 import pandas as pd
 
 from app.tasks.worker import MetabolightsTask, report_internal_technical_issue, send_email, celery
-from app.utils import MetabolightsDBException
+from app.utils import MetabolightsDBException, current_time
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus
@@ -244,7 +244,7 @@ def maintain_storage_study_folders(
         df = pd.DataFrame(all_results, columns=headers)
 
         result = {
-            "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "time": current_time().strftime("%Y-%m-%d %H:%M:%S"),
             "executed_on": os.uname().nodename,
             "result": "Listed Below",
         }

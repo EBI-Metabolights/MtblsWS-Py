@@ -27,6 +27,7 @@ from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from pyopenms import MSExperiment, FileHandler
 from app.config import get_settings
+from app.utils import current_time
 
 from app.ws.misc_utilities.response_messages import HTTP_200, HTTP_404, HTTP_403, HTTP_401
 from app.ws.mtblsWSclient import WsClient
@@ -253,7 +254,7 @@ class ZipSpectraFiles(Resource):
             study_type='NMR',
             reporting_path=reporting_path,
             private_studies_dir=get_settings().study.mounted_paths.study_metadata_files_root_path,
-            spectra_dir=f'NMR_spectra_files_{str(datetime.datetime.now())}',
+            spectra_dir=f'NMR_spectra_files_{str(current_time())}',
             study_location=study_location
         )
         sz.run()

@@ -12,7 +12,7 @@ import uuid
 from app.config import get_settings
 from app.config.model.hpc_cluster import HpcClusterConfiguration
 from app.tasks.bash_client import BashClient, CapturedBashExecutionResult
-from app.utils import MetabolightsException
+from app.utils import MetabolightsException, current_time
 
 from app.ws.settings.utils import get_cluster_settings
 
@@ -114,7 +114,7 @@ class LsfClient(object):
                     submit_time = 0
                     try:
                         submit_datetime = datetime.datetime.strptime(submit_time_str, self.datetime_format)
-                        submit_datetime = submit_datetime.replace(year=datetime.datetime.now().year)
+                        submit_datetime = submit_datetime.replace(year=current_time().year)
                         submit_time = submit_datetime.timestamp()
 
                     except Exception as ex:

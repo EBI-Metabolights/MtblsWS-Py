@@ -50,6 +50,7 @@ from dirsync import sync
 from app.config import get_settings
 from app.config.utils import get_host_internal_url
 from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files
+from app.utils import current_time
 
 from app.ws.mm_models import OntologyAnnotation
 from app.ws.settings.utils import get_study_settings
@@ -701,7 +702,7 @@ def to_isa_tab(study_id, input_folder, output_folder):
     return True, "ISA-Tab files generated for study " + study_id
 
 def create_temp_dir_in_study_folder(parent_folder: str) -> str:
-    date = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    date = current_time().strftime("%m/%d/%Y, %H:%M:%S")
     rand = random.randint(1000, 9999999)
     folder_name = f"{date}-{str(rand)}"
     random_folder_name = hashlib.sha256(bytes(folder_name, 'utf-8')).hexdigest()

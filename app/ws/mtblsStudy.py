@@ -20,7 +20,7 @@
 import glob
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import jsonify, request, send_file
 from flask_restful import Resource, abort, reqparse
@@ -45,7 +45,7 @@ from app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization import s
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import delete_study_folders, maintain_storage_study_folders
 from app.tasks.hpc_study_rsync_client import VALID_FOLDERS, StudyFolder, StudyFolderLocation, StudyFolderType, StudyRsyncClient
 
-from app.utils import MetabolightsDBException, MetabolightsException, metabolights_exception_handler
+from app.utils import MetabolightsDBException, MetabolightsException, current_time, metabolights_exception_handler
 from app.ws import db_connection as db_proxy
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyTaskModel
@@ -1084,9 +1084,8 @@ class CreateAccession(Resource):
             if study.submissiondate.timestamp() > last_study_datetime.timestamp():
                 last_study_datetime = study.submissiondate
         study_settings = get_study_settings()
-        if (
-            datetime.now() - last_study_datetime
-        ).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
+        now = current_time()
+        if (now - last_study_datetime).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
             logger.warning(
                 f"New study creation request from user {user.username} in {study_settings.min_study_creation_interval_in_mins} mins"
             )
@@ -1181,29 +1180,17 @@ class CreateAccession(Resource):
         #     else:
         #         raise MetabolightsException(message="Study folder creation was failed.", http_code=501, exception=exc)
 
-        # Send email if it is new study
-        if new_accession_number:
-            inputs = {"user_token": user_token, "study_id": study_acc}
-            new_study_email_task = send_email_for_study_submitted.apply_async(kwargs=inputs)
-            logger.info(f"Step 3: Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
-        else:
-            logger.info(f"Step 3: Skipping email. No email will be sent for the study {study_acc}")
-
         # maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
         # result = maintenance_task.execute_future_actions()
         # maintenance_task.future_actions.clear()
         inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False, "task_name": "INITIAL_METADATA", 
                   "maintain_metadata_storage": True, "maintain_data_storage": False, "maintain_private_ftp_storage": False}
-    
-        create_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
-        logger.info(f"Step 4.1: 'Create initial files and folders' task has been started for study {study_acc} with task id: {create_folders_task.id}")
-        # wait for a while to complete task
-        
-        # wait for a while to complete task
         try:
-            _ = create_folders_task.get(timeout=get_settings().hpc_cluster.configuration.task_get_timeout_in_seconds)
+            maintain_storage_study_folders(**inputs)
+            logger.info(f"Step 4.1: 'Create initial files and folders' task completed for study {study_acc}")
         except Exception as ex:
-            raise MetabolightsException(message="Study folder creation failed. Try later", http_code=500, exception=ex)
+            logger.info(f"Step 4.1: 'Create initial files and folders' task failed for study {study_acc}. {str(exc)}")
+            
         # Start ftp folder creation task
         inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": True, "maintain_private_ftp_storage": False,  "task_name": "INITIAL_DATA"})
         create_study_data_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
@@ -1213,14 +1200,22 @@ class CreateAccession(Resource):
         create_ftp_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
         logger.info(f"Step 4.3: 'Create study FTP folders' task has been started for study {study_acc} with task id: {create_ftp_folders_task.id}")
 
+        # Send email if it is new study
+        if new_accession_number:
+            inputs = {"user_token": user_token, "study_id": study_acc}
+            new_study_email_task = send_email_for_study_submitted.apply_async(kwargs=inputs)
+            logger.info(f"Step 5.1: Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
+        else:
+            logger.info(f"Step 5.1: Skipping email. No email will be sent for the study {study_acc}")
+            
         if new_accession_number:
             study: Study = StudyService.get_instance().get_study_by_acc(study_acc)
             ftp_folder_name = study_acc.lower() + "-" + study.obfuscationcode
             inputs = {"user_token": user_token, "study_id": study_acc, "folder_name": ftp_folder_name}
             send_email_for_private_ftp_folder.apply_async(kwargs=inputs)
-            logger.info(f"Step 5: Sending FTP folder email for the study {study_acc}")
+            logger.info(f"Step 5.2: Sending FTP folder email for the study {study_acc}")
         else:
-            logger.info(f"Step 5: Skipping FTP folder email for the study {study_acc}")
+            logger.info(f"Step 5.2: Skipping FTP folder email for the study {study_acc}")
 
         # # Start ftp folder creation task
 
@@ -1324,20 +1319,12 @@ class DeleteStudy(Resource):
 
         study_id = study_id.upper()
 
-        # Need to check that the user is actually an active user, ie the user_token exists
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location_deprecated,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not is_curator:
-            abort(401)
-
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        study: Study = StudyService.get_instance().get_study_by_acc(study_id)
+        status = StudyStatus(study.status)
+        if status == StudyStatus.PUBLIC:
+            abort(401, message="It is not allowed to delete a public study")
+            
         logger.info("Deleting study " + study_id)
 
         # Remove the submitter from the study

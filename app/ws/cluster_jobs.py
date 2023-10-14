@@ -24,6 +24,7 @@ from flask_restful_swagger import swagger
 from flask import request
 from datetime import datetime
 from app.config import get_settings
+from app.utils import current_time
 from app.ws.db_connection import check_access_rights
 from app.ws.study.user_service import UserService
 from app.ws.settings.utils import get_cluster_settings
@@ -72,7 +73,7 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
     if log:
         if log_path is None:
             log_file_location = cluster_settings.job_track_log_location
-            now = datetime.now()
+            now = current_time()
             date_time = now.strftime("%d-%m-%Y_%H-%M-%S")
             log_file_path = log_file_location + "/" + identifier + "_" + taskname + "_" + date_time + ".log"
         else:
@@ -465,9 +466,12 @@ class LsfUtils(Resource):
             abort(403)
 
         status, message, job_out, job_err, log_file = submit_job(True, email, queue, command, params, None, True)
-        logger.info(" Output file " + log_file)
-
+        if log_file:
+            logger.info(" Output file " + log_file)
+        else:
+            logger.info(" There is no output file")
+        
         if status:
-            return {"success": message, "message": job_out, "error": job_err}
+            return {"Success": message, "message": job_out, "error": job_err}
         else:
             return {"Failure": message, "message": job_out, "error": job_err}
