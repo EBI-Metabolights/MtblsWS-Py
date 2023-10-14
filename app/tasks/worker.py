@@ -27,7 +27,7 @@ if rs.connection_type == "redis":
     result_backend = broker_url
 else:
     sc = rs.sentinel_connection
-    broker_url = ";".join([f"sentinel://:{rs.redis_password}@{host.name}:{host.port}" for host in sc.hosts])
+    broker_url = ";".join([f"sentinel://:{rs.redis_password}@{host.name}:{host.port}/{rs.redis_db}" for host in sc.hosts])
     broker_transport_options = {"master_name": sc.master_name, "sentinel_kwargs": { "password": rs.redis_password }}
     result_backend_transport_options = broker_transport_options
     result_backend = broker_url
