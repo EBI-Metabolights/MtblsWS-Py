@@ -5,6 +5,7 @@ import datetime
 from enum import Enum
 import logging
 import os
+from pathlib import Path
 import re
 from typing import List, Union
 import uuid
@@ -276,7 +277,10 @@ class LsfClient(object):
             job_id, _, _ = self.submit_hpc_job(
                         script_path, task_name, output_file=out_log_path, error_file=err_log_path, queue=hpc_queue_name
                     )
-            hostname=self.settings.hpc_cluster.datamover.connection.host
+            if logger.level >= logging.DEBUG:
+                file = Path(script_path)
+                logger.debug(file.read_text())
+            hostname=self.settings.hpc_cluster.compute.connection.host
             target_path = os.path.join(worker_config.worker_deployment_root_path, f"run_singularity_{task_name}.sh")
             copy_singularity_run_script = f"scp {script_path} {hostname}:{target_path}"
             
