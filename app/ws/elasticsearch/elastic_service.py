@@ -30,7 +30,6 @@ class ElasticsearchService(object):
 
     def __init__(self, settings: ElasticsearchSettings, db_manager: DBManager, study_settings: StudySettings):
         self.settings = settings
-        self.db_manager = db_manager
         self.study_settings = study_settings
         self._client = None  # lazy load
         self.thread_pool_executor = ThreadPoolExecutor(max_workers=5)
@@ -304,7 +303,7 @@ class ElasticsearchService(object):
         task_name = StudyTaskName.REINDEX
         tasks = StudyService.get_instance().get_study_tasks(study_id=study_id, task_name=task_name)
 
-        with self.db_manager.session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             if tasks:
                 task = tasks[0]
             else:
@@ -342,7 +341,7 @@ class ElasticsearchService(object):
                 tasks = StudyService.get_instance().get_study_tasks(study_id=study_id, task_name=task_name)
                 if tasks:
                     task: StudyTask = tasks[0]
-                    with self.db_manager.session_maker() as db_session:
+                    with DBManager.get_instance().session_maker() as db_session:
                         task.last_request_time = current_time()
                         task.last_execution_status = StudyTaskStatus.EXECUTION_SUCCESSFUL
                         task.last_execution_time = current_time()
@@ -356,7 +355,7 @@ class ElasticsearchService(object):
                 message = f'{study_id} reindex is failed: {str(e)}'
                 if tasks:
                     task = tasks[0]
-                    with self.db_manager.session_maker() as db_session:
+                    with DBManager.get_instance().session_maker() as db_session:
                         task.last_request_time = current_time()
                         task.last_execution_status = StudyTaskStatus.EXECUTION_FAILED
                         task.last_execution_time = current_time()
