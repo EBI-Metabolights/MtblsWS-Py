@@ -46,6 +46,7 @@ celery = Celery(
         "app.tasks.datamover_tasks.basic_tasks.file_management",
         "app.tasks.datamover_tasks.curation_tasks.data_file_operations",
         "app.tasks.datamover_tasks.basic_tasks.execute_commands",
+        "app.tasks.system_monitor_tasks.heartbeat",
         "app.tasks.system_monitor_tasks.worker_maintenance",
         "app.tasks.system_monitor_tasks.integration_check",
     ],
@@ -82,6 +83,7 @@ celery.conf.update(
     task_routes={
         "app.tasks.common_tasks.*": {"queue": "common-tasks"},
         "app.tasks.compute_tasks.*": {"queue": "compute-tasks"},
+        "app.tasks.system_monitor_tasks.heartbeat.*": {"queue": "datamover-tasks", "router_key": "heartbeat"},
         "app.tasks.datamover_tasks.*": {"queue": "datamover-tasks"},
         "app.tasks.system_monitor_tasks.*": {"queue": "monitor-tasks"},
     },
@@ -176,12 +178,12 @@ class MetabolightsTask(celery.Task):
                     new_kwargs[key] = ValueMaskUtility.mask_value(key, kwargs[key])
 
             kwargs_str = str(new_kwargs) if new_kwargs else ""
-            send_email = False
+            send: bool = False
             if isinstance(einfo.exception, MetabolightsException):
                 exc: MetabolightsException = einfo.exception
                 if exc.http_code >= 500:
-                    send_email = True
-            if send_email:
+                    send = True
+            if send:
                 traceback = str(einfo.traceback).replace("\n", "<p>")
                 args_str = str(args) if args else ""
                 body = f"Task <b>{self.name}</b> with <b>{str(task_id)}</b> failed. <p>Submitter: {username} <p> Executed on: {os.uname().nodename} <p>  {str(exc)}<p>Args: {args_str}<p>kwargs: {kwargs_str}<p>{traceback}"
