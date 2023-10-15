@@ -1194,16 +1194,12 @@ class CreateAccession(Resource):
         # maintenance_task.future_actions.clear()
         inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False, "task_name": "INITIAL_METADATA", 
                   "maintain_metadata_storage": True, "maintain_data_storage": False, "maintain_private_ftp_storage": False}
-    
-        create_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
-        logger.info(f"Step 4.1: 'Create initial files and folders' task has been started for study {study_acc} with task id: {create_folders_task.id}")
-        # wait for a while to complete task
-        
-        # wait for a while to complete task
         try:
-            _ = create_folders_task.get(timeout=get_settings().hpc_cluster.configuration.task_get_timeout_in_seconds)
+            maintain_storage_study_folders(**inputs)
+            logger.info(f"Step 4.1: 'Create initial files and folders' task completed for study {study_acc}")
         except Exception as ex:
-            raise MetabolightsException(message="Study folder creation failed. Try later", http_code=500, exception=ex)
+            logger.info(f"Step 4.1: 'Create initial files and folders' task failed for study {study_acc}. {str(exc)}")
+            
         # Start ftp folder creation task
         inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": True, "maintain_private_ftp_storage": False,  "task_name": "INITIAL_DATA"})
         create_study_data_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)

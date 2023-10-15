@@ -27,7 +27,7 @@ import psycopg2
 import psycopg2.extras
 from psycopg2 import pool
 from app.config import get_settings
-from app.utils import MetabolightsDBException
+from app.utils import MetabolightsDBException, current_utc_time_without_timezone
 from app.ws.settings.utils import get_study_settings
 
 from app.ws.utils import get_single_file_information, check_user_token, val_email, fixUserDictKeys
@@ -117,8 +117,8 @@ insert_study_with_study_id = """
         %(acc)s, 
         %(obfuscationcode)s,
         %(releasedate)s,
-        0, 0, current_timestamp, 
-        current_timestamp, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
+        0, 0, %(current_time)s, 
+        %(current_time)s, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
     insert into study_user(userid, studyid) values (%(userid)s, %(new_unique_id)s);
 """
 
@@ -199,7 +199,7 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
         (
             %(address_value)s, %(affiliation_value)s, %(affiliationurl_value)s,
             %(apitoken_value)s, %(email_value)s, %(firstname_value)s,
-            current_timestamp, 
+            %(current_time)s, 
             %(lastname_value)s, %(password_value)s, 
             2, 0,
             %(email_value)s, %(orcid_value)s, %(metaspace_api_key_value)s
@@ -209,7 +209,10 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
     input_values = {"address_value": address, "affiliation_value": affiliation,
             "affiliationurl_value": affiliation_url, "apitoken_value": api_token,
             "email_value": email, "firstname_value": first_name, "lastname_value": last_name,
-            "password_value": password_encoded, "orcid_value": orcid, "metaspace_api_key_value": metaspace_api_key}
+            "password_value": password_encoded, 
+            "orcid_value": orcid, 
+            "metaspace_api_key_value": metaspace_api_key,
+            "current_time": current_utc_time_without_timezone()}
 
     query = insert_user_query
 
@@ -801,7 +804,7 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
     conn = None
     postgresql_pool = None
     acc = study_id
-    releasedate = (datetime.datetime.today() + datetime.timedelta(days=365))
+    releasedate = (current_utc_time_without_timezone() + datetime.timedelta(days=365))
     if not obfuscationcode:
         obfuscationcode = str(uuid.uuid4())
     try:
@@ -830,7 +833,8 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
                    "email": email,
                    "new_unique_id": new_unique_id,
                    "userid": user_id,
-                   "stable_id_prefix": "MTBLS"
+                   "stable_id_prefix": "MTBLS",
+                   "current_time": current_utc_time_without_timezone()
                    }
         if not study_id:
             cursor.execute(insert_empty_study, content)
@@ -1028,11 +1032,11 @@ def update_validation_status(study_id, validation_status):
         return False
 
 
-def update_study_status_change_date(study_id):
+def update_study_status_change_date(study_id, current_time):
     val_acc(study_id)
 
-    query = "update studies set status_date = current_timestamp where acc = %(study_id)s;"
-    status, msg = insert_update_data(query, {'study_id': study_id})
+    query = "update studies set status_date = %(current_time)s where acc = %(study_id)s;"
+    status, msg = insert_update_data(query, {'study_id': study_id, "current_time": current_time})
     if not status:
         logger.error('Database update of study status date failed with error ' + msg)
         return False
