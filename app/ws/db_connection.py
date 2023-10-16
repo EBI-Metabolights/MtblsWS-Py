@@ -27,7 +27,7 @@ import psycopg2
 import psycopg2.extras
 from psycopg2 import pool
 from app.config import get_settings
-from app.utils import MetabolightsDBException, current_utc_time_without_timezone
+from app.utils import MetabolightsDBException, current_time, current_utc_time_without_timezone
 from app.ws.settings.utils import get_study_settings
 
 from app.ws.utils import get_single_file_information, check_user_token, val_email, fixUserDictKeys
@@ -1031,11 +1031,12 @@ def update_validation_status(study_id, validation_status):
         return False
 
 
-def update_study_status_change_date(study_id, current_time):
+def update_study_status_change_date(study_id, change_time: datetime.datetime = None):
     val_acc(study_id)
-
+    if not change_time:
+        change_time = current_time()
     query = "update studies set status_date = %(current_time)s where acc = %(study_id)s;"
-    status, msg = insert_update_data(query, {'study_id': study_id, "current_time": current_time})
+    status, msg = insert_update_data(query, {'study_id': study_id, "current_time": change_time})
     if not status:
         logger.error('Database update of study status date failed with error ' + msg)
         return False
