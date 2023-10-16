@@ -88,8 +88,8 @@ class BashClient(object):
                 execution_result = CapturedBashExecutionResult(
                     returncode=result.returncode,
                     command=result.args,
-                    stderr=result.stderr.decode().split("\n") if result.stdout else [],
-                    stdout=result.stdout.decode().split("\n") if result.stderr else [],
+                    stderr=result.stderr.decode().split("\n"),
+                    stdout=result.stdout.decode().split("\n"),
                 )
                 logger.info(str(execution_result.dict()))
         except Exception as ex:

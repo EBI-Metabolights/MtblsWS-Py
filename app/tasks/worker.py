@@ -181,6 +181,11 @@ celery.conf.beat_schedule = {
     #     "schedule": periodic_task_configuration.worker_heath_check_period_in_seconds,
     #     "options": {"expires": periodic_task_configuration.worker_heath_check_period_in_seconds - 3}
     # }
+    "check_integration": {
+        "task": "app.tasks.common_tasks.admin_tasks.integration_check.check_integrations",
+        "schedule": periodic_task_configuration.integration_test_period_in_seconds*3,
+        "options": {"expires": 55},
+    },
 }
 celery.conf.timezone = "UTC"
 
