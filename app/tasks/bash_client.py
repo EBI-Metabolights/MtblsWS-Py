@@ -40,6 +40,7 @@ class BashClient(object):
         timeout: Union[None, float] = None,
     ) -> Union[LoggedBashExecutionResult, CapturedBashExecutionResult]:
         logger.info(f" A command is being executed : '{command}'")
+        execution_result = None
         print(f" A command is being executed  : '{command}'")
         logger.info(f"stdout_log_file_path: {stdout_log_file_path}")
         logger.info(f"stderr_log_file_path: {stderr_log_file_path}")
@@ -59,6 +60,7 @@ class BashClient(object):
                 stderr_log_file = open(stderr_log_file_path, "w")
 
             if stderr_log_file or stdout_log_file:
+                execution_result = LoggedBashExecutionResult()
                 result = subprocess.run(
                     command,
                     shell=True,
@@ -75,6 +77,7 @@ class BashClient(object):
                 )
                 logger.info(str(execution_result.dict()))
             else:
+                execution_result = CapturedBashExecutionResult()
                 result = subprocess.run(
                     command,
                     shell=True,
@@ -85,8 +88,8 @@ class BashClient(object):
                 execution_result = CapturedBashExecutionResult(
                     returncode=result.returncode,
                     command=result.args,
-                    stderr=result.stderr.decode().split("\n"),
-                    stdout=result.stdout.decode().split("\n"),
+                    stderr=result.stderr.decode().split("\n") if result.stdout else "",
+                    stdout=result.stdout.decode().split("\n") if result.stderr else "",
                 )
                 logger.info(str(execution_result.dict()))
         except Exception as ex:
