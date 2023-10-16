@@ -141,17 +141,17 @@ def ping_datamover_worker(worker_name: str):
     name = f"{project_name}_{worker_name}"
 
     input_value = socket.gethostname()
-    for _ in range(3):
+    for _ in range(5):
         task = heartbeat.ping.apply_async(queue=name, args=[input_value])
         try:
-            result = task.get(timeout=5)
+            result = task.get(timeout=10)
             if result and "reply_for" in result and result["reply_for"] == input_value:
                 if result and "worker_version" in result:
                     return result["worker_version"]
                 else:
                     return None
             else:
-                time.sleep(1)
+                time.sleep(2)
         except Exception as ex:
             print(f"No response from datamover worker {name}: {str(ex)}")
 
