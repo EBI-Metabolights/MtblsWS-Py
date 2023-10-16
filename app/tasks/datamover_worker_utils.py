@@ -4,10 +4,11 @@ import time
 from typing import List
 
 import kombu
+
 from app.config import get_settings
 from app.tasks.lsf_client import HpcJob, LsfClient
-from app.tasks.worker import celery as app
 from app.tasks.system_monitor_tasks import heartbeat
+from app.tasks.worker import celery as app
 
 
 def get_status(worker_name: str):
@@ -29,9 +30,12 @@ def create_datamover_worker(worker_name: str):
     )
     args = worker_config.broker_queue_names.split(",")
     args.append(name)
-    job_id, _ = client.run_singularity(name, command, ",".join(args), unique_task_name=False)
-    
+    job_id, _ = client.run_singularity(
+        name, command, ",".join(args), unique_task_name=False
+    )
+
     return job_id
+
 
 def create_queue(name: str):
     if not app.conf.task_queues:
@@ -45,7 +49,7 @@ def create_queue(name: str):
     if not queue_exists:
         print(f"Queue is created for datamover worker: {name}")
         app.conf.task_queues.append(kombu.Queue(name=name, routing_key="heartbeat"))
-    
+
 
 def delete_queue(name: str):
     if not app.conf.task_queues:
@@ -60,6 +64,7 @@ def delete_queue(name: str):
         print(f"Queue will be deleted for datamover worker: {name}")
         app.conf.task_queues.remove(queue)
 
+
 def delete_current_workers(worker_name: str):
     kill_old_worker_error = False
     for _ in range(3):
@@ -67,7 +72,9 @@ def delete_current_workers(worker_name: str):
         if jobs:
             job_ids = [job.job_id for job in jobs]
             client: LsfClient = LsfClient()
-            killed_ids, stdout, stderr = client.kill_jobs(job_ids, failing_gracefully=True)
+            killed_ids, stdout, stderr = client.kill_jobs(
+                job_ids, failing_gracefully=True
+            )
             if len(killed_ids) != len(job_ids):
                 print(f"{stdout}, {stderr}")
                 kill_old_worker_error = True
@@ -82,6 +89,7 @@ def delete_current_workers(worker_name: str):
         return False
     return True
 
+
 def start_worker(worker_name: str):
     up = False
     for _ in range(5):
@@ -93,7 +101,7 @@ def start_worker(worker_name: str):
             if jobs and jobs[0].status.upper() == "RUN":
                 started = True
                 break
-            time.sleep(10)     
+            time.sleep(10)
         if started:
             up = True
             break
@@ -104,34 +112,34 @@ def start_worker(worker_name: str):
         print("Datamover worker is running.")
         return True
 
-def restart_datamover_worker(worker_name: str):
 
+def restart_datamover_worker(worker_name: str):
     project_name = get_settings().hpc_cluster.configuration.job_project_name
     name = f"{project_name}_{worker_name}"
-                 
+
     success = delete_current_workers(worker_name)
     if not success:
         return False
-    
+
     success = start_worker(worker_name)
     if not success:
         return False
-    
+
     create_queue(name)
 
     worker_version = ping_datamover_worker(worker_name)
     if not worker_version:
         print("Datamover worker is not active.")
-        return False  
+        return False
     else:
-        print(f"Datamover worker '{name}' is active now.")    
+        print(f"Datamover worker '{name}' is active now.")
         return True
-    
+
 
 def ping_datamover_worker(worker_name: str):
     project_name = get_settings().hpc_cluster.configuration.job_project_name
     name = f"{project_name}_{worker_name}"
-    
+
     input_value = socket.gethostname()
     for _ in range(3):
         task = heartbeat.ping.apply_async(queue=name, args=[input_value])
@@ -146,5 +154,5 @@ def ping_datamover_worker(worker_name: str):
                 time.sleep(1)
         except Exception as ex:
             print(f"No response from datamover worker {name}: {str(ex)}")
-        
+
     return None
