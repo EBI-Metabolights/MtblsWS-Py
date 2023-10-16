@@ -7,6 +7,7 @@ import time
 import app as current_app
 from app.config import get_settings
 from app.tasks.datamover_worker_utils import delete_current_workers, delete_queue, ping_datamover_worker, restart_datamover_worker
+from app.tasks.worker import report_internal_technical_issue
 
 
 if __name__ == "__main__":
@@ -33,6 +34,7 @@ if __name__ == "__main__":
         
             time.sleep(10)
     except Exception as ex:
+        report_internal_technical_issue(f"{worker_name} queue will be deleted", "Queue will be deleted")
         project_name = get_settings().hpc_cluster.configuration.job_project_name
         name = f"{project_name}_{worker_name}"
         delete_queue(name)
