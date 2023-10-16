@@ -50,29 +50,20 @@ common_tasks = [
     "app.tasks.common_tasks.curation_tasks.validation",
     "app.tasks.common_tasks.basic_tasks.email",
     "app.tasks.common_tasks.basic_tasks.elasticsearch",
+    "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
+    "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
+    "app.tasks.system_monitor_tasks.worker_maintenance",
+    "app.tasks.system_monitor_tasks.integration_check",
 ]
 datamover_tasks = [
     "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",
     "app.tasks.datamover_tasks.basic_tasks.file_management",
     "app.tasks.datamover_tasks.curation_tasks.data_file_operations",
     "app.tasks.datamover_tasks.basic_tasks.execute_commands",
-]
-
-
-admin_tasks = [
-    "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
-    "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
     "app.tasks.system_monitor_tasks.heartbeat",
-    "app.tasks.system_monitor_tasks.worker_maintenance",
-    "app.tasks.system_monitor_tasks.integration_check",
 ]
 
-
-compute_tasks = []
-
-celery = Celery(
-    __name__,
-    include=[
+deafult=[
         "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
         "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
         "app.tasks.common_tasks.curation_tasks.metabolon",
@@ -87,7 +78,18 @@ celery = Celery(
         "app.tasks.system_monitor_tasks.worker_maintenance",
         "app.tasks.system_monitor_tasks.integration_check",
     ],
-)
+
+worker_type = os.getenv("WORKER_TYPE")
+
+if worker_type == "common-worker": 
+    include_list = common_tasks
+elif worker_type == "datamover-worker": 
+    include_list = datamover_tasks
+else:
+    include_list=deafult    
+    
+
+celery = Celery(__name__, include=include_list)
 
 
 @lru_cache(1)
