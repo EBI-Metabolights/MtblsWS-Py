@@ -184,7 +184,6 @@ study_by_obfuscation_code_query = """
 
 def create_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
                 password_encoded, metaspace_api_key):
-    val_email(email)
     email = email.lower()
     insert_user_query = """
         INSERT INTO users (
