@@ -798,7 +798,7 @@ def get_submitted_study_ids_for_user(user_token):
 
 def create_empty_study(user_token, study_id=None, obfuscationcode=None):
     email = get_email(user_token)
-    val_email(email)
+    # val_email(email)
     email = email.lower()
     conn = None
     postgresql_pool = None
