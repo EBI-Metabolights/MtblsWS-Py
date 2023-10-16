@@ -7,30 +7,38 @@ import uuid
 from pydantic import BaseModel
 from app.config import get_settings
 
-from app.utils import MetabolightsException
-
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 logger = logging.getLogger("wslog")
-env = Environment(loader=PackageLoader("resources.templates", "scripts"), autoescape=select_autoescape(["html", "xml"]))
+env = Environment(
+    loader=PackageLoader("resources.templates", "scripts"),
+    autoescape=select_autoescape(["html", "xml"]),
+)
 
 
 class BashExecutionResult(BaseModel):
     command: str = ""
     returncode: int = -1
 
+
 class LoggedBashExecutionResult(BashExecutionResult):
     stdout_log_file_path: Union[str, None] = None
     stderr_log_file_path: Union[str, None] = None
 
+
 class CapturedBashExecutionResult(BashExecutionResult):
     stdout: List[str] = []
     stderr: List[str] = []
-        
-    
+
+
 class BashClient(object):
     @staticmethod
-    def execute_command(command: str, stdout_log_file_path: str=None, stderr_log_file_path: str=None, timeout: Union[None, float] = None) -> Union[LoggedBashExecutionResult, CapturedBashExecutionResult]:
+    def execute_command(
+        command: str,
+        stdout_log_file_path: str = None,
+        stderr_log_file_path: str = None,
+        timeout: Union[None, float] = None,
+    ) -> Union[LoggedBashExecutionResult, CapturedBashExecutionResult]:
         logger.info(f" A command is being executed : '{command}'")
         print(f" A command is being executed  : '{command}'")
         stdout_log_file = None
@@ -40,22 +48,35 @@ class BashClient(object):
                 stdout_log_file = open(stdout_log_file_path, "w")
             if stderr_log_file_path:
                 stderr_log_file = open(stderr_log_file_path, "w")
-                
+
             if stderr_log_file or stdout_log_file:
-                result = subprocess.run(command, shell=True, stderr=stderr_log_file, stdout=stdout_log_file, check=False, timeout=timeout)
+                result = subprocess.run(
+                    command,
+                    shell=True,
+                    stderr=stderr_log_file,
+                    stdout=stdout_log_file,
+                    check=False,
+                    timeout=timeout,
+                )
                 execution_result = LoggedBashExecutionResult(
                     returncode=result.returncode,
                     command=result.args,
                     stdout_log_file_path=stdout_log_file_path,
-                    stderr_log_file_path=stderr_log_file_path
+                    stderr_log_file_path=stderr_log_file_path,
                 )
             else:
-                result = subprocess.run(command, shell=True, capture_output=True, check=False, timeout=timeout)
+                result = subprocess.run(
+                    command,
+                    shell=True,
+                    capture_output=True,
+                    check=False,
+                    timeout=timeout,
+                )
                 execution_result = CapturedBashExecutionResult(
                     returncode=result.returncode,
                     command=result.args,
-                    stderr=result.stderr.decode().split('\n'),
-                    stdout=result.stdout.decode().split('\n'),
+                    stderr=result.stderr.decode().split("\n"),
+                    stdout=result.stdout.decode().split("\n"),
                 )
         finally:
             if stderr_log_file:
@@ -67,7 +88,7 @@ class BashClient(object):
                 try:
                     stdout_log_file.close()
                 except Exception:
-                    pass                
+                    pass
         return execution_result
 
     @staticmethod
@@ -100,10 +121,14 @@ class BashClient(object):
     def prepare_script_from_template(script_template_name: str, **kwargs):
         template = env.get_template(script_template_name)
         content = template.render(kwargs)
-        basename = os.path.basename(script_template_name).replace(".j2", "").replace(".", "_")
+        basename = (
+            os.path.basename(script_template_name).replace(".j2", "").replace(".", "_")
+        )
 
         temp_file_name = f"{basename}_{str(uuid.uuid4())}.sh"
-        file_input_path = os.path.join(get_settings().server.temp_directory_path, temp_file_name)
+        file_input_path = os.path.join(
+            get_settings().server.temp_directory_path, temp_file_name
+        )
 
         with open(file_input_path, "w") as f:
             f.writelines(content)

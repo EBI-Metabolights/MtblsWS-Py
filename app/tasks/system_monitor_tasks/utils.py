@@ -1,12 +1,8 @@
-import datetime
 import hashlib
 from typing import Set
 
-import redis
-
-from app.config import get_settings
 from app.utils import current_time
-from app.ws.redis.redis import get_redis_server
+from app.ws.redis.redis import RedisStorage, get_redis_server
 
 
 def generate_random_name(length=4, current_names: Set[str] = None):
@@ -23,7 +19,7 @@ def generate_random_name(length=4, current_names: Set[str] = None):
 
 
 def check_and_get_monitor_session(key: str, timeout: int):
-    redis = get_redis_server()
+    redis: RedisStorage = get_redis_server()
 
     monitor_status = redis.get_value(key)
     if monitor_status and monitor_status.decode() == "1":

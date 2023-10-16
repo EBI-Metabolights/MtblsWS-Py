@@ -47,7 +47,7 @@ def maintain_datamover_workers(
             jobs = client.get_job_status()
         except Exception as exc:
             logger.error("There is no datamover job")
-            results[common_message_key].append("Failed to get current job list on HPC.")
+            results[common_message_key].append(f"Failed to get current job list on HPC. {str(exc)}")
             return results
 
         current_workers: List[HpcJob] = []
@@ -83,7 +83,7 @@ def maintain_datamover_workers(
                 results[worker.name].append("It is up and running.")
                 runnig_jobs.append(worker)
             else:
-                unexpected_state_jobs[worker]
+                unexpected_state_jobs.append(worker)
                 results[worker.name].append(
                     f"It is not running. Its state is {worker.status}."
                 )
@@ -127,7 +127,7 @@ def create_datamover_worker(
     )
     args = worker_config.broker_queue_names
     client.run_singularity(name, command, args, unique_task_name=False)
-    message = f"New worker is triggered."
+    message = "New worker is triggered."
     results[name] = [message]
     logger.info(message)
 
@@ -197,29 +197,29 @@ def maintain_expired_workers(
             x for x in current_workers if x.name in expired_worker_names
         ]
         expired_workers.sort(key=lambda x: x.submit_time, reverse=False)
-        map = current_workers_map
+        c_map = current_workers_map
         expired_active_worker_keys = [
-            map[x.name]["key"]
+            c_map[x.name]["key"]
             for x in expired_workers
-            if x.name in map
-            and map[x.name]
-            and "key" in map[x.name]
-            and map[x.name]["key"]
+            if x.name in c_map
+            and c_map[x.name]
+            and "key" in c_map[x.name]
+            and c_map[x.name]["key"]
         ]
         expired_active_worker_names = [
             x.name
             for x in expired_workers
-            if x.name in map
-            and map[x.name]
-            and "key" in map[x.name]
-            and map[x.name]["key"]
+            if x.name in c_map
+            and c_map[x.name]
+            and "key" in c_map[x.name]
+            and c_map[x.name]["key"]
         ]
         inactive_worker_job_ids = [
             x.job_id
             for x in expired_workers
-            if x.name in map
-            and map[x.name]
-            and ("key" not in map[x.name] or not map[x.name]["key"])
+            if x.name in c_map
+            and c_map[x.name]
+            and ("key" not in c_map[x.name] or not c_map[x.name]["key"])
         ]
         if inactive_worker_job_ids:
             client = LsfClient()

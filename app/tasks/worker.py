@@ -17,21 +17,59 @@ from app.ws.study.user_service import UserService
 settings: CelerySettings = get_settings().celery
 
 rs: redis_cache.RedisConnection = settings.broker
-#broker_url = f'redis+sentinel://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}'
+# broker_url = f'redis+sentinel://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}'
 broker_url = None
 broker_transport_options = None
 result_backend_transport_options = None
 if rs.connection_type == "redis":
     rc = rs.redis_connection
-    broker_url = f"redis://:{rs.redis_password}@{rc.redis_host}:{rc.redis_port}/{rs.redis_db}"
+    broker_url = (
+        f"redis://:{rs.redis_password}@{rc.redis_host}:{rc.redis_port}/{rs.redis_db}"
+    )
     result_backend = broker_url
 else:
     sc = rs.sentinel_connection
-    broker_url = ";".join([f"sentinel://:{rs.redis_password}@{host.name}:{host.port}/{rs.redis_db}" for host in sc.hosts])
-    broker_transport_options = {"master_name": sc.master_name, "sentinel_kwargs": { "password": rs.redis_password }}
+    broker_url = ";".join(
+        [
+            f"sentinel://:{rs.redis_password}@{host.name}:{host.port}/{rs.redis_db}"
+            for host in sc.hosts
+        ]
+    )
+    broker_transport_options = {
+        "master_name": sc.master_name,
+        "sentinel_kwargs": {"password": rs.redis_password},
+    }
     result_backend_transport_options = broker_transport_options
     result_backend = broker_url
-    
+
+
+common_tasks = [
+    "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
+    "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
+    "app.tasks.common_tasks.curation_tasks.metabolon",
+    "app.tasks.common_tasks.curation_tasks.validation",
+    "app.tasks.common_tasks.basic_tasks.email",
+    "app.tasks.common_tasks.basic_tasks.elasticsearch",
+]
+datamover_tasks = [
+    "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",
+    "app.tasks.datamover_tasks.basic_tasks.file_management",
+    "app.tasks.datamover_tasks.curation_tasks.data_file_operations",
+    "app.tasks.datamover_tasks.basic_tasks.execute_commands",
+]
+
+
+admin_tasks = [
+    "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
+    "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
+    "app.tasks.system_monitor_tasks.heartbeat",
+    "app.tasks.system_monitor_tasks.worker_maintenance",
+    "app.tasks.system_monitor_tasks.integration_check",
+]
+
+
+compute_tasks = []
+
 celery = Celery(
     __name__,
     include=[
@@ -52,8 +90,6 @@ celery = Celery(
     ],
 )
 
-#celery.conf.broker_transport_options = { 'master_name': "master-redis-ws", 'sentinel_kwargs': { 'password': rs.redis_password } }
-#celery.conf.result_backend_transport_options = {'master_name': "master-redis-ws", 'sentinel_kwargs': { 'password': rs.redis_password }}
 
 @lru_cache(1)
 def get_flask_app():
@@ -83,7 +119,10 @@ celery.conf.update(
     task_routes={
         "app.tasks.common_tasks.*": {"queue": "common-tasks"},
         "app.tasks.compute_tasks.*": {"queue": "compute-tasks"},
-        "app.tasks.system_monitor_tasks.heartbeat.*": {"queue": "datamover-tasks", "router_key": "heartbeat"},
+        "app.tasks.system_monitor_tasks.heartbeat.*": {
+            "queue": "datamover-tasks",
+            "router_key": "heartbeat",
+        },
         "app.tasks.datamover_tasks.*": {"queue": "datamover-tasks"},
         "app.tasks.system_monitor_tasks.*": {"queue": "monitor-tasks"},
     },
@@ -101,13 +140,17 @@ celery.conf.update(
 if broker_transport_options:
     celery.conf.update(broker_transport_options=broker_transport_options)
 if result_backend_transport_options:
-    celery.conf.update(result_backend_transport_options=result_backend_transport_options)
+    celery.conf.update(
+        result_backend_transport_options=result_backend_transport_options
+    )
+
 
 @after_task_publish.connect
 def update_task_was_sent_state(sender=None, headers=None, **kwargs):
     task = celery.tasks.get(sender)
     backend = task.backend if task else celery.backend
     backend.store_result(headers["id"], None, "INITIATED")
+
 
 service_account_apitoken = get_settings().auth.service_account.api_token
 periodic_task_configuration = get_settings().celery.periodic_task_configuration
@@ -130,19 +173,18 @@ periodic_task_configuration = get_settings().celery.periodic_task_configuration
 #         "options": {"expires": 60 },
 #     }
 # }
-celery.conf.beat_schedule = {
 
-    "check_workers": {
-        "task": "app.tasks.system_monitor_tasks.worker_maintenance.check_all_workers",
-        "schedule": periodic_task_configuration.worker_heath_check_period_in_seconds,
-        "options": {"expires": periodic_task_configuration.worker_heath_check_period_in_seconds - 3}
-    }
+celery.conf.beat_schedule = {
+    # "check_workers": {
+    #     "task": "app.tasks.system_monitor_tasks.worker_maintenance.check_all_workers",
+    #     "schedule": periodic_task_configuration.worker_heath_check_period_in_seconds,
+    #     "options": {"expires": periodic_task_configuration.worker_heath_check_period_in_seconds - 3}
+    # }
 }
 celery.conf.timezone = "UTC"
 
 
 def send_email(subject_name, body, from_address, to_addresses, cc_addresses):
-
     flask_app = get_flask_app()
     with flask_app.app_context():
         email_service = get_email_service(flask_app)
@@ -154,10 +196,14 @@ def send_email(subject_name, body, from_address, to_addresses, cc_addresses):
             cc_mail_addresses=cc_addresses,
         )
 
+
 def report_internal_technical_issue(subject, body):
-    email = get_settings().email.email_service.configuration.technical_issue_recipient_email_address
+    email = (
+        get_settings().email.email_service.configuration.technical_issue_recipient_email_address
+    )
     send_email(subject, body, None, email, None)
-    
+
+
 class MetabolightsTask(celery.Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         flask_app = get_flask_app()
@@ -167,13 +213,14 @@ class MetabolightsTask(celery.Task):
             if "email" in kwargs:
                 username = kwargs["email"]
             if not username and "user_token" in kwargs and kwargs["user_token"]:
-                user = UserService.get_instance().get_simplified_user_by_token(kwargs["user_token"])
+                user = UserService.get_instance().get_simplified_user_by_token(
+                    kwargs["user_token"]
+                )
                 if user:
                     username = user.userName
-                
+
             new_kwargs = {}
             if kwargs:
-
                 for key in kwargs:
                     new_kwargs[key] = ValueMaskUtility.mask_value(key, kwargs[key])
 

@@ -1,4 +1,3 @@
-import datetime
 import json
 import os
 from app.utils import MetabolightsDBException, current_time
@@ -37,7 +36,7 @@ def reindex_all_public_studies(user_token, send_email_to_submitter=False):
             )
 
             if not result:
-                raise MetabolightsDBException(f"No compound found on db.")
+                raise MetabolightsDBException("No compound found on db.")
             for study in result:
                 studies.append(study)
 
@@ -67,7 +66,7 @@ def reindex_all_studies(user_token, send_email_to_submitter=False):
             result = db_session.query(Study.acc, Study.updatedate).all()
 
             if not result:
-                raise MetabolightsDBException(f"No compound found on db.")
+                raise MetabolightsDBException("No compound found on db.")
             for study in result:
                 studies.append(study)
 
@@ -132,7 +131,7 @@ def reindex_all_compounds(user_token, send_email_to_submitter=False):
             metabolites = db_session.query(RefMetabolite.acc, RefMetabolite.updated_date).all()
 
             if not metabolites:
-                raise MetabolightsDBException(f"No compound found on db.")
+                raise MetabolightsDBException("No compound found on db.")
             for metabolite in metabolites:
                 compounds.append(metabolite)
 
