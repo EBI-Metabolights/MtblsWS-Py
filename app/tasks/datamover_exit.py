@@ -2,6 +2,7 @@
 
 
 import os
+import socket
 import sys
 import time
 from app.config import get_settings
@@ -12,7 +13,7 @@ from app.tasks.worker import report_internal_technical_issue
 
 if __name__ == "__main__":
     
-    worker_name = os.getenv('WORKER_HOST_NAME')
+    worker_name = socket.gethostname()
     
     report_internal_technical_issue(f"{worker_name} queue will be deleted", "Queue will be deleted")
     if not worker_name:
