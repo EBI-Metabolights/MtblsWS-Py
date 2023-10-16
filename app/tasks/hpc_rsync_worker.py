@@ -1,8 +1,9 @@
 import pathlib
-from typing import List
+from typing import List, Union
 
 from pydantic import BaseModel
 from app.config import get_settings
+from app.services.storage_service.acl import Acl
 from app.services.storage_service.models import (
     SyncCalculationStatus,
     SyncCalculationTaskResult,
@@ -27,8 +28,9 @@ class RsyncResult(BaseModel):
     error_message: str = ""
     success_message: str = ""
 
-def create_remote_path(target_path: str):
-    inputs = {"folder_paths": target_path, "exist_ok": True}
+def create_remote_path(target_path: Union[str, List[str]], acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE):
+    
+    inputs = {"folder_paths": target_path, "exist_ok": True, "acl": acl}
     task = create_folders.apply_async(kwargs=inputs, expires=10)
     try:
         task.get(timeout=get_settings().hpc_cluster.configuration.task_get_timeout_in_seconds)

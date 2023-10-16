@@ -41,6 +41,12 @@ class BashClient(object):
     ) -> Union[LoggedBashExecutionResult, CapturedBashExecutionResult]:
         logger.info(f" A command is being executed : '{command}'")
         print(f" A command is being executed  : '{command}'")
+        logger.info(f"stdout_log_file_path: {stdout_log_file_path}")
+        logger.info(f"stderr_log_file_path: {stderr_log_file_path}")
+        stdout_dir_path = os.path.dirname(stdout_log_file_path)
+        stderr_dir_path = os.path.dirname(stdout_log_file_path)
+        os.makedirs(stdout_dir_path, exist_ok=True)
+        os.makedirs(stderr_dir_path, exist_ok=True)
         stdout_log_file = None
         stderr_log_file = None
         try:
@@ -64,6 +70,7 @@ class BashClient(object):
                     stdout_log_file_path=stdout_log_file_path,
                     stderr_log_file_path=stderr_log_file_path,
                 )
+                logger.info(str(execution_result.dict()))
             else:
                 result = subprocess.run(
                     command,
@@ -78,6 +85,12 @@ class BashClient(object):
                     stderr=result.stderr.decode().split("\n"),
                     stdout=result.stdout.decode().split("\n"),
                 )
+                logger.info(str(execution_result.dict()))
+        except Exception as ex:
+            if stderr_log_file:
+                stderr_log_file.write(str(ex))
+            else:
+                logger.error(f"Error: {str(ex)}")
         finally:
             if stderr_log_file:
                 try:

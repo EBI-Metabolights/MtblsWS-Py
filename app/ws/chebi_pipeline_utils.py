@@ -1143,13 +1143,14 @@ def search_and_update_maf(study_id: str, study_metadata_location: str, annotatio
         include_list = [f"{pipeline_settings.chebi_annotation_sub_folder}", 
                         f"{pipeline_settings.chebi_annotation_sub_folder}.zip",
                         f"{pipeline_settings.chebi_annotation_sub_folder}/***"]
-        mkdir_command = f"mkdir -p {target_ftp_path}"
-        # chmod_command = f"chmod -R 750 {target_ftp_path}"
+        commands=[f"mkdir -p {target_ftp_path}"]
+        
         rsync_command = HpcRsyncWorker.build_rsync_command(
             f"{internal_files_path}/", f"{target_ftp_path}/", include_list=include_list, exclude_list=["*"], rsync_arguments="-auv"
         )
-        
-        command = f"{mkdir_command} && {rsync_command}" 
+        commands.append(f"chmod -R 750 {target_ftp_path}")
+        commands.append(rsync_command)
+        command = " && ".join(commands)
         
         inputs = {"command": command }
         task = execute_bash_command.apply_async(kwargs=inputs, expires=60*5)
