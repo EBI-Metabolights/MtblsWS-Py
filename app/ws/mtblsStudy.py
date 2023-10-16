@@ -22,7 +22,6 @@ import logging
 import os
 from datetime import datetime
 
-from flask import current_app as app
 from flask import jsonify, request, send_file
 from flask_restful import Resource, abort, reqparse
 from flask_restful_swagger import swagger
@@ -50,7 +49,7 @@ from app.utils import MetabolightsDBException, MetabolightsException, metaboligh
 from app.ws import db_connection as db_proxy
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyTaskModel
-from app.ws.db.schemes import Study, StudyTask
+from app.ws.db.schemes import Study, StudyTask, User
 from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus, UserRole
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
 from app.ws.db_connection import (
@@ -1075,7 +1074,7 @@ class CreateAccession(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
+        user: User = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
         studies = UserService.get_instance().get_user_studies(user.apitoken)
         submitted_studies = []
         last_study_datetime = datetime.fromtimestamp(0)
@@ -1108,7 +1107,7 @@ class CreateAccession(Resource):
 
         logger.info(f"Step 1: New study creation request is received from user {user.username}")
         new_accession_number = True
-        study_acc = None
+        study_acc: str = None
         if "study_id" in request.headers:
             requested_study_id = request.headers["study_id"]
             study_acc = self.validate_requested_study_id(requested_study_id, user_token)
@@ -1117,24 +1116,22 @@ class CreateAccession(Resource):
                 logger.warning(
                     f"A previous study creation request from the user {user.username}. The study {study_acc} will be created."
                 )
-        folder_name = study_acc
 
-        study: Study = None
         try:
             study_acc = create_empty_study(user_token, study_id=study_acc)
-            study = StudyService.get_instance().get_study_by_acc(study_id=study_acc)
+            # study = StudyService.get_instance().get_study_by_acc(study_id=study_acc)
 
-            if study and study.acc:
+            if study_acc:
                 logger.info(f"Step 2: Study id {study_acc} is created on DB.")
             else:
                 raise MetabolightsException(message="Could not create a new study in db", http_code=503)
         except Exception as exc:
             inputs = {
                 "subject": "Study id creation on DB was failed.",
-                "body": f"Study id on db creation was failed: folder: {folder_name}, user: {user.username} <p> {str(exc)}",
+                "body": f"Study id on db creation was failed: folder: {study_acc}, user: {user.username} <p> {str(exc)}",
             }
             send_technical_issue_email.apply_async(kwargs=inputs)
-            logger.error(f"Study id creation on DB was failed. Temp folder: {folder_name}. {str(inputs)}")
+            logger.error(f"Study id creation on DB was failed. Temp folder: {study_acc}. {str(inputs)}")
             if isinstance(exc, MetabolightsException):
                 raise exc
             else:
@@ -1195,14 +1192,25 @@ class CreateAccession(Resource):
         # maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
         # result = maintenance_task.execute_future_actions()
         # maintenance_task.future_actions.clear()
-        inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False, "task_name": "INITIAL"}
-        create_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
-        logger.info(f"Step 4: Create initial files and folders task has been started for study {study_acc} with task id: {create_folders_task.id}")
-        # wait for a while to complete task
-        _ = create_folders_task.get(timeout=get_settings().hpc_cluster.configuration.task_get_timeout_in_seconds)
+        inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False, "task_name": "INITIAL_METADATA", 
+                  "maintain_metadata_storage": True, "maintain_data_storage": False, "maintain_private_ftp_storage": False}
+        try:
+            maintain_storage_study_folders(**inputs)
+            logger.info(f"Step 4.1: 'Create initial files and folders' task completed for study {study_acc}")
+        except Exception as ex:
+            logger.info(f"Step 4.1: 'Create initial files and folders' task failed for study {study_acc}. {str(exc)}")
+            
         # Start ftp folder creation task
+        inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": True, "maintain_private_ftp_storage": False,  "task_name": "INITIAL_DATA"})
+        create_study_data_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
+        logger.info(f"Step 4.2: 'Create study data files and folders' task has been started for study {study_acc} with task id: {create_study_data_folders_task.id}")
+        
+        inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": False, "maintain_private_ftp_storage": True,  "task_name": "INITIAL_DATA"})
+        create_ftp_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
+        logger.info(f"Step 4.3: 'Create study FTP folders' task has been started for study {study_acc} with task id: {create_ftp_folders_task.id}")
 
         if new_accession_number:
+            study: Study = StudyService.get_instance().get_study_by_acc(study_acc)
             ftp_folder_name = study_acc.lower() + "-" + study.obfuscationcode
             inputs = {"user_token": user_token, "study_id": study_acc, "folder_name": ftp_folder_name}
             send_email_for_private_ftp_folder.apply_async(kwargs=inputs)

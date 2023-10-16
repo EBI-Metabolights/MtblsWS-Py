@@ -17,9 +17,9 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import logging
-from flask_restful import Resource, reqparse
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
-from flask import request, abort, jsonify
+from flask import request, jsonify
 from flask import current_app as app
 from app.services.storage_service.unmounted.data_mover_client import DataMoverAvailableStorage
 from app.services.storage_service.models import SyncTaskStatus

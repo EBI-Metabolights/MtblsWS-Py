@@ -2,7 +2,7 @@ import logging
 from datetime import timedelta, datetime
 
 import tweepy
-from flask import request, current_app as app
+from flask import request
 from flask_restful import Resource, abort, reqparse
 from flask_restful_swagger import swagger
 from app.config import get_settings

@@ -20,8 +20,8 @@ import logging
 import os.path
 import pickle
 
-from flask import request, abort, current_app as app
-from flask_restful import Resource
+from flask import request
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow

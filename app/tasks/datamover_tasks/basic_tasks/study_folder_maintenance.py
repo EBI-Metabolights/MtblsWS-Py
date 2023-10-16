@@ -199,12 +199,13 @@ def maintain_storage_study_folders(
                     force_to_maintain=force_to_maintain,
                     cluster_execution_mode=cluster_execution_mode
                 )
-                if maintain_private_ftp_storage:
-                    maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
-                if maintain_data_storage:
-                    maintenance_task.create_maintenance_actions_for_study_data_files()
+                
                 if maintain_metadata_storage:
                     maintenance_task.maintain_study_rw_storage_folders()
+                if maintain_data_storage:
+                    maintenance_task.create_maintenance_actions_for_study_data_files()
+                if maintain_private_ftp_storage:
+                    maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
                 rows = []
                 for action_log in maintenance_task.actions:
                     success = action_log.successful

@@ -18,7 +18,7 @@
 import json
 import logging
 
-from flask import request, jsonify, current_app as app
+from flask import request, jsonify
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from app.config import get_settings

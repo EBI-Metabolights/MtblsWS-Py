@@ -102,13 +102,13 @@ class StudyStatus(Resource):
 
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
 
         data_dict = json.loads(request.data.decode('utf-8'))
         study_status = data_dict['status']
 
         if study_status is None:
-            abort(404, 'Please provide the new study status')
+            abort(404, message='Please provide the new study status')
 
         # User authentication
         user_token = None
@@ -150,7 +150,7 @@ class StudyStatus(Resource):
                                obfuscation_code=obfuscation_code, user_token=user_token)
         elif write_access:
             if db_study_status.lower() != 'submitted':  # and study_status != 'In Curation':
-                abort(403, "You can not change the study to this status")
+                abort(403, message="You can not change the study to this status")
             validation_report: ValidationReportFile = get_validation_report(study_id=study_id)
 
             if validation_report.validation.status in ("success", "warning", "info"):
@@ -163,11 +163,11 @@ class StudyStatus(Resource):
                     release_date = new_date
             else:
                 if validation_report.validation.status == "not ready":
-                    abort(403, "Study has not been validated yet. Validate your study, fix any problems before attempting to change study status.")
+                    abort(403, message="Study has not been validated yet. Validate your study, fix any problems before attempting to change study status.")
                 else:
-                    abort(403, "There are validation errors. Fix any problems before attempting to change study status.")
+                    abort(403, message="There are validation errors. Fix any problems before attempting to change study status.")
         else:
-            abort(403, "You do not have rights to change the status for this study")
+            abort(403, message="You do not have rights to change the status for this study")
 
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True)
 
@@ -250,7 +250,7 @@ class ToggleAccess(Resource):
 
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
 
         # User authentication
         user_token = None
@@ -306,7 +306,7 @@ class ToggleAccessGet(Resource):
 
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
 
         # User authentication
         user_token = None

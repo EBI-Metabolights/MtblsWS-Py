@@ -25,10 +25,9 @@ from typing import Optional
 
 import psycopg2
 import psycopg2.extras
-from flask import current_app as app, abort
 from psycopg2 import pool
 from app.config import get_settings
-from app.utils import MetabolightsDBException
+from app.utils import MetabolightsDBException, current_utc_time_without_timezone
 from app.ws.settings.utils import get_study_settings
 
 from app.ws.utils import get_single_file_information, check_user_token, val_email, fixUserDictKeys
@@ -110,28 +109,34 @@ query_submitted_study_ids_for_user = """
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(user_token)s and s.status=0;
     """
 
-get_next_mtbls_id = """
-select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s;
-"""
-
-insert_empty_study = """   
+insert_study_with_study_id = """   
     insert into studies (id, acc, obfuscationcode, releasedate, status, studysize, submissiondate, 
     updatedate, validations, validation_status) 
     values ( 
-        (select nextval('hibernate_sequence')),
+        %(new_unique_id)s,
         %(acc)s, 
         %(obfuscationcode)s,
         %(releasedate)s,
-        0, 0, current_timestamp, 
-        current_timestamp, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
+        0, 0, %(current_time)s, 
+        %(current_time)s, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
+    insert into study_user(userid, studyid) values (%(userid)s, %(new_unique_id)s);
 """
 
-update_metaboligts_id_sequence = """
-    update stableid set seq = (select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s) 
-    where prefix = %(stable_id_prefix)s;
+update_study_id_sql = """  
+    LOCK TABLE stableid IN ACCESS EXCLUSIVE MODE;
+    update stableid set seq = (select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s)  
+    where prefix = %(stable_id_prefix)s; 
+    update studies set acc = 'MTBLS' || (select seq as current_acc from stableid where prefix = %(stable_id_prefix)s) 
+    where id = %(new_unique_id)s;
 """
-link_study_with_user = """
-insert into study_user(userid, studyid) select u.id, s.id from users u, studies s where lower(u.email) = %(email)s and acc=%(acc)s;
+insert_empty_study = f"{insert_study_with_study_id}\n{update_study_id_sql}"
+
+get_study_id_sql = """
+select acc from studies where id = %(unique_id)s;
+"""
+
+get_user_id_sql = """
+select id from users where lower(username)=%(username)s;
 """
 
 query_user_access_rights = """
@@ -194,7 +199,7 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
         (
             %(address_value)s, %(affiliation_value)s, %(affiliationurl_value)s,
             %(apitoken_value)s, %(email_value)s, %(firstname_value)s,
-            current_timestamp, 
+            %(current_time)s, 
             %(lastname_value)s, %(password_value)s, 
             2, 0,
             %(email_value)s, %(orcid_value)s, %(metaspace_api_key_value)s
@@ -204,7 +209,10 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
     input_values = {"address_value": address, "affiliation_value": affiliation,
             "affiliationurl_value": affiliation_url, "apitoken_value": api_token,
             "email_value": email, "firstname_value": first_name, "lastname_value": last_name,
-            "password_value": password_encoded, "orcid_value": orcid, "metaspace_api_key_value": metaspace_api_key}
+            "password_value": password_encoded, 
+            "orcid_value": orcid, 
+            "metaspace_api_key_value": metaspace_api_key,
+            "current_time": current_utc_time_without_timezone()}
 
     query = insert_user_query
 
@@ -285,15 +293,15 @@ def get_user(username):
         data = [dict((cursor.description[i][0], value) for i, value in enumerate(row)) for row in cursor.fetchall()]
     except Exception as e:
         logger.error('An error occurred while retrieving user {0}: {1}'.format(username, e))
-        abort(500)
+        raise MetabolightsDBException(exception=e, http_code=500, message=f'An error occurred while retrieving user {username}')
     finally:
         release_connection(postgresql_pool, conn)
 
     if data:
         return {'user': fixUserDictKeys(data[0])}
     else:
-        # no user found by that username, abort with 404
-        abort(404, 'User with username {0} not found.'.format(username))
+        # no user found by that username, fail with 404
+        raise MetabolightsDBException(http_code=404, message=f'username {username} not found.')
 
 
 def get_all_private_studies_for_user(user_token):
@@ -630,7 +638,7 @@ def mtblc_on_chebi_accession(chebi_id):
 
     if not chebi_id.startswith('CHEBI'):
         logger.error("Incorrect ChEBI accession number string pattern")
-        abort(406, "%s incorrect ChEBI accession number string pattern" % chebi_id)
+        raise MetabolightsDBException(message=f"{chebi_id} is incorrect ChEBI accession number string pattern", http_code=406)
 
     # Default query to get the biosd accession
     query = "select acc from ref_metabolite where temp_id = %(chebi_id)s;"
@@ -767,11 +775,14 @@ def get_user_email(user_token):
     input = "select lower(email) from users where apitoken = %(apitoken)s;"
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(input, {'apitoken': user_token})
-        data = cursor.fetchone()[0]
-        release_connection(postgresql_pool, conn)
-        return data
+        if cursor:
+            cursor.execute(input, {'apitoken': user_token}) 
+            data = cursor.fetchone()[0]
+            release_connection(postgresql_pool, conn)
+            return data
+        return False
     except Exception as e:
+        logger.warning(f"User is not fetched for token {user_token}")
         return False
 
 
@@ -792,38 +803,57 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
     email = email.lower()
     conn = None
     postgresql_pool = None
+    acc = study_id
+    releasedate = (current_utc_time_without_timezone() + datetime.timedelta(days=365))
+    if not obfuscationcode:
+        obfuscationcode = str(uuid.uuid4())
     try:
         postgresql_pool, conn, cursor = get_connection()
-        acc = study_id
-        stable_id_input = {"stable_id_prefix": "MTBLS"}
-        if not study_id:
-            cursor.execute(get_next_mtbls_id, stable_id_input)
-            result = cursor.fetchone()
-            if not result:
-                logger.error("There is not data prefix with MTBLS in stableid table")
-                raise ValueError()
-            data = result[0]
-            acc = f"MTBLS{data}"
-        if not obfuscationcode:
-            obfuscationcode = str(uuid.uuid4())
-        releasedate = (datetime.datetime.today() + datetime.timedelta(days=365))
+        if not cursor:
+            raise MetabolightsDBException(http_code=503, message="There is no database connection")
+
+        user_id = None
+        cursor.execute(get_user_id_sql, {"username": email})
+        result = cursor.fetchone()
+        if result:
+            user_id = result[0] if result else None
+
+        if not user_id:
+            message = f"User detail for {email} is not fetched."
+            logger.error(message)
+            raise MetabolightsDBException(http_code=501, message=message)
+        
+        cursor.execute(f"SELECT nextval('hibernate_sequence')")
+        new_unique_id = cursor.fetchone()[0]
+        conn.commit()
+        
         content = {"acc": acc,
                    "obfuscationcode": obfuscationcode,
                    "releasedate": releasedate,
-                   "email": email}
-        cursor.execute(insert_empty_study, content)
-        cursor.execute(update_metaboligts_id_sequence, stable_id_input)
-        cursor.execute(link_study_with_user, content)
+                   "email": email,
+                   "new_unique_id": new_unique_id,
+                   "userid": user_id,
+                   "stable_id_prefix": "MTBLS",
+                   "current_time": current_utc_time_without_timezone()
+                   }
+        if not study_id:
+            cursor.execute(insert_empty_study, content)
+        else:
+            cursor.execute(insert_study_with_study_id, content)
         conn.commit()
-        return acc
+        cursor.execute(get_study_id_sql, {"unique_id": new_unique_id})
+        fetched_study = cursor.fetchone()
+        return fetched_study[0]
+        
     except Exception as ex:
         if conn:
             conn.rollback()
-        raise MetabolightsDBException(http_code=501, message="Error while creating DB", exception=ex)
+        if isinstance(ex, MetabolightsDBException):
+            raise ex
+        raise MetabolightsDBException(http_code=501, message="Error while creating study. Try later.", exception=ex)
     finally:
         if postgresql_pool and conn:
             release_connection(postgresql_pool, conn)
-
 
 def execute_select_with_params(query, params):
     conn = None
@@ -1002,11 +1032,11 @@ def update_validation_status(study_id, validation_status):
         return False
 
 
-def update_study_status_change_date(study_id):
+def update_study_status_change_date(study_id, current_time):
     val_acc(study_id)
 
-    query = "update studies set status_date = current_timestamp where acc = %(study_id)s;"
-    status, msg = insert_update_data(query, {'study_id': study_id})
+    query = "update studies set status_date = %(current_time)s where acc = %(study_id)s;"
+    status, msg = insert_update_data(query, {'study_id': study_id, "current_time": current_time})
     if not status:
         logger.error('Database update of study status date failed with error ' + msg)
         return False
@@ -1153,6 +1183,9 @@ def get_connection():
         logger.error("Could not query the database " + str(e))
         if postgresql_pool:
             postgresql_pool.closeall()
+            postgresql_pool = None
+            conn = None
+            cursor = None
     return postgresql_pool, conn, cursor
 
 
@@ -1237,11 +1270,13 @@ def val_acc(study_id=None):
     if study_id:
         if not study_id.startswith("MTBLS") or study_id.lower() in stop_words:
             logger.error("Incorrect accession number string pattern")
-            abort(406, "'%s' incorrect accession number string pattern" % study_id)
+            raise MetabolightsDBException(message=f"{study_id} is incorrect accession number string pattern", http_code=406)
+
 
 
 def val_query_params(text_to_val):
     if text_to_val:
         for word in str(text_to_val).split():
             if word.lower() in stop_words:
-                abort(406, "'" + text_to_val + "' not allowed.")
+                raise MetabolightsDBException(message=f"{text_to_val} not allowed.", http_code=406)
+

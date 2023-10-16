@@ -18,7 +18,7 @@
 
 import logging
 
-from flask import current_app as app, abort
+from flask_restful import abort
 
 from app.utils import MetabolightsException
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
@@ -58,7 +58,7 @@ class WsClient:
         try:
             result = self.search_manager.search_by_type(search_type, search_value)
         except Exception as e:
-            abort(500, f"MAF search failed {e.args}")
+            abort(500, message=f"MAF search failed {e.args}")
 
         if not result or result.err:
             abort(400, result.err)

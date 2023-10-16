@@ -1,9 +1,8 @@
 import logging
 import os.path
 
-from flask import current_app as app, jsonify
-from flask import request, abort
-from flask_restful import Resource, reqparse
+from flask import current_app as app, request
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
@@ -78,7 +77,7 @@ class SyncCalculation(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
         study_id = study_id.upper()
         parser = reqparse.RequestParser()
         parser.add_argument('force', help='Force to recalculate')
@@ -263,7 +262,7 @@ class FtpFolderSyncStatus(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
         study_id = study_id.upper()
 
         # User authentication
@@ -326,7 +325,7 @@ class FtpFolderPermission(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
 
         # User authentication
         user_token = None
@@ -385,7 +384,7 @@ class FtpFolderPermissionModification(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
 
         # User authentication
         user_token = None
@@ -520,7 +519,7 @@ class PrivateFtpFolderPath(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
 
         # User authentication
         user_token = None
@@ -637,7 +636,7 @@ class SyncFromStudyFolder(Resource):
         # log_request(request)
         # # param validation
         # if study_id is None:
-        #     abort(404, 'Please provide valid parameter for study identifier')
+        #     abort(404, message='Please provide valid parameter for study identifier')
         # study_id = study_id.upper()
 
         # # User authentication
@@ -711,7 +710,7 @@ class SyncPublicStudyToFTP(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
         study_id = study_id.upper()
 
         # User authentication

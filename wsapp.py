@@ -23,7 +23,7 @@ from typing import List
 # import re
 
 
-from flask import Flask, request, session
+from flask import Flask, request
 from flask_restful import abort
 from jinja2 import Environment, select_autoescape, FileSystemLoader
 from app.config import get_settings

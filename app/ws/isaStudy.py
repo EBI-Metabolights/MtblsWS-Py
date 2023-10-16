@@ -390,7 +390,7 @@ class StudyReleaseDate(Resource):
         try:
             datetime.datetime.strptime(new_date, '%Y-%m-%d')
         except ValueError:
-            abort(406, "Incorrect date format, please use YYYY-MM-DD")
+            abort(406, message="Incorrect date format, please use YYYY-MM-DD")
 
         # check for keeping copies
         save_audit_copy = False
@@ -1752,7 +1752,7 @@ class StudyProtocols(Resource):
             iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
             logger.info('Deleted %s', protocol.name)
         else:
-            abort(406, "The protocol is referenced in one or more assays")
+            abort(406, message="The protocol is referenced in one or more assays")
 
         return jsonify(success=True)
 
@@ -2493,7 +2493,7 @@ class StudyFactors(Resource):
                 isa_study.factors[idx] = updated_factor
                 break
         if not found:
-            abort(404, "The factor was not found")
+            abort(404, message="The factor was not found")
 
         if found:
             update_ontolgies_in_isa_tab_sheets('factor', old_factor, updated_factor.name, study_location, isa_study)
@@ -3026,8 +3026,8 @@ class StudyDescriptors(Resource):
                 isa_study.design_descriptors[index] = updated_descriptor
                 break
         if not found:
-            abort(404, 'The descriptor %s was not found in this study, can not update.', descriptor_term)
-        logger.info("A copy of the previous files will %s saved", save_msg_str)
+            abort(404, message=f"The descriptor %s was not found in this study, can not update. {descriptor_term}")
+            logger.info("A copy of the previous files will %s saved. " + save_msg_str)
 
         # Check that the ontology is referenced in the investigation
         term_source = updated_descriptor.term_source

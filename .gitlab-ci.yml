@@ -1,81 +1,121 @@
 variables:
-     APP_VERSION: "2.0.0"
-     API_VERSION: "2.0.0"
-     BUILD_SCRIPTS_ROOT_PATH: "/home/gitlab-runner/ci_cd/standalone/mtblsws-py"
+     APP_VERSION: "2.1.0"
+     API_VERSION: "2.1.0"
+     K8S_DEPLOYMENT: "0"
+     CICD_SCRIPTS_ROOT_PATH: "/home/gitlab-runner/ci_cd"
+     BUILD_SCRIPTS_ROOT_PATH: "$CICD_SCRIPTS_ROOT_PATH/standalone"
 workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development"
 stages:
-  - prepare
-  - build
   - configure
+  - build
+  - update_server
   - deploy
 
-
-build_version_files:
-  stage: prepare
+checkout_configs:
+  stage: configure
   rules:
-    - if: $CI_COMMIT_BRANCH == "development"
+    - if: $K8S_DEPLOYMENT == "1"
       variables:
-        RELEASE_NAME: dev.${CI_PIPELINE_ID}
-    - if: $CI_COMMIT_BRANCH == "master"
-      variables:
-        RELEASE_NAME: ${CI_PIPELINE_ID}
-    - if: $CI_COMMIT_BRANCH == "test"
-      variables:
-        RELEASE_NAME: test.${CI_PIPELINE_ID}
-    - if: $CI_COMMIT_BRANCH == "staging"
-      variables:
-        RELEASE_NAME: staging.${CI_PIPELINE_ID}
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
   script:
-    - echo "PIPELINE_ID ${CI_PIPELINE_ID} and commit ${CI_COMMIT_SHORT_SHA} commit name ${CI_COMMIT_REF_NAME}"
-    - echo "${RELEASE_NAME}-${CI_COMMIT_SHORT_SHA}" > .build_number
-    - echo  "APP_VERSION $APP_VERSION" 
-    - echo  "API_VERSION $API_VERSION" 
-    - echo  "$APP_VERSION" | xargs > app_version
-    - echo  "$API_VERSION" | xargs > api_version
-  artifacts:
-      paths:
-      - app_version
-      - api_version
-      - .build_number
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/checkout_configs.sh"
 
 build_docker:
   stage: build
+  rules:
+    - if: $K8S_DEPLOYMENT == "1"
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/build_sif.sh"
-    
-configure_vm_server:
-  stage: configure
-  script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_server.sh"
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_version_files.sh"
-    
-configure_datamover:
-  stage: configure
-  script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/update_datamover.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_container.sh"
 
-run_server:
+build_singularity:
+  stage: build
+  rules:
+    - if: $K8S_DEPLOYMENT == "1"
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_sif.sh"
+    
+deployment_files:
   stage: deploy
   rules:
-    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $K8S_DEPLOYMENT == "1"
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
+    - if: $CI_COMMIT_BRANCH == "master" && $K8S_DEPLOYMENT == "1"
       when: manual
       allow_failure: false
-    - if: $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "staging" && $K8S_DEPLOYMENT == "1"
       when: on_success
-    - if: $CI_COMMIT_BRANCH == "test"
+    - if: $CI_COMMIT_BRANCH == "test" && $K8S_DEPLOYMENT == "1"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == "development" && $K8S_DEPLOYMENT == "1"
       when: on_success
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_server.sh"
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_datamover.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/prepare_deployment_files.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/deploy.sh"
 
-run_additional_servers:
+configure_datamover:
+  stage: deploy
   rules:
+    - if: $K8S_DEPLOYMENT == "1"
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/configure_datamover.sh"
+
+  
+# standalone build
+
+standalone_build_docker:
+  stage: build
+  rules:
+    - if: $K8S_DEPLOYMENT != "1"
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_container.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_sif.sh"
+    
+standalone_configure_vm_server:
+  stage: update_server
+  rules:
+    - if: $K8S_DEPLOYMENT != "1"
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/update_server.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/update_version_files.sh"
+    
+standalone_configure_datamover:
+  stage: update_server
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/update_datamover.sh"
+
+standalone_run_server:
+  stage: deploy
+  rules:
+    - if: $K8S_DEPLOYMENT != "1"
+    - if: $CI_COMMIT_BRANCH == "master" && $K8S_DEPLOYMENT != "1"
+      when: manual
+      allow_failure: false
+    - if: $CI_COMMIT_BRANCH == "staging" && $K8S_DEPLOYMENT != "1"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == "test" && $K8S_DEPLOYMENT != "1"
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == "development" && $K8S_DEPLOYMENT != "1"
+      when: on_success
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/restart_server.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/restart_datamover.sh"
+
+standalone_un_additional_servers:
+  rules:
+    - if: $K8S_DEPLOYMENT != "1"
     - if: $CI_COMMIT_BRANCH == "master"
       when: manual
       allow_failure: true
     - when: never
   stage: deploy
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/restart_additional_servers.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/restart_additional_servers.sh"

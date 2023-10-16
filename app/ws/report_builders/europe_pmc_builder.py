@@ -7,7 +7,7 @@ import requests
 import xmltodict
 from cascadict import CascaDict
 from fuzzywuzzy import fuzz
-from flask import current_app as app, abort
+from flask_restful import abort
 from typing import List, Union
 from app.config import get_settings
 
@@ -82,11 +82,11 @@ class EuropePmcReportBuilder:
                                    'europe_pmc_report', get_settings().google.connection.google_sheet_api)
                     msg = 'Saved report to google drive.'
                 except Exception as e:
-                    abort(500, str(e))
+                    abort(500, message=str(e))
         except Exception as e:
             msg = 'Problem in building and saving europe pmc report: {0}'.format(e)
             logger.error(msg)
-            abort(500, msg)
+            abort(500, message=msg)
 
         return msg
 

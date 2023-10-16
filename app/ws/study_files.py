@@ -26,9 +26,7 @@ import shutil
 import time
 from typing import Dict, List, Set
 
-from isatools import isatab
-from isatools.model import Investigation, Study, Assay
-from flask import request, abort
+from flask import request
 from flask.json import jsonify
 from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
@@ -135,7 +133,7 @@ class StudyFiles(Resource):
             directory = args['directory'] if args['directory'] else None
 
         if directory and directory.startswith(os.sep):
-            abort(401, "You can only specify folders in the current study folder")
+            abort(401, message="You can only specify folders in the current study folder")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
@@ -244,7 +242,7 @@ without setting the "force" parameter to True''',
 
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
         study_id = study_id.upper()
 
         # User authentication
@@ -269,7 +267,7 @@ without setting the "force" parameter to True''',
             always_remove = False if args['force'].lower() != 'true' else True
             
         if file_location not in ["study", "upload"]:
-            abort(400, error='Location is invalid')
+            abort(400, message='Location is invalid')
         # body content validation
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
@@ -278,13 +276,13 @@ without setting the "force" parameter to True''',
                 abort(412)
             files = data
         except (ValidationError, Exception):
-            abort(400, error='Incorrect JSON provided')
+            abort(400, message='Incorrect JSON provided')
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
         study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
-            abort(403, error='Not authorized')
+            abort(403, message='Not authorized')
 
         errors = []
         
@@ -575,7 +573,7 @@ class StudyRawAndDerivedDataFiles(Resource):
 
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
         study_id = study_id.upper()
 
         # User authentication
@@ -691,13 +689,13 @@ class StudyRawAndDerivedDataFolder(Resource):
             args = parser.parse_args(req=request)
             search_pattern = args['search_pattern'] if args['search_pattern'] else '*'
             if '..' + os.path.sep in search_pattern or '.' + os.path.sep in search_pattern:
-                abort(401, error="Relative folder search patterns (., ..) are not allowed")
+                abort(401, message="Relative folder search patterns (., ..) are not allowed")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not is_curator:
-            abort(403, error="User has no curator role")
+            abort(403, message="User has no curator role")
         study_settings = get_study_settings()
 
         study_folder = os.path.join(study_settings.mounted_paths.study_metadata_files_root_path, study_id)
@@ -821,7 +819,7 @@ class StudyRawAndDerivedDataFolder(Resource):
 
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
         study_id = study_id.upper()
 
         # User authentication
@@ -846,16 +844,16 @@ class StudyRawAndDerivedDataFolder(Resource):
             override = True if args['override'] and args['override'].lower() == "true" else False
 
         if not target_location or target_location not in ("RAW_FILES", "DERIVED_FILES", "RECYCLE_BIN"):
-            abort(400, error='target location is invalid or not defined')
+            abort(400, message='target location is invalid or not defined')
         # body content validation
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['folders']
             if data is None:
-                abort(412, error='Folders are defined')
+                abort(412, message='Folders are defined')
             folders = data
         except (ValidationError, Exception):
-            abort(400, error='Incorrect JSON provided')
+            abort(400, message='Incorrect JSON provided')
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
@@ -1242,7 +1240,7 @@ class CopyFilesFolders(Resource):
     #     log_request(request)
     #     # param validation
     #     if study_id is None:
-    #         abort(404, 'Please provide valid parameter for study identifier')
+    #         abort(404, message='Please provide valid parameter for study identifier')
     #     study_id = study_id.upper()
     #
     #     # User authentication
@@ -1297,7 +1295,7 @@ class CopyFilesFolders(Resource):
     #                 from_file = file["from"]
     #                 to_file = file["to"]
     #                 if not from_file or not to_file:
-    #                     abort(417, "Please provide both 'from' and 'to' file parameters")
+    #                     abort(417, message="Please provide both 'from' and 'to' file parameters")
     #
     #                 if not file_location:
     #                     ftp_source_file = os.path.join(upload_location, from_file)
@@ -1416,7 +1414,7 @@ class SyncFolder(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
         study_id = study_id.upper()
 
         # User authentication
@@ -1535,7 +1533,7 @@ class SampleStudyFiles(Resource):
                                                              skip_load_tables=False,
                                                              study_location=study_location)
         except:
-            abort(500, error="Could not load the study metadata files")
+            abort(500, message="Could not load the study metadata files")
 
         samples_and_files = []
         for sample in isa_study.samples:
@@ -1638,7 +1636,7 @@ class UnzipFiles(Resource):
 
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            abort(404, message='Please provide valid parameter for study identifier')
         study_id = study_id.upper()
 
         # User authentication

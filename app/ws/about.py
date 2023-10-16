@@ -54,7 +54,7 @@ class About(Resource):
         from flask import current_app as app
 
         """Get a basic description of the Web Service"""
-        logger.info('Getting WS-about onto_information')
+        logger.debug('Getting WS-about onto_information')
         api = {"version": get_settings().server.description.metabolights_api_version,
                "documentation": get_settings().server.service.app_host_url + get_settings().server.service.api_doc + ".html",
                "specification": get_settings().server.service.app_host_url + get_settings().server.service.api_doc + ".json",

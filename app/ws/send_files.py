@@ -21,8 +21,8 @@ import os
 import random
 from zipfile import ZipFile
 
-from flask import request, send_file, safe_join, abort, make_response
-from flask_restful import Resource, reqparse
+from flask import request, send_file, safe_join, make_response
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from app.utils import metabolights_exception_handler
 from app.ws.db.schemes import Study
@@ -181,9 +181,9 @@ class SendFiles(Resource):
             resp.headers['Content-Type'] = 'application/octet-stream'
             return resp
         except FileNotFoundError as e:
-            abort(404, "Could not find file " + file_name)
+            abort(404, message="Could not find file " + file_name)
         except Exception as e:
-            abort(404, "Could not create zip file " + str(e))
+            abort(404, message="Could not create zip file " + str(e))
         finally:
             if remove_file and os.path.exists(zip_name):
                 os.remove(zip_name)
@@ -349,9 +349,9 @@ class SendFilesPrivate(Resource):
             resp.headers['Content-Type'] = 'application/octet-stream'
             return resp
         except FileNotFoundError as e:
-            abort(404, "Could not find file " + file_name)
+            abort(404, message="Could not find file " + file_name)
         except Exception as e:
-            abort(404, "Could not create zip file " + str(e))
+            abort(404, message="Could not create zip file " + str(e))
         finally:
             if remove_file:
                 os.remove(safe_path)

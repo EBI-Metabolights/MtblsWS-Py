@@ -20,7 +20,7 @@ import os
 import zipfile
 from datetime import datetime
 
-from flask import request, jsonify, current_app as app
+from flask import request, jsonify
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from app.config import get_settings
@@ -720,7 +720,7 @@ class CrossReferencePublicationInformation(Resource):
 
         msg = EuropePmcReportBuilder(priv_list, user_token, wsc, iac).build(drive)
         if msg.count('Problem') == 1:
-            abort(500, msg)
+            abort(500, message=msg)
 
         return 200, msg
 

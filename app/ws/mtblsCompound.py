@@ -1,6 +1,6 @@
 import logging
 import os
-from flask import request, current_app as app, jsonify
+from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from app.tasks.common_tasks.basic_tasks.elasticsearch import delete_compound_index, reindex_all_compounds, reindex_compound

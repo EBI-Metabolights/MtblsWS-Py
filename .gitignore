@@ -1,10 +1,11 @@
 #configurations
-.build_number
+build_number
 app_version
 api_version
-.secrets/
+.secrets*
 .test_data
 .old/
+x_*/
 configs
 celerybeat-*
 .RData

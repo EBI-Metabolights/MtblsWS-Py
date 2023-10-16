@@ -16,9 +16,8 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-from flask_restful import Resource
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
-from flask import abort, current_app as app
 from app.config import get_settings
 from app.ws.db_connection import mtblc_on_chebi_accession
 import os
@@ -57,7 +56,7 @@ class EnzymePortalHelper(Resource):
 
         status, data = mtblc_on_chebi_accession(chebi_id.upper())
         if not status:
-            abort(404, data)
+            abort(404, message=str(data))
 
         mtblc = data[0]
         mtblc_url = get_settings().server.service.ws_app_base_link

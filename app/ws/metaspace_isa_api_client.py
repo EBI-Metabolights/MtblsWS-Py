@@ -17,10 +17,10 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import errno
+import logging
 import os
 import time
 
-from flask import current_app as app
 from flask_restful import Resource, abort
 from isatools.isatab import dump
 from isatools.model import *
@@ -29,7 +29,6 @@ from app.config import get_settings
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.isaAssay import create_assay
 from app.ws.mtblsWSclient import WsClient
-from app.ws.settings.utils import get_study_settings
 from app.ws.utils import copy_files_and_folders, add_ontology_to_investigation, update_correct_sample_file_name
 
 logger = logging.getLogger('wslog')
@@ -80,7 +79,7 @@ class MetaSpaceIsaApiClient(Resource):
                 # status, message = convert_to_isa(to_path, study_id)
             except Exception as e:
                 logger.error('Could not copy files from %s to %s, Error ', from_path, to_path, str(e))
-                abort(409, "Something went wrong with copying the ISA-Tab templates to study " + str(study_id))
+                abort(409, message="Something went wrong with copying the ISA-Tab templates to study " + str(study_id))
 
             isa_study, isa_inv, std_path = isa_api.get_isa_study(study_id, user_token, skip_load_tables=True,
                                                                  study_location=output_dir)

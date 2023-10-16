@@ -8,6 +8,7 @@ from app.config.model.chebi import ChebiSettings
 from app.config.model.database import DatabaseSettings
 from app.config.model.elasticsearch import ElasticsearchSettings
 from app.config.model.email import EmailSettings
+from app.config.model.external_dependencies import ExternalDependenciesSettings
 from app.config.model.file_filters import FileFilters
 from app.config.model.file_resources import FileResources
 from app.config.model.flask import FlaskConfiguration
@@ -51,6 +52,7 @@ class ApplicationSettings(ApplicationBaseSettings):
     bioportal: BioportalSettings
     redis_cache: RedisSettings
     celery: CelerySettings
+    external_dependencies: ExternalDependenciesSettings
 
 
 _application_settings: ApplicationSettings = None
@@ -71,7 +73,7 @@ def get_settings():
         _last_update_check_timestamp = now
     
     if not _application_settings:
-        print("Configuration file will be updated.")
+        # print("Configuration file will be updated.")
         try:
             _application_settings = ApplicationSettings()
         except Exception as ex:

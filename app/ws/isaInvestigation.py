@@ -236,8 +236,7 @@ Please use the GET method above to retrieve the structure of your study prior to
             user_token = request.headers["user_token"]
         else:
             # user token is required
-            abort(401, "Study does not exist or your do not have access to this study. "
-                       "Please provide a valid user_token")
+            abort(401, message="Study does not exist or your do not have access to this study. Please provide a valid user_token")
 
         # check for keeping copies
         save_audit_copy = False

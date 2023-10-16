@@ -19,8 +19,8 @@
 import json
 import logging
 
-from flask import request, abort, jsonify
-from flask_restful import Resource
+from flask import request, jsonify
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from marshmallow import ValidationError
 
@@ -136,9 +136,9 @@ class UserManagement(Resource):
                 orcid = data['orcid']
                 metaspace_api_key = data['metaspace_api_key']
             except Exception as e:
-                abort(412, str(e))
+                abort(412, message=str(e))
         except (ValidationError, Exception):
-            abort(400, 'Incorrect JSON provided')
+            abort(400, message='Incorrect JSON provided')
 
         password, password_encoded, api_token = get_new_password_and_api_token()
 
@@ -267,9 +267,9 @@ class UserManagement(Resource):
                 user_name = email
                 metaspace_api_key = data['metaspace_api_key']
             except Exception as e:
-                abort(412, str(e))
+                abort(412, message=str(e))
         except (ValidationError, Exception):
-            abort(400, 'Incorrect JSON provided')
+            abort(400, message='Incorrect JSON provided')
 
         password, password_encoded, api_token = get_new_password_and_api_token()
 

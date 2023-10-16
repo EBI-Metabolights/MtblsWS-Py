@@ -23,8 +23,8 @@ import re
 
 import numpy as np
 import pandas as pd
-from flask import request, abort
-from flask_restful import Resource, reqparse
+from flask import request
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 
 from app.ws.mtblsWSclient import WsClient
@@ -195,7 +195,7 @@ class EditSampleFile(Resource):
             data_dict = json.loads(request.data.decode('utf-8'))
             new_row = data_dict['data']
         except KeyError:
-            abort(404, "Please provide valid data for updated new row(s). The JSON string has to have a 'data' array")
+            abort(404, message="Please provide valid data for updated new row(s). The JSON string has to have a 'data' array")
 
         try:
             for element in new_row:
@@ -205,7 +205,7 @@ class EditSampleFile(Resource):
 
         # param validation
         if study_id is None or sample_file_name is None:
-            abort(404, 'Please provide valid parameters for study identifier and sample file name')
+            abort(404, message='Please provide valid parameters for study identifier and sample file name')
 
         # User authentication
         user_token = None
@@ -299,7 +299,7 @@ class EditSampleFile(Resource):
 
         # param validation
         if study_id is None or sample_file_name is None:
-            abort(404, 'Please provide valid parameters for study identifier and sample file name')
+            abort(404, message='Please provide valid parameters for study identifier and sample file name')
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
@@ -308,8 +308,7 @@ class EditSampleFile(Resource):
             new_rows = None
 
         if new_rows is None:
-            abort(404, "Please provide valid data for updated new row(s). "
-                       "The JSON string has to have a 'data' element")
+            abort(404, message="Please provide valid data for updated new row(s).  The JSON string has to have a 'data' element")
 
         for row in new_rows:
             try:
@@ -318,9 +317,7 @@ class EditSampleFile(Resource):
                 row_index = None
 
             if new_rows is None or row_index is None:
-                abort(404, "Please provide valid data for the updated row(s). "
-                           "The JSON string has to have an 'index:n' element in each (JSON) row, "
-                           "this is the original row number. The header row can not be updated")
+                abort(404, message="Please provide valid data for the updated row(s). The JSON string has to have an 'index:n' element in each (JSON) row, this is the original row number. The header row can not be updated")
 
         # User authentication
         user_token = None

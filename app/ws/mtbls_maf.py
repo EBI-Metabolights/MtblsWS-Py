@@ -22,8 +22,8 @@ import os
 
 import pandas as pd
 
-from flask import request, abort
-from flask_restful import Resource, reqparse
+from flask import request
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 
 from app.ws.mtblsWSclient import WsClient
@@ -195,7 +195,7 @@ class MetaboliteAnnotationFile(Resource):
 
         # param validation
         if assay_file_names is None:
-            abort(417, 'Please ensure the JSON has at least one "assay_file_name" element')
+            abort(417, message='Please ensure the JSON has at least one "assay_file_name" element')
 
         # User authentication
         user_token = None
@@ -216,7 +216,7 @@ class MetaboliteAnnotationFile(Resource):
             assay_file = assay_file_name['assay_file_name']
             full_assay_file_name = os.path.join(study_location, assay_file)
             if not os.path.isfile(full_assay_file_name):
-                abort(406, "Assay file " + assay_file + " does not exist")
+                abort(406, message="Assay file " + assay_file + " does not exist")
             assay_df = read_tsv(full_assay_file_name)
             annotation_file_name = assay_df['Metabolite Assignment File'].iloc[0]
 
@@ -228,7 +228,7 @@ class MetaboliteAnnotationFile(Resource):
                 annotation_file_name = new_annotation_file_name
 
             if maf_df.empty:
-                abort(406, "MAF file could not be created or updated")
+                abort(406, message="MAF file could not be created or updated")
 
             maf_feedback = maf_feedback + ". New row(s):" + str(new_column_counter) + " for assay file " + \
                             annotation_file_name

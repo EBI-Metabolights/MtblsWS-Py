@@ -3,7 +3,7 @@ import os
 import pandas
 
 from typing import List
-from flask import current_app as app, abort
+from flask_restful import abort
 from app.config import get_settings
 from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 from app.ws.settings.utils import get_study_settings

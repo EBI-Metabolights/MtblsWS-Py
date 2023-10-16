@@ -19,8 +19,8 @@ import json
 import logging
 import os
 
-from flask import request, abort
-from flask_restful import Resource, reqparse
+from flask import request
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from isatools.model import OntologySource
 from marshmallow import ValidationError
