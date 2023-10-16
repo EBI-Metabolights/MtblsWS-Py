@@ -94,14 +94,24 @@ def start_worker(worker_name: str):
     up = False
     for _ in range(5):
         create_datamover_worker(worker_name)
+        time.sleep(5)
+        started = False
         for _ in range(3):
             jobs = get_status(worker_name)
             if jobs and jobs[0].status.upper() == "RUN":
-                print("Datamover worker is running.")
-                return True
+                started = True
+                break
             time.sleep(10)
+        if started:
+            up = True
+            break
+    if not up:
+        print("Datamover worker failed.")
+        return False
+    else:
+        print("Datamover worker is running.")
+        return True
 
-    print("Datamover worker failed.")
 
 def restart_datamover_worker(worker_name: str):
     project_name = get_settings().hpc_cluster.configuration.job_project_name

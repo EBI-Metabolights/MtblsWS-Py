@@ -79,7 +79,6 @@ celery = Celery(
         "app.tasks.common_tasks.curation_tasks.validation",
         "app.tasks.common_tasks.basic_tasks.email",
         "app.tasks.common_tasks.basic_tasks.elasticsearch",
-        "app.tasks.common_tasks.basic_tasks.ftp_operations",
         "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",
         "app.tasks.datamover_tasks.basic_tasks.file_management",
         "app.tasks.datamover_tasks.curation_tasks.data_file_operations",
