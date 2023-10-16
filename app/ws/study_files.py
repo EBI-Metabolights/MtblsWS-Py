@@ -445,13 +445,13 @@ class StudyRawAndDerivedDataFiles(Resource):
 
         UserService.get_instance().validate_user_has_curator_role(user_token)
         StudyService.get_instance().get_study_by_acc(study_id)
-        settings = get_study_settings()
+
         study_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
         search_subfolder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id, data_files_subfolder)
         search_path = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id, search_pattern)
         ignore_list = self.get_ignore_list(search_path)
 
-        glob_search_result = glob.glob(os.path.join(search_subfolder, search_path), recursive=True)
+        glob_search_result = glob.glob(search_path, recursive=True)
         search_results = [os.path.abspath(file) for file in glob_search_result if not os.path.isdir(file)]
         excluded_folders = get_settings().file_filters.folder_exclusion_list
 

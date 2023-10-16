@@ -184,7 +184,6 @@ study_by_obfuscation_code_query = """
 
 def create_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
                 password_encoded, metaspace_api_key):
-    val_email(email)
     email = email.lower()
     insert_user_query = """
         INSERT INTO users (
@@ -799,7 +798,7 @@ def get_submitted_study_ids_for_user(user_token):
 
 def create_empty_study(user_token, study_id=None, obfuscationcode=None):
     email = get_email(user_token)
-    val_email(email)
+    # val_email(email)
     email = email.lower()
     conn = None
     postgresql_pool = None

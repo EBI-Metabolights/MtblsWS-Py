@@ -45,6 +45,8 @@ from app.ws.study_folder_utils import FileSearchResult
 from app.ws.utils import read_tsv, map_file_type, find_text_in_isatab_file, get_table_header, \
     get_assay_type_from_file_name, get_assay_headers_and_protcols
 from app.ws.study.validation.model import ValidationReportFile
+from isatools.model import Extract, Sample, OntologyAnnotation, Assay, Protocol, Study, ProtocolParameter
+
 
 iac = IsaApiClient()
 
@@ -1000,7 +1002,8 @@ def validate_assays(isa_study, readonly_files_folder, metadata_files_folder, int
 
     total_assay_rows = 0
 
-    for assay in isa_study.assays:
+    for item in isa_study.assays:
+        assay: Assay = item
         is_ms = False
         assays = []
         all_assay_names = []
@@ -1458,7 +1461,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
     return return_validations(val_section, validations, override_list, comment_list)
 
 
-def validate_protocols(isa_study, validation_schema, file_name, override_list, comment_list, val_section="protocols",
+def validate_protocols(isa_study: Study, validation_schema, file_name, override_list, comment_list, val_section="protocols",
                        log_category=error):
     # check for Publication
     validations = []
@@ -1470,8 +1473,14 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, c
     if isa_study.assays:
         for assay in isa_study.assays:
             assay_type_onto = assay.technology_type
-            if assay_type_onto.term:
+            if not assay_type_onto:
+                add_msg(validations, val_section, "Assay has no valid technology type definition",
+                            warning, file_name, val_sequence=20, log_category=log_category)
+            elif assay_type_onto.term:
                 term_type = assay_type_onto.term
+                if not term_type:              
+                    add_msg(validations, val_section, "Assay has no valid technology type definition",
+                            warning, file_name, val_sequence=20, log_category=log_category)
                 if assay_type_onto.term == 'mass spectrometry':
                     is_ms = True
                 elif assay_type_onto.term == 'NMR spectroscopy':
@@ -1500,7 +1509,7 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, c
         else:
             all_prots = prot_val_name
         try:
-            isa_prot = isa_study.protocols[idx]
+            isa_prot: Protocol = isa_study.protocols[idx]
             isa_prot_name = isa_prot.name
             isa_prot_type = isa_prot.protocol_type
             isa_prot_type_name = isa_prot_type.term
