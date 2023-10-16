@@ -10,7 +10,7 @@ from app.tasks.datamover_worker_utils import delete_current_workers, delete_queu
 
 
 if __name__ == "__main__":
-    worker_name = os.getenv('WORKER_NAME')
+    worker_name = os.getenv('WORKER_HOST_NAME')
     
     if not worker_name:
         print("Invalid worker name.")
