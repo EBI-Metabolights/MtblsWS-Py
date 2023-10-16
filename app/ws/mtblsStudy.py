@@ -1180,6 +1180,14 @@ class CreateAccession(Resource):
         #     else:
         #         raise MetabolightsException(message="Study folder creation was failed.", http_code=501, exception=exc)
 
+        # Send email if it is new study
+        if new_accession_number:
+            inputs = {"user_token": user_token, "study_id": study_acc}
+            new_study_email_task = send_email_for_study_submitted.apply_async(kwargs=inputs)
+            logger.info(f"Step 3: Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
+        else:
+            logger.info(f"Step 3: Skipping email. No email will be sent for the study {study_acc}")
+
         # maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
         # result = maintenance_task.execute_future_actions()
         # maintenance_task.future_actions.clear()
@@ -1200,22 +1208,14 @@ class CreateAccession(Resource):
         create_ftp_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
         logger.info(f"Step 4.3: 'Create study FTP folders' task has been started for study {study_acc} with task id: {create_ftp_folders_task.id}")
 
-        # Send email if it is new study
-        if new_accession_number:
-            inputs = {"user_token": user_token, "study_id": study_acc}
-            new_study_email_task = send_email_for_study_submitted.apply_async(kwargs=inputs)
-            logger.info(f"Step 5.1: Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
-        else:
-            logger.info(f"Step 5.1: Skipping email. No email will be sent for the study {study_acc}")
-            
         if new_accession_number:
             study: Study = StudyService.get_instance().get_study_by_acc(study_acc)
             ftp_folder_name = study_acc.lower() + "-" + study.obfuscationcode
             inputs = {"user_token": user_token, "study_id": study_acc, "folder_name": ftp_folder_name}
             send_email_for_private_ftp_folder.apply_async(kwargs=inputs)
-            logger.info(f"Step 5.2: Sending FTP folder email for the study {study_acc}")
+            logger.info(f"Step 5: Sending FTP folder email for the study {study_acc}")
         else:
-            logger.info(f"Step 5.2: Skipping FTP folder email for the study {study_acc}")
+            logger.info(f"Step 5: Skipping FTP folder email for the study {study_acc}")
 
         # # Start ftp folder creation task
 
