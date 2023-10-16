@@ -1141,8 +1141,10 @@ def search_and_update_maf(study_id: str, study_metadata_location: str, annotatio
         pipeline_settings = get_settings().chebi.pipeline
         target_ftp_path = os.path.join(get_settings().hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path, ftp_private_folder, settings.internal_files_symbolic_link_name)
         include_list = [f"{pipeline_settings.chebi_annotation_sub_folder}", 
+                        f"{pipeline_settings.chebi_annotation_sub_folder}.zip",
                         f"{pipeline_settings.chebi_annotation_sub_folder}/***"]
         mkdir_command = f"mkdir -p {target_ftp_path}"
+        # chmod_command = f"chmod -R 750 {target_ftp_path}"
         rsync_command = HpcRsyncWorker.build_rsync_command(
             f"{internal_files_path}/", f"{target_ftp_path}/", include_list=include_list, exclude_list=["*"], rsync_arguments="-auv"
         )
