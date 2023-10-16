@@ -43,10 +43,13 @@ class BashClient(object):
         print(f" A command is being executed  : '{command}'")
         logger.info(f"stdout_log_file_path: {stdout_log_file_path}")
         logger.info(f"stderr_log_file_path: {stderr_log_file_path}")
-        stdout_dir_path = os.path.dirname(stdout_log_file_path)
-        stderr_dir_path = os.path.dirname(stdout_log_file_path)
-        os.makedirs(stdout_dir_path, exist_ok=True)
-        os.makedirs(stderr_dir_path, exist_ok=True)
+        if stdout_log_file_path:   
+            stdout_dir_path = os.path.dirname(stdout_log_file_path)
+            os.makedirs(stdout_dir_path, exist_ok=True)
+            
+        if stderr_log_file_path:
+            stderr_dir_path = os.path.dirname(stderr_log_file_path)
+            os.makedirs(stderr_dir_path, exist_ok=True)
         stdout_log_file = None
         stderr_log_file = None
         try:
