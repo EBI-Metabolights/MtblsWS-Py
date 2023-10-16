@@ -1204,7 +1204,7 @@ class CreateAccession(Resource):
         create_study_data_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
         logger.info(f"Step 4.2: 'Create study data files and folders' task has been started for study {study_acc} with task id: {create_study_data_folders_task.id}")
         
-        inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": False, "maintain_private_ftp_storage": True,  "task_name": "INITIAL_DATA"})
+        inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": False, "maintain_private_ftp_storage": True,  "task_name": "INITIAL_FTP_FOLDERS"})
         create_ftp_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
         logger.info(f"Step 4.3: 'Create study FTP folders' task has been started for study {study_acc} with task id: {create_ftp_folders_task.id}")
 
