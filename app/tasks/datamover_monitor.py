@@ -16,7 +16,7 @@ if __name__ == "__main__":
     if not worker_name:
         print("Invalid worker name.")
         exit(1)
-    max_retry_count = 3
+    max_retry_count = 2
     current_retry_count = 0
     try:
         while True:

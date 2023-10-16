@@ -7,6 +7,7 @@ import logging
 import os
 from pathlib import Path
 import re
+import shutil
 from typing import List, Union
 import uuid
 from app.config import get_settings
@@ -273,16 +274,30 @@ class LsfClient(object):
                 
         out_log_path = os.path.join(settings.hpc_cluster.configuration.job_track_log_location, f"{task_name}_out.log")
         err_log_path = os.path.join(settings.hpc_cluster.configuration.job_track_log_location, f"{task_name}_err.log")
+        temp_path = None
         try:
             job_id, _, _ = self.submit_hpc_job(
                         script_path, task_name, output_file=out_log_path, error_file=err_log_path, queue=hpc_queue_name
                     )
-            if logger.level >= logging.DEBUG:
+            if logger.level >= logging.INFO:
                 file = Path(script_path)
-                logger.debug(file.read_text())
-            hostname=self.settings.hpc_cluster.compute.connection.host
-            target_path = os.path.join(worker_config.worker_deployment_root_path, f"run_singularity_{task_name}.sh")
-            copy_singularity_run_script = f"scp {script_path} {hostname}:{target_path}"
+                logger.info(file.read_text())
+            hostname = self.settings.hpc_cluster.compute.connection.host
+            host_username = self.settings.hpc_cluster.compute.connection.username
+            script_file_name = f"run_singularity.sh"
+            target_path = os.path.join(worker_config.worker_deployment_root_path, script_file_name)
+            if not self.settings.hpc_cluster.datamover.run_ssh_on_hpc_compute:
+                copy_singularity_run_script = f"scp {script_path} {host_username}@{hostname}:{target_path}"
+            else:
+                deleted_files = self.settings.hpc_cluster.datamover.mounted_paths.cluster_rw_storage_recycle_bin_root_path
+                temp_path = os.path.join(deleted_files, script_file_name)
+                shutil.copy2(script_path, temp_path)
+                datamover = self.settings.hpc_cluster.datamover.connection.host
+                datamover_username = self.settings.hpc_cluster.datamover.connection.username
+                commands = [BashClient.build_ssh_command(hostname, host_username)]
+                commands.append(f"scp {temp_path} {datamover_username}@{datamover}:{target_path}")
+                
+                copy_singularity_run_script = " ".join(commands)
             
             BashClient.execute_command(copy_singularity_run_script)
             
@@ -295,4 +310,7 @@ class LsfClient(object):
         finally:
             if script_path and os.path.exists(script_path):
                 os.remove(script_path)
+            if temp_path and os.path.exists(temp_path):
+                os.remove(temp_path)
+                
         return job_id, messages

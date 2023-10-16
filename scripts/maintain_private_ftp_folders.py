@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 
 from app.ws.study.study_service import StudyService
 from scripts.study_folder_maintenance import maintain_folders
