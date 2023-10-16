@@ -1,9 +1,7 @@
 import os
 import socket
-import app as current_app
 import time
 from typing import List
-from billiard import current_process
 
 import kombu
 from app.config import get_settings
@@ -58,13 +56,13 @@ def delete_queue(name: str):
         if queue.name == name:
             target = queue
             break
-    if not queue:
+    if not target:
         print(f"Queue will be deleted for datamover worker: {name}")
         app.conf.task_queues.remove(queue)
 
 def delete_current_workers(worker_name: str):
     kill_old_worker_error = False
-    for k in range(3):
+    for _ in range(3):
         jobs: List[HpcJob] = get_status(worker_name)
         if jobs:
             job_ids = [job.job_id for job in jobs]
@@ -86,11 +84,11 @@ def delete_current_workers(worker_name: str):
 
 def start_worker(worker_name: str):
     up = False
-    for i in range(5):
-        job_id = create_datamover_worker(worker_name)
+    for _ in range(5):
+        create_datamover_worker(worker_name)
         time.sleep(10)
         started = False
-        for j in range(3):
+        for _ in range(3):
             jobs = get_status(worker_name)
             if jobs and jobs[0].status.upper() == "RUN":
                 started = True
@@ -134,19 +132,19 @@ def ping_datamover_worker(worker_name: str):
     project_name = get_settings().hpc_cluster.configuration.job_project_name
     name = f"{project_name}_{worker_name}"
     
-    input = socket.gethostname()
-    for h in range(10):
-        task = heartbeat.ping.apply_async(queue=name, args=[input])
+    input_value = socket.gethostname()
+    for _ in range(3):
+        task = heartbeat.ping.apply_async(queue=name, args=[input_value])
         try:
             result = task.get(timeout=5)
-            if result and "reply_for" in result and result["reply_for"] == input:
+            if result and "reply_for" in result and result["reply_for"] == input_value:
                 if result and "worker_version" in result:
                     return result["worker_version"]
                 else:
                     return None
             else:
-                time.sleep(2)
+                time.sleep(1)
         except Exception as ex:
-            pass
+            print(f"No response from datamover worker {name}: {str(ex)}")
         
     return None

@@ -1,5 +1,3 @@
-import datetime
-from enum import Enum
 import pathlib
 from typing import List
 
@@ -12,9 +10,8 @@ from app.services.storage_service.models import (
     SyncTaskStatus,
 )
 from app.tasks.bash_client import BashExecutionResult, CapturedBashExecutionResult, LoggedBashExecutionResult
-from app.tasks.datamover_tasks.basic_tasks.execute_commands import execute_bash_command
 from app.tasks.datamover_tasks.basic_tasks.file_management import create_folders
-from app.tasks.hpc_worker_bash_runner import BashExecutionTaskStatus, HpcWorkerBashRunner, TaskDescription
+from app.tasks.hpc_worker_bash_runner import BashExecutionTaskStatus, HpcWorkerBashRunner
 from app.tasks.utils import get_current_utc_time_string, get_utc_time_string_from_timestamp
 from app.utils import current_time
 
@@ -36,7 +33,7 @@ def create_remote_path(target_path: str):
     try:
         task.get(timeout=get_settings().hpc_cluster.configuration.task_get_timeout_in_seconds)
     except Exception as ex:
-        pass
+        print(f"Failed to create remote path {target_path}. {str(ex)}")
     
 
 class HpcRsyncWorker:
@@ -67,6 +64,7 @@ class HpcRsyncWorker:
 
         return HpcRsyncWorker.get_sync_task_result(task_status)
 
+    @staticmethod
     def get_rsync_status(task_name, study_id) -> SyncTaskResult:
         runner = HpcWorkerBashRunner(task_name=task_name, study_id=study_id)
         task_status: BashExecutionTaskStatus = runner.get_bash_execution_status(result_only=True)
@@ -210,9 +208,9 @@ class HpcRsyncWorker:
 
                     messages.append(f"Total size: {rsync_result.total_size_str}.")
                     if rsync_result.number_of_files == 0 and rsync_result.total_bytes > 0:
-                        messages.append(f"Files are empty.")
-                except Exception as exc:
-                    pass
+                        messages.append("Files are empty.")
+                except Exception as ex:
+                    print(f"There is no 'total size is' line. {str(ex)}")
 
             if trimmed_files_count >= 0 and len(rsync_result.files) > trimmed_files_count:
                 trimmed_files = stdout_lines[:trimmed_files_count]
