@@ -32,7 +32,7 @@ from app.services.storage_service.remote_worker.remote_file_manager import \
 from app.study_folder_utils import FileDescriptor, get_all_study_metadata_and_data_files
 from app.tasks.bash_client import BashClient
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
-from app.utils import INVESTIGATION_FILE_ROWS_LIST, INVESTIGATION_FILE_ROWS_SET
+from app.utils import INVESTIGATION_FILE_ROWS_LIST, INVESTIGATION_FILE_ROWS_SET, current_time
 from app.ws.db.types import StudyStatus
 from app.ws.settings.utils import get_cluster_settings, get_study_settings
 
@@ -1887,6 +1887,9 @@ class StudyFolderMaintenanceTask(object):
                     dirname = os.path.basename(backup_path)
                     renamed_basename = f"{self.task_name}_{basename}"
                     renamed_backup_path = os.path.join(dirname, renamed_basename)
+                    if os.path.exists(renamed_backup_path):
+                        now = int(current_time().timestamp())
+                        shutil.move(renamed_backup_path, f"{renamed_backup_path}.{now}") 
                     shutil.move(backup_path, renamed_backup_path)
                     action_log = MaintenanceActionLog(
                         item=backup_path,
@@ -1908,6 +1911,10 @@ class StudyFolderMaintenanceTask(object):
                 target_path = os.path.join(backup_path, basename)
                 target_dir = os.path.dirname(target_path)
                 os.makedirs(target_dir, exist_ok=True)
+                if os.path.exists(target_path):
+                    now = int(current_time().timestamp())
+                    shutil.move(target_path, f"{target_path}.{now}")
+                    
                 if keep_file_on_folder:
                     shutil.copy2(file_path, target_path)
                 else:
@@ -1927,6 +1934,10 @@ class StudyFolderMaintenanceTask(object):
                     renamed_basename = f"{self.task_name}_{basename}"
                 dirname = os.path.dirname(file_path)
                 target_path = os.path.join(dirname, renamed_basename)
+                if os.path.exists(target_path):
+                    now = int(current_time().timestamp())
+                    shutil.move(target_path, f"{target_path}.{now}")
+                    
                 if keep_file_on_folder:
                     shutil.copy2(file_path, target_path)
                 else:
@@ -2156,7 +2167,9 @@ class StudyFolderMaintenanceTask(object):
                                 sanitized_file_path,
                                 reason=f"Other assay file will be renamed to {os.path.basename(sanitized_file_path)}.",
                             )
-
+                        if os.path.exists(sanitized_file_path):
+                            now = int(current_time().timestamp())
+                            shutil.move(sanitized_file_path, f"{sanitized_file_path}.{now}")
                         shutil.move(assay_file_path, sanitized_file_path)  # Rename assay file name
                         action_log = MaintenanceActionLog(
                             item=assay_file_path,
