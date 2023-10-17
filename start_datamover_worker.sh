@@ -28,4 +28,4 @@ echo "Python version:" $(python3 --version)
 echo "Host name: $HOST"
 
 cd $APPDIR
-python3 -m celery -A app.tasks.worker:celery worker --loglevel info -Q $QUEUE_NAME --autoscale 2,20 --logfile $LOGS_PATH/celery_datamover_worker.log -n ${WORKER_NAME}@%h
+python3 -m celery -A app.tasks.worker:celery worker --loglevel info -Q $QUEUE_NAME --autoscale 2,20 --logfile $LOGS_PATH/celery_datamover_worker_${WORKER_NAME}.log -n ${WORKER_NAME}@%h
