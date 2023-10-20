@@ -2,14 +2,34 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Gunicorn run",
+            "name": "Flask Server run",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/wsapp.py",
+            "program": "${workspaceFolder}/run_flask_server.py",
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
             "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"},
             "postDebugTask": "killdebugger"
+        },   
+        {
+            "name": "Gunicorn Server run",
+            "type": "python",
+            "request": "launch",
+            "program": "~/miniconda3/envs/python3.8-test/bin/gunicorn",
+            "gevent": true,
+            "args": [
+                "--bind=0.0.0.0:6010",
+                "--timeout=1000",
+                "-w",
+                "1",
+                "--preload",
+                "--worker-class=gevent",
+                "--log-level=DEBUG",
+                "wsapp:application"
+            ],
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false,
+            "env": {"CONFIG_FILE_PATH": "${workspaceFolder}/config.yaml", "SECRETS_PATH": "${workspaceFolder}/.secrets"},
         },
         {
             "name": "Celery Worker",
@@ -93,6 +113,23 @@
             "justMyCode": false,
             "postDebugTask": "killdebugger",
             "env": {"PYTHONPATH": "${cwd}"}
-        }
+        },
+        {
+            "name": "Remote Debug",
+            "type": "python",
+            "request": "launch",
+            "module": "debugpy",
+            "args": [
+                "--wait-for-client",
+                "--listen",
+                "0.0.0.0:15678",
+                "-m",
+                "flask",
+                "run"
+            ],
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"},
+        },     
 	]
 }

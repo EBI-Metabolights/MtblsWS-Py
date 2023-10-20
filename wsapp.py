@@ -19,18 +19,18 @@
 import logging.config
 import os
 import re
-from typing import List
-# import re
-
-
-from flask import Flask, request
+from typing import Dict, List
+from flask_restful_swagger import swagger
+from flask_restful import Resource
+from flask import Flask, request, Response
 from flask_restful import abort
 from jinja2 import Environment, select_autoescape, FileSystemLoader
 from app.config import get_settings
 from app.config.model.server import EndpointDescription, EndpointMethodOption
 
+from jinja2 import Template
 from app.wsapp_config import initialize_app
-from app.ws.redis.redis import get_redis_server
+
 """
 MTBLS WS-Py
 
@@ -42,11 +42,11 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 application = Flask(__name__)
 
 application.config.setdefault("PYTHON_WS_APPLICATION_PATH", current_dir)
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 
 
 def setup_logging():
-    default_log_dir = os.path.join(current_dir, "logs")
+    # default_log_dir = os.path.join(current_dir, "logs")
     # if not os.path.exists(default_log_dir):
     #     os.makedirs(default_log_dir, exist_ok=True)
 
@@ -55,60 +55,178 @@ def setup_logging():
     if logging_config_file_path and os.path.exists(logging_config_file_path):
         print(f"Using logging config file {logging_config_file_path}")
     else:
-        default_logging_config_file_path = os.path.join(get_settings().server.log.log_path, f"logging_{hostname}.conf")
+        default_logging_config_file_path = os.path.join(
+            get_settings().server.log.log_path, f"logging_{hostname}.conf"
+        )
         logging_config_file_path = default_logging_config_file_path
         if os.path.exists(default_logging_config_file_path):
-            print(f"Using default logging config file {default_logging_config_file_path}")
+            print(
+                f"Using default logging config file {default_logging_config_file_path}"
+            )
         else:
-            print(f"Creating default logging config file {default_logging_config_file_path}")
+            print(
+                f"Creating default logging config file {default_logging_config_file_path}"
+            )
 
             env = Environment(
-                loader=FileSystemLoader('resources/'),
-                autoescape=select_autoescape(['html', 'xml'])
+                loader=FileSystemLoader("resources/"),
+                autoescape=select_autoescape(["html", "xml"]),
             )
-            template = env.get_template('template_logging.conf')
+            template = env.get_template("template_logging.conf")
             content = {"hostname": hostname}
             log_file_content = template.render(content)
             with open(default_logging_config_file_path, "w") as file:
                 file.writelines(log_file_content)
 
     logging.config.fileConfig(logging_config_file_path)
-    print(f"Running on server: '{hostname}' using logging config {logging_config_file_path}")
+    print(
+        f"Running on server: '{hostname}' using logging config {logging_config_file_path}"
+    )
 
-mtbls_pattern = re.compile(r'MTBLS[1-9][0-9]*')
+
+mtbls_pattern = re.compile(r"MTBLS[1-9][0-9]*")
 MANAGED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"}
 BYPASS_HTTP_METHODS = ("OPTIONS", "HEAD")
+
+
+@application.after_request
+def check_response(result):
+    return result
+
+
+SCHEME_HEADER_NAME = "HTTP_X_FORWARDED_PROTO"
+
+
 @application.before_request
 def check_study_maintenance_mode():
     if request.method in BYPASS_HTTP_METHODS:
         return None
     settings = get_settings()
-    
-    disabled_endpoints: List[EndpointDescription] = settings.server.service.disabled_endpoints
+
+    disabled_endpoints: List[
+        EndpointDescription
+    ] = settings.server.service.disabled_endpoints
     if disabled_endpoints:
         matched = check_request(request, disabled_endpoints)
         if matched:
             abort(503, message=f"This endpoint is disabled and unreachable.")
-        
-    
+
     if settings.server.service.maintenance_mode:
         enabled_endpoints = settings.server.service.enabled_endpoints_under_maintenance
         if enabled_endpoints:
             matched = check_request(request, enabled_endpoints)
             if not matched:
-                abort(503, message=f"This endpoint is under maintenance now. Please try again later.")
-        
+                message = (
+                    f"This endpoint is under maintenance now. Please try again later."
+                )
+                abort(503, message=message)
+
     return None
+
+host_url = get_settings().server.service.app_host_url
+print(f"Configured host name: {host_url}")
+def parse_app_host_url(url: str):
+    app_host_parts = url.split("://")
+    scheme = None
+    app_host = None
+    service_port = None
+    if len(app_host_parts) > 1:
+        scheme = app_host_parts[0]
+        host_port = app_host_parts[1].split(":")
+    else:
+        host_port = app_host_parts[0].split(":")
+    app_host = host_port[0]
+    if len(host_port) > 1:
+        service_port = host_port[1]
+
+    return scheme, app_host, service_port
+
+
+app_scheme, app_host_dns, app_service_port = parse_app_host_url(host_url)
+if app_scheme:
+    http_host_url = f"http://{app_host_dns}"
+    if app_service_port:
+        http_host_url = f"http://{app_host_dns}:{app_service_port}"
+else:
+    http_host_url = host_url
+
+print(f"HTTP url: {http_host_url}")
+
+# def updated_render_page(page, info):
+#     global http_host_url
+#     global host_url
+#     global app_scheme
+    
+#     req_registry = swagger._get_current_registry()
+#     url = req_registry['basePath']
+#     if url.endswith('/'):
+#         url = url.rstrip('/')
+#     conf = {
+#         'base_url': url + swagger.api_spec_static,
+#         'full_base_url': url + swagger.api_spec_static
+#     }
+    
+#     if info is not None:
+#         conf.update(info)
+        
+#     for x in conf:
+#         previous = conf[x]
+#         # print(f"{x}: {conf[x]}")
+#         # # if conf[x] and conf[x].startswith(http_host_url):
+#         # print(f"{http_host_url}->{host_url}")
+#         # print(f"{conf[x]}->{conf[x].replace('http:', app_scheme, 1)}")
+#         if conf[x] and isinstance(conf[x], str) and conf[x].startswith(http_host_url):
+#             conf[x] = conf[x].replace("http:", f"{app_scheme}:", 1)
+#         if conf[x] != previous:
+#             print(f"URL updated {x}: {conf[x]}")
+#     print(f"Index html conf: {str(conf)}")
+#     templates = swagger.templates
+#     if page in templates:
+#         template = templates[page]
+#     else:
+#         with open(os.path.join(swagger.rootPath, 'static', page), "r") as fs:
+#             template = Template(fs.read())
+#             templates[page] = template
+#     mime = 'text/html'
+#     if page.endswith('.js'):
+#         mime = 'text/javascript'
+#     return Response(template.render(conf), mimetype=mime)
+
+# swagger.render_page = updated_render_page
+
+
+default_get_current_registry = swagger._get_current_registry
+
+def updated_get_current_registry(api=None):
+    global http_host_url
+    global host_url
+    global app_scheme
+    
+    # import ipdb;ipdb.set_trace()
+    conf = default_get_current_registry(api)
+    for x in conf:
+        previous = conf[x]
+        # print(f"{x}: {conf[x]}")
+        if conf[x] and isinstance(conf[x], str) and conf[x].startswith(http_host_url):
+        # print(f"{http_host_url}->{host_url}")
+        # print(f"{conf[x]}->{conf[x].replace('http:', app_scheme, 1)}")
+            conf[x] = conf[x].replace("http:", f"{app_scheme}:", 1)
+        if conf[x] != previous:
+            print(f"URL updated {x}: {conf[x]}")
+
+    return conf
+
+swagger._get_current_registry = updated_get_current_registry
 
 def check_request(current_request, endpoints: List[EndpointDescription]):
     if current_request.method not in MANAGED_HTTP_METHODS:
         abort(400, message=f"{current_request.method} is unexpected request method.")
-        
+    context_path = get_settings().server.service.resources_path
     for endpoint in endpoints:
-        pattern = endpoint.path
-        
+        pattern = f"{context_path}{endpoint.path}"
+
         method: EndpointMethodOption = endpoint.method
-        if isinstance(endpoint.method, EndpointMethodOption): 
+        if isinstance(endpoint.method, EndpointMethodOption):
             method: EndpointMethodOption = [endpoint.method]
         accepted_methods = set()
         for item in method:
@@ -124,25 +242,26 @@ def check_request(current_request, endpoints: List[EndpointDescription]):
             return True
     return False
 
+
 def main():
     setup_logging()
     print("Initialising application")
     initialize_app(application)
-    logger.info("Starting server %s v%s", get_settings().server.description.ws_app_name,
-                get_settings().server.description.ws_app_version)
-    print("Starting application on port %s" % str(get_settings().server.service.rest_api_port))
-    application.run(host="0.0.0.0", port=get_settings().server.service.rest_api_port, debug=get_settings().flask.DEBUG,
-                    threaded=True, use_reloader=False)
-    logger.info("Finished server %s v%s", get_settings().server.description.ws_app_name,
-                get_settings().server.description.ws_app_version)
+    # logger.info("Starting server %s v%s", get_settings().server.description.ws_app_name,
+    #             get_settings().server.description.ws_app_version)
+    # print("Starting application on port %s" % str(get_settings().server.service.rest_api_port))
+    # application.run(host="0.0.0.0", port=get_settings().server.service.rest_api_port, debug=get_settings().flask.DEBUG,
+    #                 threaded=True, use_reloader=False)
+    # logger.info("Finished server %s v%s", get_settings().server.description.ws_app_name,
+    #            get_settings().server.description.ws_app_version)
 
 
 print("before main")
 if __name__ == "__main__":
     print("Setting ssl context for Flask server")
-    context = ('ssl/wsapp.crt', 'ssl/wsapp.key')  # SSL certificate and key files
+    context = ("ssl/wsapp.crt", "ssl/wsapp.key")  # SSL certificate and key files
     main()
 else:
     print("Setting ssl context for Gunicorn server")
-    context = ('ssl/wsapp.crt', 'ssl/wsapp.key')  # SSL certificate and key files
+    context = ("ssl/wsapp.crt", "ssl/wsapp.key")  # SSL certificate and key files
     main()

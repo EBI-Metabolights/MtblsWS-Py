@@ -553,7 +553,8 @@ def extractUntargetStudy(studyType=None, publicStudy=True):
 
         for studyID in studyIDs:
             print(studyID)
-            source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+            context_path = get_settings().server.service.resources_path
+            source = '{context_path}/studies/{study_id}/descriptors'.format(context_path=context_path, study_id=studyID)
             ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
             try:
                 resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token})
@@ -717,7 +718,8 @@ def getLCMSinfo():
 
 
 def getFileList2(studyID):
-    source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
+    context_path = get_settings().server.service.resources_path
+    source = '{context_path}/studies/{study_id}/files?include_raw_data=false'.format(context_path=context_path, study_id=studyID)
     ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
     try:
         request = urllib.request.Request(ws_url)
@@ -756,10 +758,10 @@ def getFileList2(studyID):
 def getFileList(studyID):
     try:
         source = '/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
-        url = get_host_internal_url() + source
-        request = urllib.request.Request(url)
-        request.add_header('user_token', get_settings().auth.service_account.api_token)
-        response = urllib.request.urlopen(request)
+        internal_url = get_host_internal_url() + source
+        current_request = urllib.request.Request(internal_url)
+        current_request.add_header('user_token', get_settings().auth.service_account.api_token)
+        response = urllib.request.urlopen(current_request)
         content = response.read().decode('utf-8')
         j_content = json.loads(content)
 
@@ -799,7 +801,8 @@ def get_sample_file(studyID, sample_file_name):
     '''
     import io
     try:
-        source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
+        context_path = get_settings().server.service.resources_path
+        source = '{context_path}/studies/{study_id}/sample'.format(context_path=context_path, study_id=studyID)
         ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
         resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
@@ -823,7 +826,8 @@ def get_assay_file(studyID, assay_file_name):
     '''
     import io
     try:
-        source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
+        context_path = get_settings().server.service.resources_path
+        source = '{context_path}/studies/{study_id}/assay'.format(context_path=context_path, study_id=studyID)
         ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
         resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
@@ -846,7 +850,8 @@ def assay_sample_list(studyID):
     import io
 
     try:
-        source = '/metabolights/ws/studies/{study_id}/investigation'.format(study_id=studyID)
+        context_path = get_settings().server.service.resources_path
+        source = '{context_path}/studies/{study_id}/investigation'.format(context_path=context_path, study_id=studyID)
         ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
         resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token})

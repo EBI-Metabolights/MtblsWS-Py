@@ -17,11 +17,13 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import json
+import os
 from flask import request
 from flask_restful import Resource, abort, reqparse
 from isatools.model import Investigation
 from marshmallow import ValidationError
 from flask_restful_swagger import swagger
+from app.study_folder_utils import get_all_metadata_files
 from app.utils import metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import IsaInvestigationSchema
@@ -142,7 +144,11 @@ class IsaInvestigation(Resource):
             study_status = wsc.get_permissions(study_id, user_token, obfuscation_code)
         if not read_access:
             abort(403)
-
+        metadata_files = get_all_metadata_files(study_location)
+        investigation_file = [x for x in metadata_files if os.path.basename(x).lower() == "i_Investigation.txt"]
+        if not investigation_file:
+            abort(404, message=f"There is no i_Investigation.txt file on {study_id} folder.")
+            
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id,
                                                          user_token,
                                                          skip_load_tables=skip_load_tables,

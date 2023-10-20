@@ -179,19 +179,22 @@ def mask_settings(data: dict):
 def initialize_app(flask_app):
     configure_app(flask_app)
 
-    CORS(flask_app, resources={get_settings().server.service.cors_resources_path: 
+    cors_path = get_settings().server.service.cors_resources_path
+    context_path = get_settings().server.service.resources_path
+    cors_resources_path = f"{context_path}{cors_path}"
+    CORS(flask_app, resources={cors_resources_path: 
                                {"origins": get_settings().server.service.cors_hosts, 
                                 "methods": {"GET, HEAD, POST, OPTIONS, PUT, DELETE"}}})
 
-    res_path = get_settings().server.service.resources_path 
+    api_doc = f"{context_path}{get_settings().server.service.api_doc}"
     api = swagger.docs(Api(flask_app),
                        description='MetaboLights RESTful WebService',
                        apiVersion=get_settings().server.description.metabolights_api_version,
                        basePath=get_settings().server.service.app_host_url,
-                       api_spec_url=get_settings().server.service.api_doc,
-                       resourcePath=res_path
+                       api_spec_url=api_doc,
+                       resourcePath=context_path
                        )
-
+    res_path = context_path
     api.add_resource(About, res_path)
     api.add_resource(AboutServer, res_path + "/ebi-internal/server-info")
     api.add_resource(AuthLogin, res_path + "/auth/login")
@@ -364,8 +367,6 @@ def initialize_app(flask_app):
     api.add_resource(fellaPathway, res_path + "/ebi-internal/fella-pathway")
     api.add_resource(PublicStudyTweet, res_path + "/ebi-internal/public-study-tweet")
 
-
-    # https://www.ebi.ac.uk:443/metabolights/ws/v2
     api.add_resource(reports, res_path + "/v2/reports")
     api.add_resource(CrossReferencePublicationInformation, res_path + "/v2/europe-pmc-report")
     api.add_resource(StudyAssayTypeReports, res_path + "/v2/study-assay-type-reports")

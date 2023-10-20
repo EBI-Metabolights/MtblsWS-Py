@@ -52,20 +52,21 @@ class About(Resource):
     def get(self):
 
         from flask import current_app as app
-
-        """Get a basic description of the Web Service"""
-        logger.debug('Getting WS-about onto_information')
-        api = {"version": get_settings().server.description.metabolights_api_version,
-               "documentation": get_settings().server.service.app_host_url + get_settings().server.service.api_doc + ".html",
-               "specification": get_settings().server.service.app_host_url + get_settings().server.service.api_doc + ".json",
-               "isatoolsApi": get_settings().server.description.isa_api_version,
-               "metaspaceApi": get_settings().server.description.metaspace_api_version,
-               "mzml2isa": get_settings().server.description.mzml2isa_api_version
+        server_settings = get_settings().server
+        resources_path = server_settings.service.resources_path
+        api_doc = f"{resources_path}{server_settings.service.api_doc}"
+        
+        api = {"version": server_settings.description.metabolights_api_version,
+               "documentation": server_settings.service.app_host_url + api_doc + ".html",
+               "specification": server_settings.service.app_host_url + api_doc + ".json",
+               "isatoolsApi": server_settings.description.isa_api_version,
+               "metaspaceApi": server_settings.description.metaspace_api_version,
+               "mzml2isa": server_settings.description.mzml2isa_api_version
                }
-        app = {"name": get_settings().server.description.ws_app_name,
-                "version": get_settings().server.description.ws_app_version,
-                "description": get_settings().server.description.ws_app_description,
-                "url": get_settings().server.service.app_host_url + get_settings().server.service.resources_path 
+        app = {"name": server_settings.description.ws_app_name,
+                "version": server_settings.description.ws_app_version,
+                "description": server_settings.description.ws_app_description,
+                "url": server_settings.service.app_host_url + server_settings.service.resources_path 
                 }
         about = {"about": {'app': app, 'api': api}}
         return about

@@ -361,7 +361,8 @@ def get_sample_file(studyID, sample_file_name):
     import io
     try:
         host = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port)
-        ws_url = f'{host}/metabolights/ws/studies/{studyID}/sample'
+        context_path = get_settings().server.service.resources_path
+        ws_url = f'{host}{context_path}/studies/{studyID}/sample'
 
         resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                             params={'sample_filename': sample_file_name})
@@ -414,8 +415,8 @@ def uniqueOrganism(studyID):
     '''
     try:
         host = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port)
-
-        url = f'{host}/metabolights/ws/studies/{studyID}/organisms'
+        context_path = get_settings().server.service.resources_path
+        url = f'{host}{context_path}/studies/{studyID}/organisms'
         resp = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
         data = resp.json()
         org = []

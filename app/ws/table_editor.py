@@ -28,7 +28,9 @@ from flask_restful_swagger import swagger
 from app.config import get_settings
 
 from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsDBException
+from app.ws.auth.utils import get_permission_by_obfuscation_code, get_permission_by_study_id
 from app.ws.db.dbmanager import DBManager
+from app.ws.db.models import StudyAccessPermission
 from app.ws.study import commons
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import identify_study_id
@@ -1274,17 +1276,27 @@ class GetTsvFile(Resource):
         study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
         logger.info('Assay Table: Getting ISA-JSON Study Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = commons.get_permissions(study_id, user_token, obfuscation_code)
-        if not read_access:
+        if obfuscation_code:
+            permission: StudyAccessPermission = get_permission_by_obfuscation_code(study_id, obfuscation_code)
+        else:
+            permission: StudyAccessPermission = get_permission_by_study_id(study_id, user_token)
+        
+        # permission.view
+        # is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        #     study_status = commons.get_permissions(study_id, user_token, obfuscation_code)
+        if not permission.view:
             abort(403)
         file_basename = file_name
         if file_name == 'metabolights_zooma.tsv':  # This will edit the MetaboLights Zooma mapping file
-            if not is_curator:
+            if not permission.userRole != "ROLE_SUPER_USER":
                 abort(403)
             file_name = get_settings().file_resources.mtbls_zooma_file
         else:
+            study_location = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
             file_name = os.path.join(study_location, file_name)
+        
+        if not os.path.exists(file_name):
+            raise MetabolightsException(http_code=404, message=f"{file_basename} does not exist on {study_id} metadata folder.")
 
         logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
         # Get the Assay table or create a new one if it does not already exist

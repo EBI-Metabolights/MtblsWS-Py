@@ -645,12 +645,12 @@ class Placeholder(Resource):
                 operation, studyID, old_term, term, annotationValue, termAccession, superclass, definition = \
                     row['operation(Update/Add/Delete/Zooma/MTBLS)'], row['studyID'], row['old_name'], row['name'], row[
                         'annotationValue'], row['termAccession'], row['superclass'], row['definition']
-
-                source = '/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+                context_path = get_settings().server.service.resources_path
+                source = '{context_path}/studies/{study_id}/factors'.format(context_path=context_path, study_id=studyID)
                 ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 if operation.lower() in ['update', 'u', 'add', 'A']:
-                    # ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+                    # ws_url = 'https://www.ebi.ac.uk/{context_path}/studies/{study_id}/factors'.format(context_path=context_path, study_id=studyID)
                     protocol = '''
                                     {
                                         "factorName": "",
@@ -729,7 +729,8 @@ class Placeholder(Resource):
                 # add factor term to MTBLS ontology
                 elif operation.lower() == 'mtbls':
                     try:
-                        source = '/metabolights/ws/ebi-internal/ontology'
+                        context_path = get_settings().server.service.resources_path
+                        source = f'{context_path}/ebi-internal/ontology'
                         protocol = '''{
                                         "termName": " ",
                                         "definition": " ",
@@ -784,7 +785,8 @@ class Placeholder(Resource):
                 definition = row['operation(Update/Add/Delete/Zooma/MTBLS)'], row['studyID'], row['old_name'], row[
                     'name'], row['matched_iri'], row['superclass'], row['definition']
 
-                source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+                context_path = get_settings().server.service.resources_path
+                source = '{context_path}/studies/{study_id}/descriptors'.format(context_path=context_path, study_id=studyID)
                 ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 # add / update descriptor
@@ -863,7 +865,8 @@ class Placeholder(Resource):
                 # add descriptor to MTBLS ontology
                 elif operation.lower() == 'mtbls':
                     try:
-                        source = '/metabolights/ws/ebi-internal/ontology'
+                        context_path = get_settings().server.service.resources_path
+                        source = f'{context_path}/ebi-internal/ontology'
                         protocol = '''{
                                         "termName": " ",
                                         "definition": " ",
@@ -920,7 +923,8 @@ class Placeholder(Resource):
                     = row['old_organismPart'], row['organismPart'], row['organismPart_ref'], row['organismPart_url']
                 superclass, definition = row['superclass'], row['definition']
 
-                source = '/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
+                context_path = get_settings().server.service.resources_path
+                source = '{context_path}/studies/{study_id}/organisms'.format(context_path=context_path, study_id=studyID)
                 ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 list_changes = []
@@ -1006,7 +1010,8 @@ class Placeholder(Resource):
                 elif operation.lower() == 'mtbls':
                     for change in list_changes:
                         try:
-                            source = '/metabolights/ws/ebi-internal/ontology'
+                            context_path = get_settings().server.service.resources_path
+                            source = f'{context_path}/ebi-internal/ontology'
                             protocol = '''{
                                             "termName": " ",
                                             "definition": " ",

@@ -1,6 +1,3 @@
-
-from datetime import datetime
-from flask import current_app as app
 from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
@@ -38,7 +35,7 @@ def get_banner():
                 new_banner = new_banner.decode("utf-8")
                 if new_banner != current_banner:
                     _banner = new_banner
-                    print(f"Banner is updated. New banner message: {_banner}")
+                    # print(f"Banner is updated. New banner message: {_banner}")
         except Exception as ex:
             print("Failed to load banner")
             _banner = current_banner

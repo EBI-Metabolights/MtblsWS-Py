@@ -2,9 +2,9 @@
 
 import requests
 
-def get_all_studies():
+def get_all_studies(token):
 
-    headers = {'Accept': 'application/json', 'User_token': '4ae0c06f-a5de-41a0-bcf9-7e573c63f515'}
+    headers = {'Accept': 'application/json', 'User_token': token}
 
     session = requests.Session()
     session.headers.update(headers)

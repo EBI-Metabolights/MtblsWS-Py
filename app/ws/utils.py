@@ -1433,7 +1433,9 @@ def get_instrument(studyID, assay_name):
     instrument_name = []
     # res.loc[len(res)] = [sheet_name, key, term]
     try:
-        source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
+        context_path = get_settings().server.service.resources_path
+
+        source = '{context_path}/studies/{study_id}/assay'.format(context_path=context_path, study_id=studyID)
         settings = get_settings()
         service_settings = settings.server.service
         ws_url = f"{service_settings.mtbls_ws_host}:{service_settings.rest_api_port}{source}"
@@ -1455,10 +1457,11 @@ def get_instrument(studyID, assay_name):
         print(e)
 
 
-def get_orgaisms(studyID, sample_file_name):
+def get_organisms(studyID, sample_file_name):
     # print('getting organism')
     try:
-        source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
+        context_path = get_settings().server.service.resources_path
+        source = '{context_path}`/studies/{study_id}/sample'.format(context_path=context_path, study_id=studyID)
         settings = get_settings()
         service_settings = settings.server.service
         ws_url = f"{service_settings.mtbls_ws_host}:{service_settings.rest_api_port}{source}"
@@ -1550,7 +1553,7 @@ def get_instruments_organism(studyID=None):
                 for i in ins['instruments']:
                     instruments_df.loc[len(instruments_df)] = [ins['studyID'], ins['assay_name'], i]
 
-        organism_df = organism_df.append(get_orgaisms(studyID, sample_file))
+        organism_df = organism_df.append(get_organisms(studyID, sample_file))
 
     instruments = {}
     for index, row in instruments_df.iterrows():
