@@ -19,16 +19,14 @@
 import logging.config
 import os
 import re
-from typing import Dict, List
+from typing import List
 from flask_restful_swagger import swagger
-from flask_restful import Resource
-from flask import Flask, request, Response
+from flask import Flask, request
 from flask_restful import abort
 from jinja2 import Environment, select_autoescape, FileSystemLoader
 from app.config import get_settings
 from app.config.model.server import EndpointDescription, EndpointMethodOption
 
-from jinja2 import Template
 from app.wsapp_config import initialize_app
 
 """
@@ -94,9 +92,6 @@ def check_response(result):
     return result
 
 
-SCHEME_HEADER_NAME = "HTTP_X_FORWARDED_PROTO"
-
-
 @application.before_request
 def check_study_maintenance_mode():
     if request.method in BYPASS_HTTP_METHODS:
@@ -116,15 +111,16 @@ def check_study_maintenance_mode():
         if enabled_endpoints:
             matched = check_request(request, enabled_endpoints)
             if not matched:
-                message = (
-                    f"This endpoint is under maintenance now. Please try again later."
-                )
+                message = f"This endpoint is under maintenance. Please try again later."
                 abort(503, message=message)
 
     return None
 
+
 host_url = get_settings().server.service.app_host_url
 print(f"Configured host name: {host_url}")
+
+
 def parse_app_host_url(url: str):
     app_host_parts = url.split("://")
     scheme = None
@@ -150,73 +146,28 @@ if app_scheme:
 else:
     http_host_url = host_url
 
-print(f"HTTP url: {http_host_url}")
-
-# def updated_render_page(page, info):
-#     global http_host_url
-#     global host_url
-#     global app_scheme
-    
-#     req_registry = swagger._get_current_registry()
-#     url = req_registry['basePath']
-#     if url.endswith('/'):
-#         url = url.rstrip('/')
-#     conf = {
-#         'base_url': url + swagger.api_spec_static,
-#         'full_base_url': url + swagger.api_spec_static
-#     }
-    
-#     if info is not None:
-#         conf.update(info)
-        
-#     for x in conf:
-#         previous = conf[x]
-#         # print(f"{x}: {conf[x]}")
-#         # # if conf[x] and conf[x].startswith(http_host_url):
-#         # print(f"{http_host_url}->{host_url}")
-#         # print(f"{conf[x]}->{conf[x].replace('http:', app_scheme, 1)}")
-#         if conf[x] and isinstance(conf[x], str) and conf[x].startswith(http_host_url):
-#             conf[x] = conf[x].replace("http:", f"{app_scheme}:", 1)
-#         if conf[x] != previous:
-#             print(f"URL updated {x}: {conf[x]}")
-#     print(f"Index html conf: {str(conf)}")
-#     templates = swagger.templates
-#     if page in templates:
-#         template = templates[page]
-#     else:
-#         with open(os.path.join(swagger.rootPath, 'static', page), "r") as fs:
-#             template = Template(fs.read())
-#             templates[page] = template
-#     mime = 'text/html'
-#     if page.endswith('.js'):
-#         mime = 'text/javascript'
-#     return Response(template.render(conf), mimetype=mime)
-
-# swagger.render_page = updated_render_page
+print(f"HTTP address of the host url: {http_host_url}")
 
 
 default_get_current_registry = swagger._get_current_registry
 
+
 def updated_get_current_registry(api=None):
+    """Fix for proxy issue. If traffic is redirected as HTTP it converts to HTTPS."""
     global http_host_url
     global host_url
     global app_scheme
-    
-    # import ipdb;ipdb.set_trace()
+
     conf = default_get_current_registry(api)
     for x in conf:
-        previous = conf[x]
-        # print(f"{x}: {conf[x]}")
         if conf[x] and isinstance(conf[x], str) and conf[x].startswith(http_host_url):
-        # print(f"{http_host_url}->{host_url}")
-        # print(f"{conf[x]}->{conf[x].replace('http:', app_scheme, 1)}")
             conf[x] = conf[x].replace("http:", f"{app_scheme}:", 1)
-        if conf[x] != previous:
-            print(f"URL updated {x}: {conf[x]}")
 
     return conf
 
+
 swagger._get_current_registry = updated_get_current_registry
+
 
 def check_request(current_request, endpoints: List[EndpointDescription]):
     if current_request.method not in MANAGED_HTTP_METHODS:
