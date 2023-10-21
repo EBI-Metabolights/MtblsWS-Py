@@ -21,6 +21,7 @@ import os
 import re
 from typing import List
 from flask import Flask, request
+from flask_restful_swagger import swagger
 from flask_restful import abort
 from jinja2 import Environment, select_autoescape, FileSystemLoader
 from app.config import get_settings
@@ -28,7 +29,11 @@ from app.config.model.server import EndpointDescription, EndpointMethodOption
 
 from app.wsapp_config import initialize_app
 
+"""
+MTBLS WS-Py
 
+MetaboLights Python-based REST Web Service
+"""
 hostname = os.uname().nodename
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -106,7 +111,6 @@ def check_request(current_request, endpoints: List[EndpointDescription]):
             return True
     return False
 
-
 @application.after_request
 def check_response(result):
     return result
@@ -135,7 +139,78 @@ def check_study_maintenance_mode():
                 abort(503, message=message)
     return None
 
+
+# host_url = get_settings().server.service.app_host_url
+# print(f"Configured host name: {host_url}")
+
+
+# def parse_app_host_url(url: str):
+#     app_host_parts = url.split("://")
+#     scheme = None
+#     app_host = None
+#     service_port = None
+#     if len(app_host_parts) > 1:
+#         scheme = app_host_parts[0]
+#         host_port = app_host_parts[1].split(":")
+#     else:
+#         host_port = app_host_parts[0].split(":")
+#     app_host = host_port[0]
+#     if len(host_port) > 1:
+#         service_port = host_port[1]
+
+#     return scheme, app_host, service_port
+
+
+# app_scheme, app_host_dns, app_service_port = parse_app_host_url(host_url)
+# if app_scheme:
+#     http_host_url = f"http://{app_host_dns}"
+#     if app_service_port:
+#         http_host_url = f"http://{app_host_dns}:{app_service_port}"
+# else:
+#     http_host_url = host_url
+
+# print(f"HTTP address of the host url: {http_host_url}")
+
+
+# default_get_current_registry = swagger._get_current_registry
+
+
+# def updated_get_current_registry(api=None):
+#     """Fix for proxy issue. If traffic is redirected as HTTP it converts to HTTPS."""
+#     global http_host_url
+#     global host_url
+#     global app_scheme
+
+#     conf = default_get_current_registry(api)
+#     for x in conf:
+#         if conf[x] and isinstance(conf[x], str) and conf[x].startswith(http_host_url):
+#             conf[x] = conf[x].replace("http:", f"{app_scheme}:", 1)
+
+#     return conf
+
+
+# swagger._get_current_registry = updated_get_current_registry
+
+
+# def main():
 setup_logging()
 print("Initialising application")
 initialize_app(application)
+    # logger.info("Starting server %s v%s", get_settings().server.description.ws_app_name,
+    #             get_settings().server.description.ws_app_version)
+    # print("Starting application on port %s" % str(get_settings().server.service.rest_api_port))
+    # application.run(host="0.0.0.0", port=get_settings().server.service.rest_api_port, debug=get_settings().flask.DEBUG,
+    #                 threaded=True, use_reloader=False)
+    # logger.info("Finished server %s v%s", get_settings().server.description.ws_app_name,
+    #            get_settings().server.description.ws_app_version)
 
+
+# print("before main")
+# if __name__ == "__main__":
+#     # print("Setting ssl context for Flask server")
+#     # context = ("ssl/wsapp.crt", "ssl/wsapp.key")  # SSL certificate and key files
+#     main()
+# else:
+#     # print("Setting ssl context for Gunicorn server")
+#     # context = ("ssl/wsapp.crt", "ssl/wsapp.key")  # SSL certificate and key files
+#     main()

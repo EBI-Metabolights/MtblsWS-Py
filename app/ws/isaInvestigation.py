@@ -145,7 +145,7 @@ class IsaInvestigation(Resource):
         if not read_access:
             abort(403)
         metadata_files = get_all_metadata_files(study_location)
-        investigation_file = [x for x in metadata_files if os.path.basename(x).lower() == "i_Investigation.txt"]
+        investigation_file = [x for x in metadata_files if os.path.basename(x).lower() == "i_investigation.txt"]
         if not investigation_file:
             abort(404, message=f"There is no i_Investigation.txt file on {study_id} folder.")
             
