@@ -160,13 +160,13 @@ def configure_app(flask_app):
     print(f"SERVER PORT:\t\t\t{settings.server.service.rest_api_port}")
     print("................................................................................................................")
 
-    import yaml
-    if settings.flask.DEBUG:
-        import copy
-        masked_copy = copy.deepcopy(settings.dict())
-        mask_settings(masked_copy)
-        masked_settings_text = yaml.dump(masked_copy)
-        print(masked_settings_text)
+    # import yaml
+    # if settings.flask.DEBUG:
+    #     import copy
+    #     masked_copy = copy.deepcopy(settings.dict())
+    #     mask_settings(masked_copy)
+    #     masked_settings_text = yaml.dump(masked_copy)
+    #     print(masked_settings_text)
 
 def mask_settings(data: dict):
     for k, v in data.items():
