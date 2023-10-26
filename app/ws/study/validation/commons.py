@@ -72,7 +72,7 @@ fid_file = 'Free Induction Decay Data File'
 acq_file = 'Acquisition Parameter Data File'
 raw_file = 'Raw Spectral Data File'
 derived_file = 'Derived Spectral Data File'
-
+nmr_raw_files = ["fid", "acqu", "acqus", "acqus2" "ser"]
 
 def add_msg(validations, section, message, status, meta_file="", value="", descr="", val_sequence=0,
             log_category=error):
@@ -916,7 +916,11 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
 
                         add_msg(validations, val_section, header + f" was not referenced in {filename} assay row {str(row_idx)}",
                                 val_type, filename, val_sequence=7.5, log_category=log_category)
-
+                    else:
+                        all_assay_raw_files.append(value)
+                        raw_found = True
+                        raw_valid =  os.path.basename(value) in nmr_raw_files
+                        raw_value = value 
             if derived_tested and raw_tested:
                 if not raw_found and not derived_found:
                     add_msg(validations, val_section,
@@ -939,7 +943,7 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
     return validations, all_assay_raw_files
 
 
-def is_valid_raw_file_column_entry(value: str, valid_filetypes: List[str]=None) -> bool:
+def is_valid_raw_file_column_entry(value: str, valid_filetypes: List[str]=None, exact_match: bool=False) -> bool:
     """
     Checks whether the given value for the raw file is valid. Iterates over the list of valid filetypes, and if the
     value string contains a valid filetype, the loop breaks and returns true.
@@ -951,8 +955,12 @@ def is_valid_raw_file_column_entry(value: str, valid_filetypes: List[str]=None) 
     if not valid_filetypes:
         valid_filetypes = [x.lower() for x in get_settings().file_filters.raw_files_list]
     for filetype in valid_filetypes:
-        if value.lower().endswith(filetype) and len(value) > len(filetype):
-            return True
+        if exact_match:
+            if value.lower() == filetype.lower():
+                return True
+        else:
+            if value.lower().endswith(filetype) and len(value) > len(filetype):
+                return True
     return False
 
 
