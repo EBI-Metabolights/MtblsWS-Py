@@ -116,20 +116,22 @@ def get_study_folder_files(root_path: str, file_descriptors: Dict[str, FileDescr
             #     if item.name in SKIP_FOLDER_NAMES:
             #         continue
             sub_filename = ""
+            referenced_sub_files = set()
             is_stop_folder = False
             if relative_path and str(relative_path) not in MANAGED_FOLDERS:
                 search = glob.iglob(f"{item}/{SKIP_FOLDER_CONTAINS_FILE_NAME_PATTERN}")
                 
                 files = [x for x in search if "." not in os.path.basename(x)]
+                
                 if files:
+                    referenced_sub_files = referenced_sub_files.union(set(files))
                     for parameters_file in SKIP_FOLDER_CONTAINS_ANY:
                         items = glob.iglob(f"{item}/{parameters_file}")
-                        if items:
-                            expected_files = [x for x in items if "." not in os.path.basename(x)]
-                            if expected_files:
-                                sub_filename = parameters_file
-                                is_stop_folder = True
-                                break
+                        expected_files = [x for x in items if "." not in os.path.basename(x)]
+                        if expected_files:
+                            referenced_sub_files = referenced_sub_files.union(set(expected_files))
+                            sub_filename = parameters_file
+                            is_stop_folder = True
                                     
             ext = item.suffix.lower()
             relative_path = str(item).replace(f"{root_path}", "").lstrip("/")
@@ -138,11 +140,19 @@ def get_study_folder_files(root_path: str, file_descriptors: Dict[str, FileDescr
             if ext in STOP_FOLDER_EXTENSIONS or is_stop_folder:
                 if pattern and not fnmatch.fnmatch(name, pattern):
                     continue
-                if ext in STOP_FOLDER_SAMPLE_FILES:
-                    sub_filename = STOP_FOLDER_SAMPLE_FILES[ext]
+                if is_stop_folder:
+                    sub_filename = ""
                 else:
-                    sub_filename = DEFAULT_SAMPLE_FILE_NAME
+                    if ext in STOP_FOLDER_SAMPLE_FILES:
+                        sub_filename = STOP_FOLDER_SAMPLE_FILES[ext]
+                    else:
+                        sub_filename = DEFAULT_SAMPLE_FILE_NAME
+                    
                 file_descriptors[relative_path] = FileDescriptor(relative_path=relative_path, is_dir=True, modified_time=m_time, extension=ext, is_stop_folder=True, sub_filename=sub_filename)
+                if is_stop_folder:
+                    for subfile in referenced_sub_files:
+                        relative_path = str(subfile).replace(f"{root_path}", "").lstrip("/")
+                        file_descriptors[relative_path] = FileDescriptor(relative_path=relative_path, is_dir=False, modified_time=m_time, extension="", is_stop_folder=False, sub_filename="")
                 yield item
             else:
                 if not pattern or (pattern and fnmatch.fnmatch(name, pattern)):

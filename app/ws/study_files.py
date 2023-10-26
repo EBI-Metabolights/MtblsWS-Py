@@ -449,10 +449,10 @@ class StudyRawAndDerivedDataFiles(Resource):
         study_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
         search_subfolder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id, data_files_subfolder)
         search_path = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id, search_pattern)
-        ignore_list = self.get_ignore_list(search_path)
+        ignore_list = self.get_ignore_list(study_folder)
 
         glob_search_result = glob.glob(search_path, recursive=True)
-        search_results = [os.path.abspath(file) for file in glob_search_result if not os.path.isdir(file)]
+        search_results = [os.path.abspath(file) for file in glob_search_result if (file_match and os.path.isfile(file)) or (folder_match and os.path.isdir(file))]
         excluded_folders = get_settings().file_filters.folder_exclusion_list
 
         excluded_folder_set = set(
