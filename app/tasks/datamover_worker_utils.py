@@ -141,7 +141,7 @@ def ping_datamover_worker(worker_name: str):
     name = f"{project_name}_{worker_name}"
 
     input_value = socket.gethostname()
-    for _ in range(3):
+    for _ in range(5):
         task = heartbeat.ping.apply_async(queue=name, args=[input_value])
         try:
             result = task.get(timeout=10)

@@ -13,6 +13,7 @@ import uuid
 from app.config import get_settings
 from app.config.model.hpc_cluster import HpcClusterConfiguration
 from app.tasks.bash_client import BashClient, CapturedBashExecutionResult
+from app.tasks.hpc_rsync_worker import HpcRsyncWorker
 from app.utils import MetabolightsException, current_time
 
 from app.ws.settings.utils import get_cluster_settings
@@ -275,32 +276,60 @@ class LsfClient(object):
         out_log_path = os.path.join(settings.hpc_cluster.configuration.job_track_log_location, f"{task_name}_out.log")
         err_log_path = os.path.join(settings.hpc_cluster.configuration.job_track_log_location, f"{task_name}_err.log")
         temp_path = None
+        local_tmp_folder_path = None
         try:
+                
+            uuid_value = str(uuid.uuid4())
+            
+            script_file_name = f"run_singularity.sh"
+            tmp_folder =  f"run_singularity_{uuid_value}"
+            local_tmp_folder_path = os.path.join(self.settings.server.temp_directory_path, tmp_folder)
+            os.makedirs(local_tmp_folder_path, exist_ok=True)
+            config_file_path = os.path.join(os.getcwd(), "datamover-config.yaml")
+            target_config_file_path = os.path.join(local_tmp_folder_path, "config.yaml")
+            
+            secrets_folder_path = os.environ.get("SECRETS_PATH")
+            if not secrets_folder_path:
+                secrets_folder_path = os.path.join(os.getcwd(), ".secrets")
+            
+            target_secrets_folder_path = os.path.join(local_tmp_folder_path, ".secrets")
+            target_script_path = os.path.join(local_tmp_folder_path, script_file_name)
+            
+            shutil.copy2(config_file_path, target_config_file_path)
+            shutil.copytree(secrets_folder_path, target_secrets_folder_path, dirs_exist_ok=True)
+            shutil.copy2(script_path, target_script_path)
+            hostname = self.settings.hpc_cluster.compute.connection.host
+            host_username = self.settings.hpc_cluster.compute.connection.username
+            root_path = worker_config.worker_deployment_root_path
+            if not self.settings.hpc_cluster.datamover.run_ssh_on_hpc_compute:
+                source_path=f"{local_tmp_folder_path}/"
+                target_path=f"{host_username}@{hostname}:{root_path}/"
+                commands = [HpcRsyncWorker.build_rsync_command(source_path=source_path, target_path=target_path, rsync_arguments="-av")]
+                copy_singularity_run_script = " ".join(commands)
+
+                result = BashClient.execute_command(copy_singularity_run_script)
+            else:
+                deleted_files = self.settings.hpc_cluster.datamover.mounted_paths.cluster_rw_storage_recycle_bin_root_path
+                os.makedirs(os.path.join(deleted_files, tmp_folder), exist_ok=True)
+                temp_path = os.path.join(deleted_files, tmp_folder)
+                shutil.copytree(local_tmp_folder_path, temp_path, dirs_exist_ok=True)
+                datamover = self.settings.hpc_cluster.datamover.connection.host
+                datamover_username = self.settings.hpc_cluster.datamover.connection.username
+                source_path=f"{temp_path}/"
+                target_path=f"{datamover_username}@{datamover}:{root_path}/"
+                commands = [BashClient.build_ssh_command(hostname, host_username)]
+                commands.append(HpcRsyncWorker.build_rsync_command(source_path=source_path, target_path=target_path, rsync_arguments="-av"))
+                copy_singularity_run_script = " ".join(commands)
+                result = BashClient.execute_command(copy_singularity_run_script)
+                shutil.rmtree(temp_path, ignore_errors=True)
+
             job_id, _, _ = self.submit_hpc_job(
                         script_path, task_name, output_file=out_log_path, error_file=err_log_path, queue=hpc_queue_name
                     )
             if logger.level >= logging.INFO:
                 file = Path(script_path)
                 logger.info(file.read_text())
-            hostname = self.settings.hpc_cluster.compute.connection.host
-            host_username = self.settings.hpc_cluster.compute.connection.username
-            script_file_name = f"run_singularity.sh"
-            target_path = os.path.join(worker_config.worker_deployment_root_path, script_file_name)
-            if not self.settings.hpc_cluster.datamover.run_ssh_on_hpc_compute:
-                copy_singularity_run_script = f"scp {script_path} {host_username}@{hostname}:{target_path}"
-            else:
-                deleted_files = self.settings.hpc_cluster.datamover.mounted_paths.cluster_rw_storage_recycle_bin_root_path
-                temp_path = os.path.join(deleted_files, script_file_name)
-                shutil.copy2(script_path, temp_path)
-                datamover = self.settings.hpc_cluster.datamover.connection.host
-                datamover_username = self.settings.hpc_cluster.datamover.connection.username
-                commands = [BashClient.build_ssh_command(hostname, host_username)]
-                commands.append(f"scp {temp_path} {datamover_username}@{datamover}:{target_path}")
                 
-                copy_singularity_run_script = " ".join(commands)
-            
-            BashClient.execute_command(copy_singularity_run_script)
-            
             messages.append(f"New job was submitted with job id {job_id} for {task_name}")
         except Exception as exc:
             message = f"Exception after kill jobs command. {str(exc)}"
@@ -312,5 +341,9 @@ class LsfClient(object):
                 os.remove(script_path)
             if temp_path and os.path.exists(temp_path):
                 os.remove(temp_path)
-                
+            
+            if local_tmp_folder_path and os.path.exists(local_tmp_folder_path):
+                shutil.rmtree(local_tmp_folder_path)
         return job_id, messages
+    
+
