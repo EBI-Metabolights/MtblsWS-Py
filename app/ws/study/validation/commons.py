@@ -72,7 +72,7 @@ fid_file = 'Free Induction Decay Data File'
 acq_file = 'Acquisition Parameter Data File'
 raw_file = 'Raw Spectral Data File'
 derived_file = 'Derived Spectral Data File'
-nmr_raw_files = ["fid", "acqu", "acqus", "acqus2" "ser"]
+valid_acq_raw_files = ["acqu", "acqus", "acqu2", "acqu2s", "acqus.txt", "acqu2s.txt"]
 
 def add_msg(validations, section, message, status, meta_file="", value="", descr="", val_sequence=0,
             log_category=error):
@@ -893,7 +893,10 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
                 'valid': False,
                 'is_text_file': False
             }
-
+            fid_file_value = None
+            aqc_file_value = None
+            nmr_data_row = False
+            derived_data_value = None
             for header, value in row.iteritems():  # Check cells
                 if header == raw_file:
                     raw_tested = True
@@ -906,8 +909,30 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
                     derived_tested = True
                     if value:
                         all_assay_derived_files.append(value)
+                        derived_data_value= value
                         derived_found = True
                         derived_valid = is_valid_derived_column_entry(value, valid_filetypes=valid_derived_filetypes)
+                elif header == fid_file:
+                    if value and os.path.basename(value).lower() in ("fid", "ser") or value.endswith(".zip"):
+                        fid_file_value = value
+                        all_assay_raw_files.append(fid_file_value)
+                    elif value:
+                        add_msg(validations, val_section,
+                            f"'{filename}': {fid_file} value at  {str(row_idx)} row is invalid. " + 
+                            f"Current value '{value if value else ''}'. " + 
+                            f"Relative path of fid, ser or a compressed raw data (*.zip) file is expected.",
+                            error, filename, val_sequence=7.21, log_category=log_category)
+                    nmr_data_row = True
+                elif header == acq_file:
+                    if  value and value.endswith(".zip") or os.path.basename(value) in valid_acq_raw_files:
+                        aqc_file_value = value
+                        all_assay_raw_files.append(aqc_file_value)
+                    else:
+                        add_msg(validations, val_section,
+                            f"'{filename}': {acq_file} value at  {str(row_idx)} row is invalid. Current value '{value}'. " +
+                            f"Relative path of acqu, acqus, acqu2 or acqu2s or a compressed raw data (*.zip) file is expected.",
+                            error, filename, val_sequence=7.22, log_category=log_category)
+                    nmr_data_row = True
                 else:
                     if not value:
                         val_type = error
@@ -916,12 +941,16 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
 
                         add_msg(validations, val_section, header + f" was not referenced in {filename} assay row {str(row_idx)}",
                                 val_type, filename, val_sequence=7.5, log_category=log_category)
-                    else:
-                        all_assay_raw_files.append(value)
-                        raw_found = True
-                        raw_valid =  os.path.basename(value) in nmr_raw_files
-                        raw_value = value 
-            if derived_tested and raw_tested:
+            if nmr_data_row:
+                if not derived_found or not derived_valid['valid']:
+                    if not fid_file_value:
+                        add_msg(validations, val_section,
+                            f"'{filename}': If there is no valid derived data file in {derived_file} column, " + 
+                            f"{fid_file} column value is required and should be valid at {str(row_idx)}. row. " + 
+                            f"Current values: {derived_file}:'{derived_data_value if derived_data_value else ''}', " + 
+                            f"{fid_file}:'{fid_file_value if fid_file_value else ''}', ",
+                            error, filename, val_sequence=7.24, log_category=log_category)                        
+            elif derived_tested and raw_tested:
                 if not raw_found and not derived_found:
                     add_msg(validations, val_section,
                             f"'{filename}': Both Raw and Derived Spectral Data Files are missing from assay row {str(row_idx)}",
