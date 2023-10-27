@@ -51,7 +51,6 @@ deploy_on_k8s:
     - if: $CI_COMMIT_BRANCH == "development" && $K8S_DEPLOYMENT == "1"
       when: on_success
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/prepare_deployment_files.sh"
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/deploy.sh"
 
 build_singularity:

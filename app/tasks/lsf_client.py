@@ -307,7 +307,7 @@ class LsfClient(object):
                 commands = [HpcRsyncWorker.build_rsync_command(source_path=source_path, target_path=target_path, rsync_arguments="-av")]
                 copy_singularity_run_script = " ".join(commands)
 
-                result = BashClient.execute_command(copy_singularity_run_script)
+                BashClient.execute_command(copy_singularity_run_script)
             else:
                 deleted_files = self.settings.hpc_cluster.datamover.mounted_paths.cluster_rw_storage_recycle_bin_root_path
                 os.makedirs(os.path.join(deleted_files, tmp_folder), exist_ok=True)
@@ -320,7 +320,7 @@ class LsfClient(object):
                 commands = [BashClient.build_ssh_command(hostname, host_username)]
                 commands.append(HpcRsyncWorker.build_rsync_command(source_path=source_path, target_path=target_path, rsync_arguments="-av"))
                 copy_singularity_run_script = " ".join(commands)
-                result = BashClient.execute_command(copy_singularity_run_script)
+                BashClient.execute_command(copy_singularity_run_script)
                 shutil.rmtree(temp_path, ignore_errors=True)
 
             job_id, _, _ = self.submit_hpc_job(
