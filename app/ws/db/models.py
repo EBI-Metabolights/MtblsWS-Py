@@ -452,7 +452,7 @@ class MetAttributeDefinitionModel(EntityModel):
 class MetAttributeModel(EntityModel):
     ObjectType: str = "Attribute"
     value: str = None
-    attributeDefinition: MetAttributeDefinitionModel = Field(MetAttributeDefinitionModel(), alias="attribute_definition")
+    attributeDefinition: Union[None, MetAttributeDefinitionModel] = Field(None, alias="attribute_definition")
     class Config:
         orm_mode = True
         
