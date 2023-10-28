@@ -40,8 +40,8 @@
                 "-A",
                 "app.tasks.worker:celery",
                 "worker",
-                "--loglevel",
-                "info",
+                "--loglevel=info",
+                "--concurrency=1",
                 "-Q",
                 "common-tasks,monitor-tasks"
             ],
