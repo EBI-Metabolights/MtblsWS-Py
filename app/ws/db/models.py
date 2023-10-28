@@ -452,7 +452,7 @@ class MetAttributeDefinitionModel(EntityModel):
 class MetAttributeModel(EntityModel):
     ObjectType: str = "Attribute"
     value: str = None
-    attributeDefinition: MetAttributeDefinitionModel = Field([], alias="attribute_definition")
+    attributeDefinition: MetAttributeDefinitionModel = Field(MetAttributeDefinitionModel(), alias="attribute_definition")
     class Config:
         orm_mode = True
         
@@ -506,6 +506,7 @@ class MetaboLightsCompoundIndexModel(EntityModel):
     
     metSpectras: List[MetSpectraModel] = Field([], alias="met_spectras")
     metPathways: List[MetPathwayModel] = Field([], alias="met_pathways")
+    
     @validator('updatedDate', check_fields=False)
     def datetime_validation(cls, value):
         if not value:
