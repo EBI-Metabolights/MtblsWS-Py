@@ -96,8 +96,9 @@ def evaluate_request():
     host_url =  f"{protocol}://{request.host}"
     allowed = [x for x in allowed_host_domains if re.fullmatch(x, host_url)]
     if not allowed:
+        logger.debug(f"Request is not allowed from {host_url}")
         abort(403, message=f"Forbidden request from {host_url}.")
-
+    logger.debug(f"Allowed request from {host_url}")
     if request.method in BYPASS_HTTP_METHODS:
         return None
     
