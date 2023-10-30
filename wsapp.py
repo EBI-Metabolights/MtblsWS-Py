@@ -85,7 +85,30 @@ def setup_logging():
 mtbls_pattern = re.compile(r"MTBLS[1-9][0-9]*")
 MANAGED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"}
 BYPASS_HTTP_METHODS = ("OPTIONS", "HEAD")
-
+@application.before_request
+def evaluate_request():
+    settings = get_settings()
+    host = settings.server.service.app_host_url
+    if request.host !=  host:
+        abort(403, message=f"Request is forbidden from {request.host}.")
+    if request.method in BYPASS_HTTP_METHODS:
+        return None
+    
+    disabled_endpoints: List[EndpointDescription] = settings.server.service.disabled_endpoints
+    if disabled_endpoints:
+        matched = check_request(request, disabled_endpoints)
+        if matched:
+            abort(503, message=f"This endpoint is disabled and unreachable.")
+        
+    
+    if settings.server.service.maintenance_mode:
+        enabled_endpoints = settings.server.service.enabled_endpoints_under_maintenance
+        if enabled_endpoints:
+            matched = check_request(request, enabled_endpoints)
+            if not matched:
+                abort(503, message=f"This endpoint is under maintenance now. Please try again later.")
+        
+    return None
 
 def check_request(current_request, endpoints: List[EndpointDescription]):
     if current_request.method not in MANAGED_HTTP_METHODS:
