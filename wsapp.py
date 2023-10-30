@@ -98,7 +98,7 @@ def evaluate_request():
     if not allowed:
         logger.info(f"Request is not allowed from {host_url}")
         abort(403, message=f"Forbidden request from {host_url}.")
-    logger.info(f"Allowed request from {host_url}")
+    logger.debug(f"Allowed request from {host_url}")
     if request.method in BYPASS_HTTP_METHODS:
         return None
     
