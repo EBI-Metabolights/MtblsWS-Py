@@ -81,9 +81,6 @@ BYPASS_HTTP_METHODS = ("OPTIONS", "HEAD")
 @application.before_request
 def evaluate_request():
     settings = get_settings()
-    host = settings.server.service.app_host_url
-    if request.host !=  host:
-        abort(403, message=f"Request is forbidden from {request.host}.")
     if request.method in BYPASS_HTTP_METHODS:
         return None
     
