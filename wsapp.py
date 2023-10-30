@@ -88,9 +88,16 @@ BYPASS_HTTP_METHODS = ("OPTIONS", "HEAD")
 @application.before_request
 def evaluate_request():
     settings = get_settings()
-    host = settings.server.service.app_host_url
-    if request.host !=  host:
-        abort(403, message=f"Request is forbidden from {request.host}.")
+    allowed_host_domains = settings.server.service.allowed_host_domains
+    protocol = request.scheme
+    if "HTTP_X_FORWARDED_PROTO" in request.environ:
+        protocol = request.environ["HTTP_X_FORWARDED_PROTO"]
+        
+    host_url =  f"{protocol}://{request.host}"
+    allowed = [x for x in allowed_host_domains if re.fullmatch(x, host_url)]
+    if not allowed:
+        abort(403, message=f"Forbidden request from {host_url}.")
+
     if request.method in BYPASS_HTTP_METHODS:
         return None
     
@@ -139,28 +146,28 @@ def check_response(result):
     return result
 
 
-@application.before_request
-def check_study_maintenance_mode():
-    if request.method in BYPASS_HTTP_METHODS:
-        return None
-    settings = get_settings()
+# @application.before_request
+# def check_study_maintenance_mode():
+#     if request.method in BYPASS_HTTP_METHODS:
+#         return None
+#     settings = get_settings()
 
-    disabled_endpoints: List[
-        EndpointDescription
-    ] = settings.server.service.disabled_endpoints
-    if disabled_endpoints:
-        matched = check_request(request, disabled_endpoints)
-        if matched:
-            abort(503, message=f"This endpoint is disabled and unreachable.")
+#     disabled_endpoints: List[
+#         EndpointDescription
+#     ] = settings.server.service.disabled_endpoints
+#     if disabled_endpoints:
+#         matched = check_request(request, disabled_endpoints)
+#         if matched:
+#             abort(503, message=f"This endpoint is disabled and unreachable.")
 
-    if settings.server.service.maintenance_mode:
-        enabled_endpoints = settings.server.service.enabled_endpoints_under_maintenance
-        if enabled_endpoints:
-            matched = check_request(request, enabled_endpoints)
-            if not matched:
-                message = f"This endpoint is under maintenance. Please try again later."
-                abort(503, message=message)
-    return None
+#     if settings.server.service.maintenance_mode:
+#         enabled_endpoints = settings.server.service.enabled_endpoints_under_maintenance
+#         if enabled_endpoints:
+#             matched = check_request(request, enabled_endpoints)
+#             if not matched:
+#                 message = f"This endpoint is under maintenance. Please try again later."
+#                 abort(503, message=message)
+#     return None
 
 
 # host_url = get_settings().server.service.app_host_url
