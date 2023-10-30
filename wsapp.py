@@ -79,10 +79,13 @@ mtbls_pattern = re.compile(r'MTBLS[1-9][0-9]*')
 MANAGED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"}
 BYPASS_HTTP_METHODS = ("OPTIONS", "HEAD")
 @application.before_request
-def check_study_maintenance_mode():
+def evaluate_request():
+    settings = get_settings()
+    host = settings.server.service.app_host_url
+    if request.host !=  host:
+        abort(403, message=f"Request is forbidden from {request.host}.")
     if request.method in BYPASS_HTTP_METHODS:
         return None
-    settings = get_settings()
     
     disabled_endpoints: List[EndpointDescription] = settings.server.service.disabled_endpoints
     if disabled_endpoints:
@@ -124,17 +127,98 @@ def check_request(current_request, endpoints: List[EndpointDescription]):
             return True
     return False
 
-def main():
-    setup_logging()
-    print("Initialising application")
-    initialize_app(application)
-    logger.info("Starting server %s v%s", get_settings().server.description.ws_app_name,
-                get_settings().server.description.ws_app_version)
-    print("Starting application on port %s" % str(get_settings().server.service.rest_api_port))
-    application.run(host="0.0.0.0", port=get_settings().server.service.rest_api_port, debug=get_settings().flask.DEBUG,
-                    threaded=True, use_reloader=False)
-    logger.info("Finished server %s v%s", get_settings().server.description.ws_app_name,
-                get_settings().server.description.ws_app_version)
+@application.after_request
+def check_response(result):
+    return result
+
+
+@application.before_request
+def check_study_maintenance_mode():
+    if request.method in BYPASS_HTTP_METHODS:
+        return None
+    settings = get_settings()
+
+    disabled_endpoints: List[
+        EndpointDescription
+    ] = settings.server.service.disabled_endpoints
+    if disabled_endpoints:
+        matched = check_request(request, disabled_endpoints)
+        if matched:
+            abort(503, message=f"This endpoint is disabled and unreachable.")
+
+    if settings.server.service.maintenance_mode:
+        enabled_endpoints = settings.server.service.enabled_endpoints_under_maintenance
+        if enabled_endpoints:
+            matched = check_request(request, enabled_endpoints)
+            if not matched:
+                message = f"This endpoint is under maintenance. Please try again later."
+                abort(503, message=message)
+    return None
+
+
+# host_url = get_settings().server.service.app_host_url
+# print(f"Configured host name: {host_url}")
+
+
+# def parse_app_host_url(url: str):
+#     app_host_parts = url.split("://")
+#     scheme = None
+#     app_host = None
+#     service_port = None
+#     if len(app_host_parts) > 1:
+#         scheme = app_host_parts[0]
+#         host_port = app_host_parts[1].split(":")
+#     else:
+#         host_port = app_host_parts[0].split(":")
+#     app_host = host_port[0]
+#     if len(host_port) > 1:
+#         service_port = host_port[1]
+
+#     return scheme, app_host, service_port
+
+
+# app_scheme, app_host_dns, app_service_port = parse_app_host_url(host_url)
+# if app_scheme:
+#     http_host_url = f"http://{app_host_dns}"
+#     if app_service_port:
+#         http_host_url = f"http://{app_host_dns}:{app_service_port}"
+# else:
+#     http_host_url = host_url
+
+# print(f"HTTP address of the host url: {http_host_url}")
+
+
+# default_get_current_registry = swagger._get_current_registry
+
+
+# def updated_get_current_registry(api=None):
+#     """Fix for proxy issue. If traffic is redirected as HTTP it converts to HTTPS."""
+#     global http_host_url
+#     global host_url
+#     global app_scheme
+
+#     conf = default_get_current_registry(api)
+#     for x in conf:
+#         if conf[x] and isinstance(conf[x], str) and conf[x].startswith(http_host_url):
+#             conf[x] = conf[x].replace("http:", f"{app_scheme}:", 1)
+
+#     return conf
+
+
+# swagger._get_current_registry = updated_get_current_registry
+
+
+# def main():
+setup_logging()
+print("Initialising application")
+initialize_app(application)
+    # logger.info("Starting server %s v%s", get_settings().server.description.ws_app_name,
+    #             get_settings().server.description.ws_app_version)
+    # print("Starting application on port %s" % str(get_settings().server.service.rest_api_port))
+    # application.run(host="0.0.0.0", port=get_settings().server.service.rest_api_port, debug=get_settings().flask.DEBUG,
+    #                 threaded=True, use_reloader=False)
+    # logger.info("Finished server %s v%s", get_settings().server.description.ws_app_name,
+    #            get_settings().server.description.ws_app_version)
 
 
 print("before main")
