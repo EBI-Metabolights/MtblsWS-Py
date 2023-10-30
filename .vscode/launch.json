@@ -13,6 +13,47 @@
             ],
         },   
         {
+            "name": "Poetry Celery Worker",
+            "type": "python",
+            "request": "launch",
+            "program": "/opt/poetry/bin/poetry",
+            "args": [
+                "run",
+                "celery",
+                "-A",
+                "app.tasks.worker:celery",
+                "worker",
+                "--loglevel=info",
+                "--concurrency=1",
+                "-Q",
+                "common-tasks,monitor-tasks"
+            ],
+            "jinja": true,
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/.env",
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets", "GEVENT_SUPPORT": "True"}
+
+        },   
+        {
+            "name": "Poetry Celery Beat",
+            "type": "python",
+            "request": "launch",
+            "program": "/opt/poetry/bin/poetry",
+            "args": [
+                "run",
+                "celery",
+                "-A",
+                "app.tasks.worker:celery",
+                "beat",
+                "--loglevel",
+                "info"
+            ],
+            "jinja": true,
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
+
+        },    
+        {
             "name": "Flask Server run",
             "type": "python",
             "request": "launch",

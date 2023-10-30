@@ -6,12 +6,8 @@ authors = ["MetaboLights Team <metabolights-dev@ebi.ac.uk>"]
 readme = "README.md"
 packages = [
     { include = "app" },
-    { include = "resources" },
     { include = "scripts" },
-    { include = "tests" },
-    { include = "*.sh" },
-    { include = "*.py" },
-    { include = "*.txt" }
+    { include = "tests" }
 ]
 
 [tool.poetry.dependencies]
