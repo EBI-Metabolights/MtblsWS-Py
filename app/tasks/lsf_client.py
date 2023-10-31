@@ -139,10 +139,10 @@ class LsfClient(object):
         if self.submit_with_ssh:
             settings = get_settings()
             dmc = self.settings.hpc_cluster.datamover.connection
-            datamover_ssh_command: str = BashClient.build_ssh_command(hostname=dmc.host, username=dmc.username)
+            datamover_ssh_command: str = BashClient.build_ssh_command(hostname=dmc.host, username=dmc.username, identity_file=dmc.identity_file)
             if settings.hpc_cluster.datamover.run_ssh_on_hpc_compute:
                 cc = self.settings.hpc_cluster.compute.connection
-                compute_ssh_command: str = BashClient.build_ssh_command(hostname=cc.host, username=cc.username)
+                compute_ssh_command: str = BashClient.build_ssh_command(hostname=cc.host, username=cc.username,  identity_file=cc.identity_file)
                 return f"{compute_ssh_command} {datamover_ssh_command} {submission_command}" 
             else:
                 return f"{datamover_ssh_command} {submission_command}"
@@ -300,11 +300,12 @@ class LsfClient(object):
             shutil.copy2(script_path, target_script_path)
             hostname = self.settings.hpc_cluster.compute.connection.host
             host_username = self.settings.hpc_cluster.compute.connection.username
+            identity_file = self.settings.hpc_cluster.compute.connection.identity_file
             root_path = worker_config.worker_deployment_root_path
             if not self.settings.hpc_cluster.datamover.run_ssh_on_hpc_compute:
                 source_path=f"{local_tmp_folder_path}/"
                 target_path=f"{host_username}@{hostname}:{root_path}/"
-                commands = [HpcRsyncWorker.build_rsync_command(source_path=source_path, target_path=target_path, rsync_arguments="-av")]
+                commands = [HpcRsyncWorker.build_rsync_command(source_path=source_path, target_path=target_path, rsync_arguments="-av", identity_file=identity_file)]
                 copy_singularity_run_script = " ".join(commands)
 
                 BashClient.execute_command(copy_singularity_run_script)
@@ -313,12 +314,14 @@ class LsfClient(object):
                 os.makedirs(os.path.join(deleted_files, tmp_folder), exist_ok=True)
                 temp_path = os.path.join(deleted_files, tmp_folder)
                 shutil.copytree(local_tmp_folder_path, temp_path, dirs_exist_ok=True)
+                
+                commands = [BashClient.build_ssh_command(hostname, username=host_username, identity_file=identity_file)]
                 datamover = self.settings.hpc_cluster.datamover.connection.host
                 datamover_username = self.settings.hpc_cluster.datamover.connection.username
+                datamover_identity_file = self.settings.hpc_cluster.datamover.connection.identity_file
                 source_path=f"{temp_path}/"
                 target_path=f"{datamover_username}@{datamover}:{root_path}/"
-                commands = [BashClient.build_ssh_command(hostname, host_username)]
-                commands.append(HpcRsyncWorker.build_rsync_command(source_path=source_path, target_path=target_path, rsync_arguments="-av"))
+                commands.append(HpcRsyncWorker.build_rsync_command(source_path=source_path, target_path=target_path, rsync_arguments="-av", identity_file=datamover_identity_file))
                 copy_singularity_run_script = " ".join(commands)
                 BashClient.execute_command(copy_singularity_run_script)
                 shutil.rmtree(temp_path, ignore_errors=True)

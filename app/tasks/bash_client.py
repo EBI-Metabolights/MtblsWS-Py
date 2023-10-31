@@ -121,9 +121,12 @@ class BashClient(object):
             raise e
 
     @staticmethod
-    def build_ssh_command(hostname: str, username: str = None):
+    def build_ssh_command(hostname: str, username: str = None, identity_file: str = None):
         command = []
         command.append("ssh")
+        if identity_file:
+            command.append("-i")
+            command.append(identity_file)
         command.append("-o")
         command.append("StrictHostKeyChecking=no")
         command.append("-o")

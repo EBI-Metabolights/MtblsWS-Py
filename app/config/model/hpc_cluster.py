@@ -19,7 +19,7 @@ class HpcClusterConfiguration(BaseModel):
 class HpcConnection(BaseModel):
     host: str
     username: str
-
+    identity_file: str = "~/.ssh2/id_rsa"
 
 class DataMoverPathConfiguration(BaseModel):
     cluster_study_metadata_files_root_path: str

@@ -50,10 +50,11 @@ class HpcRsyncWorker:
         rsync_arguments="-auv",
         stdout_log_file_path: str = None,
         stderr_log_file_path: str = None,
+        identity_file: str = None,
     ) -> SyncTaskResult:
         create_remote_path([source_path, target_path])
         command = HpcRsyncWorker.build_rsync_command(
-            source_path, target_path, include_list, exclude_list, rsync_arguments=rsync_arguments
+            source_path, target_path, include_list, exclude_list, rsync_arguments=rsync_arguments, identity_file=identity_file
         )
         runner = HpcWorkerBashRunner(
             task_name=task_name,
@@ -83,6 +84,7 @@ class HpcRsyncWorker:
         rsync_arguments="-aunv",
         stdout_log_file_path: str = None,
         stderr_log_file_path: str = None,
+        identity_file: str = None
     ) -> SyncCalculationTaskResult:
         
         create_remote_path([source_path, target_path])
@@ -92,6 +94,7 @@ class HpcRsyncWorker:
             include_list,
             exclude_list,
             rsync_arguments=rsync_arguments,
+            identity_file=identity_file
         )
         runner = HpcWorkerBashRunner(
             task_name=task_name,
@@ -281,13 +284,19 @@ class HpcRsyncWorker:
 
     @staticmethod
     def build_rsync_command(
-        source_path: str, target_path: str, include_list=None, exclude_list=None, rsync_arguments: str = "-aunv"
+        source_path: str, target_path: str, include_list=None, exclude_list=None, rsync_arguments: str = "-aunv", identity_file: str=None
     ):
         source_path = source_path.rstrip("/")
         target_path = target_path.rstrip(".").rstrip("/")
 
         command_terms = ["rsync"]
         command_terms.append(rsync_arguments)
+        
+        if identity_file and (":" in source_path or ":" in target_path):
+            command_terms.append("-e")
+            ssh_command = f"ssh -i {identity_file}"
+            command_terms.append(f'\"{ssh_command}\"')
+        
         if include_list:
             for item in include_list:
                 command_terms.append(f"--include='{item}'")

@@ -99,7 +99,7 @@ def start_vm_worker(host: HostWorkerConfiguration, current_names: Set[str], resu
     redis_key = f"{initiate_vm_worker_key_prefix}:{hostname}:{name}"
     status = redis.get_value(redis_key)
     if not status or status.decode() != "1":
-        port = str(get_settings().server.service.rest_api_port)
+        port = str(settings.server.service.rest_api_port)
         paramters = {
             "application_deployment_path": host.deployment_path,
             "worker_name": name,
@@ -115,8 +115,9 @@ def start_vm_worker(host: HostWorkerConfiguration, current_names: Set[str], resu
         if localhost == hostname:
             result = BashClient.execute_command(f"{file_path}")
         else:
-            username = get_settings().hpc_cluster.datamover.connection.username
-            ssh_command = BashClient.build_ssh_command(hostname, username)
+            username = settings.hpc_cluster.datamover.connection.username
+            identity_file = settings.hpc_cluster.datamover.connection.identity_file
+            ssh_command = BashClient.build_ssh_command(hostname, username=username, identity_file=identity_file)
             result = BashClient.execute_command(f"{ssh_command} bash < {file_path}")
         success = True if result and result.returncode == 0 else False
         if success:
