@@ -58,10 +58,14 @@ class WsClient:
         try:
             result = self.search_manager.search_by_type(search_type, search_value)
         except Exception as e:
-            abort(500, message=f"MAF search failed {e.args}")
+            message = f"MAF search failed search type: {search_type} value: {search_value}, {e.args}"
+            logger.error(message)
+            print(message)
+            return None
 
         if not result or result.err:
-            abort(400, result.err)
+            logger.warning(f"Result is not valid {str(result.err)}")
+            return None
 
         json_result = result.dict()
         return json_result
