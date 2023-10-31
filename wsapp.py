@@ -82,7 +82,8 @@ def setup_logging():
 mtbls_pattern = re.compile(r"MTBLS[1-9][0-9]*")
 MANAGED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"}
 BYPASS_HTTP_METHODS = ("OPTIONS", "HEAD")
-@application.before_request
+
+@application.before_request    
 def evaluate_request():
     settings = get_settings()
     allowed_host_domains = settings.server.service.allowed_host_domains
@@ -143,31 +144,6 @@ def check_request(current_request, endpoints: List[EndpointDescription]):
 @application.after_request
 def check_response(result):
     return result
-
-
-@application.before_request
-def check_study_maintenance_mode():
-    if request.method in BYPASS_HTTP_METHODS:
-        return None
-    settings = get_settings()
-
-    disabled_endpoints: List[
-        EndpointDescription
-    ] = settings.server.service.disabled_endpoints
-    if disabled_endpoints:
-        matched = check_request(request, disabled_endpoints)
-        if matched:
-            abort(503, message=f"This endpoint is disabled and unreachable.")
-
-    if settings.server.service.maintenance_mode:
-        enabled_endpoints = settings.server.service.enabled_endpoints_under_maintenance
-        if enabled_endpoints:
-            matched = check_request(request, enabled_endpoints)
-            if not matched:
-                message = f"This endpoint is under maintenance. Please try again later."
-                abort(503, message=message)
-    return None
-
 
 # def parse_app_host_url(url: str):
 #     app_host_parts = url.split("://")

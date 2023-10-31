@@ -77,7 +77,7 @@ if [ -z "$PROCESS_ID" ]; then
     EXISTING_PROCESS=$(netstat -plant 2>/dev/null | grep $SERVER_PORT | awk '{print $7}') | tr "/" " "
     if [ -z "$EXISTING_PROCESS" ]; then
         echo "GUNICORN will be started"
-        gunicorn -b 0.0.0.0:$SERVER_PORT --access-logfile $LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}.log --error-logfile $LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}.log --worker-class gevent --preload wsapp:application --workers 3 --threads 2 --pid ./app_${HOST}_${SERVER_PORT}.pid  --log-level info --capture-output --daemon  > $LOG_PATH/gunicorn_${HOST}_${SERVER_PORT} 3>&1 & echo $! > app_${HOST}_${SERVER_PORT}.pid
+        gunicorn -b 0.0.0.0:$SERVER_PORT --access-logfile $LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}.log --error-logfile $LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}.log --preload wsapp:application --workers 3 --threads 2 --pid ./app_${HOST}_${SERVER_PORT}.pid  --log-level info --capture-output --daemon  > $LOG_PATH/gunicorn_${HOST}_${SERVER_PORT} 3>&1 & echo $! > app_${HOST}_${SERVER_PORT}.pid
         if [ $? -eq 0 ]; then
             echo "Gunicorn is up."
         else
