@@ -135,5 +135,5 @@ class ChebiWsProxy(object):
 
 
 @lru_cache(1)
-def get_chebi_ws_proxy():
+def get_chebi_ws_proxy() -> ChebiWsProxy:
     return ChebiWsProxy()
