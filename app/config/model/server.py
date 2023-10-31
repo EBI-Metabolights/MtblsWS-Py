@@ -31,6 +31,7 @@ class ServerService(BaseModel):
     mtbls_ws_host: str
     resources_path: str
     cors_hosts: str = "*"
+    allowed_host_domains: List[str] = ["https://.+\.ebi\.ac\.uk"]
     cors_resources_path: str
     api_doc: str
     maintenance_mode: bool = False

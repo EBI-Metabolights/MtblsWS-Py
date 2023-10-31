@@ -293,11 +293,6 @@ class ElasticsearchService(object):
         params = {"request_timeout": 10}
         result = self.client.get(index=self.INDEX_NAME, id=study_id, doc_type=self.DOC_TYPE_STUDY, params=params)
         return result
-
-    def get_study(self, study_id):
-        params = {"request_timeout": 10}
-        result = self.client.get(index=self.INDEX_NAME, id=study_id, doc_type=self.DOC_TYPE_STUDY, params=params)
-        return result
         
     def reindex_study_with_task(self, study_id, user_token, include_validation_results, sync: bool):
         task_name = StudyTaskName.REINDEX

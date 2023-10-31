@@ -34,6 +34,7 @@ from app.services.storage_service.storage_service import StorageService
 from app.tasks.datamover_tasks.basic_tasks.execute_commands import execute_bash_command
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
+from app.ws.chebi.wsproxy import ChebiWsProxy, get_chebi_ws_proxy
 from app.ws.cluster_jobs import submit_job
 from app.ws.db_connection import get_user_email
 from app.ws.isaApiClient import IsaApiClient
@@ -1792,7 +1793,7 @@ def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_t
 
     comp_name = clean_comp_name(comp_name)
 
-    client = get_chebi_client()
+    client: ChebiWsProxy = get_chebi_ws_proxy()
     if not client:
         print_log("    -- Could not set up any ChEBI webservice calls. ")
         abort(500, message='ERROR: Could not set up any direct ChEBI webservice calls, ChEBI WS may be down?')

@@ -44,9 +44,6 @@ logger = logging.getLogger("wslog")
 
 
 def setup_logging():
-    # default_log_dir = os.path.join(current_dir, "logs")
-    # if not os.path.exists(default_log_dir):
-    #     os.makedirs(default_log_dir, exist_ok=True)
 
     logging_config_file_path = get_settings().server.log.log_config_file_path
 
@@ -85,7 +82,39 @@ def setup_logging():
 mtbls_pattern = re.compile(r"MTBLS[1-9][0-9]*")
 MANAGED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"}
 BYPASS_HTTP_METHODS = ("OPTIONS", "HEAD")
-
+@application.before_request
+def evaluate_request():
+    settings = get_settings()
+    allowed_host_domains = settings.server.service.allowed_host_domains
+    protocol = request.scheme
+    if "HTTP_X_FORWARDED_PROTO" in request.environ:
+        protocol = request.environ["HTTP_X_FORWARDED_PROTO"]
+        
+    host_url =  f"{protocol}://{request.host}"
+    allowed = [x for x in allowed_host_domains if re.fullmatch(x, host_url)]
+    if not allowed:
+        logger.warning(f"Request is not allowed from {host_url}")
+        abort(403, message=f"Forbidden request from {host_url}.")    
+    
+    settings = get_settings()
+    if request.method in BYPASS_HTTP_METHODS:
+        return None
+    
+    disabled_endpoints: List[EndpointDescription] = settings.server.service.disabled_endpoints
+    if disabled_endpoints:
+        matched = check_request(request, disabled_endpoints)
+        if matched:
+            abort(503, message=f"This endpoint is disabled and unreachable.")
+        
+    
+    if settings.server.service.maintenance_mode:
+        enabled_endpoints = settings.server.service.enabled_endpoints_under_maintenance
+        if enabled_endpoints:
+            matched = check_request(request, enabled_endpoints)
+            if not matched:
+                abort(503, message=f"This endpoint is under maintenance now. Please try again later.")
+        
+    return None
 
 def check_request(current_request, endpoints: List[EndpointDescription]):
     if current_request.method not in MANAGED_HTTP_METHODS:
@@ -140,10 +169,6 @@ def check_study_maintenance_mode():
     return None
 
 
-# host_url = get_settings().server.service.app_host_url
-# print(f"Configured host name: {host_url}")
-
-
 # def parse_app_host_url(url: str):
 #     app_host_parts = url.split("://")
 #     scheme = None
@@ -161,56 +186,6 @@ def check_study_maintenance_mode():
 #     return scheme, app_host, service_port
 
 
-# app_scheme, app_host_dns, app_service_port = parse_app_host_url(host_url)
-# if app_scheme:
-#     http_host_url = f"http://{app_host_dns}"
-#     if app_service_port:
-#         http_host_url = f"http://{app_host_dns}:{app_service_port}"
-# else:
-#     http_host_url = host_url
-
-# print(f"HTTP address of the host url: {http_host_url}")
-
-
-# default_get_current_registry = swagger._get_current_registry
-
-
-# def updated_get_current_registry(api=None):
-#     """Fix for proxy issue. If traffic is redirected as HTTP it converts to HTTPS."""
-#     global http_host_url
-#     global host_url
-#     global app_scheme
-
-#     conf = default_get_current_registry(api)
-#     for x in conf:
-#         if conf[x] and isinstance(conf[x], str) and conf[x].startswith(http_host_url):
-#             conf[x] = conf[x].replace("http:", f"{app_scheme}:", 1)
-
-#     return conf
-
-
-# swagger._get_current_registry = updated_get_current_registry
-
-
-# def main():
 setup_logging()
 print("Initialising application")
 initialize_app(application)
-    # logger.info("Starting server %s v%s", get_settings().server.description.ws_app_name,
-    #             get_settings().server.description.ws_app_version)
-    # print("Starting application on port %s" % str(get_settings().server.service.rest_api_port))
-    # application.run(host="0.0.0.0", port=get_settings().server.service.rest_api_port, debug=get_settings().flask.DEBUG,
-    #                 threaded=True, use_reloader=False)
-    # logger.info("Finished server %s v%s", get_settings().server.description.ws_app_name,
-    #            get_settings().server.description.ws_app_version)
-
-
-# print("before main")
-# if __name__ == "__main__":
-#     # print("Setting ssl context for Flask server")
-#     # context = ("ssl/wsapp.crt", "ssl/wsapp.key")  # SSL certificate and key files
-#     main()
-# else:
-#     # print("Setting ssl context for Gunicorn server")
-#     # context = ("ssl/wsapp.crt", "ssl/wsapp.key")  # SSL certificate and key files
-#     main()

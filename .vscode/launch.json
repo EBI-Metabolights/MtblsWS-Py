@@ -31,7 +31,7 @@
             "jinja": true,
             "justMyCode": false,
             "envFile": "${workspaceFolder}/.env",
-            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets", "GEVENT_SUPPORT": "True"}
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
 
         },   
         {
@@ -68,14 +68,12 @@
             "type": "python",
             "request": "launch",
             "program": "~/miniconda3/envs/python3.8-test/bin/gunicorn",
-            "gevent": true,
             "args": [
                 "--bind=0.0.0.0:6010",
                 "--timeout=1000",
                 "-w",
                 "1",
                 "--preload",
-                "--worker-class=gevent",
                 "--log-level=DEBUG",
                 "wsapp:application"
             ],
@@ -100,7 +98,7 @@
             "jinja": true,
             "justMyCode": false,
             "envFile": "${workspaceFolder}/.env",
-            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets", "GEVENT_SUPPORT": "True"}
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
 
         }, 
         {
@@ -160,7 +158,7 @@
             "type": "python",
             "request": "launch",
             "module": "cProfile",
-            "args": ["-o", "${workspaceFolder}/tmp.prof", "gunicorn", "--worker-class", "gevent", "--preload", "-w", "3", "wsapp:app"],
+            "args": ["-o", "${workspaceFolder}/tmp.prof", "gunicorn", "--preload", "-w", "3", "wsapp:application"],
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
             "postDebugTask": "killdebugger",
