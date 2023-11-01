@@ -1,13 +1,12 @@
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SingularityImageConfiguration(BaseModel):
     docker_deployment_path: str
     run_singularity_script_template_name: str
     worker_deployment_root_path: str
-    singularity_docker_image_source: str
-    current_singularity_file_descriptor: str
+    gitlab_api_token: str
     user_home_binding_source_path: str
     user_home_binding_target_path: str
     logs_path: str

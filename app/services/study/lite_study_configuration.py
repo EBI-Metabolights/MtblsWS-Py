@@ -103,7 +103,6 @@ class LiteStudyConfiguration(object):
             paths.readonly_integrity_check_files = self.get_path(mounted_paths.cluster_study_readonly_integrity_check_files_root_path, study_folder)
             paths.readonly_public_metadata_versions = self.get_path(mounted_paths.cluster_study_readonly_public_metadata_versions_root_path, study_folder)
             paths.public_ftp_files = self.get_path(mounted_paths.cluster_public_ftp_root_path, study_folder)
-            paths.legacy_study_files_root_path = self.get_path(mounted_paths.cluster_legacy_study_files_root_path, study_folder)
         else:
             mounted_paths = self.settings.study.mounted_paths
             
@@ -121,7 +120,6 @@ class LiteStudyConfiguration(object):
             paths.readonly_public_metadata_versions = self.get_path(mounted_paths.study_readonly_public_metadata_versions_root_path, study_folder)
             paths.public_ftp_files = self.get_path(mounted_paths.public_ftp_root_path, study_folder)
         
-            paths.legacy_study_files_root_path = self.get_path(mounted_paths.legacy_study_files_root_path, study_folder)
 
         self.recalculate_private_ftp_paths()
         self.recalculate_managed_folders()

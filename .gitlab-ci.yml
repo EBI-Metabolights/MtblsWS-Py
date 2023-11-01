@@ -15,7 +15,7 @@ stages:
   - build_docker
   - deploy_docker
   - build_sif
-  - configure_datamover
+  - build_datamover_worker
 
 checkout_configs:
   stage: configure
@@ -62,14 +62,14 @@ build_singularity:
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_sif.sh"
 
-configure_datamover:
-  stage: configure_datamover
+deploy_datamover_worker:
+  stage: build_datamover_worker
   rules:
     - if: $K8S_DEPLOYMENT == "1"
       variables:
         BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
   script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/configure_datamover.sh"
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/deploy_datamover_worker.sh"
 
   
 # standalone build

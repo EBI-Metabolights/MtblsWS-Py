@@ -11,7 +11,7 @@
                 "python3",
                 "run_flask_server.py"
             ],
-        },   
+        }, 
         {
             "name": "Poetry Celery Worker",
             "type": "python",
@@ -52,35 +52,24 @@
             "justMyCode": false,
             "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
 
-        },    
-        {
-            "name": "Flask Server run",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/run_flask_server.py",
-            "envFile": "${workspaceFolder}/.env",
-            "justMyCode": false,
-            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"},
-            "postDebugTask": "killdebugger"
         },   
-        {
+
+       {
             "name": "Gunicorn Server run",
             "type": "python",
             "request": "launch",
-            "program": "~/miniconda3/envs/python3.8-test/bin/gunicorn",
+            "program": "${workspaceFolder}/run_gunicorn.py",
             "args": [
-                "--bind=0.0.0.0:6010",
-                "--timeout=1000",
-                "-w",
-                "1",
+                "--bind=0.0.0.0:7007",
                 "--preload",
-                "--log-level=DEBUG",
+                "--workers=1",
                 "wsapp:application"
             ],
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
-            "env": {"CONFIG_FILE_PATH": "${workspaceFolder}/config.yaml", "SECRETS_PATH": "${workspaceFolder}/.secrets"},
-        },
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"},
+            "postDebugTask": "killdebugger"
+        }, 
         {
             "name": "Celery Worker",
             "type": "python",

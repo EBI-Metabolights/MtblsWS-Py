@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 
@@ -42,7 +42,6 @@ class DataMoverPathConfiguration(BaseModel):
     cluster_public_ftp_root_path: str
     cluster_public_ftp_recycle_bin_root_path: str
     
-    cluster_legacy_study_files_root_path: str
     cluster_reports_root_path: str
     cluster_compounds_root_path: str
 

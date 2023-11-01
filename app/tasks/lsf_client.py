@@ -250,14 +250,18 @@ class LsfClient(object):
         settings = get_settings()
         worker_config = settings.workers.datamover_workers.singularity_image_configuration
         script_template = worker_config.run_singularity_script_template_name
-                
-        
+        sif_image_file_url = os.environ.get("SINGULARITY_IMAGE_FILE_URL")
+        if not sif_image_file_url:
+            raise ("SINGULARITY_IMAGE_FILE_URL is not defined.")
+        sif_file_name = os.path.basename(sif_image_file_url)
         inputs = {
                     "DOCKER_BOOTSTRAP_COMMAND": command,
                     "DOCKER_APP_ROOT": worker_config.docker_deployment_path,
                     "DOCKER_BOOTSTRAP_COMMAND_ARGUMENTS": command_arguments,
                     "REMOTE_SERVER_BASE_PATH": worker_config.worker_deployment_root_path,
-                    "SINGULARITY_IMAGE_DESCRIPTOR": worker_config.current_singularity_file_descriptor,
+                    "GITLAB_API_TOKEN": worker_config.gitlab_api_token,
+                    "SINGULARITY_IMAGE_URL": sif_image_file_url,
+                    "SINGULARITY_IMAGE_FILENAME": sif_file_name,
                     "CONFIG_FILE_PATH": worker_config.config_file_path,
                     "SECRETS_PATH": worker_config.secrets_path,
                     "LOGS_PATH": worker_config.logs_path,

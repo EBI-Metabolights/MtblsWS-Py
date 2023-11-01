@@ -42,7 +42,6 @@ application = Flask(__name__)
 application.config.setdefault("PYTHON_WS_APPLICATION_PATH", current_dir)
 logger = logging.getLogger("wslog")
 
-
 def setup_logging():
 
     logging_config_file_path = get_settings().server.log.log_config_file_path
@@ -53,6 +52,8 @@ def setup_logging():
         default_logging_config_file_path = os.path.join(
             get_settings().server.log.log_path, f"logging_{hostname}.conf"
         )
+        if not os.path.exists(get_settings().server.log.log_path):
+            os.makedirs(get_settings().server.log.log_path, exist_ok=True)
         logging_config_file_path = default_logging_config_file_path
         if os.path.exists(default_logging_config_file_path):
             print(

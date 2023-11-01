@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class StudyMountedPaths(BaseModel):
@@ -16,9 +16,7 @@ class StudyMountedPaths(BaseModel):
 
     readonly_storage_recycle_bin_root_path: str
     rw_storage_recycle_bin_root_path: str
-    
-    legacy_study_files_root_path: str
-    
+        
     private_ftp_root_path: str = ""
     private_ftp_recycle_bin_root_path: str = ""
     public_ftp_root_path: str = ""

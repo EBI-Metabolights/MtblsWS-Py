@@ -80,7 +80,6 @@ class StudyFolders(BaseModel):
     study_readonly_metadata_files_root_path: str = ""
     study_readonly_public_metadata_versions_root_path: str = ""
     study_readonly_integrity_check_files_root_path: str = ""
-    study_legacy_study_files_root_path: str = ""
 
     readonly_storage_recycle_bin_root_path: str = ""
     rw_storage_recycle_bin_root_path: str = ""
@@ -127,7 +126,6 @@ class FolderRootPaths(object):
         self.folders.study_readonly_integrity_check_files_root_path = self.study_settings.mounted_paths.study_readonly_integrity_check_files_root_path
         self.folders.readonly_storage_recycle_bin_root_path = self.study_settings.mounted_paths.readonly_storage_recycle_bin_root_path
         self.folders.rw_storage_recycle_bin_root_path = self.study_settings.mounted_paths.rw_storage_recycle_bin_root_path
-        self.folders.study_legacy_study_files_root_path = self.study_settings.mounted_paths.legacy_study_files_root_path
 
         
  
@@ -145,7 +143,6 @@ class FolderRootPaths(object):
         self.folders.study_readonly_metadata_files_root_path = mounted_paths.cluster_study_readonly_metadata_files_root_path
         self.folders.study_readonly_public_metadata_versions_root_path = mounted_paths.cluster_study_readonly_public_metadata_versions_root_path
         self.folders.study_readonly_integrity_check_files_root_path = mounted_paths.cluster_study_readonly_integrity_check_files_root_path
-        self.folders.study_legacy_study_files_root_path = mounted_paths.cluster_legacy_study_files_root_path
         self.folders.readonly_storage_recycle_bin_root_path = mounted_paths.cluster_readonly_storage_recycle_bin_root_path
         self.folders.rw_storage_recycle_bin_root_path = mounted_paths.cluster_rw_storage_recycle_bin_root_path
                
@@ -1576,7 +1573,6 @@ class StudyFolderMaintenanceTask(object):
             settings.study_metadata_files_root_path, study_id, study_settings.readonly_files_symbolic_link_name
         )        
         read_only_files_actual_path = os.path.join(settings.study_readonly_files_actual_root_path, study_id)
-        legacy_study_files_path = os.path.join(settings.study_legacy_study_files_root_path, study_id)
         read_only_audit_files_path = os.path.join(settings.study_readonly_audit_files_root_path, study_id)
         self._create_rw_storage_folder(settings.study_readonly_audit_files_root_path, 0o755, task_temp_path)
 
@@ -1591,28 +1587,9 @@ class StudyFolderMaintenanceTask(object):
         archived_audit_file_link_path = os.path.join(study_audit_folder_path, study_settings.readonly_audit_folder_symbolic_name)
         
         read_only_audit_files_actual_path = os.path.join(settings.study_readonly_audit_files_actual_root_path, study_id)
-        legacy_study_audit_path = os.path.join(legacy_study_files_path, self.study_settings.audit_folder_name)
-        # if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists:
-        #     logger.info(f"Legacy storage study data files folder is {legacy_study_files_path}")
-        #     logger.info(f"Legacy storage study audit folder is {legacy_study_audit_path}")
-            
-        # if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists and os.path.exists(legacy_study_files_path):
-        #     if self.study_status in [StudyStatus.DORMANT, StudyStatus.INREVIEW, StudyStatus.PUBLIC]:
-        #         logger.info(f"{read_only_files_actual_path} folder will be used for study data files")
-        #         self.maintain_study_symlinks(read_only_files_actual_path, read_only_files_path)
-        #     else:
-        #         logger.info(f"Legacy storage study files folder exists. {legacy_study_files_path} is used for study data files")
-        #         self.maintain_study_symlinks(legacy_study_files_path, read_only_files_path)
-        # else:
         logger.info(f"{read_only_files_actual_path} folder will be used for study data files")
         read_only_files_path = os.path.join(settings.study_readonly_files_root_path, study_id)
         self.maintain_study_symlinks(read_only_files_actual_path, read_only_files_path)
-                
-        # if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists and os.path.exists(legacy_study_audit_path):
-        #     logger.info(f"Legacy storage study files folder exists. {legacy_study_audit_path} is used for readonly study audit files")
-        #     self.maintain_study_symlinks(legacy_study_audit_path, read_only_audit_files_path)
-        # else:
-        #     logger.info(f"{read_only_audit_files_actual_path} is used for readonly study audit files")
         self.maintain_study_symlinks(read_only_audit_files_actual_path, read_only_audit_files_path)
         archived_folder_ref_path = os.path.join(read_only_audit_files_path, self.study_settings.audit_folder_name)
         self.maintain_study_symlinks(archived_folder_ref_path, archived_audit_file_link_path)
@@ -2242,7 +2219,7 @@ class StudyFolderMaintenanceTask(object):
             elif x.lower().startswith("pos"):
                 if x != "positive":
                     updates[x] = "positive"
-                return "negative"
+                return "positive"
             elif x.lower().startswith("alt"):
                 if x != "alternating":
                     updates[x] = "alternating"
