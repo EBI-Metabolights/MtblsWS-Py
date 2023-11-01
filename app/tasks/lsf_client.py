@@ -323,9 +323,12 @@ class LsfClient(object):
                 datamover = self.settings.hpc_cluster.datamover.connection.host
                 datamover_username = self.settings.hpc_cluster.datamover.connection.username
                 datamover_identity_file = self.settings.hpc_cluster.datamover.connection.identity_file
+                include_list=["config.yaml", ".secrets", ".secrets/***", script_file_name]
+                exclude_list=["*"]
                 source_path=f"{temp_path}/"
                 target_path=f"{datamover_username}@{datamover}:{root_path}/"
-                commands.append(HpcRsyncWorker.build_rsync_command(source_path=source_path, target_path=target_path, rsync_arguments="-av", identity_file=datamover_identity_file))
+                commands.append(HpcRsyncWorker.build_rsync_command(source_path=source_path, target_path=target_path, rsync_arguments="-av", 
+                                                                   identity_file=datamover_identity_file, include_list=include_list, exclude_list=exclude_list))
                 copy_singularity_run_script = " ".join(commands)
                 BashClient.execute_command(copy_singularity_run_script)
                 shutil.rmtree(temp_path, ignore_errors=True)
