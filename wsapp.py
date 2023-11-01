@@ -56,6 +56,8 @@ def setup_logging():
         print(f"Using logging config file {logging_config_file_path}")
     else:
         default_logging_config_file_path = os.path.join(get_settings().server.log.log_path, f"logging_{hostname}.conf")
+        if not os.path.exists(get_settings().server.log.log_path):
+            os.makedirs(get_settings().server.log.log_path, exist_ok=True)
         logging_config_file_path = default_logging_config_file_path
         if os.path.exists(default_logging_config_file_path):
             print(f"Using default logging config file {default_logging_config_file_path}")
@@ -224,8 +226,8 @@ initialize_app(application)
     # logger.info("Starting server %s v%s", get_settings().server.description.ws_app_name,
     #             get_settings().server.description.ws_app_version)
     # print("Starting application on port %s" % str(get_settings().server.service.rest_api_port))
-    # application.run(host="0.0.0.0", port=get_settings().server.service.rest_api_port, debug=get_settings().flask.DEBUG,
-    #                 threaded=True, use_reloader=False)
+# application.run(host="0.0.0.0", port=get_settings().server.service.rest_api_port, debug=get_settings().flask.DEBUG,
+#                 threaded=True, use_reloader=False)
     # logger.info("Finished server %s v%s", get_settings().server.description.ws_app_name,
     #            get_settings().server.description.ws_app_version)
 

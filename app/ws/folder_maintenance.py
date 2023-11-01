@@ -2218,7 +2218,7 @@ class StudyFolderMaintenanceTask(object):
             elif x.lower().startswith("pos"):
                 if x != "positive":
                     updates[x] = "positive"
-                return "negative"
+                return "positive"
             elif x.lower().startswith("alt"):
                 if x != "alternating":
                     updates[x] = "alternating"

@@ -17,4 +17,4 @@ LOG_PATH=$APPDIR/logs
 
 cd $APPDIR
 
-gunicorn -b 0.0.0.0:$SERVER_PORT --worker-class gevent --preload wsapp:application --workers 1 --threads 3 --pid $LOG_PATH/app_${HOST}_${SERVER_PORT}.pid  --log-level info
+gunicorn -b 0.0.0.0:$SERVER_PORT --preload wsapp:application --workers 1 --threads 3 --pid $LOG_PATH/app_${HOST}_${SERVER_PORT}.pid  --log-level info

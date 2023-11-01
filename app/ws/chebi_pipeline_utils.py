@@ -1124,7 +1124,10 @@ def search_and_update_maf(study_id: str, study_metadata_location: str, annotatio
         if os.path.exists(compressed_chebi_annotations_folder_path):
             compressed_chebi_annotations_folder_path = os.path.join(zip_file_folder_path, f"{folder_name}_old.zip")
             shutil.move(compressed_chebi_annotations_folder_path, f"{anno_sub_folder_path}_old.zip")
-            
+    except Exception as e:
+        logger.error("chebi folder zip move error")
+        print(f"An error occurred: {e}")
+    try:             
         with zipfile.ZipFile(compressed_chebi_annotations_folder_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
             for foldername, subfolders, filenames in os.walk(anno_sub_folder_path):
                 for filename in filenames:

@@ -2,7 +2,23 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Gunicorn run",
+            "name": "Gunicorn Server run",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/run_gunicorn.py",
+            "args": [
+                "--bind=0.0.0.0:7007",
+                "--preload",
+                "--workers=1",
+                "wsapp:application"
+            ],
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"},
+            "postDebugTask": "killdebugger"
+        },       
+        {
+            "name": "Flask run",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/wsapp.py",
