@@ -15,7 +15,8 @@ stages:
   - build_docker
   - deploy_docker
   - build_sif
-  - build_datamover_worker
+  - deploy_workers
+
 
 checkout_configs:
   stage: configure
@@ -34,24 +35,6 @@ build_docker:
         BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_container.sh"
-    
-deploy_on_k8s:
-  stage: deploy_docker
-  rules:
-    - if: $K8S_DEPLOYMENT == "1"
-      variables:
-        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
-    - if: $CI_COMMIT_BRANCH == "master" && $K8S_DEPLOYMENT == "1"
-      when: manual
-      allow_failure: false
-    - if: $CI_COMMIT_BRANCH == "staging" && $K8S_DEPLOYMENT == "1"
-      when: on_success
-    - if: $CI_COMMIT_BRANCH == "test" && $K8S_DEPLOYMENT == "1"
-      when: on_success
-    - if: $CI_COMMIT_BRANCH == "development" && $K8S_DEPLOYMENT == "1"
-      when: on_success
-  script:
-    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/deploy.sh"
 
 build_singularity:
   stage: build_sif
@@ -62,16 +45,50 @@ build_singularity:
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/build_sif.sh"
 
-deploy_datamover_worker:
-  stage: build_datamover_worker
+deploy_ws_on_k8s:
+  stage: deploy_workers
   rules:
     - if: $K8S_DEPLOYMENT == "1"
+      when: manual
+      allow_failure: true
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/deploy_ws.sh"
+
+deploy_datamover_worker_on_k8s:
+  stage: deploy_workers
+  rules:
+    - if: $K8S_DEPLOYMENT == "1"
+      when: manual
+      allow_failure: true
       variables:
         BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
   script:
     - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/deploy_datamover_worker.sh"
 
-  
+deploy_common_worker_on_k8s:
+  stage: deploy_workers
+  rules:
+    - if: $K8S_DEPLOYMENT == "1"
+      when: manual
+      allow_failure: true
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/deploy_common_worker.sh"
+
+deploy_beat_on_k8s:
+  stage: deploy_workers
+  rules:
+    - if: $K8S_DEPLOYMENT == "1"
+      when: manual
+      allow_failure: true
+      variables:
+        BUILD_SCRIPTS_ROOT_PATH: $CICD_SCRIPTS_ROOT_PATH/k8s
+  script:
+    - bash "$BUILD_SCRIPTS_ROOT_PATH/mtblsws-py/deploy_beat.sh"
+
 # standalone build
 
 standalone_build_docker:
