@@ -1,31 +1,26 @@
 FROM python:3.8-slim-buster as builder
 LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
 
-RUN apt-get clean && apt-get -y update
-RUN apt-get -y install build-essential python3-dev python3-pip libpq-dev libglib2.0-0 libsm6 libxrender1 libxext6 \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get -y autoremove --purge
+RUN apt-get clean && apt-get -y update && apt-get -y install build-essential python3-dev python3-pip libpq-dev libglib2.0-0 libsm6 libxrender1 libxext6
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1\
-    POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_IN_PROJECT=1 \
-    POETRY_VIRTUALENVS_CREATE=1 \
-    POETRY_CACHE_DIR=/tmp/poetry_cache
-
-RUN pip3 install --upgrade pip && pip3 install poetry=1.6.1
-
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV  PYTHONUNBUFFERED 1
+ENV POETRY_NO_INTERACTION 1
+ENV POETRY_VIRTUALENVS_IN_PROJECT 1 
+ENV POETRY_VIRTUALENVS_CREATE 1
+ENV POETRY_CACHE_DIR /tmp/poetry_cache
+ENV POETRY_HOME /opt/poetry
 WORKDIR /app-root
 
-COPY requirements.txt .
+RUN pip3 install --upgrade pip 
+RUN pip3 install poetry==1.6.1
+RUN poetry --version
 
-COPY pyproject.toml poetry.lock ./
+COPY pyproject.toml .
+COPY poetry.lock .
 RUN touch README.md
 
-RUN poetry install --without dev
-RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --without dev --no-root
-
-
+RUN poetry install --without dev --no-root && rm -rf $POETRY_CACHE_DIR
 
 FROM python:3.8-slim-buster as runner
 LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
@@ -57,6 +52,5 @@ WORKDIR /app-root
 COPY . .
 
 EXPOSE 7007
-
 
 CMD ["./start_datamover_worker.sh"]
