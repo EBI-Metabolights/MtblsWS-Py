@@ -89,6 +89,6 @@ class V1StudyDetail(Resource):
             m_study = create_study_model_from_db_study(study)
 
         update_study_model_from_directory(m_study, study_folders, optimize_for_es_indexing=True)
-        dict_data = m_study.dict()
+        dict_data = m_study.model_dump()
         result = {'content': dict_data, 'message': None, "err": None}
         return result

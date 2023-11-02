@@ -277,7 +277,7 @@ class fellaPathway(Resource):
         command = script + ' ' + para
 
         logger.info("Starting cluster job for FELLA pathway: " + command)
-        status, message, job_out, job_err, log_file = submit_job(True, account=None, job_cmd=command, job_params=None, submitter=None, log=False)
+        status, message, job_out, job_err, log_file = submit_job(True, account=None, job_cmd=command, job_params=None, log=False)
 
 
         if status:

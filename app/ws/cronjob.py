@@ -215,7 +215,7 @@ class cronjob(Resource):
 def curation_log_database_query():
     try:
         settings = get_settings()
-        params = settings.database.connection.dict()
+        params = settings.database.connection.model_dump()
         with psycopg2.connect(**params) as conn:
             sql = open('./resources/updateDB.sql', 'r').read()
             data = pd.read_sql_query(sql, conn)
@@ -249,7 +249,7 @@ def curation_log_database_update(starting_index, ending_index):
         def execute_query(query):
             try:
                 settings = get_settings()
-                params = settings.database.connection.dict()
+                params = settings.database.connection.model_dump()
                 conn = psycopg2.connect(**params)
                 cursor = conn.cursor()
                 cursor.execute(query)
@@ -275,7 +275,7 @@ def curation_log_database_update(starting_index, ending_index):
         # Find the maximum number of Metlite ID
         try:
             settings = get_settings()
-            params = settings.database.connection.dict()
+            params = settings.database.connection.model_dump()
             connection = psycopg2.connect(**params)
             cursor = connection.cursor()
             select_Query = "select max(lpad(replace(acc, 'MTBLS', ''), 4, '0')) as acc_short from studies order by acc_short"
@@ -501,7 +501,7 @@ def MTBLS_statistics_update():
     untarget_NMR = extractUntargetStudy(['NMR'])
     res = untarget_NMR[['studyID']]
     replaceGoogleSheet(df=res, url=get_settings().google.sheets.mtbls_statistics, worksheetName='untarget NMR',
-                       token_path=get_settings().google.connection.google_sheet_api)
+                       googlesheet_key_dict=get_settings().google.connection.google_sheet_api)
 
     ## update untarget LC-MS
     print('-' * 20 + 'UPDATE untarget LC-MS' + '-' * 20)
@@ -509,7 +509,7 @@ def MTBLS_statistics_update():
     untarget_LCMS = extractUntargetStudy(['LC'])
     res = untarget_LCMS[['studyID']]
     replaceGoogleSheet(df=res, url=get_settings().google.sheets.mtbls_statistics, worksheetName='untarget LC-MS',
-                       token_path=get_settings().google.connection.google_sheet_api)
+                       googlesheet_key_dict=get_settings().google.connection.google_sheet_api)
 
     ## update NMR and LC-MS
     print('-' * 20 + 'UPDATE NMR and LC-MS' + '-' * 20)
@@ -518,14 +518,14 @@ def MTBLS_statistics_update():
     df = pd.DataFrame(columns=['studyID', 'dataType'])
     df.studyID, df.dataType = studyID, studyType
     replaceGoogleSheet(df=df, url=get_settings().google.sheets.mtbls_statistics, worksheetName='both NMR and LCMS',
-                       token_path=get_settings().google.connection.google_sheet_api)
+                       googlesheet_key_dict=get_settings().google.connection.google_sheet_api)
 
     ## update NMR sample / assay sheet
     print('-' * 20 + 'UPDATE NMR info' + '-' * 20)
     logger.info('UPDATE NMR info')
     df = getNMRinfo()
     replaceGoogleSheet(df=df, url=get_settings().google.sheets.mtbls_statistics, worksheetName='NMR',
-                       token_path=get_settings().google.connection.google_sheet_api)
+                       googlesheet_key_dict=get_settings().google.connection.google_sheet_api)
 
     ## update MS sample / assay sheet
 
@@ -534,7 +534,7 @@ def MTBLS_statistics_update():
     logger.info('UPDATE LC-MS info')
     df = getLCMSinfo()
     replaceGoogleSheet(df=df, url=get_settings().google.sheets.lc_ms_statistics, worksheetName='LCMS samples and assays',
-                       token_path=get_settings().google.connection.google_sheet_api)
+                       googlesheet_key_dict=get_settings().google.connection.google_sheet_api)
 
 
 def extractUntargetStudy(studyType=None, publicStudy=True):
@@ -872,7 +872,7 @@ def assay_sample_list(studyID):
     except Exception as e:
         logger.info(e)
         print(e)
-        logger.info('Fail to load investigation file from', studyID)
+        logger.info('Fail to load investigation file from ' + studyID)
 
 
 def atoi(text):

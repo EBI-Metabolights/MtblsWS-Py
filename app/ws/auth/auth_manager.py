@@ -1,8 +1,8 @@
 import base64
 import hashlib
 import uuid
-from datetime import datetime, timedelta
-from typing import List, Optional
+from datetime import timedelta
+from typing import List, Union
 
 from jose import jwt
 from passlib.context import CryptContext
@@ -19,7 +19,7 @@ from app.ws.study.user_service import UserService
 
 
 class AuthenticationManager(object):
-    def __init__(self, settings: AuthConfiguration = None):
+    def __init__(self, settings: Union[None, AuthConfiguration] = None):
         self.settings = settings
         if not self.settings:
             self.settings: AuthConfiguration = get_settings().auth.configuration
@@ -80,7 +80,7 @@ class AuthenticationManager(object):
         access_token = self._create_jwt_token(data=token_base_data, expires_delta=access_token_expires)
         return access_token
 
-    def validate_oauth2_token(self, token: str, audience: str = None, issuer_name: str = None, db_session=None):
+    def validate_oauth2_token(self, token: str, audience: Union[None, str] = None, issuer_name: Union[None, str] = None, db_session=None):
         user = None
         try:
             if not audience:
@@ -116,7 +116,7 @@ class AuthenticationManager(object):
                 db_user = query.filter(func.lower(User.username) == username.lower()).first()
             if not db_user:
                 raise MetabolightsAuthorizationException(message="Could not validate credentials or no username")
-            user = SimplifiedUserModel.from_orm(db_user)
+            user = SimplifiedUserModel.model_validate(db_user)
         except (Exception) as e:
             raise e
 
@@ -131,7 +131,7 @@ class AuthenticationManager(object):
             raise MetabolightsAuthorizationException(message="Invalid user or credential")
         return user
 
-    def _create_jwt_token(self, data: dict, expires_delta: Optional[timedelta] = None):
+    def _create_jwt_token(self, data: dict, expires_delta: Union[None, timedelta] = None):
         to_encode = data.copy()
         if expires_delta:
             expire = current_time()+ expires_delta

@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import sys
 import time
-from typing import Dict, List
+from typing import Dict, List, Union
 from app.config import get_settings
 from app.tasks.bash_client import BashClient
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
@@ -31,9 +31,9 @@ def get_files(search_path, patterns: List[str], recursive: bool = False):
 
 def update_readonly_storage_folders(
     study_id_list: List[str],
-    target: str = None,
-    task_name: str = None,
-    settings: StudySettings = None,
+    target: Union[None, str] = None,
+    task_name: Union[None, str] = None,
+    settings: Union[None, StudySettings] = None,
     output_summary_report=None,
     delete_unreferenced_metadata_files=False,
     apply_future_actions=False,

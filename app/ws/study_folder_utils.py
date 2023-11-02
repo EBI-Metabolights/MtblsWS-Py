@@ -2,12 +2,12 @@ import datetime
 import logging
 import os
 import pathlib
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Union
 
 from isatools import isatab
 from isatools.model import Investigation, Study, Assay
 import pandas as pd
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.config import get_settings
 from app.study_folder_utils import FileDescriptor, get_study_folder_files
 
@@ -21,7 +21,7 @@ class LiteFileMetadata(BaseModel):
     status: str = "unreferenced"
     timestamp: str = ""
     type: str = "unknown"
-
+    model_config = ConfigDict(from_attributes=True)
 
 def sortFileMetadataList(items: List[LiteFileMetadata]):
     items.sort(key=metadata_sort)
@@ -40,7 +40,7 @@ class FileMetadata(LiteFileMetadata):
     extension: str = ""
     is_stop_folder: bool = False
     is_empty: bool = False
-    
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FileSearchResult(BaseModel):
@@ -49,7 +49,7 @@ class FileSearchResult(BaseModel):
     uploadPath: str = ""
     obfuscationCode: str = ""
     latest: List[FileMetadata] = []
-
+    model_config = ConfigDict(from_attributes=True)
 
 class LiteFileSearchResult(BaseModel):
     study: List[LiteFileMetadata] = []
@@ -57,11 +57,11 @@ class LiteFileSearchResult(BaseModel):
     uploadPath: str = ""
     obfuscationCode: str = ""
     latest: List[LiteFileMetadata] = []
-
+    model_config = ConfigDict(from_attributes=True)
 
 class StudyFolderIndex(BaseModel):
     study: List[FileMetadata] = []
-
+    model_config = ConfigDict(from_attributes=True)
 
 def get_directory_files(
     root_path: str, subpath: str, recursive=False, search_pattern="**/*", exclude_list=None, include_metadata_files=True
@@ -91,14 +91,14 @@ def get_directory_files(
             include_metadata_files=include_metadata_files,
         )
 
-        [x for x in source_folders_iter]
+        results = [x for x in source_folders_iter]
     return source_file_descriptors
 
 def evaluate_files(
     source_file_descriptors: Dict[str, FileDescriptor], referenced_file_set: Set[str]
 ) -> LiteFileSearchResult:
     file_search_result = evaluate_files_in_detail(source_file_descriptors, referenced_file_set)
-    return LiteFileSearchResult.parse_obj(file_search_result)
+    return LiteFileSearchResult.model_validate(file_search_result)
 
 def evaluate_files_in_detail(
     source_file_descriptors: Dict[str, FileDescriptor], referenced_file_set: Set[str]
@@ -163,7 +163,7 @@ def get_referenced_file_set(study_id, metadata_path: str) -> Set[str]:
     try:
         investigation_file_name = get_settings().study.investigation_file_name
         investigation_file_path = os.path.join(metadata_path, investigation_file_name)
-        investigation: Investigation = None
+        investigation: Union[None, Investigation] = None
         if not os.path.exists(investigation_file_path):
             return []
 

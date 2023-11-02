@@ -17,7 +17,7 @@ class SingularityImageConfiguration(BaseModel):
 
 class DatamoverWorkerSettings(BaseModel):
     monitor_task_status_key: str
-    monitor_task_timeout: str
+    monitor_task_timeout: int
     shutdown_signal_wait_key_prefix: str
     shutdown_signal_wait_time: int
     minimum_datamover_workers: int

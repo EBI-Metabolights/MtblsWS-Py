@@ -41,9 +41,9 @@ def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
         es = ElasticsearchService.get_instance()
         result = es.get_all_study_ids()
         if "hits" in result and result["hits"] and "hits" in result["hits"]:
-            studies= result["hits"]["hits"]
+            studies_list = result["hits"]["hits"]
             try:
-                for studies in studies:
+                for studies in studies_list:
                     studies_id = None
                     updated_date = None
                     if "_id" in studies:

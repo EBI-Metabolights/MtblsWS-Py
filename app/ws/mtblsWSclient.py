@@ -17,6 +17,7 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import logging
+from typing import Union
 
 from flask_restful import abort
 
@@ -39,12 +40,12 @@ logger = logging.getLogger('wslog')
 
 
 class WsClient:
-    search_manager: ChebiSearchManager = None
-    email_service: EmailService = None
-    elasticsearch_service: ElasticsearchService = None
+    search_manager: Union[None, ChebiSearchManager] = None
+    email_service: Union[None, EmailService] = None
+    elasticsearch_service: Union[None, ElasticsearchService] = None
 
-    def __init__(self, search_manager: ChebiSearchManager = None, email_service: EmailService = None,
-                 elasticsearch_service: ElasticsearchService = None):
+    def __init__(self, search_manager: Union[None, ChebiSearchManager] = None, email_service: Union[None, EmailService] = None,
+                 elasticsearch_service: Union[None, ElasticsearchService] = None):
         WsClient.email_service = email_service
         WsClient.search_manager = search_manager
         WsClient.elasticsearch_service = elasticsearch_service
@@ -67,7 +68,7 @@ class WsClient:
             logger.warning(f"Result is not valid {str(result.err)}")
             return None
 
-        json_result = result.dict()
+        json_result = result.model_dump()
         return json_result
 
     @staticmethod

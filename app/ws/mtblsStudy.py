@@ -21,6 +21,7 @@ import glob
 import logging
 import os
 from datetime import datetime, timezone
+from typing import Union
 
 from flask import jsonify, request, send_file
 from flask_restful import Resource, abort, reqparse
@@ -1028,7 +1029,7 @@ class PublicStudyDetail(Resource):
             m_study = create_study_model_from_db_study(study)
 
         update_study_model_from_directory(m_study, study_folders)
-        dict_data = m_study.dict()
+        dict_data = m_study.model_dump()
         result = {"content": dict_data, "message": None, "err": None}
         return result
 
@@ -1106,7 +1107,7 @@ class CreateAccession(Resource):
 
         logger.info(f"Step 1: New study creation request is received from user {user.username}")
         new_accession_number = True
-        study_acc: str = None
+        study_acc: Union[None, str] = None
         if "study_id" in request.headers:
             requested_study_id = request.headers["study_id"]
             study_acc = self.validate_requested_study_id(requested_study_id, user_token)
@@ -1608,8 +1609,8 @@ class UnindexedStudy(Resource):
                 result = filtered.all()
                 result_list = []
                 for task in result:
-                    model: StudyTaskModel = StudyTaskModel.from_orm(task)
-                    result_list.append(model.dict())
+                    model: StudyTaskModel = StudyTaskModel.model_validate(task)
+                    result_list.append(model.model_dump())
 
                 if result_list:
                     return jsonify({"result": "Found", "tasks": result_list})
@@ -2199,7 +2200,7 @@ class StudyFolderSynchronization(Resource):
             status: SyncTaskResult = client.rsync(source, target, status_check_only=status_check_only)
 
         status.description = f"{status.description[:100]} ..." if status.description and len(status.description) > 100 else status.description
-        return status.dict()
+        return status.model_dump()
     
 
     

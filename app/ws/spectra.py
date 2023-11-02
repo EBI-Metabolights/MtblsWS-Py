@@ -23,11 +23,10 @@ import shutil
 
 import pandas
 from flask import request
-from flask_restful import Resource, reqparse, abort
+from flask_restful import Resource,  abort
 from flask_restful_swagger import swagger
-from pyopenms import MSExperiment, FileHandler
 from app.config import get_settings
-from app.utils import current_time
+from app.utils import MetabolightsException, current_time
 
 from app.ws.misc_utilities.response_messages import HTTP_200, HTTP_404, HTTP_403, HTTP_401
 from app.ws.mtblsWSclient import WsClient
@@ -109,108 +108,111 @@ class ExtractMSSpectra(Resource):
         ]
     )
     def get(self, study_id):
+        raise MetabolightsException(message="Deprecated endpoint")
+        
+    # def get(self, study_id):
 
-        # param validation
-        if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+    #     # param validation
+    #     if study_id is None:
+    #         abort(404, message='Please provide valid parameter for study identifier')
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+    #     # User authentication
+    #     user_token = None
+    #     if "user_token" in request.headers:
+    #         user_token = request.headers["user_token"]
 
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
-        if not is_curator:
-            abort(403)
+    #     # check for access rights
+    #     is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, \
+    #         study_status = wsc.get_permissions(study_id, user_token)
+    #     if not is_curator:
+    #         abort(403)
 
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('mzml_file_name', help="mzML file", location="args")
-        parser.add_argument('mtbls_compound_id', help="MTBLS compound id", location="args")
-        parser.add_argument('retention_time', help="RT for peaks", location="args")
-        args = parser.parse_args()
-        mzml_file_name = args['mzml_file_name'].strip()
-        mtbls_compound_id = args['mtbls_compound_id'].strip()
-        retention_time = args['retention_time']
-        if retention_time:
-            retention_time = retention_time.strip()
-        full_mzml_file_name = None
-        settings = get_study_settings()
-        study_metadata_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
-        if mzml_file_name:
-            full_mzml_file_name = os.path.join(study_metadata_location, mzml_file_name)
+    #     # query validation
+    #     parser = reqparse.RequestParser()
+    #     parser.add_argument('mzml_file_name', help="mzML file", location="args")
+    #     parser.add_argument('mtbls_compound_id', help="MTBLS compound id", location="args")
+    #     parser.add_argument('retention_time', help="RT for peaks", location="args")
+    #     args = parser.parse_args()
+    #     mzml_file_name = args['mzml_file_name'].strip()
+    #     mtbls_compound_id = args['mtbls_compound_id'].strip()
+    #     retention_time = args['retention_time']
+    #     if retention_time:
+    #         retention_time = retention_time.strip()
+    #     full_mzml_file_name = None
+    #     settings = get_study_settings()
+    #     study_metadata_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
+    #     if mzml_file_name:
+    #         full_mzml_file_name = os.path.join(study_metadata_location, mzml_file_name)
 
-        peak_list, mz_list, mz_start, mz_stop, intensity_min, intensity_max, rt_list = \
-            self.create_mtblc_peak_list(full_mzml_file_name, retention_time)
-        base_file_name = os.path.basename(full_mzml_file_name)
-        parent_folder = os.path.dirname(os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id, "spectra", mzml_file_name))
-        os.makedirs(parent_folder, exist_ok=True)
-        short_name = base_file_name.replace(".mzML", "")
-        json_file_name = base_file_name.replace(".mzML", ".json")
-        new_file_path = os.path.join(parent_folder, mtbls_compound_id + '-' + json_file_name)
+    #     peak_list, mz_list, mz_start, mz_stop, intensity_min, intensity_max, rt_list = \
+    #         self.create_mtblc_peak_list(full_mzml_file_name, retention_time)
+    #     base_file_name = os.path.basename(full_mzml_file_name)
+    #     parent_folder = os.path.dirname(os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id, "spectra", mzml_file_name))
+    #     os.makedirs(parent_folder, exist_ok=True)
+    #     short_name = base_file_name.replace(".mzML", "")
+    #     json_file_name = base_file_name.replace(".mzML", ".json")
+    #     new_file_path = os.path.join(parent_folder, mtbls_compound_id + '-' + json_file_name)
 
-        data = {"mzStart": mz_start, "mzStop": mz_stop, "spectrumId": short_name,
-                "fileName": json_file_name, "peaks": peak_list}
-        self.write_json(new_file_path, data)
+    #     data = {"mzStart": mz_start, "mzStop": mz_stop, "spectrumId": short_name,
+    #             "fileName": json_file_name, "peaks": peak_list}
+    #     self.write_json(new_file_path, data)
 
-        return {"mzStart": mz_start, "mzStop": mz_stop, "spectrumId": short_name,
-                "intensityMin": intensity_min, "intensityMax": intensity_max,
-                "retentionTimes": rt_list, "numberOfPeaks": len(peak_list)}
+    #     return {"mzStart": mz_start, "mzStop": mz_stop, "spectrumId": short_name,
+    #             "intensityMin": intensity_min, "intensityMax": intensity_max,
+    #             "retentionTimes": rt_list, "numberOfPeaks": len(peak_list)}
 
-    def get_spectrum(self, filepath, retention_time):
-        #  See: https://pypi.org/project/pyopenms/
-        peak_list = []
-        mz_list = []
-        rt_list = []
-        intensity_list = []
-        path = str.encode(filepath)
+    # def get_spectrum(self, filepath, retention_time):
+    #     #  See: https://pypi.org/project/pyopenms/
+    #     peak_list = []
+    #     mz_list = []
+    #     rt_list = []
+    #     intensity_list = []
+    #     path = str.encode(filepath)
 
-        try:
-            exp = MSExperiment()
-            FileHandler().loadExperiment(path, exp)
-        except Exception as error:
-            print(str(error))
-        for spectrum in exp:
-            rt = str(spectrum.getRT())
-            # So either no rt param passed, or the decimal input exists in the start of the mzml rt float (no rounding)
-            if not retention_time or retention_time in rt:
-                if rt not in rt_list:
-                    rt_list.append(rt)
-                for peak in spectrum:
-                    mz = peak.getMZ()
-                    intensity = peak.getIntensity()
-                    peak_list.append({"intensity": intensity, "mz": mz})
-                    mz_list.append(mz)
-                    intensity_list.append(intensity)
+    #     try:
+    #         exp = MSExperiment()
+    #         FileHandler().loadExperiment(path, exp)
+    #     except Exception as error:
+    #         print(str(error))
+    #     for spectrum in exp:
+    #         rt = str(spectrum.getRT())
+    #         # So either no rt param passed, or the decimal input exists in the start of the mzml rt float (no rounding)
+    #         if not retention_time or retention_time in rt:
+    #             if rt not in rt_list:
+    #                 rt_list.append(rt)
+    #             for peak in spectrum:
+    #                 mz = peak.getMZ()
+    #                 intensity = peak.getIntensity()
+    #                 peak_list.append({"intensity": intensity, "mz": mz})
+    #                 mz_list.append(mz)
+    #                 intensity_list.append(intensity)
 
-        return peak_list, mz_list, rt_list, intensity_list
+    #     return peak_list, mz_list, rt_list, intensity_list
 
-    def create_mtblc_peak_list(self, filepath, retention_time):
-        peak_list, mz_list, rt_list, intensity_list = self.get_spectrum(filepath, retention_time)
-        intensity_min = 0
-        intensity_max = 0
-        try:
-            mz_start = min(mz_list)
-            mz_stop = max(mz_list)
-            intensity_min = min(intensity_list)
-            intensity_max = max(intensity_list)
-        except:
-            mz_start = 0
-            mz_stop = 0
+    # def create_mtblc_peak_list(self, filepath, retention_time):
+    #     peak_list, mz_list, rt_list, intensity_list = self.get_spectrum(filepath, retention_time)
+    #     intensity_min = 0
+    #     intensity_max = 0
+    #     try:
+    #         mz_start = min(mz_list)
+    #         mz_stop = max(mz_list)
+    #         intensity_min = min(intensity_list)
+    #         intensity_max = max(intensity_list)
+    #     except:
+    #         mz_start = 0
+    #         mz_stop = 0
 
-        return peak_list, mz_list, mz_start, mz_stop, intensity_min, intensity_max, rt_list
+    #     return peak_list, mz_list, mz_start, mz_stop, intensity_min, intensity_max, rt_list
 
-    def write_json(self, filename, data):
-        try:
-            json_object = json.dumps(data, indent=4)
+    # def write_json(self, filename, data):
+    #     try:
+    #         json_object = json.dumps(data, indent=4)
  
-            # Writing to sample.json
-            with open(filename, "w") as outfile:
-                outfile.write(json_object)
-        except Exception as e:
-            print(f"{str(e)}")
+    #         # Writing to sample.json
+    #         with open(filename, "w") as outfile:
+    #             outfile.write(json_object)
+    #     except Exception as e:
+    #         print(f"{str(e)}")
 
 
 class ZipSpectraFiles(Resource):

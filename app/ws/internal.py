@@ -1,3 +1,4 @@
+from typing import Union
 from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
@@ -9,7 +10,7 @@ from app.ws.redis.redis import get_redis_server
 from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
 
-_banner: str = None
+_banner: Union[None, str] = None
 _last_banner_check_timestamp: int=0
 
 def get_banner():

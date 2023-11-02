@@ -34,7 +34,6 @@ pandas==0.25.3
 psycopg2-binary==2.8.6
 pubchempy==1.0.4
 pronto==0.12.2
-pyopenms==2.6.0
 python-Levenshtein==0.12.2
 plotly==4.6.0
 pillow==9.0.1

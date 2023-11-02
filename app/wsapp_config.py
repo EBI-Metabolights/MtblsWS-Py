@@ -51,7 +51,7 @@ from app.ws.ftp.ftp_operations import (FtpFolderPermission,
                                        FtpFolderPermissionModification,
                                        FtpFolderSyncStatus, PrivateFtpFolder,
                                        PrivateFtpFolderPath, SyncCalculation,
-                                       SyncFromFtpFolder, SyncFromStudyFolder, SyncPublicStudyToFTP)
+                                       SyncFromFtpFolder, SyncFromStudyFolder)
 from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.internal import BannerMessage
@@ -163,7 +163,7 @@ def configure_app(flask_app):
     # import yaml
     # if settings.flask.DEBUG:
     #     import copy
-    #     masked_copy = copy.deepcopy(settings.dict())
+    #     masked_copy = copy.deepcopy(settings.model_dump())
     #     mask_settings(masked_copy)
     #     masked_settings_text = yaml.dump(masked_copy)
     #     print(masked_settings_text)

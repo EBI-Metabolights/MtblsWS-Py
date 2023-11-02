@@ -1,7 +1,7 @@
-from ast import List
 import json
+from typing import Union, List
 
-from flask import current_app as app, jsonify, request
+from flask import jsonify, request
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
@@ -106,7 +106,7 @@ class UserAccounts(Resource):
                     user.fullName = f"{user.firstName} {user.lastName}"
                     user.status = UserStatus(user.status).name
                         
-                return jsonify({"content": user.dict(), "message": None, "error": None})
+                return jsonify({"content": user.model_dump(), "message": None, "error": None})
             else:
                 users: List[UserModel] = UserService.get_instance().get_db_users_by_filter_clause()
                 user_dict = []
@@ -116,7 +116,7 @@ class UserAccounts(Resource):
                             user.curator = True
                         user.fullName = f"{user.firstName} {user.lastName}"
                         user.status = UserStatus(user.status).name        
-                    user_dict.append(user.dict())           
+                    user_dict.append(user.model_dump())           
                 
                 return jsonify({"content": user_dict, "message": None, "error": None})
 
@@ -170,10 +170,10 @@ class UserAccounts(Resource):
             user_token = request.headers["user_token"]
             
         UserService.get_instance().validate_user_has_curator_role(user_token)
-        user: UserModel = None
+        user: Union[None, UserModel] = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            user = UserModel.parse_obj(data_dict)
+            user = UserModel.model_validate(data_dict)
             if hasattr(user, 'status') and isinstance(user.status, str):
                 user.status = UserStatus.from_name(user.status).value
             
@@ -189,7 +189,7 @@ class UserAccounts(Resource):
                 query_filter = query.filter(User.id == user.userId)
                 db_user = query_filter.first()
                 if db_user:
-                    m_user = UserModel.from_orm(db_user)
+                    m_user = UserModel.model_validate(db_user)
                     
                     
                     user_updates_data = user.dict(exclude_unset=True, by_alias=True)
@@ -201,8 +201,8 @@ class UserAccounts(Resource):
                     db_session.add(db_user)
                     db_session.commit()  
                     db_session.refresh(db_user)
-                    m_user = UserModel.from_orm(db_user)
-                    return jsonify({"content": m_user.dict(), "message": None, "error": None})
+                    m_user = UserModel.model_validate(db_user)
+                    return jsonify({"content": m_user.model_dump(), "message": None, "error": None})
                 else:
                     raise MetabolightsException(http_code=400, message="Invalid user id")   
         except (Exception) as ex:
@@ -282,10 +282,10 @@ class UserAccounts(Resource):
             user_token = request.headers["user_token"]
             
         UserService.get_instance().validate_user_has_curator_role(user_token)
-        user: NewUserModel = None
+        user: Union[None, NewUserModel] = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            user = NewUserModel.parse_obj(data_dict)
+            user = NewUserModel.model_validate(data_dict)
             if hasattr(user, 'status') and isinstance(user.status, str):
                 user.status = UserStatus.from_name(user.status).value
             
@@ -309,8 +309,8 @@ class UserAccounts(Resource):
                 db_session.add(db_user)
                 db_session.commit()  
                 db_session.refresh(db_user)
-                m_user = NewUserModel.from_orm(db_user)
-                return jsonify({"content": m_user.dict(), "message": None, "error": None})
+                m_user = NewUserModel.model_validate(db_user)
+                return jsonify({"content": m_user.model_dump(), "message": None, "error": None})
         except (Exception) as ex:
             db_session.rollback()
             raise MetabolightsException(http_code=400, message="DB error", exception=ex)

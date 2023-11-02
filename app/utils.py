@@ -1,4 +1,5 @@
 import datetime
+from typing import Union
 from flask import make_response
 import re
 
@@ -26,7 +27,7 @@ def metabolights_exception_handler(func):
 
 
 class MetabolightsException(Exception):
-    def __init__(self, message: str = "", exception: Exception = None, http_code=400):
+    def __init__(self, message: str = "", exception: Union[None, Exception] = None, http_code=400):
         super(MetabolightsException, self).__init__()
         self.message = message
         self.exception = exception
@@ -40,17 +41,17 @@ class MetabolightsException(Exception):
 
 
 class MetabolightsDBException(MetabolightsException):
-    def __init__(self, message: str, exception: Exception = None, http_code=401):
+    def __init__(self, message: str, exception: Union[None, Exception] = None, http_code=401):
         super(MetabolightsDBException, self).__init__(message, exception, http_code)
 
 
 class MetabolightsFileOperationException(MetabolightsException):
-    def __init__(self, message: str, exception: Exception = None, http_code=400):
+    def __init__(self, message: str, exception: Union[None, Exception] = None, http_code=400):
         super(MetabolightsFileOperationException, self).__init__(message, exception, http_code)
 
 
 class MetabolightsAuthorizationException(MetabolightsException):
-    def __init__(self, message: str = "", exception: Exception = None, http_code=401):
+    def __init__(self, message: str = "", exception: Union[None, Exception] = None, http_code=401):
         super(MetabolightsAuthorizationException, self).__init__(message, exception, http_code)
 
     def __str__(self):

@@ -944,12 +944,12 @@ class AddRows(Resource):
             try:
                 row_index_int = int(row['index'])
             except:
-                row_index_int is None
+                row_index_int = None
 
             # Validate column names in new rows
             valid_column_name, message = validate_row(file_df, row, 'put')
             if not valid_column_name:
-                abort(417, message)
+                abort(417, message=message)
 
             if row_index_int is not None:
                 file_df = file_df.drop(file_df.index[row_index_int])  # Remove the old row from the spreadsheet

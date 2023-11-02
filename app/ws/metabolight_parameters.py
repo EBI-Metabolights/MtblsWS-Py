@@ -1,4 +1,5 @@
 import json
+from typing import Union
 
 from flask import current_app as app, jsonify, request
 from flask_restful import Resource, reqparse
@@ -76,8 +77,8 @@ class MetabolightsParameters(Resource):
                         query = db_session.query(MetabolightsParameter)
                         db_param: MetabolightsParameter = filter_clause(query).first()
                         
-                        m_param = MetabolightsParameterModel.from_orm(db_param)
-                        return jsonify({"content": m_param.dict(), "message": None, "error": None})
+                        m_param: MetabolightsParameterModel = MetabolightsParameterModel.model_validate(db_param)
+                        return jsonify({"content": m_param.model_dump(), "message": None, "error": None})
                 except Exception as e:
                     raise MetabolightsDBException(message=f"Error while retrieving parameter from database", exception=e)
             else:
@@ -86,7 +87,7 @@ class MetabolightsParameters(Resource):
                         query = db_session.query(MetabolightsParameter)
                         db_parameters: MetabolightsParameter = query.order_by(MetabolightsParameter.name.asc()).all()
                         
-                        m_params = [ MetabolightsParameterModel.from_orm(db_param).dict() for db_param in db_parameters ]
+                        m_params = [ MetabolightsParameterModel.model_validate(db_param).model_dump() for db_param in db_parameters ]
                         return jsonify({"content": m_params, "message": None, "error": None})
                 except Exception as e:
                     raise MetabolightsDBException(message=f"Error while retreiving parameter from database", exception=e)
@@ -150,10 +151,10 @@ class MetabolightsParameters(Resource):
             user_token = request.headers["user_token"]
             
         UserService.get_instance().validate_user_has_curator_role(user_token)
-        user: UserModel = None
+        user: Union[None, UserModel] = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            param = MetabolightsParameterModel.parse_obj(data_dict)
+            param = MetabolightsParameterModel.model_validate(data_dict)
         except (Exception) as ex:
             raise MetabolightsException(http_code=404, message="Invalid parameter data input", exception=ex)
         db_session = DBManager.get_instance().session_maker()
@@ -169,8 +170,8 @@ class MetabolightsParameters(Resource):
                     db_session.add(db_param)
                     db_session.commit()  
                     db_session.refresh(db_param)
-                    m_param = MetabolightsParameterModel.from_orm(db_param)
-                    return jsonify({"content": m_param.dict(), "message": None, "error": None})
+                    m_param = MetabolightsParameterModel.model_validate(db_param)
+                    return jsonify({"content": m_param.model_dump(), "message": None, "error": None})
                 else:
                     raise MetabolightsException(http_code=400, message="Invalid parameter name")   
         except (Exception) as ex:
@@ -235,10 +236,10 @@ class MetabolightsParameters(Resource):
             user_token = request.headers["user_token"]
             
         UserService.get_instance().validate_user_has_curator_role(user_token)
-        param: MetabolightsParameterModel = None
+        param: Union[None, MetabolightsParameterModel] = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            param = MetabolightsParameterModel.parse_obj(data_dict)
+            param = MetabolightsParameterModel.model_validate(data_dict)
                 
         except (Exception) as ex:
             raise MetabolightsException(http_code=400, message="Invalid parameter data input", exception=ex)
@@ -252,8 +253,8 @@ class MetabolightsParameters(Resource):
                 db_session.add(db_param)
                 db_session.commit()  
                 db_session.refresh(db_param)
-                m_param = MetabolightsParameterModel.from_orm(db_param)
-                return jsonify({"content": m_param.dict(), "message": None, "error": None})
+                m_param = MetabolightsParameterModel.model_validate(db_param)
+                return jsonify({"content": m_param.model_dump(), "message": None, "error": None})
         except (Exception) as ex:
             db_session.rollback()
             raise MetabolightsException(http_code=400, message="DB error", exception=ex)

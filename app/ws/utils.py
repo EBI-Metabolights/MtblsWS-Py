@@ -175,13 +175,13 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                                     shutil.copytree(source, destination, symlinks=symlinks, ignore=ignore)
                                 logger.info('Copied file %s to %s', source, destination)
                             except FileExistsError as e:
-                                logger.error('Folder already exists! Can not copy %s to %s', source, destination,
+                                logger.error('Folder already exists! Can not copy %s to %s: %s', source, destination,
                                              str(e))
                             except OSError as e:
-                                logger.error('Does the folder already exists? Can not copy %s to %s', source,
+                                logger.error('Does the folder already exists? Can not copy %s to %s: %s', source,
                                              destination, str(e))
                             except Exception as e:
-                                logger.error('Other error! Can not copy %s to %s', source, destination,
+                                logger.error('Other error! Can not copy %s to %s: %s', source, destination,
                                              str(e))
                         else:  # elif not os.path.exists(destination):
                             logger.info(source + ' is not a directory')
@@ -198,12 +198,11 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                                 else:
                                     shutil.copy2(source, destination)
                             except FileExistsError as e:
-                                logger.error('File already exists! Can not copy %s to %s', source, destination, str(e))
+                                logger.error('File already exists! Can not copy %s to %s %s', source, destination, str(e))
                             except OSError as e:
-                                logger.error('Does the file already exists? Can not copy %s to %s', source, destination,
-                                             str(e))
+                                logger.error('Does the file already exists? Can not copy %s to %s %s', source, destination, str(e))
                             except Exception as e:
-                                logger.error('Other error! Can not copy %s to %s', source, destination, str(e))
+                                logger.error('Other error! Can not copy %s to %s: %s', source, destination, str(e))
     except Exception as e:
         logger.error(str(e))
         raise
@@ -1408,7 +1407,7 @@ def get_techniques(studyID=None):
         sql = 'select acc,studytype from studies where status= 3'
 
     settings = get_settings()
-    params = settings.database.connection.dict()
+    params = settings.database.connection.model_dump()
     with psycopg2.connect(**params) as conn:
         data = pd.read_sql_query(sql, conn)
 
@@ -1594,7 +1593,7 @@ def get_connection():
     cursor = None
     try:
         settings = get_settings()
-        params = settings.database.connection.dict()
+        params = settings.database.connection.model_dump()
         conn_pool_min = settings.database.configuration.conn_pool_min
         conn_pool_max = settings.database.configuration.conn_pool_max
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)

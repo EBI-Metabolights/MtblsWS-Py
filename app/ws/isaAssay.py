@@ -1244,7 +1244,7 @@ class AssaySamples(Resource):
                 logger.warning("No valid data provided.")
                 abort(400)
         except (ValidationError, Exception) as err:
-            logger.warning("Bad format JSON request.", err)
+            logger.warning("Bad format JSON request." + str(err))
             abort(400, message=str(err))
 
         # check for access rights

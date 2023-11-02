@@ -129,7 +129,7 @@ class DataMoverAvailableStorage(object):
             
         return meta_sync_status,files_sync_status,chebi_sync_status
         
-    def sync_public_study_to_ftp(self, source_study_folder:str=None, target_ftp_folder:str=None , ignore_list: List[str] = None,
+    def sync_public_study_to_ftp(self, source_study_folder: Union[None, str] = None, target_ftp_folder: Union[None, str] = None , ignore_list: List[str] = None,
                                  **kwargs):   
         command = 'rsync'
         meta_sync_task = 'rsync_meta_pub_ftp'
@@ -295,7 +295,7 @@ class DataMoverAvailableStorage(object):
             
         return status
 
-    def sync_anaysis_job_results(self, source_ftp_folder: str, force: bool = True, ignore_list: List = None) -> SyncCalculationTaskResult:
+    def sync_anaysis_job_results(self, source_ftp_folder: str, force: bool = True, ignore_list: Union[None, List] = None) -> SyncCalculationTaskResult:
         study_id = self.studyId
         calc_meta_job = f'{study_id}_{self.calc_metedata_task}'
         calc_rdfiles_job = f'{study_id}_{self.calc_rdfiles_task}'
@@ -351,7 +351,7 @@ class DataMoverAvailableStorage(object):
             # raise MetabolightsException(message=message, http_code=500, exception=e)
         return result
 
-    def _init_sync_analysis(self, folder_type:str = 'metadata', source_ftp_folder: str = 'NONE', ignore_list: List = None) -> SyncCalculationTaskResult:
+    def _init_sync_analysis(self, folder_type:str = 'metadata', source_ftp_folder: str = 'NONE', ignore_list: Union[None, List] = None) -> SyncCalculationTaskResult:
         result: SyncCalculationTaskResult = SyncCalculationTaskResult()
         try:
             make_dir_with_chmod(self._get_study_log_folder(study_id=self.studyId), 0o777)
@@ -379,7 +379,7 @@ class DataMoverAvailableStorage(object):
 
     def _check_calc_log_file_status(self, calc_log_file: str, sync_log_file: str, folder_type:str = 'metadata',
                                     source_ftp_folder: str ='NONE', job_found: bool = False,
-                                    force: bool = True, ignore_list: List = None) -> SyncCalculationTaskResult:
+                                    force: bool = True, ignore_list: Union[None, List] = None) -> SyncCalculationTaskResult:
         result: SyncCalculationTaskResult = SyncCalculationTaskResult()
         if not job_found:
             # check for one day case
@@ -768,7 +768,7 @@ class DataMoverAvailableStorage(object):
                     if self.str_in_file(file_path=log_file_study_path, word='Exited with exit code'):
                         return False
                     time.sleep(1)
-                logger.error(f'Failed to read the file content in {self.read_time_out} seconds')
+                logger.error(f'Failed to read the file content in {self.read_timeout} seconds')
                 return False
             else:
                 logger.error('Job was not submitted to queue')

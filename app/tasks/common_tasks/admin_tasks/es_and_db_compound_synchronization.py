@@ -26,7 +26,7 @@ def sync_compound_on_es_and_db(user_token: str, send_email_to_submitter=False):
                     raise MetabolightsDBException("No user")
                 email = user.email
                 if not metabolites:
-                    raise MetabolightsDBException(f"{compound_id} does not exist") 
+                    raise MetabolightsDBException(f"There are no metabolights") 
                 for metabolite in metabolites:
                     compounds_dict[metabolite['acc']] = metabolite['updated_date'] 
         indexed_compounds = {} 

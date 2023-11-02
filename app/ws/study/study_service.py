@@ -1,3 +1,4 @@
+from typing import Union
 from app.config import get_settings
 from app.utils import MetabolightsDBException, MetabolightsFileOperationException, MetabolightsException
 from app.ws.db.dbmanager import DBManager
@@ -8,7 +9,7 @@ from app.ws.db.wrappers import create_study_model_from_db_study, update_study_mo
 
 
 
-def identify_study_id(study_id: str, obfuscation_code: str = None):
+def identify_study_id(study_id: str, obfuscation_code: Union[None, str] = None):
     if study_id.lower().startswith("reviewer"):
         obfuscation_code = study_id.lower().replace("reviewer", "")
         study: Study = StudyService.get_instance().get_study_by_obfuscation_code(obfuscation_code)

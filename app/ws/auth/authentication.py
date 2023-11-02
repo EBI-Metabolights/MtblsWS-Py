@@ -185,7 +185,7 @@ class AuthLogin(Resource):
 
         user: UserModel = UserService.get_instance().get_db_user_by_user_name(username)
         
-        resp = make_response(jsonify({"content": user.dict(), "message": "Authentication successful", "err": None}), 200)
+        resp = make_response(jsonify({"content": user.model_dump(), "message": "Authentication successful", "err": None}), 200)
         resp.headers["Access-Control-Expose-Headers"] = "Jwt, User"
         resp.headers["jwt"] = token
         resp.headers["user"] = username
@@ -336,7 +336,7 @@ class AuthUser(Resource):
             try:
                 UserService.get_instance().validate_username_with_submitter_or_super_user_role(username)
                 m_user = UserService.get_instance().get_simplified_user_by_username(username)
-                response_data = {"content": json.dumps({"owner": m_user.dict()}), "message": None, "err": None}
+                response_data = {"content": json.dumps({"owner": m_user.model_dump()}), "message": None, "err": None}
                 response = make_response(response_data, 200)
                 response.headers["Access-Control-Allow-Origin"] = "*"
             except Exception as e:
@@ -408,10 +408,10 @@ class AuthUserStudyPermissions(Resource):
             user_token = request.headers["user_token"]
         permission = StudyAccessPermission()
         if not study_id:
-            return jsonify(permission.dict()) 
+            return jsonify(permission.model_dump()) 
                   
         permission = get_permission_by_study_id(study_id, user_token)
-        return jsonify(permission.dict()) 
+        return jsonify(permission.model_dump()) 
 
 class AuthUserStudyPermissions2(Resource):
     @swagger.operation(
@@ -462,7 +462,7 @@ class AuthUserStudyPermissions2(Resource):
             user_token = request.headers["user_token"]
         permission = StudyAccessPermission()
         if not obfuscation_code:
-            return jsonify(permission.dict()) 
+            return jsonify(permission.model_dump()) 
         
         permission = get_permission_by_obfuscation_code(obfuscation_code, user_token)
-        return jsonify(permission.dict())
+        return jsonify(permission.model_dump())

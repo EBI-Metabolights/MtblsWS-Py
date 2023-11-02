@@ -3,7 +3,7 @@ import os
 import pytest
 from flask import Flask
 from flask_mail import Mail
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.ws.email.email_service import EmailService
 from app.ws.mtblsWSclient import WsClient
@@ -62,10 +62,7 @@ class SensitiveDatastorage(BaseSettings):
     super_user_token_001: str
     invalid_user_token_001: str
     submitter_token_001: str
-
-    class Config:
-        # read and set settings variables from this env_file
-        env_file = "./tests/.test_data"
+    model_config = SettingsConfigDict(env_file_encoding='utf-8', env_file="./tests/.test_data")
 
 
 @pytest.fixture(scope="session")

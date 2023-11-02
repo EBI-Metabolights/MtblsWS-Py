@@ -1,4 +1,5 @@
 import re
+from typing import Union
 
 
 from app.config import ApplicationSettings
@@ -13,13 +14,13 @@ class StudyConfiguration(LiteStudyConfiguration):
     def __init__(
         self,
         study_id: str,
-        obfuscation_code: str = None,
+        obfuscation_code: Union[None, str] = None,
         cluster_mode: bool = False,
-        study_folder_relative_path: str = None,
-        study_ftp_folder_relative_path: str = None,
-        settings: ApplicationSettings = None,
-        study_service: StudyService = None,
-        user_service: UserService = None,
+        study_folder_relative_path: Union[None, str] = None,
+        study_ftp_folder_relative_path: Union[None, str] = None,
+        settings: Union[None, ApplicationSettings] = None,
+        study_service: Union[None, StudyService] = None,
+        user_service: Union[None, UserService] = None,
     ) -> None:
         self.study_status = StudyStatus.DORMANT
         self._db_metadata = None

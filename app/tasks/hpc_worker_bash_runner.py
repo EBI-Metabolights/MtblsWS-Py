@@ -25,11 +25,11 @@ class TaskDescription(BaseModel):
 
 
 class BashExecutionTaskStatus(BaseModel):
-    description: TaskDescription = None
+    description: Union[None, TaskDescription] = None
     running: bool = False
     wait_in_seconds: float = 0
     result_ready: bool = False
-    result: BashExecutionResult = None
+    result: Union[None, BashExecutionResult] = None
     new_task: bool = False
 
 WAIT_STATES = {"STARTED", "INITIATED", "RECEIVED", "STARTED", "RETRY", "PROGRESS"}
@@ -40,7 +40,7 @@ class HpcWorkerBashRunner:
         self,
         task_name: str,
         study_id: str,
-        command: str = None,
+        command: Union[None, str] = None,
         expires=60 * 5,
         result_expires=30,
         min_rerun_time_in_seconds=5,
@@ -98,9 +98,9 @@ class HpcWorkerBashRunner:
                         task_status.wait_in_seconds = self.get_wait_time(result.date_done.timestamp())
                         if result.successful() and isinstance(result.result, dict):
                             if "stdout" in result.result:
-                                task_status.result = CapturedBashExecutionResult.parse_obj(result.result)
+                                task_status.result = CapturedBashExecutionResult.model_validate(result.result)
                             elif "stdout_log_file_path" in result.result:
-                                task_status.result = LoggedBashExecutionResult.parse_obj(result.result)
+                                task_status.result = LoggedBashExecutionResult.model_validate(result.result)
                             else:
                                 raise MetabolightsException(message="unexpected bash result")
 

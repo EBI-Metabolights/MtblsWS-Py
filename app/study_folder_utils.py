@@ -2,7 +2,7 @@ import fnmatch
 import glob
 import os
 import pathlib
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from pydantic import BaseModel
 
@@ -33,7 +33,7 @@ class FileDescriptor(BaseModel):
     is_empty: bool = False
 
 
-def get_all_metadata_files(study_metadata_files_path: str=None):
+def get_all_metadata_files(study_metadata_files_path: Union[None, str] = None):
     metadata_files = []
     if not os.path.exists(study_metadata_files_path):
         return metadata_files

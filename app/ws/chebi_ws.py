@@ -71,7 +71,7 @@ class ChebiLiteEntity(Resource):
 
             result = list()
             for search in search_result:
-                result.append(search.dict())
+                result.append(search.model_dump())
             return result
         except ChebiWsException as e:
             abort(501, message="Remote server error")
@@ -109,7 +109,7 @@ class ChebiEntity(Resource):
             if not search_result:
                 return abort(404, message=f"Entity not found with ChEBI id {chebi_id}")
 
-            return search_result.dict()
+            return search_result.model_dump()
         except ChebiWsException as e:
             abort(501, message=f"Remote server error {e.message}")
 

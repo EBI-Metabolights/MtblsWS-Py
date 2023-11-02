@@ -101,7 +101,7 @@ class MountedVolumeFileManager(FileManager):
             raise StorageServiceException(StorageServiceException.ERR_CODE_FILE_NOT_EXIST, message)
         return abs_path
 
-    def get_uri(self, source_file):
+    def get_uri(self, source_file) -> str:
         return self._get_abs_path(source_file)
 
     def _validate_path(self, source: str):

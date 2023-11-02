@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List
+from typing import List, Union
 
 from pydantic import BaseModel, Field
 
@@ -22,12 +22,12 @@ class SearchResource(str, Enum):
 
 
 class CompoundSearchResultModel(BaseModel):
-    name: str = None
-    inchi: str = None
-    databaseId: str = None
-    formula: str = None
-    smiles: str = None
-    search_resource: SearchResource = None
+    name: Union[None, str] = None
+    inchi: Union[None, str] = None
+    databaseId: Union[None, str] = None
+    formula: Union[None, str] = None
+    smiles: Union[None, str] = None
+    search_resource: Union[None, SearchResource] = None
 
     def is_complete(self):
         if self.name and self.inchi and self.formula and self.smiles and self.databaseId:
@@ -56,11 +56,11 @@ class CompoundSearchResponseModel(BaseModel):
                                                      description="""
                          This field contains data of service result
                          """)
-    message: str = Field(None,
+    message: Union[None, str] = Field(None,
                          description="""
                          This field contains message about content and service result
                          """)
-    err: str = Field(None,
+    err: Union[None, str] = Field(None,
                      description="""
                      This field contains error message details, if service returns error code
                      """)

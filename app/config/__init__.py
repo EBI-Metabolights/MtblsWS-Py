@@ -1,4 +1,5 @@
 import logging
+from typing import Union
 
 from app.config.model.auth import AuthSettings
 from app.config.model.bioportal import BioportalSettings
@@ -55,7 +56,7 @@ class ApplicationSettings(ApplicationBaseSettings):
     external_dependencies: ExternalDependenciesSettings
 
 
-_application_settings: ApplicationSettings = None
+_application_settings: Union[None, ApplicationSettings] = None
 _last_update_check_timestamp: int = 0 
 
 

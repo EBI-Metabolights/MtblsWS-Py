@@ -48,9 +48,9 @@ class HpcRsyncWorker:
         include_list=None,
         exclude_list=None,
         rsync_arguments="-auv",
-        stdout_log_file_path: str = None,
-        stderr_log_file_path: str = None,
-        identity_file: str = None,
+        stdout_log_file_path: Union[None, str] = None,
+        stderr_log_file_path: Union[None, str] = None,
+        identity_file: Union[None, str] = None,
     ) -> SyncTaskResult:
         create_remote_path([source_path, target_path])
         command = HpcRsyncWorker.build_rsync_command(
@@ -82,9 +82,9 @@ class HpcRsyncWorker:
         include_list=None,
         exclude_list=None,
         rsync_arguments="-aunv",
-        stdout_log_file_path: str = None,
-        stderr_log_file_path: str = None,
-        identity_file: str = None
+        stdout_log_file_path: Union[None, str] = None,
+        stderr_log_file_path: Union[None, str] = None,
+        identity_file: Union[None, str] = None
     ) -> SyncCalculationTaskResult:
         
         create_remote_path([source_path, target_path])
@@ -284,7 +284,7 @@ class HpcRsyncWorker:
 
     @staticmethod
     def build_rsync_command(
-        source_path: str, target_path: str, include_list=None, exclude_list=None, rsync_arguments: str = "-aunv", identity_file: str=None
+        source_path: str, target_path: str, include_list=None, exclude_list=None, rsync_arguments: str = "-aunv", identity_file: Union[None, str] = None
     ):
         source_path = source_path.rstrip("/")
         target_path = target_path.rstrip(".").rstrip("/")

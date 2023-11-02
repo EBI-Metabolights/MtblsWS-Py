@@ -38,7 +38,7 @@ class HpcJob(BaseModel):
     
 class LsfClient(object):
     
-    def __init__(self, cluster_settings: HpcClusterConfiguration=None, submit_with_ssh: bool=True, datetime_format=None) -> None:
+    def __init__(self, cluster_settings: Union[None, HpcClusterConfiguration] = None, submit_with_ssh: bool=True, datetime_format=None) -> None:
         self.cluster_settings = cluster_settings
         if not cluster_settings:
             self.cluster_settings = get_cluster_settings()
@@ -49,7 +49,7 @@ class LsfClient(object):
             self.datetime_format = "%b %d %H:%M"
 
         
-    def submit_hpc_job(self, script_path: str, job_name: str, output_file=None, error_file=None, account=None, queue: str=None, timeout: Union[None, float]=30.0) -> int:
+    def submit_hpc_job(self, script_path: str, job_name: str, output_file=None, error_file=None, account=None, queue: Union[None, str] = None, timeout: Union[None, float]=30.0) -> int:
         if not queue:
             queue = get_settings().hpc_cluster.datamover.queue_name
         bsub_command = self._get_submit_command(script_path, queue, job_name, output_file, error_file, account)
@@ -180,7 +180,7 @@ class LsfClient(object):
         
         return " ".join(bsub_command) + f" {command}"     
         
-    def _prepare_script_to_submit_on_lsf(self, script_path: str, job_name: str, queue=None, output_file=None, error_file=None, account=None, runtime_limit:str=None, cpu:int = 1, rusage: str = "rusage[mem=2048]"):
+    def _prepare_script_to_submit_on_lsf(self, script_path: str, job_name: str, queue=None, output_file=None, error_file=None, account=None, runtime_limit: Union[None, str] = None, cpu:int = 1, rusage: str = "rusage[mem=2048]"):
         if not os.path.exists(script_path):
             raise MetabolightsException(message=f"Script path {script_path} does not exist.")
         lines = []
@@ -228,7 +228,7 @@ class LsfClient(object):
             f.writelines(content)
         return file_input_path
             
-    def run_singularity(self, task_name: str, command: str, command_arguments: str, unique_task_name: bool = True, hpc_queue_name: str=None, additional_mounted_paths: List[str] = None):
+    def run_singularity(self, task_name: str, command: str, command_arguments: str, unique_task_name: bool = True, hpc_queue_name: Union[None, str] = None, additional_mounted_paths: List[str] = None):
         messages: List[str] = []
         additional_mounted_paths = additional_mounted_paths if additional_mounted_paths else []
         if unique_task_name:
@@ -252,7 +252,7 @@ class LsfClient(object):
         script_template = worker_config.run_singularity_script_template_name
         sif_image_file_url = os.environ.get("SINGULARITY_IMAGE_FILE_URL")
         if not sif_image_file_url:
-            raise ("SINGULARITY_IMAGE_FILE_URL is not defined.")
+            raise MetabolightsException("SINGULARITY_IMAGE_FILE_URL is not defined.")
         sif_file_name = os.path.basename(sif_image_file_url)
         inputs = {
                     "DOCKER_BOOTSTRAP_COMMAND": command,

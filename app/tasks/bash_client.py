@@ -35,8 +35,8 @@ class BashClient(object):
     @staticmethod
     def execute_command(
         command: str,
-        stdout_log_file_path: str = None,
-        stderr_log_file_path: str = None,
+        stdout_log_file_path: Union[None, str] = None,
+        stderr_log_file_path: Union[None, str] = None,
         timeout: Union[None, float] = None,
     ) -> Union[LoggedBashExecutionResult, CapturedBashExecutionResult]:
         logger.info(f" A command is being executed : '{command}'")
@@ -75,7 +75,7 @@ class BashClient(object):
                     stdout_log_file_path=stdout_log_file_path,
                     stderr_log_file_path=stderr_log_file_path,
                 )
-                logger.info(str(execution_result.dict()))
+                logger.info(str(execution_result.model_dump()))
             else:
                 execution_result = CapturedBashExecutionResult()
                 result = subprocess.run(
@@ -91,7 +91,7 @@ class BashClient(object):
                     stderr=result.stderr.decode().split("\n"),
                     stdout=result.stdout.decode().split("\n"),
                 )
-                logger.info(str(execution_result.dict()))
+                logger.info(str(execution_result.model_dump()))
         except Exception as ex:
             if stderr_log_file:
                 stderr_log_file.write(str(ex))
@@ -121,7 +121,7 @@ class BashClient(object):
             raise e
 
     @staticmethod
-    def build_ssh_command(hostname: str, username: str = None, identity_file: str = None):
+    def build_ssh_command(hostname: str, username: Union[None, str] = None, identity_file: Union[None, str] = None):
         command = []
         command.append("ssh")
         if identity_file:

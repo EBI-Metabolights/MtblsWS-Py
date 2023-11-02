@@ -48,7 +48,7 @@ def create_study_model_from_db_study(db_study: Study):
     if db_study.validations:
         try:
             db_study.validations = json.loads(db_study.validations)
-            validation_entries_model = models.ValidationEntriesModel.parse_obj(db_study.validations)
+            validation_entries_model = models.ValidationEntriesModel.model_validate(db_study.validations)
             m_study.validations = validation_entries_model
         except Exception as e:
             logger.warning(f'{e.args}')
@@ -59,7 +59,7 @@ def create_study_model_from_db_study(db_study: Study):
 
 
 def get_user_model(db_user: User):
-    m_user = models.UserModel.from_orm(db_user)
+    m_user = models.UserModel.model_validate(db_user)
     m_user.fullName = m_user.firstName + " " + m_user.lastName
     m_user.joinDate = datetime_to_int(m_user.joinDate)
     m_user.dbPassword = None  # This value is set to empty string intentionally
@@ -78,7 +78,7 @@ def get_user_lite_model(db_user: User):
 def update_users_for_indexing(m_study):
     new_indexed_user_list = []
     for user in m_study.users:
-        indexed_user = IndexedUserModel.from_orm(user)
+        indexed_user = IndexedUserModel.model_validate(user)
 
         new_indexed_user_list.append(indexed_user)
 
@@ -89,7 +89,7 @@ def update_users_for_indexing(m_study):
 def update_assays_for_indexing(m_study):
     new_indexed_assay_list = []
     for assay in m_study.assays:
-        indexed_assay = IndexedAssayModel.from_orm(assay)
+        indexed_assay = IndexedAssayModel.model_validate(assay)
         new_indexed_assay_list.append(indexed_assay)
 
     m_study.assays.clear()
@@ -269,7 +269,7 @@ def fill_organism(m_study):
                 if key.split("~")[1] == "characteristics[organism part]":
                     organism_part_index = value.index
         if m_study.sampleTable.data:
-            organism_dic = dict()
+            organism_dic = {}
             for data in m_study.sampleTable.data:
                 model = models.OrganismModel()
                 if organism_index >= 0:

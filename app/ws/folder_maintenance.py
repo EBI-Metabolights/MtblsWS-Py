@@ -11,7 +11,7 @@ import chardet
 import time
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Union
 
 import numpy as np
 import pandas as pd
@@ -148,7 +148,7 @@ class FolderRootPaths(object):
                
 
 class MaintenanceActionLog(BaseModel):
-    item: str = None
+    item: Union[None, str] = None
     action: MaintenanceAction = MaintenanceAction.INFO_MESSAGE
     parameters: Dict[str, str] = {}
     message: str = ""
@@ -163,8 +163,8 @@ class StudyFolderMaintenanceTask(object):
         study_status: StudyStatus,
         public_release_date: datetime,
         submission_date: datetime,
-        obfuscationcode: str = None,
-        settings: StudySettings = None,
+        obfuscationcode: Union[None, str] = None,
+        settings: Union[None, StudySettings] = None,
         task_name=None,
         delete_unreferenced_metadata_files=False,
         fix_tsv_file_headers=True,
@@ -340,7 +340,7 @@ class StudyFolderMaintenanceTask(object):
 
             
         # self.file_manager = MountedVolumeFileManager(f"{self.study_id}_local_file_manager")
-    def backup_private_ftp_metadata_files(self, folder_name: str = None, stage: str = "BACKUP"):
+    def backup_private_ftp_metadata_files(self, folder_name: Union[None, str] = None, stage: str = "BACKUP"):
         metadata_files_list = self.get_all_private_ftp_metadata_files(recursive=False)
         metadata_files_list.sort()
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
@@ -373,7 +373,7 @@ class StudyFolderMaintenanceTask(object):
             # for file_path in metadata_files_list:
             #     self.backup_file(file_path, reason="synced with metadata folder", backup_path=backup_folder_path, keep_file_on_folder=False, force_delete=True)
                 
-    def create_audit_folder(self, metadata_files_path: str=None, audit_folder_root_path : str=None, folder_name: str = None, metadata_files_signature_root_path: str=None , stage: str = "BACKUP"):
+    def create_audit_folder(self, metadata_files_path: Union[None, str] = None, audit_folder_root_path : Union[None, str] = None, folder_name: Union[None, str] = None, metadata_files_signature_root_path: Union[None, str] = None , stage: str = "BACKUP"):
         # if os.path.exists(self.study_metadata_files_path):
         metadata_files_list = self.get_all_metadata_files(search_path=metadata_files_path, recursive=False)
         metadata_files_list.sort()
@@ -1113,7 +1113,7 @@ class StudyFolderMaintenanceTask(object):
 
         return False
 
-    def read_hash_file(self, metadata_files_signature_root_path: str=None, hash_file_name: str=None) -> str:
+    def read_hash_file(self, metadata_files_signature_root_path: Union[None, str] = None, hash_file_name: Union[None, str] = None) -> str:
         if not hash_file_name:
             hash_file_name = self.study_settings.metadata_files_signature_file_name
         if not metadata_files_signature_root_path:
@@ -1129,7 +1129,7 @@ class StudyFolderMaintenanceTask(object):
                 return current_signature
         return None
     
-    def create_metadata_files_signature(self, metadata_files_path: str=None,  metadata_files_signature_root_path: str=None):
+    def create_metadata_files_signature(self, metadata_files_path: Union[None, str] = None,  metadata_files_signature_root_path: Union[None, str] = None):
         if not metadata_files_signature_root_path:
             metadata_files_signature_root_path = self.study_internal_files_path
         os.makedirs(metadata_files_signature_root_path, exist_ok=True)
@@ -1258,7 +1258,7 @@ class StudyFolderMaintenanceTask(object):
         with open(metadata_summary_file_path, "w") as f:
             f.writelines(rows)
 
-    def calculate_metadata_files_hash(self, search_path: str=None):
+    def calculate_metadata_files_hash(self, search_path: Union[None, str] = None):
         metadata_files_list = self.get_all_metadata_files(recursive=False, search_path=search_path)
         file_hashes = {}
         metadata_files_list.sort()
@@ -1290,7 +1290,7 @@ class StudyFolderMaintenanceTask(object):
         
         return self.get_all_metadata_files(recursive=recursive, search_path=private_ftp_root_path)
     
-    def get_all_metadata_files(self, recursive=False, search_path: str=None):
+    def get_all_metadata_files(self, recursive=False, search_path: Union[None, str] = None):
         metadata_files = []
         patterns = ["[asi]_*.txt", "m_*.tsv"]
         search_path = search_path if search_path else self.study_metadata_files_path

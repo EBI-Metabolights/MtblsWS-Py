@@ -186,7 +186,7 @@ class StudyJsonExporter(Resource):
         try:
             file_path = os.path.join(json_path, m_study.studyIdentifier + '.json')
             update_study_model_from_directory(m_study, study_folders)
-            dict_data = m_study.dict()
+            dict_data = m_study.model_dump()
             with open(file_path, "w") as f:
                 f.write(json.dumps(dict_data))
         except Exception as ex:
@@ -280,7 +280,7 @@ class PublicStudyJsonExporter(Resource):
         os.makedirs(json_path, exist_ok=True)
         for m_study in m_study_list:
             update_study_model_from_directory(m_study, study_folders)
-            dict_data = m_study.dict()
+            dict_data = m_study.model_dump()
             file_path = os.path.join(json_path, m_study.studyIdentifier + '.json')
             with open(file_path, "w") as f:
                 f.write(json.dumps(dict_data))

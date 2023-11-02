@@ -76,7 +76,7 @@ class MetabolightsStatistics(Resource):
                     db_parameters: List[MlStat] = filter_clause(query).order_by(MlStat.sort_order.asc(), MlStat.str_name.asc()).all() 
                 else:
                     db_parameters: List[MlStat] = query.order_by(MlStat.page_section.asc(), MlStat.sort_order.asc(), MlStat.str_name.asc()).all() 
-                m_params = [ MetabolightsStatisticsModel.from_orm(db_param).dict() for db_param in db_parameters ]
+                m_params = [ MetabolightsStatisticsModel.model_validate(db_param).model_dump() for db_param in db_parameters ]
                 return jsonify({"content": m_params, "message": None, "error": None})                    
         except Exception as ex:
             raise ex

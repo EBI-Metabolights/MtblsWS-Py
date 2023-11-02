@@ -241,7 +241,7 @@ class FTPRemoteFileManager(Resource):
                 data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('ftp_filemanager_testing',
                                                                                           study_id, app)
                 meta_calc_result,rdfiles_calc_result = data_mover_storage.sync_anaysis_job_results(source_ftp_folder=source_folder, force=False)
-                result = {'result':{'meta_calc_result':meta_calc_result.dict(),'rdfiles_calc_result': rdfiles_calc_result.dict()}}
+                result = {'result':{'meta_calc_result':meta_calc_result.model_dump(),'rdfiles_calc_result': rdfiles_calc_result.model_dump()}}
             except Exception as e:
                 logger.info(e)
                 print(e)
@@ -251,7 +251,7 @@ class FTPRemoteFileManager(Resource):
                 data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('ftp_filemanager_testing',
                                                                                           study_id, app)
                 sync_metafiles_result,sync_rdfiles_result = data_mover_storage.get_folder_sync_results()
-                result = {'result':{'sync_metafiles_result':sync_metafiles_result.dict(),'sync_rdfiles_result': sync_rdfiles_result.dict()}}
+                result = {'result':{'sync_metafiles_result':sync_metafiles_result.model_dump(),'sync_rdfiles_result': sync_rdfiles_result.model_dump()}}
             except Exception as e:
                 logger.info('Exception ' + str(e))
                 print(e)

@@ -2318,7 +2318,7 @@ class StudyFactors(Resource):
                 logger.error(str(e))
                 return {"Success": "Failed to remove column(s) from sample file"} 
         except (ValidationError, Exception) as err:
-            logger.warning("Bad Study Factor format", err)
+            logger.warning("Bad Study Factor format " + str(err))
         return extended_response(data=resp.data, errs=resp.errors)
 
     def get_factor(self, factor_list, factor_name):
@@ -3815,7 +3815,7 @@ class StudySources(Resource):
             abort(400)
 
         # update Study Source details
-        logger.info('Updating Study Source details for %s', study_id, user_token)
+        logger.info('Updating Study Source details for %s %s', study_id, user_token)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
@@ -4274,7 +4274,7 @@ class StudySamples(Resource):
                 logger.warning("No valid data provided.")
                 abort(400)
         except (ValidationError, Exception) as err:
-            logger.warning("Bad format JSON request.", err)
+            logger.warning("Bad format JSON request. " + str(err))
             abort(400)
 
         # check for access rights

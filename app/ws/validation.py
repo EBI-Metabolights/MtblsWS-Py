@@ -674,7 +674,7 @@ class ValidationComment(Resource):
             __ = update_comments(study_id, db_update_string)
         except Exception as e:
             logger.error(f"Could not store new comments in the database: {str(e)}")
-            abort(500, str(e))
+            abort(500, message=str(e))
 
         return {"status": feedback}
 

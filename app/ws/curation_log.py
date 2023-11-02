@@ -124,7 +124,7 @@ class curation_log(Resource):
             wks = getWorksheet(get_settings().google.sheets.mtbls_curation_log, 'Studies',
                                get_settings().google.connection.google_sheet_api)
         except Exception as e:
-            logger.info('Fail to load worksheet.', e)
+            logger.info('Fail to load worksheet.' +  str(e))
             print('Fail to load worksheet.', e)
             abort(400)
             return []
@@ -285,7 +285,7 @@ class curation_log(Resource):
                                        get_settings().google.connection.google_sheet_api)
             google_df = google_df.set_index('MTBLS ID')
         except Exception as e:
-            logger.info('Fail to load google sheet:', e)
+            logger.info('Fail to load google sheet:' + str(e))
             abort(404)
             return []
 

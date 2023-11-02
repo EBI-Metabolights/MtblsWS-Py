@@ -88,8 +88,8 @@ class MtblsCompoundsDetails(Resource):
             if not metabolite:
                 raise MetabolightsDBException(f"{accession} does not exist")
 
-            metabo_lights = models.MetaboLightsCompoundModel.from_orm(metabolite)
-            dict_date = metabo_lights.dict()
+            metabo_lights = models.MetaboLightsCompoundModel.model_validate(metabolite)
+            dict_date = metabo_lights.model_dump()
 
         result = {'content': dict_date, 'message': None, "err": None}
         return result

@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple
+from typing import List, Tuple, Union
 import psycopg2
 
 from app.config import get_settings
@@ -12,7 +12,7 @@ def sort_by_study_id(value: Tuple[str, str, int]):
                 return int(val)
         return -1
     
-def get_studies(status_code: StudyStatus = None):
+def get_studies(status_code: Union[None, StudyStatus] = None):
     settings = get_settings().database.connection
     try:
         connection = psycopg2.connect(

@@ -1,7 +1,7 @@
 import datetime
-from typing import Optional, List, Dict, Union
+from typing import List, Dict, Union
 
-from pydantic import BaseModel, Field, validator
+from pydantic import field_validator, BaseModel, Field, ConfigDict
 
 from app.ws.db.utils import datetime_to_int
 
@@ -19,59 +19,53 @@ class StudyAccessPermission(BaseModel):
     
     
 class IndexedUserModel(BaseModel):
-    firstName: str = Field(None)
-    fullName: str = Field(None)  # assigned as not_analyzed in es
-    lastName: str = Field(None)
-    orcid: str = Field(None)
-    userName: str = Field(None)  # assigned as not_analyzed in es
-    address: str = Field(None)
-
-    class Config:
-        orm_mode = True
+    firstName: Union[None, str] = Field(None)
+    fullName: Union[None, str] = Field(None)  # assigned as not_analyzed in es
+    lastName: Union[None, str] = Field(None)
+    orcid: Union[None, str] = Field(None)
+    userName: Union[None, str] = Field(None)  # assigned as not_analyzed in es
+    address: Union[None, str] = Field(None)
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StudyTaskModel(BaseModel):
     id: int = Field(0)
-    study_acc: str = Field(None)
-    task_name: str = Field(None)
-    last_request_time: datetime.datetime = Field(None)
-    last_request_executed: datetime.datetime = Field(None)
-    last_execution_time: datetime.datetime = Field(None)
-    last_execution_status: str = Field(None)
-    last_execution_message: str = Field(None)
-
-    class Config:
-        orm_mode = True
-        json_encoders = {
-            datetime.datetime: lambda v: v.timestamp(),
-        }
+    study_acc: Union[None, str] = Field(None)
+    task_name: Union[None, str] = Field(None)
+    last_request_time: Union[None, datetime.datetime] = Field(None)
+    last_request_executed: Union[None, datetime.datetime] = Field(None)
+    last_execution_time: Union[None, datetime.datetime] = Field(None)
+    last_execution_status: Union[None, str] = Field(None)
+    last_execution_message: Union[None, str] = Field(None)
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(from_attributes=True, json_encoders={
+        datetime.datetime: lambda v: v.timestamp(),
+    })
 
 class UserModel(BaseModel):
-    address: str = Field(None, alias="address")  # excluded from es
-    affiliation: str = Field(None, alias="affiliation")  # excluded from es
-    affiliationUrl: str = Field(None, alias="affiliationurl")  # excluded from es
+    address: Union[None, str] = Field(None, alias="address")  # excluded from es
+    affiliation: Union[None, str] = Field(None, alias="affiliation")  # excluded from es
+    affiliationUrl: Union[None, str] = Field(None, alias="affiliationurl")  # excluded from es
     curator: bool = False  # excluded from es
     dbPassword: str = Field(..., alias="password")  # excluded from es
     email: str = Field(..., alias="email")  # excluded from es
-    firstName: str = Field(None, alias="firstname")
-    fullName: str = Field(None)  # assigned as not_analyzed in es
+    firstName: Union[None, str] = Field(None, alias="firstname")
+    fullName: Union[None, str] = Field(None)  # assigned as not_analyzed in es
     joinDate: Union[str, datetime.datetime] = Field(None, alias="joindate")  # excluded from es
-    lastName: str = Field(None, alias="lastname")
-    orcid: str = Field(None, alias="orcid")
+    lastName: Union[None, str] = Field(None, alias="lastname")
+    orcid: Union[None, str] = Field(None, alias="orcid")
     role: Union[int, str] = Field(..., alias="role")  # excluded from es
     status: Union[int, str] = Field(..., alias="status")  # excluded from es
     userId: int = Field(..., alias="id")  # excluded from es
     userName: str = Field(..., alias="username")  # assigned as not_analyzed in es
-    userVerifyDbPassword: str = None  # not in es index mapping
-    mobilePhoneNumber: str = None  # not in es index mapping
-    officePhoneNumber: str = None  # not in es index mapping
-    apiToken: str = Field(None, alias="apitoken")
-
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
-        
-    @validator('joinDate', check_fields=False)
+    userVerifyDbPassword: Union[None, str] = None  # not in es index mapping
+    mobilePhoneNumber: Union[None, str] = None  # not in es index mapping
+    officePhoneNumber: Union[None, str] = None  # not in es index mapping
+    apiToken: Union[None, str] = Field(None, alias="apitoken")
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+    @field_validator('joinDate', check_fields=False)
+    @classmethod
     def datetime_validation(cls, value):
         if not value:
             return None 
@@ -87,13 +81,13 @@ class UserLiteModel(BaseModel):
     
 class NewUserModel(BaseModel):
     
-    userId: Optional[int] = Field(None, alias="id")  # excluded from es
+    userId: Union[None, int] = Field(None, alias="id")  # excluded from es
     email: str = Field(..., alias="email")  # excluded from es
     userName: str = Field(..., alias="username")  # assigned as not_analyzed in es
     dbPassword: str = Field(..., alias="password")  # excluded from es
     joinDate: datetime.datetime = Field(..., alias="joindate")  # excluded from es
     firstName: str = Field(..., alias="firstname")
-    fullName: str = Field(None)  # assigned as not_analyzed in es
+    fullName: Union[None, str] = Field(None)  # assigned as not_analyzed in es
     lastName: str = Field(..., alias="lastname")
     address: str = Field(..., alias="address")  # excluded from es
     affiliation: str = Field(..., alias="affiliation")  # excluded from es
@@ -101,59 +95,51 @@ class NewUserModel(BaseModel):
     status: Union[int, str] = Field(..., alias="status")  # excluded from es
     role: Union[int, str] = Field(..., alias="role")  # excluded from es
     apiToken: str = Field(..., alias="apitoken")
-    orcid: str = Field(None, alias="orcid")
-    userVerifyDbPassword: str = None  # not in es index mapping
+    orcid: Union[None, str] = Field(None, alias="orcid")
+    userVerifyDbPassword: Union[None, str] = None  # not in es index mapping
     curator: bool = False  # excluded from es
-    mobilePhoneNumber: str = None  # not in es index mapping
-    officePhoneNumber: str = None  # not in es index mapping
-
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+    mobilePhoneNumber: Union[None, str] = None  # not in es index mapping
+    officePhoneNumber: Union[None, str] = None  # not in es index mapping
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class MetabolightsParameterModel(BaseModel):
-    name:   Optional[str] = Field(..., alias="name")
-    value:  Optional[str] = Field(..., alias="value")
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+    name:   Union[None, str] = Field(..., alias="name")
+    value:  Union[None, str] = Field(..., alias="value")
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class MetabolightsStatisticsModel(BaseModel):
-    id:   Optional[int] = Field(..., alias="id")
-    page_section:   Optional[str] = Field(..., alias="page_section")
-    str_name:   Optional[str] = Field(..., alias="str_name")
-    str_value:   Optional[str] = Field(..., alias="str_value")
-    sort_order:   Optional[int] = Field(..., alias="sort_order")
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+    id:   Union[None, int] = Field(..., alias="id")
+    page_section:   Union[None, str] = Field(..., alias="page_section")
+    str_name:   Union[None, str] = Field(..., alias="str_name")
+    str_value:   Union[None, str] = Field(..., alias="str_value")
+    sort_order:   Union[None, int] = Field(..., alias="sort_order")
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class SimplifiedUserModel(BaseModel):
-    address: str = Field(None, alias="address")  # excluded from es
-    affiliation: str = Field(None, alias="affiliation")  # excluded from es
-    affiliationUrl: str = Field(None, alias="affiliationurl")  # excluded from es
+    address: Union[None, str] = Field(None, alias="address")  # excluded from es
+    affiliation: Union[None, str] = Field(None, alias="affiliation")  # excluded from es
+    affiliationUrl: Union[None, str] = Field(None, alias="affiliationurl")  # excluded from es
     email: str = Field(..., alias="email")  # excluded from es
-    firstName: str = Field(None, alias="firstname")
-    fullName: str = Field(None)  # assigned as not_analyzed in es
+    firstName: Union[None, str] = Field(None, alias="firstname")
+    fullName: Union[None, str] = Field(None)  # assigned as not_analyzed in es
     joinDate: datetime.datetime = Field(None, alias="joindate")  # excluded from es
-    lastName: str = Field(None, alias="lastname")
-    orcid: str = Field(None, alias="orcid")
+    lastName: Union[None, str] = Field(None, alias="lastname")
+    orcid: Union[None, str] = Field(None, alias="orcid")
     role: Union[int, str] = Field(..., alias="role")  # excluded from es
     status: Union[int, str] = Field(..., alias="status")  # excluded from es
     userName: str = Field(..., alias="username")  # assigned as not_analyzed in es
     apiToken: str = Field(..., alias="apitoken")  # excluded from es
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrganismModel(BaseModel):
-    organismName: str = None  # assigned as not_analyzed in es
-    organismPart: str = None  # assigned as not_analyzed in es
+    organismName: Union[None, str] = None  # assigned as not_analyzed in es
+    organismPart: Union[None, str] = None  # assigned as not_analyzed in es
 
 
 class EntityModel(BaseModel):
     id: int
-    organism: Optional[List[OrganismModel]] = []
+    organism: Union[None, List[OrganismModel]] = []
 
 
 class ValidationEntryModel(BaseModel):
@@ -173,21 +159,19 @@ class ValidationEntriesModel(BaseModel):
     status: str = 'GREEN'
     passedMinimumRequirement: bool = False
     overriden: bool = False
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StudyFactorModel(BaseModel):
-    name: str = None  # assigned as not_analyzed in es
+    name: Union[None, str] = None  # assigned as not_analyzed in es
 
 
 class FieldModel(BaseModel):
     index: int = -1
-    header: str = None
-    fieldType: str = None
-    description: str = None
-    cleanHeader: str = None
+    header: Union[None, str] = None
+    fieldType: Union[None, str] = None
+    description: Union[None, str] = None
+    cleanHeader: Union[None, str] = None
 
 
 class TableModel(BaseModel):
@@ -196,103 +180,101 @@ class TableModel(BaseModel):
 
 
 class BackupModel(BaseModel):
-    backupTimeStamp: int = None
-    backupId: str = None
-    folderPath: str = None
+    backupTimeStamp: Union[None, int] = None
+    backupId: Union[None, str] = None
+    folderPath: Union[None, str] = None
 
 
 class StudyDesignDescriptor(BaseModel):
-    description: str = None  # assigned as not_analyzed in es
+    description: Union[None, str] = None  # assigned as not_analyzed in es
 
 
 class PublicationModel(BaseModel):
-    abstractText: str = None  # not in es index mapping
-    title: str = None
-    doi: str = None
-    pubmedId: str = None
-    authorList: str = None
+    abstractText: Union[None, str] = None  # not in es index mapping
+    title: Union[None, str] = None
+    doi: Union[None, str] = None
+    pubmedId: Union[None, str] = None
+    authorList: Union[None, str] = None
 
 
 class ProtocolModel(BaseModel):
-    name: str = None
-    description: str = None
+    name: Union[None, str] = None
+    description: Union[None, str] = None
 
 
 class SampleMeasurementModel(BaseModel):
-    sampleName: str = None
-    value: str = None
+    sampleName: Union[None, str] = None
+    value: Union[None, str] = None
 
 
 class MetaboliteAssignmentLine(BaseModel):
-    identifier: str = None
-    databaseIdentifier: str = None  # in es mapping
-    unitId: str = None  # mzTab internal identificator
-    chemicalFormula: str = None  # in es mapping
-    smiles: str = None  # V2 field only                     # in es mapping
-    inchi: str = None  # V2 field only                      # in es mapping
-    metaboliteIdentification: str = None  # V2 field        # in es mapping
-    chemicalShift: str = None
-    multiplicity: str = None
-    massToCharge: str = None  # in es mapping
-    fragmentation: str = None
-    modifications: str = None  # V2 field only
-    charge: str = None
-    retentionTime: str = None  # in es mapping
-    taxid: str = None  # in es mapping
-    species: str = None  # in es mapping
-    database: str = None
-    databaseVersion: str = None
-    reliability: str = None  # in es mapping
-    uri: str = None
-    searchEngine: str = None
-    searchEngineScore: str = None
-    smallmoleculeAbundanceSub: str = None
-    smallmoleculeAbundanceStdevSub: str = None
-    smallmoleculeAbundanceStdErrorSub: str = None
+    identifier: Union[None, str] = None
+    databaseIdentifier: Union[None, str] = None  # in es mapping
+    unitId: Union[None, str] = None  # mzTab internal identificator
+    chemicalFormula: Union[None, str] = None  # in es mapping
+    smiles: Union[None, str] = None  # V2 field only                     # in es mapping
+    inchi: Union[None, str] = None  # V2 field only                      # in es mapping
+    metaboliteIdentification: Union[None, str] = None  # V2 field        # in es mapping
+    chemicalShift: Union[None, str] = None
+    multiplicity: Union[None, str] = None
+    massToCharge: Union[None, str] = None  # in es mapping
+    fragmentation: Union[None, str] = None
+    modifications: Union[None, str] = None  # V2 field only
+    charge: Union[None, str] = None
+    retentionTime: Union[None, str] = None  # in es mapping
+    taxid: Union[None, str] = None  # in es mapping
+    species: Union[None, str] = None  # in es mapping
+    database: Union[None, str] = None
+    databaseVersion: Union[None, str] = None
+    reliability: Union[None, str] = None  # in es mapping
+    uri: Union[None, str] = None
+    searchEngine: Union[None, str] = None
+    searchEngineScore: Union[None, str] = None
+    smallmoleculeAbundanceSub: Union[None, str] = None
+    smallmoleculeAbundanceStdevSub: Union[None, str] = None
+    smallmoleculeAbundanceStdErrorSub: Union[None, str] = None
     sampleMeasurements: List[SampleMeasurementModel] = []  # in es mapping
-    assayName: str = None  # This is the name of the Assay record this MAF is assigned to
+    assayName: Union[None, str] = None  # This is the name of the Assay record this MAF is assigned to
 
 
 class MetaboliteAssignmentModel(BaseModel):
-    metaboliteAssignmentFileName: str = None
+    metaboliteAssignmentFileName: Union[None, str] = None
     metaboliteAssignmentLines: List[MetaboliteAssignmentLine] = []
 
 
 class IndexedAssayModel(BaseModel):
-    measurement: str = None  # assigned as not_analyzed
-    technology: str = None  # assigned as not_analyzed
-    platform: str = None
-
-    class Config:
-        orm_mode = True
+    measurement: Union[None, str] = None  # assigned as not_analyzed
+    technology: Union[None, str] = None  # assigned as not_analyzed
+    platform: Union[None, str] = None
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AssayModel(BaseModel):
-    measurement: str = None  # assigned as not_analyzed
-    technology: str = None  # assigned as not_analyzed
-    platform: str = None
-    fileName: str = None  # excluded from es
+    measurement: Union[None, str] = None  # assigned as not_analyzed
+    technology: Union[None, str] = None  # assigned as not_analyzed
+    platform: Union[None, str] = None
+    fileName: Union[None, str] = None  # excluded from es
     assayNumber: int = -1  # excluded from es
-    metaboliteAssignment: MetaboliteAssignmentModel = None  # excluded from es
-    assayTable: TableModel = None  # excluded from es
+    metaboliteAssignment: Union[None, MetaboliteAssignmentModel] = None  # excluded from es
+    assayTable: Union[None, TableModel] = None  # excluded from es
 
 
 class ContactModel(BaseModel):
-    lastName: str = None
-    firstName: str = None
-    email: str = None
-    role: str = None
-    midInitial: str = None
-    phone: str = None
-    fax: str = None
-    affiliation: str = None
-    address: str = None
+    lastName: Union[None, str] = None
+    firstName: Union[None, str] = None
+    email: Union[None, str] = None
+    role: Union[None, str] = None
+    midInitial: Union[None, str] = None
+    phone: Union[None, str] = None
+    fax: Union[None, str] = None
+    affiliation: Union[None, str] = None
+    address: Union[None, str] = None
 
 
 class StudySummaryModel(BaseModel):
-    id: str = Field(None, description="Study accession number")
-    title: str = Field(None, description="Title of study")
-    description: str = Field(None, description="Description of study")
+    id: Union[None, str] = Field(None, description="Study accession number")
+    title: Union[None, str] = Field(None, description="Title of study")
+    description: Union[None, str] = Field(None, description="Description of study")
     
     
 class StudyDerivedData(BaseModel):
@@ -309,40 +291,39 @@ class LiteStudyModel(EntityModel):
     ObjectType: str = "Study"
     id: int = Field(...)
     studyIdentifier: str = Field(...)  # assigned as not_analyzed in es
-    title: Optional[str] = None
+    title: Union[None, str] = None
 
-    studyDescription: str = None
-    studyStatus: str = None  # assigned as not_analyzed in es
-    studyPublicReleaseDate: int = Field(0)
-    updateDate: int = Field(0)
-    studySubmissionDate: int = Field(0)
+    studyDescription: Union[None, str] = None
+    studyStatus: Union[None, str] = None  # assigned as not_analyzed in es
+    studyPublicReleaseDate: Union[str, int] = Field(0)
+    updateDate: Union[str, int] = Field(0)
+    studySubmissionDate: Union[str, int] = Field(0)
     obfuscationCode: str = Field('')  # assigned as not_analyzed in es
     studySize: int = Field(0)
-    validations: ValidationEntriesModel = None
+    validations: Union[None, ValidationEntriesModel] = None
     factors: List[StudyFactorModel] = []
     isatabErrorMessages: List[str] = []
-    studyHumanReadable: str = None
+    studyHumanReadable: Union[None, str] = None
     users: Union[List[UserModel], List[IndexedUserModel]] = []
     publicStudy: bool = False
-    derivedData: StudyDerivedData = None
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+    derivedData: Union[None, StudyDerivedData] = None
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class StudyModel(LiteStudyModel):
     indexTimestamp: int = 0
-    description: Optional[str]
-    studyLocation: Optional[str]  # excluded from es
+    description: Union[None, str] = None
+    studyLocation: Union[None, str] = None  # excluded from es
     descriptors: List[StudyDesignDescriptor] = []
     publications: List[PublicationModel] = []
     protocols: List[ProtocolModel] = []
     assays: Union[List[AssayModel], List[IndexedAssayModel], None] = []
-    contacts: Optional[List[ContactModel]] = []  # excluded from es
-    backups: Optional[List[BackupModel]] = []
-    sampleTable: TableModel = None  # excluded from es
+    contacts: Union[None, List[ContactModel]] = []  # excluded from es
+    backups: Union[None, List[BackupModel]] = []
+    sampleTable: Union[None, TableModel] = None  # excluded from es
 
-    @validator('updateDate', 'studySubmissionDate', 'studyPublicReleaseDate')
+    @field_validator('updateDate', 'studySubmissionDate', 'studyPublicReleaseDate')
+    @classmethod
     def datetime_validation(cls, value):
         if not value:
             return None
@@ -350,76 +331,65 @@ class StudyModel(LiteStudyModel):
             timestamp_value = datetime_to_int(value)
             return timestamp_value
         return value
-
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
-
-        json_encoders = {
-            datetime.datetime: lambda v: v.timestamp()
-        }
-        
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True, json_encoders={
+        datetime.datetime: lambda v: v.timestamp()
+    })
 class SpeciesGroupModel(BaseModel):
     ObjectType: str = "SpeciesGroup"
-    id: int = None
-    name: str = None
-    class Config:
-        orm_mode = True
+    id: Union[None, int] = None
+    name: Union[None, str] = None
+    model_config = ConfigDict(from_attributes=True)
 
 class SpeciesMembersModel(BaseModel):
     ObjectType: str = "SpeciesMembers"
-    id: int = None
-    taxon: str = None
-    taxonDesc: Optional[str] = Field("", alias="taxon_desc")
-    parentMemberId: int = Field(None, alias="parent_id")
+    id: Union[None, int] = None
+    taxon: Union[None, str] = None
+    taxonDesc: Union[None, str] = Field("", alias="taxon_desc")
+    parentMemberId: Union[None, int] = Field(None, alias="parent_id")
     speciesGroup: SpeciesGroupModel = Field(None, alias="group")
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 class MetSpeciesModel(BaseModel):
     ObjectType: str = "Species"
-    id: int = None
-    description: str = None
-    species: str = None
-    taxon: str = None
+    id: Union[None, int] = None
+    description: Union[None, str] = None
+    species: Union[None, str] = None
+    taxon: Union[None, str] = None
     speciesMember: SpeciesMembersModel = Field(None, alias="ref_species_member")
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class MetDbModel(BaseModel):
     ObjectType: str = "Database"
-    id: int = None
-    name: str = Field(None, alias="db_name")
-    class Config:
-        orm_mode = True
+    id: Union[None, int] = None
+    name: Union[None, str] = Field(None, alias="db_name")
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MetCrossReferenceModel(BaseModel):
     ObjectType: str = "CrossReference"
-    id: int = None
-    accession: str = Field(None, alias="acc")
-    db: MetDbModel = None
-    class Config:
-        orm_mode = True
+    id: Union[None, int] = None
+    accession: Union[None, str] = Field(None, alias="acc")
+    db: Union[None, MetDbModel] = None
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MetSpeciesIndexModel(EntityModel):
     ObjectType: str = "MetSpecies"
-    species: Optional[MetSpeciesModel] = Field(None, alias="species")
-    crossReference: Optional[MetCrossReferenceModel] = Field(None, alias="cross_reference")
-    class Config:
-        orm_mode = True
+    species: Union[None, MetSpeciesModel] = Field(None, alias="species")
+    crossReference: Union[None, MetCrossReferenceModel] = Field(None, alias="cross_reference")
+    model_config = ConfigDict(from_attributes=True)
 
 class MetaboLightsCompoundModel(EntityModel):
     ObjectType: str = "compound"
-    accession: str = Field(None, alias="acc")
-    name: str = None
-    description: str = None
-    inchi: str = None
-    inchikey: str = None
-    chebiId: str = Field(None, alias="temp_id")
-    formula: str = None
-    iupacNames: str = Field(None, alias="iupac_names")
+    accession: Union[None, str] = Field(None, alias="acc")
+    name: Union[None, str] = None
+    description: Union[None, str] = None
+    inchi: Union[None, str] = None
+    inchikey: Union[None, str] = None
+    chebiId: Union[None, str] = Field(None, alias="temp_id")
+    formula: Union[None, str] = None
+    iupacNames: Union[None, str] = Field(None, alias="iupac_names")
     studyStatus: str = 'PUBLIC'
     hasLiterature: bool = Field(None, alias="has_literature")
     hasReactions: bool = Field(None, alias="has_reactions")
@@ -431,68 +401,58 @@ class MetaboLightsCompoundModel(EntityModel):
     metSpecies: List[MetSpeciesModel] = Field([], alias="met_species")
     crossReference: List[MetCrossReferenceModel] = Field([], alias="ref_xref")
 
-    @validator('updatedDate')
+    @field_validator('updatedDate')
+    @classmethod
     def datetime_validation(cls, value):
         if not value:
             return None
         if isinstance(value, datetime.datetime):
             return value.strftime("%d-%b-%Y %H:%M:%S")
         return value
-    class Config:
-        orm_mode = True
-        
+    model_config = ConfigDict(from_attributes=True)
 class MetAttributeDefinitionModel(EntityModel):
     ObjectType: str = "AttributeDefinition"
-    value: str = None
-    description: str = None
-    
-    class Config:
-        orm_mode = True
-        
+    value: Union[None, str] = None
+    description: Union[None, str] = None
+    model_config = ConfigDict(from_attributes=True)
 class MetAttributeModel(EntityModel):
     ObjectType: str = "Attribute"
-    value: str = None
+    value: Union[None, str] = None
     attributeDefinition: Union[None, MetAttributeDefinitionModel] = Field(None, alias="attribute_definition")
-    class Config:
-        orm_mode = True
-        
+    model_config = ConfigDict(from_attributes=True)
 class MetSpectraModel(EntityModel):
     ObjectType: str = "Spectra"
-    name: str = None
-    pathToJsonSpectra: str = Field(None, alias="path_to_json")
-    spectraType: str = Field(None, alias="spectra_type")
+    name: Union[None, str] = None
+    pathToJsonSpectra: Union[None, str] = Field(None, alias="path_to_json")
+    spectraType: Union[None, str] = Field(None, alias="spectra_type")
     attributes: List[MetAttributeModel] = Field([], alias="attributes")
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class MetDb(EntityModel):
     ObjectType: str = "Database"
     db_name: str 
-    class Config:
-        orm_mode = True
-        
+    model_config = ConfigDict(from_attributes=True)
 class MetPathwayModel(EntityModel):
     ObjectType: str = "Pathway"
-    name: str = None
-    pathToPathwayFile: str = Field(None, alias="path_to_pathway_file")
+    name: Union[None, str] = None
+    pathToPathwayFile: Union[None, str] = Field(None, alias="path_to_pathway_file")
     attributes: List[MetAttributeModel] = Field([], alias="attributes")
     database: MetDb = Field([], alias="database")
     speciesAssociated: MetSpeciesModel = Field([], alias="species")
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
   
     
 class MetaboLightsCompoundIndexModel(EntityModel):
     ObjectType: str = "compound"
-    accession: str = Field(None, alias="acc")
-    name: str = None
-    description: str = None
-    inchi: str = None
-    inchikey: str = None
-    chebiId: str = Field(None, alias="temp_id")
-    formula: str = None
-    iupacNames: str = Field(None, alias="iupac_names")
+    accession: Union[None, str] = Field(None, alias="acc")
+    name: Union[None, str] = None
+    description: Union[None, str] = None
+    inchi: Union[None, str] = None
+    inchikey: Union[None, str] = None
+    chebiId: Union[None, str] = Field(None, alias="temp_id")
+    formula: Union[None, str] = None
+    iupacNames: Union[None, str] = Field(None, alias="iupac_names")
     studyStatus: str = 'PUBLIC'
     hasLiterature: bool = Field(None, alias="has_literature")
     hasReactions: bool = Field(None, alias="has_reactions")
@@ -507,20 +467,15 @@ class MetaboLightsCompoundIndexModel(EntityModel):
     metSpectras: List[MetSpectraModel] = Field([], alias="met_spectras")
     metPathways: List[MetPathwayModel] = Field([], alias="met_pathways")
     
-    @validator('updatedDate', check_fields=False)
+    @field_validator('updatedDate', check_fields=False)
+    @classmethod
     def datetime_validation(cls, value):
         if not value:
             return None 
         if isinstance(value, datetime.datetime):
             return value.strftime("%Y-%m-%d")
         return value
-    
-    class Config:
-        orm_mode = True
-        
+    model_config = ConfigDict(from_attributes=True)
 
 class ESMetaboLightsCompound(MetaboLightsCompoundIndexModel):
-    
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

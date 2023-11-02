@@ -1,5 +1,6 @@
 import logging
 import os.path
+from typing import Union
 
 from flask_mail import Mail, Message
 from jinja2 import Environment, PackageLoader, select_autoescape
@@ -16,7 +17,7 @@ env = Environment(
 
 
 class EmailService(object):
-    def __init__(self, settings: EmailSettings = None, mail: Mail = None):
+    def __init__(self, settings: Union[None, EmailSettings] = None, mail: Union[None, Mail] = None):
         self.email_settings = settings
         self.mail = mail
 

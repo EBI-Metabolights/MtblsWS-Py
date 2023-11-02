@@ -21,7 +21,7 @@ import os
 import re
 import traceback
 import uuid
-from typing import Optional
+from typing import Union
 
 import psycopg2
 import psycopg2.extras
@@ -715,7 +715,7 @@ def check_access_rights(user_token, study_id, study_obfuscation_code=None):
            submission_date, updated_date, study_status
 
 
-def get_email(user_token) -> Optional[str]:
+def get_email(user_token) -> Union[None, str]:
     val_query_params(user_token)
     user_email = None
     try:
@@ -1031,7 +1031,7 @@ def update_validation_status(study_id, validation_status):
         return False
 
 
-def update_study_status_change_date(study_id, change_time: datetime.datetime = None):
+def update_study_status_change_date(study_id, change_time: Union[None, datetime.datetime] = None):
     val_acc(study_id)
     if not change_time:
         change_time = current_time()
@@ -1170,7 +1170,7 @@ def get_connection():
     conn = None
     cursor = None
     settings = get_settings()
-    params = settings.database.connection.dict()
+    params = settings.database.connection.model_dump()
 
     conn_pool_min = settings.database.configuration.conn_pool_min
     conn_pool_max = settings.database.configuration.conn_pool_max
@@ -1195,7 +1195,7 @@ def get_connection2():
     cursor = None
     try:
         settings = get_settings()
-        params = settings.database.connection.dict()
+        params = settings.database.connection.model_dump()
         conn_pool_min = settings.database.configuration.conn_pool_min
         conn_pool_max = settings.database.configuration.conn_pool_max
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)

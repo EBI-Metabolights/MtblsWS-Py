@@ -1,3 +1,4 @@
+from typing import Union
 from urllib.parse import quote
 
 from sqlalchemy import create_engine
@@ -9,7 +10,7 @@ from app.config.model.database import DatabaseConnection
 
 
 class DBManager(object):
-    def __init__(self, db_config: DatabaseConnection = None):
+    def __init__(self, db_config: Union[None, DatabaseConnection] = None):
         self.db_config: DatabaseConnection = db_config
         self.db_url = self._get_db_url()
 

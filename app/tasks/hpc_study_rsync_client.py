@@ -1,7 +1,7 @@
 import datetime
 from enum import Enum
 import os
-from typing import List
+from typing import List, Union
 from pydantic import BaseModel
 from app.config import get_settings
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult
@@ -93,7 +93,7 @@ ALLOWED_STAGING_AREA_DIRECTIONS = {
 
 
 class StudyRsyncClient:
-    def __init__(self, study_id: str, obfuscation_code: str = None) -> None:
+    def __init__(self, study_id: str, obfuscation_code: Union[None, str] = None) -> None:
         self.study_id = study_id
         self.obfuscation_code = obfuscation_code
         self.settings = get_settings()
@@ -232,7 +232,7 @@ class StudyRsyncClient:
                 return path
             if path:
                 return os.path.join(path, f"{self.study_id.lower()}-{self.obfuscation_code}")
-        raise MetabolightsException(message=f"Folder path is not valid for {folder.dict()}")
+        raise MetabolightsException(message=f"Folder path is not valid for {folder.model_dump()}")
 
     def get_include_and_exlude_lists(self, source: StudyFolder, target: StudyFolder):
         include_list = []

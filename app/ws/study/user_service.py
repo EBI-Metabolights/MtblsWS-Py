@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Union
 
 from sqlalchemy import func
 
@@ -131,7 +131,7 @@ class UserService(object):
         else:
             raise MetabolightsAuthorizationException(message=f"Invalid user or credential")
 
-    def get_simplified_user_by_username(self, user_name) -> Optional[SimplifiedUserModel]:
+    def get_simplified_user_by_username(self, user_name) -> Union[None, SimplifiedUserModel]:
         if not user_name:
             raise MetabolightsException(message=f"User token is not valid")
 
@@ -139,7 +139,7 @@ class UserService(object):
 
         return self.get_simplified_user_by_user_field(filter_clause)
 
-    def get_simplified_user_by_token(self, user_token) -> Optional[SimplifiedUserModel]:
+    def get_simplified_user_by_token(self, user_token) -> Union[None, SimplifiedUserModel]:
         if not user_token:
             raise MetabolightsException(message=f"User token is not valid")
 
@@ -147,7 +147,7 @@ class UserService(object):
 
         return self.get_simplified_user_by_user_field(filter_clause)
 
-    def get_simplified_user_by_user_field(self, filter_clause) -> Optional[SimplifiedUserModel]:
+    def get_simplified_user_by_user_field(self, filter_clause) -> Union[None, SimplifiedUserModel]:
         try:
             with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(User)
@@ -156,7 +156,7 @@ class UserService(object):
             raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
 
         if db_user:
-            m_user = SimplifiedUserModel.from_orm(db_user)
+            m_user = SimplifiedUserModel.model_validate(db_user)
             m_user.email = m_user.email.lower()
             m_user.userName = m_user.userName.lower()
             m_user.fullName = m_user.firstName + " " + m_user.lastName
@@ -168,7 +168,7 @@ class UserService(object):
             raise MetabolightsAuthorizationException(message=f"User not in database")
 
 
-    def get_db_user_by_user_name(self, user_name: str) -> Optional[UserModel]:
+    def get_db_user_by_user_name(self, user_name: str) -> Union[None, UserModel]:
         filter_clause = lambda query: query.filter(User.username == user_name)
         m_user =  self.get_db_user_by_filter_clause(filter_clause=filter_clause)
         m_user.email = m_user.email.lower()
@@ -178,7 +178,7 @@ class UserService(object):
         m_user.joinDate = datetime_to_int(m_user.joinDate)
         return m_user
 
-    def get_db_user_by_filter_clause(self, filter_clause) -> Optional[UserModel]:
+    def get_db_user_by_filter_clause(self, filter_clause) -> Union[None, UserModel]:
         try:
             with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(User)
@@ -187,7 +187,7 @@ class UserService(object):
             raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
 
         if db_user:
-            m_user = UserModel.from_orm(db_user)
+            m_user = UserModel.model_validate(db_user)
             return m_user
         else:
             raise MetabolightsAuthorizationException(message=f"User not in database")
@@ -206,7 +206,7 @@ class UserService(object):
         users: List[UserModel] = []
         if db_users:
             for db_user in db_users:
-                m_user = UserModel.from_orm(db_user)
+                m_user = UserModel.model_validate(db_user)
                 users.append(m_user)
             
         return users

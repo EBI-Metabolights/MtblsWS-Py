@@ -4,7 +4,6 @@ import logging
 import os
 from pathlib import Path
 import shutil
-from typing import Any, Dict, List, Union
 
 from pydantic import BaseModel
 from app.tasks.common_tasks.curation_tasks.validation import update_validation_files
@@ -35,7 +34,7 @@ def get_validation_report(study_id: str, level: str="all") -> ValidationReportFi
     report = None
     try:
         validation_schema = json.loads(validation_file.read_text(encoding="utf-8"))
-        report = ValidationReportFile.parse_obj(validation_schema)
+        report = ValidationReportFile.model_validate(validation_schema)
         if report and report.validation:
             if not report.validation.last_update_time:
                 report.validation.last_update_timestamp = validation_file.stat().st_mtime
@@ -84,12 +83,12 @@ def get_validation_report(study_id: str, level: str="all") -> ValidationReportFi
         logger.error(f"{str(exc)}")
     if not report:
         report = ValidationReportFile()
-        # validation_file.write_text(report.dict())
+        # validation_file.write_text(report.model_dump())
     return report
 
 def get_validation_report_content(study_id: str, level: str="all"):
     
-    return get_validation_report(study_id, level).dict()
+    return get_validation_report(study_id, level).model_dump()
    
     
 
@@ -148,7 +147,7 @@ def update_validation_files_task(study_id, user_token, force_to_start=True):
         start_new_task = False
     if not desc:
         desc = ValidationTaskDescription()
-    return {"new_task": start_new_task, "message": message, "task": desc.dict()}
+    return {"new_task": start_new_task, "message": message, "task": desc.model_dump()}
 
 def get_validation_task_description(key: str) -> ValidationTaskDescription:
     try:

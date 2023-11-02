@@ -2,6 +2,7 @@ import datetime
 import json
 import logging
 import os
+from typing import Union
 
 import pandas as pd
 
@@ -81,7 +82,7 @@ def create_study_folders(
 )
 def delete_study_folders(
     user_token: str,
-    study_id: str = None,
+    study_id: Union[None, str] = None,
     force_to_maintain=False,
     delete_metadata_storage_folders=True,
     delete_data_storage_folders=True,
@@ -145,7 +146,7 @@ def delete_study_folders(
 def maintain_storage_study_folders(
     user_token: str,
     send_email_to_submitter=False,
-    study_id: str = None,
+    study_id: Union[None, str] = None,
     force_to_maintain=False,
     maintain_metadata_storage=True,
     maintain_data_storage=True,

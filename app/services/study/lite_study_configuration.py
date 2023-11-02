@@ -14,11 +14,11 @@ class LiteStudyConfiguration(object):
     def __init__(
         self,
         study_id: str,
-        obfuscation_code: str = None,
+        obfuscation_code: Union[None, str] = None,
         cluster_mode: bool = False,
-        study_folder_relative_path: str = None,
-        study_ftp_folder_relative_path: str = None,
-        settings: ApplicationSettings = None,
+        study_folder_relative_path: Union[None, str] = None,
+        study_ftp_folder_relative_path: Union[None, str] = None,
+        settings: Union[None, ApplicationSettings] = None,
     ) -> None:
         self.settings = settings
         if not self.settings:

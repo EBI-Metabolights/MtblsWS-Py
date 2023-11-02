@@ -25,7 +25,7 @@ import re
 import subprocess
 import time
 import traceback
-from typing import List
+from typing import List, Union
 
 import numpy as np
 import pandas as pd
@@ -491,7 +491,7 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
 
 
 def update_validation_schema_files(validation_file, study_id, user_token, obfuscation_code,
-                            log_category='all', study_settings: StudySettings=None):
+                            log_category='all', study_settings: Union[None, StudySettings] = None):
     settings = get_settings()
     if not study_settings:
         study_settings = settings.study
@@ -559,7 +559,7 @@ def get_last_update_on_folder(study_location):
 
 
 def validate_study(study_id, study_location_old, user_token, obfuscation_code,
-                   validation_section='all', log_category='all', static_validation_file=None, settings: StudySettings = None):
+                   validation_section='all', log_category='all', static_validation_file=None, settings: Union[None, StudySettings] = None):
     """
     Entry point method for validating an entire study. Each section is validated in turn, unless a validation section is
     specified in the request parameters.

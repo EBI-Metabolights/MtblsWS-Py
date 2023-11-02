@@ -1045,7 +1045,7 @@ class StudyFilesReuse(Resource):
         #     try:
         #         with open(files_list_json_file, "r") as fp:
         #             cached_data = json.load(fp)
-        #             indexed_files = StudyFolderIndex.parse_obj(cached_data)
+        #             indexed_files = StudyFolderIndex.model_validate(cached_data)
         #     except Exception as exc:
         #         logger.warning(f"Error reading {files_list_json} for study {study_id}")
         
@@ -1070,7 +1070,7 @@ class StudyFilesReuse(Resource):
                 inputs = {"path": ftp_folder_path}
                 task = list_directory.apply_async(kwargs=inputs, expires=60*5)
                 output = task.get(timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds * 2)
-                ftp_files = LiteFileSearchResult.parse_obj(output).study
+                ftp_files = LiteFileSearchResult.model_validate(output).study
                 
                 search_result.latest = ftp_files  
                 sortFileMetadataList(ftp_files)
@@ -1084,7 +1084,7 @@ class StudyFilesReuse(Resource):
         search_result.obfuscationCode = study.obfuscationcode
         sortFileMetadataList(search_result.study)
         
-        return search_result.dict()
+        return search_result.model_dump()
 
         
         # return update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
@@ -1235,7 +1235,7 @@ class CopyFilesFolders(Resource):
         storage = StorageService.get_ftp_private_storage()
 
         result = storage.check_folder_sync_status(study_id, study.obfuscationcode, study_path)
-        return jsonify(result.dict())
+        return jsonify(result.model_dump())
 
     #     log_request(request)
     #     # param validation
@@ -1679,9 +1679,6 @@ class UnzipFiles(Resource):
             return result
         except Exception as ex:
             raise MetabolightsException(http_code=500, message=f"Unzip task submission was failed", exception=ex)
-        
-        
-        return {'Success': ret_msg}
 
 
 def clean_name(name):
@@ -1873,17 +1870,17 @@ class StudyFilesTree(Resource):
                 inputs = {"path": ftp_folder_path, "recursive": include_sub_dir}
                 task = list_directory.apply_async(kwargs=inputs, expires=60*5)
                 output = task.get(timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds * 2)
-                search_result = LiteFileSearchResult.parse_obj(output)
+                search_result = LiteFileSearchResult.model_validate(output)
                 # search_result.latest = search_result.study
                 # search_result.study = []
                 sortFileMetadataList(search_result.study)
             except Exception as exc:
                 logger.error(f"Error for study {study.acc}: {str(exc)}")          
-                return LiteFileSearchResult().dict()
+                return LiteFileSearchResult().model_dump()
         
         search_result.uploadPath = upload_path
         search_result.obfuscationCode = study.obfuscationcode
-        return search_result.dict()
+        return search_result.model_dump()
         
 class FileList(Resource):
     @swagger.operation(

@@ -70,9 +70,9 @@ class ReadOnlyFileVolumeManager(object):
         cluster_study_log_folder = os.path.join(cluster_study_internal_files_folder, self.study_settings.internal_logs_folder_name)
         logger.info("Sending cluster job : " + command + " " + params + " ;For Study :- " + study_id)
         
-        status, message, job_out, job_err, log_file = submit_job(False, None, queue=get_settings().hpc_cluster.datamover.queue_name,
+        status, message, job_out, job_err, log_file = submit_job(False, queue=get_settings().hpc_cluster.datamover.queue_name,
                                                                  job_cmd=command, job_params=params,
-                                                                 submitter=requestor, log=True,
+                                                                 account=requestor, log=True,
                                                                  log_path=cluster_study_log_folder)
         log_file_name = os.path.basename(log_file)
         log_file_study_path = os.path.join(study_log_folder, log_file_name)
@@ -106,7 +106,6 @@ class ReadOnlyFileVolumeManager(object):
 
     def _log_job_output(self, status, job_out, job_err, log_file_study_path):
         logger.info("----------------------- ")
-        logger.info("Requestor " + self.requestor)
         logger.info("Job execution status -  " + str(status))
         logger.info("Job output -  " + job_out)
         logger.info("Job error -  " + job_err)

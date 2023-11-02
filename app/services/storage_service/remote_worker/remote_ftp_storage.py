@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Union
 from app.config import get_settings
 from app.services.storage_service.models import (
     SyncCalculationStatus,
@@ -155,7 +155,7 @@ class RemoteFtpStorage(Storage):
         obfuscation_code: str,
         target_local_path: str,
         force: bool = False,
-        ignore_list: List = None,
+        ignore_list: Union[None, List] = None,
     ) -> SyncCalculationTaskResult:
         status_check_only = False if force else True
         client = StudyRsyncClient(study_id=study_id, obfuscation_code=obfuscation_code)
