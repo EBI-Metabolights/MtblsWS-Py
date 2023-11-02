@@ -3,7 +3,6 @@ LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
 
 RUN apt-get clean && apt-get -y update
 RUN apt-get -y install build-essential python3-dev python3-pip libpq-dev libglib2.0-0 libsm6 libxrender1 libxext6 \
-    && pip3 install --upgrade pip \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get -y autoremove --purge
 
@@ -14,7 +13,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     POETRY_VIRTUALENVS_CREATE=1 \
     POETRY_CACHE_DIR=/tmp/poetry_cache
 
-RUN pip install poetry=1.6.1
+RUN pip3 install --upgrade pip && pip3 install poetry=1.6.1
 
 WORKDIR /app-root
 
