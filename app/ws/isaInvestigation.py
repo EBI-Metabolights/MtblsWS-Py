@@ -27,6 +27,7 @@ from app.study_folder_utils import get_all_metadata_files
 from app.utils import metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import IsaInvestigationSchema
+from app.ws.mm_models_v1 import IsaInvestigationSchemaV1
 from app.ws.mtblsWSclient import WsClient
 import logging
 
@@ -345,4 +346,16 @@ class IsaStudyCreation(Resource):
         response = dict(targetRepository="metaboLights",
                         receipt={},
                         accessions=[])
+        try:
+            data = json.loads(request.data.decode('utf-8'))
+            # if partial=True missing fields will be ignored
+            result = IsaInvestigationSchemaV1().load(data, partial=True)
+            response['receipt']['submission'] = "failure"
+            response['receipt']['isaValidation'] = "success"
+        except (ValidationError, Exception) as err:
+            for arg in err.args:
+                logger.error(arg)
+            response['receipt']['submission'] = "failure"
+            response['receipt']['isaValidation'] = "failure"
+             
         return response
