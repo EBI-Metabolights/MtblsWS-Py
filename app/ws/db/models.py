@@ -280,8 +280,8 @@ class StudySummaryModel(BaseModel):
 class StudyDerivedData(BaseModel):
     submissionMonth: str = ""
     releaseMonth: str = ""
-    submissionYear: str = 1970
-    releaseYear: str = 1970
+    submissionYear: int = 1970
+    releaseYear: int = 1970
     country: str = ""
     organismNames: str = ""
     organismParts: str = ""
