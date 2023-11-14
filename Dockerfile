@@ -26,7 +26,7 @@ FROM python:3.8-slim-buster as runner
 LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
 
 RUN apt-get -y update \
-    && apt-get -y install wget curl zip git p7zip-full bzip2 pigz pbzip2 zstd rsync openssh-client libglib2.0-0 libsm6 libxrender1 libxext6 \
+    && apt-get -y install wget curl zip git p7zip-full bzip2 pigz pbzip2 zstd rsync openssh-client libglib2.0-0 libsm6 libxrender1 libxext6 libpq-dev \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get -y autoremove --purge
 
