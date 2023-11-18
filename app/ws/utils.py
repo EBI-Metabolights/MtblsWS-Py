@@ -841,6 +841,17 @@ def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, o
 
     return isa_inv, onto
 
+def update_correct_sample_file_name(isa_study, study_location, study_id):
+    sample_file_path = os.path.join(study_location, isa_study.filename)
+    short_sample_file_name = 's_' + study_id.upper() + '.txt'
+    default_sample_file_path = os.path.join(study_location, short_sample_file_name)
+    if os.path.isfile(sample_file_path):
+        if sample_file_path != default_sample_file_path:
+            os.rename(sample_file_path, default_sample_file_path)  # Rename the sample file
+            isa_study.filename = short_sample_file_name  # Add the new filename to the investigation
+
+    return isa_study, short_sample_file_name
+
 def delete_remote_file(root_path: str, file_path: str) -> Tuple[bool, str]:
     inputs = {"root_path": root_path, "file_paths": file_path}
     try:
