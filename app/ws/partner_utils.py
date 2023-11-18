@@ -27,13 +27,10 @@ from flask_restful_swagger import swagger
 from app.tasks.common_tasks.curation_tasks.metabolon import metabolon_confirm
 from app.utils import MetabolightsException
 
-from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.user_service import UserService
-from app.ws.utils import validate_mzml_files, convert_to_isa, copy_file, read_tsv, write_tsv, \
-    update_correct_sample_file_name, get_year_plus_one
 
 wsc = WsClient()
 iac = IsaApiClient()

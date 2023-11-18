@@ -449,7 +449,7 @@ def log_request(request_obj):
         else:
             logger.debug('REQUEST JSON    -> EMPTY')
 
-def read_tsv(file_name, col_names=None):
+def read_tsv(file_name, col_names=None, sep="\t"):
     table_df = pd.DataFrame()  # Empty file
     try:
         # Enforce str datatype for all columns we read from ISA-Tab table
@@ -457,18 +457,18 @@ def read_tsv(file_name, col_names=None):
         
         try:
             if not filter:
-                col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
+                col_names = pd.read_csv(file_name, sep=sep, nrows=0).columns
             types_dict = {col: str for col in col_names}
             if os.path.getsize(file_name) == 0:  # Empty file
                 logger.error("Could not read file " + file_name)
             else:
                 if filter:
-                    table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8', usecols=col_names, dtype=types_dict)
+                    table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='utf-8', usecols=col_names, dtype=types_dict, engine='python')
                 else:
-                    table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8', dtype=types_dict)
+                    table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='utf-8', dtype=types_dict, engine='python')
         except Exception as e:  # Todo, should check if the file format is Excel. ie. not in the exception handler
             if os.path.getsize(file_name) > 0:
-                table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='ISO-8859-1', dtype=types_dict)  # Excel format
+                table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='ISO-8859-1', dtype=types_dict)  # Excel format
                 logger.info("Tried to open as Excel tsv file 'ISO-8859-1' file " + file_name + ". " + str(e))
     except Exception as e:
         logger.error("Could not read file " + file_name + ". " + str(e))
@@ -690,76 +690,6 @@ def validate_xml(xml=None, xmlschema=None):
     except etree.DocumentInvalid:
         print('Schema validation error. ' + xml)
         return False, "Can not validate the file " + xml
-
-
-def to_isa_tab(study_id, input_folder, output_folder):
-    try:
-        isa_convert(input_folder, output_folder, study_id, jobs=2)
-    except Exception as e:
-        return False, "Could not convert mzML to ISA-Tab study " + study_id + ". " + str(e)
-
-    return True, "ISA-Tab files generated for study " + study_id
-
-def create_temp_dir_in_study_folder(parent_folder: str) -> str:
-    date = current_time().strftime("%m/%d/%Y, %H:%M:%S")
-    rand = random.randint(1000, 9999999)
-    folder_name = f"{date}-{str(rand)}"
-    random_folder_name = hashlib.sha256(bytes(folder_name, 'utf-8')).hexdigest()
-    path = os.path.join(parent_folder, random_folder_name)
-    os.makedirs(path, exist_ok=True)
-    
-    return path
-
-def collect_all_mzml_files(study_id, study_metadata_files_folder):
-    settings = get_study_settings()
-    temp_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id, "temp")
-    folder_path = create_temp_dir_in_study_folder(parent_folder=temp_folder)
-    files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
-    mzml_files = {}
-    if os.path.exists(files_folder) and os.path.isdir(files_folder):  # Only check if the folder exists
-        files = glob.iglob(os.path.join(files_folder, '*.mzML'))  # Are there mzML files there?
-        for file in files:
-            base_name = os.path.basename(file)
-            if base_name not in mzml_files:
-                mzml_files[base_name] = file
-        files = glob.iglob(os.path.join(files_folder, '**/*.mzML'), recursive=True)  # Are there mzML files there?
-        for file in files:
-            base_name = os.path.basename(file)
-            if base_name not in mzml_files:
-                mzml_files[base_name] = file
-    
-    for file in mzml_files:
-        target = os.path.join(folder_path, file)
-        source = mzml_files[file]
-        
-        os.symlink(source, target, target_is_directory=False)
-    
-    return folder_path + "/"
-
-def convert_to_isa(study_location, study_id):
-    input_folder = ""
-    try:
-        input_folder = collect_all_mzml_files(study_id, study_metadata_files_folder=study_location)
-        output_folder = study_location + "/"
-        status, message = to_isa_tab("", input_folder, output_folder)
-        return status, message
-    finally:
-        if input_folder:
-            dirpath = pathlib.Path(input_folder)
-            if dirpath.exists() and dirpath.is_dir():
-                shutil.rmtree(dirpath)
-
-
-def update_correct_sample_file_name(isa_study, study_location, study_id):
-    sample_file_path = os.path.join(study_location, isa_study.filename)
-    short_sample_file_name = 's_' + study_id.upper() + '.txt'
-    default_sample_file_path = os.path.join(study_location, short_sample_file_name)
-    if os.path.isfile(sample_file_path):
-        if sample_file_path != default_sample_file_path:
-            os.rename(sample_file_path, default_sample_file_path)  # Rename the sample file
-            isa_study.filename = short_sample_file_name  # Add the new filename to the investigation
-
-    return isa_study, short_sample_file_name
 
 
 def get_maf_name_from_assay_name(assay_file_name):
