@@ -84,7 +84,7 @@ mtbls_pattern = re.compile(r"MTBLS[1-9][0-9]*")
 MANAGED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"}
 BYPASS_HTTP_METHODS = ("OPTIONS", "HEAD")
 
-@application.before_request    
+@application.before_request
 def evaluate_request():
     settings = get_settings()
     allowed_host_domains = settings.server.service.allowed_host_domains
@@ -97,8 +97,7 @@ def evaluate_request():
     if not allowed:
         logger.warning(f"Request is not allowed from {host_url}")
         abort(403, message=f"Forbidden request from {host_url}.")    
-    
-    settings = get_settings()
+        
     if request.method in BYPASS_HTTP_METHODS:
         return None
     
