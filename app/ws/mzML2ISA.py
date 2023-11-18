@@ -29,9 +29,9 @@ from app.config import get_settings
 from app.utils import metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.settings.utils import get_study_settings
 from app.ws.study.user_service import UserService
-from app.ws.utils import convert_to_isa, validate_mzml_files
+from app.ws.utils import validate_mzml_files
+from app.ws.metabolon_utils import convert_to_isa
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()

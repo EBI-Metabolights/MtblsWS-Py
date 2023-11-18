@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Tuple
 
 from app.services.storage_service.file_manager import FileManager
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult
@@ -24,7 +24,7 @@ class Storage(ABC):
         pass
     
     @abstractmethod
-    def sync_to_public_ftp(self, source_local_folder: str, target_folder: str, ignore_list: List[str] = None, **kwargs):
+    def sync_to_public_ftp(self, source_local_folder: str, target_folder: str, ignore_list: List[str] = None, **kwargs) -> Tuple[str, str]:
         pass
 
     @abstractmethod
