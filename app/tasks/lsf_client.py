@@ -253,6 +253,8 @@ class LsfClient(object):
         sif_image_file_url = os.environ.get("SINGULARITY_IMAGE_FILE_URL")
         if not sif_image_file_url:
             raise MetabolightsException("SINGULARITY_IMAGE_FILE_URL is not defined.")
+        temp_value = str(int(current_time().timestamp()*1000))
+        worker_name = f"worker_{task_name}"
         sif_file_name = os.path.basename(sif_image_file_url)
         inputs = {
                     "DOCKER_BOOTSTRAP_COMMAND": command,
@@ -262,8 +264,7 @@ class LsfClient(object):
                     "GITLAB_API_TOKEN": worker_config.gitlab_api_token,
                     "SINGULARITY_IMAGE_URL": sif_image_file_url,
                     "SINGULARITY_IMAGE_FILENAME": sif_file_name,
-                    "CONFIG_FILE_PATH": worker_config.config_file_path,
-                    "SECRETS_PATH": worker_config.secrets_path,
+                    "WORKER_NAME": worker_name,
                     "LOGS_PATH": worker_config.logs_path,
                     "HOME_DIR": worker_config.user_home_binding_source_path,
                     "HOME_DIR_MOUNT_PATH": worker_config.user_home_binding_target_path,
@@ -283,10 +284,10 @@ class LsfClient(object):
         local_tmp_folder_path = None
         try:
                 
-            uuid_value = str(uuid.uuid4())
+            
             
             script_file_name = f"run_singularity.sh"
-            tmp_folder =  f"run_singularity_{uuid_value}"
+            tmp_folder =  f"run_singularity_{temp_value}"
             local_tmp_folder_path = os.path.join(self.settings.server.temp_directory_path, tmp_folder)
             os.makedirs(local_tmp_folder_path, exist_ok=True)
             config_file_path = os.path.join(os.getcwd(), "datamover-config.yaml")
@@ -305,11 +306,12 @@ class LsfClient(object):
             hostname = self.settings.hpc_cluster.compute.connection.host
             host_username = self.settings.hpc_cluster.compute.connection.username
             identity_file = self.settings.hpc_cluster.compute.connection.identity_file
-            root_path = worker_config.worker_deployment_root_path
+            root_path = os.path.join(worker_config.worker_deployment_root_path, worker_name)
             if not self.settings.hpc_cluster.datamover.run_ssh_on_hpc_compute:
                 source_path=f"{local_tmp_folder_path}/"
                 target_path=f"{host_username}@{hostname}:{root_path}/"
-                commands = [HpcRsyncWorker.build_rsync_command(source_path=source_path, target_path=target_path, rsync_arguments="-av", identity_file=identity_file)]
+                commands = [HpcRsyncWorker.build_rsync_command(source_path=source_path, target_path=target_path, rsync_arguments="-av", 
+                                                               identity_file=identity_file)]
                 copy_singularity_run_script = " ".join(commands)
 
                 BashClient.execute_command(copy_singularity_run_script)
@@ -328,9 +330,12 @@ class LsfClient(object):
                 source_path=f"{temp_path}/"
                 target_path=f"{datamover_username}@{datamover}:{root_path}/"
                 commands.append(HpcRsyncWorker.build_rsync_command(source_path=source_path, target_path=target_path, rsync_arguments="-av", 
-                                                                   identity_file=datamover_identity_file, include_list=include_list, exclude_list=exclude_list))
+                                                                   identity_file=datamover_identity_file, include_list=include_list, 
+                                                                   exclude_list=exclude_list))
                 copy_singularity_run_script = " ".join(commands)
-                BashClient.execute_command(copy_singularity_run_script)
+                result: CapturedBashExecutionResult = BashClient.execute_command(copy_singularity_run_script)
+                if result.returncode != 0:
+                    return None, str(result.stderr)
                 shutil.rmtree(temp_path, ignore_errors=True)
 
             job_id, _, _ = self.submit_hpc_job(

@@ -284,7 +284,8 @@ class HpcRsyncWorker:
 
     @staticmethod
     def build_rsync_command(
-        source_path: str, target_path: str, include_list=None, exclude_list=None, rsync_arguments: str = "-aunv", identity_file: Union[None, str] = None
+        source_path: str, target_path: str, include_list=None, exclude_list=None, rsync_arguments: str = "-aunv", 
+        identity_file: Union[None, str] = None, created_remote_path: Union[None, str] = None
     ):
         source_path = source_path.rstrip("/")
         target_path = target_path.rstrip(".").rstrip("/")
@@ -296,15 +297,16 @@ class HpcRsyncWorker:
             command_terms.append("-e")
             ssh_command = f"ssh -i {identity_file}"
             command_terms.append(f'\"{ssh_command}\"')
-        
+        if created_remote_path:
+            command_terms.append(f'-–rsync-path="mkdir -p {created_remote_path}/ && rsync"')
         if include_list:
             for item in include_list:
                 command_terms.append(f"--include='{item}'")
         if exclude_list:
             for item in exclude_list:
                 command_terms.append(f"--exclude='{item}'")
-        command_terms.append(f"'{source_path}/.'")
-        command_terms.append(f"'{target_path}/'")
+        command_terms.append(f'"{source_path}/."')
+        command_terms.append(f'"{target_path}/"')
 
         command = " ".join(command_terms)
         return command
