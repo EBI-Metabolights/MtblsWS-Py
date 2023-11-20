@@ -110,9 +110,9 @@ class MetabolightsParameterModel(BaseModel):
 class MetabolightsStatisticsModel(BaseModel):
     id:   Union[None, int] = Field(..., alias="id")
     page_section:   Union[None, str] = Field(..., alias="page_section")
-    str_name:   Union[None, str] = Field(..., alias="str_name")
-    str_value:   Union[None, str] = Field(..., alias="str_value")
-    sort_order:   Union[None, int] = Field(..., alias="sort_order")
+    str_name:   Union[None, str] = Field("", alias="str_name")
+    str_value:   Union[None, str] = Field("", alias="str_value")
+    sort_order:   Union[None, int] = Field("", alias="sort_order")
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class SimplifiedUserModel(BaseModel):
@@ -233,7 +233,7 @@ class MetaboliteAssignmentLine(BaseModel):
     smallmoleculeAbundanceSub: Union[None, str] = None
     smallmoleculeAbundanceStdevSub: Union[None, str] = None
     smallmoleculeAbundanceStdErrorSub: Union[None, str] = None
-    sampleMeasurements: List[SampleMeasurementModel] = []  # in es mapping
+    sampleMeasurements: Union[None, List[SampleMeasurementModel]] = []  # in es mapping
     assayName: Union[None, str] = None  # This is the name of the Assay record this MAF is assigned to
 
 
@@ -348,7 +348,7 @@ class SpeciesMembersModel(BaseModel):
     taxon: Union[None, str] = None
     taxonDesc: Union[None, str] = Field("", alias="taxon_desc")
     parentMemberId: Union[None, int] = Field(None, alias="parent_id")
-    speciesGroup: SpeciesGroupModel = Field(None, alias="group")
+    speciesGroup: Union[None, SpeciesGroupModel] = Field(None, alias="group")
     model_config = ConfigDict(from_attributes=True)
 class MetSpeciesModel(BaseModel):
     ObjectType: str = "Species"
@@ -356,7 +356,7 @@ class MetSpeciesModel(BaseModel):
     description: Union[None, str] = None
     species: Union[None, str] = None
     taxon: Union[None, str] = None
-    speciesMember: SpeciesMembersModel = Field(None, alias="ref_species_member")
+    speciesMember: Union[None, SpeciesMembersModel] = Field(None, alias="ref_species_member")
     model_config = ConfigDict(from_attributes=True)
 
 class MetDbModel(BaseModel):
@@ -391,15 +391,15 @@ class MetaboLightsCompoundModel(EntityModel):
     formula: Union[None, str] = None
     iupacNames: Union[None, str] = Field(None, alias="iupac_names")
     studyStatus: str = 'PUBLIC'
-    hasLiterature: bool = Field(None, alias="has_literature")
-    hasReactions: bool = Field(None, alias="has_reactions")
-    hasSpecies: bool = Field(None, alias="has_species")
-    hasPathways: bool = Field(None, alias="has_pathways")
-    hasNMR: bool = Field(None, alias="has_nmr")
-    hasMS: bool = Field(None, alias="has_ms")
-    updatedDate: datetime.datetime = Field(None, alias="updated_date")
-    metSpecies: List[MetSpeciesModel] = Field([], alias="met_species")
-    crossReference: List[MetCrossReferenceModel] = Field([], alias="ref_xref")
+    hasLiterature: bool = Field(False, alias="has_literature")
+    hasReactions: bool = Field(False, alias="has_reactions")
+    hasSpecies: bool = Field(False, alias="has_species")
+    hasPathways: bool = Field(False, alias="has_pathways")
+    hasNMR: bool = Field(False, alias="has_nmr")
+    hasMS: bool = Field(False, alias="has_ms")
+    updatedDate: Union[None, datetime.datetime] = Field(None, alias="updated_date")
+    metSpecies: Union[None, List[MetSpeciesModel]] = Field([], alias="met_species")
+    crossReference: Union[None, List[MetCrossReferenceModel]] = Field([], alias="ref_xref")
 
     @field_validator('updatedDate')
     @classmethod
@@ -425,7 +425,7 @@ class MetSpectraModel(EntityModel):
     name: Union[None, str] = None
     pathToJsonSpectra: Union[None, str] = Field(None, alias="path_to_json")
     spectraType: Union[None, str] = Field(None, alias="spectra_type")
-    attributes: List[MetAttributeModel] = Field([], alias="attributes")
+    attributes: Union[None, List[MetAttributeModel]] = Field([], alias="attributes")
     model_config = ConfigDict(from_attributes=True)
 
 class MetDb(EntityModel):
@@ -436,9 +436,9 @@ class MetPathwayModel(EntityModel):
     ObjectType: str = "Pathway"
     name: Union[None, str] = None
     pathToPathwayFile: Union[None, str] = Field(None, alias="path_to_pathway_file")
-    attributes: List[MetAttributeModel] = Field([], alias="attributes")
-    database: MetDb = Field([], alias="database")
-    speciesAssociated: MetSpeciesModel = Field([], alias="species")
+    attributes: Union[None, List[MetAttributeModel]] = Field([], alias="attributes")
+    database: Union[None, MetDb] = Field(None, alias="database")
+    speciesAssociated: Union[None,  MetSpeciesModel] = Field(None, alias="species")
     model_config = ConfigDict(from_attributes=True)
 
   
@@ -460,12 +460,12 @@ class MetaboLightsCompoundIndexModel(EntityModel):
     hasPathways: bool = Field(None, alias="has_pathways")
     hasNMR: bool = Field(None, alias="has_nmr")
     hasMS: bool = Field(None, alias="has_ms")
-    updatedDate: Union[datetime.datetime, str] = Field(None, alias="updated_date")
+    updatedDate: Union[None, datetime.datetime, str] = Field(None, alias="updated_date")
     metSpecies: Union[List[MetSpeciesIndexModel], None] = Field([], alias="met_species_index")
     crossReference: Union[List[MetCrossReferenceModel], None] = Field([], alias="ref_xref")
     
-    metSpectras: List[MetSpectraModel] = Field([], alias="met_spectras")
-    metPathways: List[MetPathwayModel] = Field([], alias="met_pathways")
+    metSpectras: Union[None, List[MetSpectraModel]] = Field([], alias="met_spectras")
+    metPathways: Union[None, List[MetPathwayModel]] = Field([], alias="met_pathways")
     
     @field_validator('updatedDate', check_fields=False)
     @classmethod
