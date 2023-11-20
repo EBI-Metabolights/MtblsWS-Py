@@ -14,12 +14,13 @@ def sort_by_study_id(value: Tuple[str, str, int]):
     
 def get_studies(status_code: Union[None, StudyStatus] = None):
     settings = get_settings().database.connection
+    connection = None
     try:
         connection = psycopg2.connect(
             host=settings.host,
             database=settings.database,
             user=settings.user,
-            password=settings.password
+            password=settings.password,
         )
 
         # Create a cursor object
