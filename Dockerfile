@@ -35,7 +35,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 ENV VIRTUAL_ENV=/app-root/.venv \
-    PATH="/app-root/.venv/bin:$PATH"
+    PATH="/opt/rar:/app-root/.venv/bin:$PATH"
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
@@ -45,6 +45,9 @@ ARG USER_ID=2222
 RUN groupadd group1 -g $GROUP1_ID \
     && groupadd group2 -g $GROUP2_ID \ 
     && useradd -ms /bin/bash -u $USER_ID -g group1 -G group1,group2 metabolights
+    
+RUN cd /opt && wget rarlab.com/rar/rarlinux-x64-5.1.1.tar.gz && tar -zxvf rarlinux-x64-5.1.1.tar.gz && rm rarlinux-x64-5.1.1.tar.gz
+
 USER metabolights
 
 WORKDIR /app-root
