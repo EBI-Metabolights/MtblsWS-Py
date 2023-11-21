@@ -10,8 +10,6 @@ class SingularityImageConfiguration(BaseModel):
     user_home_binding_source_path: str
     user_home_binding_target_path: str
     logs_path: str
-    config_file_path: str
-    secrets_path: str
     shared_paths: List[str]
 
 
