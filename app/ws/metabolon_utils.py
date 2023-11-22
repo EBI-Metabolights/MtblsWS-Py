@@ -391,7 +391,29 @@ def create_sample_file(study_id, study_location, temp_folder, all_sample_names, 
     merged_data["Source Name"] = merged_data["CLIENT_ID"]
     merged_data.drop(columns=["SAMPLE_NAME", "SOURCE_NAME", "CLIENT_ID", "PARENT_SAMPLE_NAME"], inplace=True, axis=1)
     merged_data.drop_duplicates(subset=['Sample Name'], inplace=True)
-    write_tsv(merged_data, os.path.join(study_location, f"s_{study_id}.txt"))
+    
+    final_sample_file_data = pd.DataFrame()
+    final_sample_file_data["Source Name"] = merged_data["Source Name"]
+    final_sample_file_data["Characteristics[Organism]"] = ""
+    final_sample_file_data["Term Source REF"] = ""
+    final_sample_file_data["Term Accession Number"] = ""
+
+    final_sample_file_data["Characteristics[Organism part]"] = ""
+    final_sample_file_data["Term Source REF.1"] = ""
+    final_sample_file_data["Term Accession Number.1"] = ""
+    
+    final_sample_file_data["Characteristics[Variant]"] = ""
+    final_sample_file_data["Term Source REF.2"] = ""
+    final_sample_file_data["Term Accession Number.2"] = ""
+    
+    final_sample_file_data["Characteristics[Sample type]"] = "experimental sample"
+    final_sample_file_data["Term Source REF.3"] = "CHMO"
+    final_sample_file_data["Term Accession Number.3"] = "http://purl.obolibrary.org/obo/CHMO_0002746"
+    final_sample_file_data["Protocol REF"] = "Sample collection"
+    final_sample_file_data["Sample Name"] = merged_data["Sample Name"]
+    
+    
+    write_tsv(final_sample_file_data, os.path.join(study_location, f"s_{study_id}.txt"))
 
 
 
