@@ -243,7 +243,8 @@ def create_isa_files(study_id, study_location, target_location: str=None) -> Tup
     
     for sample_file in samples_files:
         basename = os.path.basename(sample_file)
-        sampe_df = read_tsv(sample_file, sep=",")
+        sampe_df = pd.read_csv(sample_file, sep=",")
+        sampe_df = sampe_df.replace(np.nan, '', regex=True)  # Remove NaN
         match =  ss_id_pattern.match(basename)
         match_result = match.groups()[0].strip() if match else ""
         sample_csv_map[match_result.strip()] = sampe_df

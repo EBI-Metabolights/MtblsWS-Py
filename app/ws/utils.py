@@ -463,9 +463,9 @@ def read_tsv(file_name, col_names=None, sep="\t"):
                 logger.error("Could not read file " + file_name)
             else:
                 if filter:
-                    table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='utf-8', usecols=col_names, dtype=types_dict, engine='python')
+                    table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='utf-8', usecols=col_names, dtype=types_dict)
                 else:
-                    table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='utf-8', dtype=types_dict, engine='python')
+                    table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='utf-8', dtype=types_dict)
         except Exception as e:  # Todo, should check if the file format is Excel. ie. not in the exception handler
             if os.path.getsize(file_name) > 0:
                 table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='ISO-8859-1', dtype=types_dict)  # Excel format
