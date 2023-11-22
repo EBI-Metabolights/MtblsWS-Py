@@ -107,7 +107,7 @@ class Metabolon(Resource):
         study_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
         
         try:
-            inputs = {"study_id": study_id, "study_location": study_location, "user_token": user_token, "email": email}
+            inputs = {"study_id": study_id, "study_location": study_location, "email": email}
             
             result = metabolon_confirm.apply_async(kwargs=inputs, expires=60*5)
 

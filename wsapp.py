@@ -87,16 +87,16 @@ BYPASS_HTTP_METHODS = ("OPTIONS", "HEAD")
 @application.before_request
 def evaluate_request():
     settings = get_settings()
-    # allowed_host_domains = settings.server.service.allowed_host_domains
-    # protocol = request.scheme
-    # if "HTTP_X_FORWARDED_PROTO" in request.environ:
-    #     protocol = request.environ["HTTP_X_FORWARDED_PROTO"]
+    allowed_host_domains = settings.server.service.allowed_host_domains
+    protocol = request.scheme
+    if "HTTP_X_FORWARDED_PROTO" in request.environ:
+        protocol = request.environ["HTTP_X_FORWARDED_PROTO"]
         
-    # host_url =  f"{protocol}://{request.host}"
-    # allowed = [x for x in allowed_host_domains if re.fullmatch(x, host_url)]
-    # if not allowed:
-    #     logger.warning(f"Request is not allowed from {host_url}")
-    #     abort(403, message=f"Forbidden request from {host_url}.")    
+    host_url =  f"{protocol}://{request.host}"
+    allowed = [x for x in allowed_host_domains if re.fullmatch(x, host_url)]
+    if not allowed:
+        logger.warning(f"Request is not allowed from {host_url}")
+        abort(403, message=f"Forbidden request from {host_url}.")    
         
     if request.method in BYPASS_HTTP_METHODS:
         return None

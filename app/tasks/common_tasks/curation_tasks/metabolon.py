@@ -22,7 +22,7 @@ logger = logging.getLogger('wslog')
 
 
 @celery.task(bind=True, base=MetabolightsTask, name="app.tasks.common_tasks.curation_tasks.metabolon.metabolon_confirm")
-def metabolon_confirm(self, study_id: str, study_location: str, target_location: str, user_token, email):
+def metabolon_confirm(self, study_id: str, study_location: str, email: str, target_location: str=None):
 
     message = {}
     success = True
