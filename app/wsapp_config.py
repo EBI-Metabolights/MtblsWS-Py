@@ -56,7 +56,8 @@ from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.internal import BannerMessage
 from app.ws.isaAssay import StudyAssay, StudyAssayDelete
-from app.ws.isaInvestigation import IsaInvestigation,IsaStudyCreation
+from app.ws.isaInvestigation import IsaInvestigation
+from app.ws.isaStudySubmission import IsaStudySubmission
 from app.ws.isaStudy import (StudyContacts, StudyDescription, StudyDescriptors,
                              StudyFactors, StudyMetaInfo, StudyProtocols,
                              StudyPublications, StudyReleaseDate,
@@ -264,7 +265,7 @@ def initialize_app(flask_app):
 
     # ISA Investigation
     api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")
-    api.add_resource(IsaStudyCreation, res_path + "/isa_study")
+    api.add_resource(IsaStudySubmission, res_path + "/isa_study")
     api.add_resource(StudyTitle, res_path + "/studies/<string:study_id>/title")
     api.add_resource(StudyReleaseDate, res_path + "/studies/<string:study_id>/release-date")
     api.add_resource(StudyDescription, res_path + "/studies/<string:study_id>/description")

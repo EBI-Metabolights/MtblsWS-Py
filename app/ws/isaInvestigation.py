@@ -18,9 +18,18 @@
 
 import json
 import os
+from typing import Dict
 from flask import request
 from flask_restful import Resource, abort, reqparse
-from isatools.model import Investigation
+from isatools.model import (
+    Investigation,
+    Study,
+    StudyFactor,
+    Person,
+    OntologyAnnotation,
+    OntologySource
+)
+
 from marshmallow import ValidationError
 from flask_restful_swagger import swagger
 from app.study_folder_utils import get_all_metadata_files
@@ -33,7 +42,6 @@ import logging
 
 from app.ws.study.study_service import identify_study_id
 from app.ws.utils import log_request
-
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -290,72 +298,3 @@ Please use the GET method above to retrieve the structure of your study prior to
         sch = IsaInvestigationSchema()
         sch.context['investigation'] = Investigation()
         return sch.dump(updated_inv)
-
-class IsaStudyCreation(Resource):
-    @swagger.operation(
-        summary="Create Study using ISA-JSON",
-        notes='''Create Study using ISA-JSON ''',
-        parameters=[
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
-            },
-            {
-                "name": "study",
-                "description": "Study data in ISA-JSON format",
-                "paramType": "body",
-                "type": "string",
-                "format": "application/json",
-                "required": True,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 201,
-                "message": "Created."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            }
-        ]
-    )
-    def post(self):
-        logger.info('Creating Stuyd using ISA-JSON')
-        log_request(request)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401, "Please provide a valid user_token")
-        response = dict(targetRepository="metaboLights",
-                        receipt={},
-                        accessions=[])
-        try:
-            data = json.loads(request.data.decode('utf-8'))
-            # if partial=True missing fields will be ignored
-            result = IsaInvestigationSchemaV1().load(data, partial=True)
-            response['receipt']['submission'] = "failure"
-            response['receipt']['isaValidation'] = "success"
-        except (ValidationError, Exception) as err:
-            for arg in err.args:
-                logger.error(arg)
-            response['receipt']['submission'] = "failure"
-            response['receipt']['isaValidation'] = "failure"
-             
-        return response
