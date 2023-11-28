@@ -2,29 +2,19 @@ import os
 from typing import List, Union
 from app.config import get_settings
 from app.services.storage_service.models import (
-    SyncCalculationStatus,
     SyncCalculationTaskResult,
     SyncTaskResult,
-    SyncTaskStatus,
 )
 from app.services.storage_service.remote_worker.remote_file_manager import (
     RemoteFileManager,
 )
 from app.services.storage_service.storage import Storage
-from app.tasks.bash_client import BashExecutionResult
-from app.tasks.hpc_rsync_worker import HpcRsyncWorker
 from app.tasks.hpc_study_rsync_client import (
     StudyFolder,
     StudyFolderLocation,
     StudyFolderType,
     StudyRsyncClient,
 )
-from app.tasks.hpc_worker_bash_runner import (
-    HpcWorkerBashRunner,
-    TaskDescription,
-    BashExecutionTaskStatus,
-)
-from app.tasks.worker import celery
 from app.utils import MetabolightsException
 
 

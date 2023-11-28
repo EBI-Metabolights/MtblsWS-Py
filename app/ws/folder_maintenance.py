@@ -19,6 +19,7 @@ from bs4 import BeautifulSoup
 from isatools import isatab
 from isatools import model as isatools_model
 from pydantic import BaseModel
+from unidecode import unidecode
 from app.config import get_settings
 
 from app.config.model.hpc_cluster import HpcClusterConfiguration
@@ -179,7 +180,9 @@ class StudyFolderMaintenanceTask(object):
         future_actions_recompress_unexpected_archive_files=False,
         backup_study_private_ftp_metadata_files=True,
         apply_future_actions=False,
-        max_referenced_files_in_folder=200,
+        max_file_count_on_folder=200,
+        min_file_count_to_split_extensions=50,
+        max_file_count_on_splitted_folder=100,
         create_data_files_maintenance_file=True,
         cluster_execution_mode=False
     ) -> None:
@@ -246,7 +249,9 @@ class StudyFolderMaintenanceTask(object):
         self.future_actions_create_subfolders = future_actions_create_subfolders
         self.future_actions_compress_folders = future_actions_compress_folders
         self.future_actions_recompress_unexpected_archive_files = future_actions_recompress_unexpected_archive_files
-        self.max_referenced_files_in_folder = max_referenced_files_in_folder
+        self.max_file_count_on_folder = max_file_count_on_folder
+        self.min_file_count_to_split_extensions = min_file_count_to_split_extensions
+        self.max_file_count_on_splitted_folder = max_file_count_on_splitted_folder
         self.create_data_files_maintenance_file = create_data_files_maintenance_file
         self.apply_future_actions = apply_future_actions
         
@@ -519,7 +524,7 @@ class StudyFolderMaintenanceTask(object):
         return updated_file_names
 
     def _create_recompress_folder_actions(self, updated_file_names: Dict[str, str]) -> Dict[str, str]:
-        non_standard_compressed_file_extensions = {".rar", ".7z", ".z", ".g7z", ".arj", "tar", ".bz2", ".war"}
+        non_standard_compressed_file_extensions = {".rar", ".7z", ".z", ".g7z", ".arj", "tar", ".bz2", ".war", ".tar.gz", ".gz"}
         for key in updated_file_names:
             file = updated_file_names[key]
             if file:
@@ -550,7 +555,7 @@ class StudyFolderMaintenanceTask(object):
                     referenced_directories[dirname] = set()
                 referenced_directories[dirname].add(key)
         subfolders_map = {}
-        maximum = self.max_referenced_files_in_folder
+        maximum = self.max_file_count_on_folder
         for referenced_folder in referenced_directories:
             if len(referenced_directories[referenced_folder]) > maximum:
                 files = list(referenced_directories[referenced_folder])
@@ -563,16 +568,19 @@ class StudyFolderMaintenanceTask(object):
                         extensions_map[ext] = []
                     extensions_map[ext].append(key)
                 for extension in extensions_map:
-                    if len(extensions_map[extension]) > int(maximum / 2):
-                        extension_file_count = len(extensions_map[extension])
-                        folder_count = int(len(extensions_map[extension]) / maximum)
-                        if extension_file_count % maximum > 0:
+                    extension_file_count = len(extensions_map[extension])
+                    if extension_file_count > self.min_file_count_to_split_extensions:
+                        folder_count = int(len(extensions_map[extension]) / self.max_file_count_on_splitted_folder)
+                        if extension_file_count % self.max_file_count_on_splitted_folder > 0:
                             folder_count += 1
                         cleared_extension = extension.replace(".", "").upper()
                         prefix = f"{cleared_extension}_" if cleared_extension else ""
 
                         for i in range(folder_count):
-                            subfolder_name = f"{prefix}{(i + 1):03}"
+                            if folder_count == 1:
+                                subfolder_name = cleared_extension
+                            else:
+                                subfolder_name = f"{prefix}{(i + 1):03}"
                             new_folder = os.path.join(referenced_folder, subfolder_name)
                             if os.path.exists(new_folder):
                                 renamed_path = f"{new_folder}_{self.task_name}"
@@ -2084,8 +2092,10 @@ class StudyFolderMaintenanceTask(object):
     def sanitise_filename(self, filename: str):
         if not filename or not filename.strip():
             return ""
-        result = re.sub("[^/a-zA-Z0-9_.-]", "_", filename.strip())
-        return result
+        filename = unidecode(filename.strip())
+        filename = filename.replace("+", "_PLUS_")
+        filename = re.sub("[^/a-zA-Z0-9_.-]", "_", filename) 
+        return filename
 
     def write_tsv_file(self, dataframe: pd.DataFrame, file_name):
         try:
@@ -2113,13 +2123,17 @@ class StudyFolderMaintenanceTask(object):
         if not new_name.startswith(f"{prefix}{study_id}"):
             new_name = new_name[len(prefix) :]
             parse = new_name.split("_")
-            will_be_deleted = []
+            will_be_updated = {}
             for i in range(len(parse)):
-                if parse[i].lower().startswith("mtbl"):
-                    will_be_deleted.append(parse[i])
-            for item in will_be_deleted:
-                parse.remove(item)
-            new_name = f"{prefix}{study_id}_{'_'.join(parse)}"
+                if parse[i].lower().startswith("mtbls"):
+                    if len(parse[i]) > 5:
+                        will_be_updated[i] = parse[i][5:]
+                    else:
+                        will_be_updated[i] = ""
+            for i in will_be_updated:
+                parse[i] = ""
+            suffix = '_'.join(parse).replace("__", "_")
+            new_name = f"{prefix}{study_id}_{suffix}"
         return new_name
 
     def maintain_assay_files(self, investigation: isatools_model.Investigation):

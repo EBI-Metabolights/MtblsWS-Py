@@ -15,6 +15,7 @@ from app.ws.db.utils import date_str_to_int, datetime_to_int
 
 logger = logging.getLogger(__file__)
 
+KB_FACTOR = 1024.0 ** 1
 MB_FACTOR = 1024.0 ** 2
 GB_FACTOR = 1024.0 ** 3
 
@@ -31,10 +32,13 @@ def create_study_model_from_db_study(db_study: Study):
     m_study.studySize = int(db_study.studysize)  # This value is different in DB and www.ebi.ac.uk
     if m_study.studySize > GB_FACTOR:
         size_in_gb = m_study.studySize / GB_FACTOR
-        m_study.studyHumanReadable = "%.2f" % round(size_in_gb, 2) + "GB"
-    else:
+        m_study.studyHumanReadable = "%.2f" % round(size_in_gb, 2) + "GiB"
+    elif m_study.studySize > MB_FACTOR:
         size_in_mb = m_study.studySize / MB_FACTOR
-        m_study.studyHumanReadable = "%.2f" % round(size_in_mb, 2) + "MB"
+        m_study.studyHumanReadable = "%.2f" % round(size_in_mb, 2) + "MiB"
+    else:
+        size_in_mb = m_study.studySize / KB_FACTOR
+        m_study.studyHumanReadable = "%.2f" % round(size_in_mb, 2) + "KiB"
 
     m_study.publicStudy = StudyStatus(db_study.status) == StudyStatus.PUBLIC
 

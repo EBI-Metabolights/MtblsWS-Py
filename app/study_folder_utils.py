@@ -31,6 +31,7 @@ class FileDescriptor(BaseModel):
     is_stop_folder: bool = False
     sub_filename:str = ""
     is_empty: bool = False
+    file_size: int = 0
 
 
 def get_all_metadata_files(study_metadata_files_path: Union[None, str] = None):
@@ -73,7 +74,7 @@ def find_study_data_files(study_metadata_path, filtered_subfolder=None, search_p
         result = [{"name": str(file)} for file in search_results]
         return result
  
-def get_all_study_metadata_and_data_files(study_metadata_path: str, exclude_list: List[str]=None, include_metadata_files: bool=True) -> Dict[str, FileDescriptor]:
+def get_all_study_metadata_and_data_files(study_metadata_path: str, exclude_list: List[str]=None, include_metadata_files: bool=True, add_sub_folders: bool = True, list_all_files:bool=False) -> Dict[str, FileDescriptor]:
         data_files_path = study_metadata_path
         file_descriptors: Dict[str, FileDescriptor] = {}
 
@@ -81,7 +82,8 @@ def get_all_study_metadata_and_data_files(study_metadata_path: str, exclude_list
         source_folders_iter = []
         if os.path.exists(study_metadata_path):
             source_folders_iter = get_study_folder_files(
-                data_files_path, file_descriptors, study_source_path_item, pattern=None, recursive=True, exclude_list=exclude_list, include_metadata_files=include_metadata_files,
+                data_files_path, file_descriptors, study_source_path_item, pattern=None, recursive=True, exclude_list=exclude_list, 
+                include_metadata_files=include_metadata_files, add_sub_folders=add_sub_folders, list_all_files=list_all_files
             )
         
             [x for x in source_folders_iter]
@@ -95,7 +97,10 @@ def get_all_study_metadata_and_data_files(study_metadata_path: str, exclude_list
         return file_descriptors
        
 
-def get_study_folder_files(root_path: str, file_descriptors: Dict[str, FileDescriptor], root: pathlib.Path, list_all_files=False, pattern=None, recursive=True, exclude_list=None, include_metadata_files=False):
+def get_study_folder_files(root_path: str, file_descriptors: Dict[str, FileDescriptor],
+                           root: pathlib.Path, list_all_files=False, pattern=None, 
+                           recursive=True, exclude_list=None, include_metadata_files=False, 
+                           add_sub_folders: bool=True):
     if not exclude_list:
         exclude_list = []
     relative_root_path = str(root).replace(f"{root_path}", "").lstrip("/")
@@ -127,7 +132,7 @@ def get_study_folder_files(root_path: str, file_descriptors: Dict[str, FileDescr
                     referenced_sub_files = referenced_sub_files.union(set(files))
                     for parameters_file in SKIP_FOLDER_CONTAINS_ANY:
                         items = glob.iglob(f"{item}/{parameters_file}")
-                        expected_files = [x for x in items if "." not in os.path.basename(x)]
+                        expected_files = [x for x in items if "." not in os.path.basename(x) and "_" not in os.path.basename(x)]
                         if expected_files:
                             referenced_sub_files = referenced_sub_files.union(set(expected_files))
                             sub_filename = parameters_file
@@ -160,7 +165,8 @@ def get_study_folder_files(root_path: str, file_descriptors: Dict[str, FileDescr
                     for _ in root.iterdir():
                         is_empty = False
                         break
-                    file_descriptors[relative_path] = FileDescriptor(relative_path=relative_path, is_dir=True, modified_time=m_time, extension=ext, is_stop_folder=False, is_empty=is_empty)
+                    if add_sub_folders or is_empty:
+                        file_descriptors[relative_path] = FileDescriptor(relative_path=relative_path, is_dir=True, modified_time=m_time, extension=ext, is_stop_folder=False, is_empty=is_empty)
                     
                 if recursive:
                     yield from get_study_folder_files(root_path, file_descriptors, item, list_all_files=list_all_files, pattern=pattern, recursive=recursive, exclude_list=exclude_list, include_metadata_files=include_metadata_files)
@@ -174,15 +180,19 @@ def get_study_folder_files(root_path: str, file_descriptors: Dict[str, FileDescr
                 if ext in SKIP_FILE_EXTENSIONS:
                     continue
                 if not include_metadata_files:
-                    if len(item.name) > 2 and item.name[:2] in METADATA_FILE_PREFIXES:
+                    if len(item.name) > 2 and item.name[:2] in METADATA_FILE_PREFIXES and (item.name.endswith(".txt") or item.name.endswith(".tsv")):
                         continue
 
             relative_path = str(item).replace(f"{root_path}/", "")
             if item.is_symlink() and not item.resolve().exists():
                 continue
+            if not item.exists():
+                continue
             if not item.is_symlink() or (item.is_symlink() and item.resolve().exists()):
+                
+                file_size = os.path.getsize(item)
                 m_time = os.path.getmtime(item)
                 is_empty = True if item.stat().st_size == 0 else False
-            file_descriptors[relative_path] = FileDescriptor(relative_path=relative_path, is_dir=False, modified_time=m_time, extension=ext, is_empty=is_empty)
+            file_descriptors[relative_path] = FileDescriptor(relative_path=relative_path, is_dir=False, modified_time=m_time, extension=ext, is_empty=is_empty, file_size=file_size)
                                 
             yield item
