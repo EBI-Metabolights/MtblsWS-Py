@@ -19,7 +19,7 @@ import tempfile
 from bisect import bisect_left, bisect_right
 from io import StringIO
 from itertools import tee, zip_longest
-
+from pandas import DataFrame
 import iso8601
 import networkx as nx
 import numpy as np
@@ -38,6 +38,7 @@ from app.ws.isa_tools_v1.model import (
     Investigation,
     Material,
     OntologyAnnotation,
+    load_protocol_types_info,
     OntologySource,
     ParameterValue,
     Person,
@@ -64,7 +65,7 @@ def xml_config_contents(filename):
     :param filename: ISA Configuration XML filename
     :return: String content of the configuration file
     """
-    isa_tools_path = '/nfs/public/rw/homes/tc_cm01/miniconda3/envs/python38-MtblsWS/lib/python3.8/site-packages/isatools/'
+    isa_tools_path = '/net/isilonP/public/rw/homes/tc_cm01/development/felix/isa-api/isatools/'
     
     config_filepath = os.path.join(
         os.path.dirname(isa_tools_path),
@@ -1047,7 +1048,7 @@ def dump(isa_obj, output_path, i_file_name='i_investigation.txt',
         pass
     else:
         #write_study_table_files(investigation, output_path)
-        write_assay_table_files(
+        write_assay_table_files_new(
             investigation, output_path, write_factor_values_in_assay_table)
 
     fp.close()
@@ -1064,8 +1065,7 @@ def _get_start_end_nodes(G):
     end_nodes = list()
     for process in [n for n in G.nodes() if isinstance(n, Process)]:
         if process.prev_process is None:
-            for material in [
-                    m for m in process.inputs if not isinstance(m, DataFile)]:
+            for material in [m for m in process.inputs if not isinstance(m, DataFile)]:
                 start_nodes.append(material)
         outputs_no_data = [
             m for m in process.outputs if not isinstance(m, DataFile)]
@@ -1078,7 +1078,7 @@ def _get_start_end_nodes(G):
     return start_nodes, end_nodes
 
 
-def _longest_path_and_attrs(paths):
+def _longest_path_and_attrs(paths, indexes):
     """Function to find the longest paths and attributes to determine the
     most appropriate ISA-Tab header. This is calculated by adding up the length
     of each path with the number of attributes needed to describe each node in
@@ -1088,9 +1088,11 @@ def _longest_path_and_attrs(paths):
     :return: The longest path and attributes
     """
     longest = (0, None)
+    log.info(paths)
     for path in paths:
         length = len(path)
-        for n in path:
+        for node in path:
+            n = indexes[node]
             if isinstance(n, Source):
                 length += len(n.characteristics)
             elif isinstance(n, Sample):
@@ -1126,34 +1128,37 @@ def _all_end_to_end_paths(G, start_nodes):
     num_start_nodes = len(start_nodes)
     message = 'Calculating for paths for {} start nodes: '.format(
         num_start_nodes)
-    if isinstance(start_nodes[0], Source):
+    log.info(start_nodes)
+    start_node = G.indexes[start_nodes[0]]
+    if isinstance(start_node, Source):
         message = 'Calculating for paths for {} sources: '.format(
             num_start_nodes)
-    elif isinstance(start_nodes[0], Sample):
+    elif isinstance(start_node, Sample):
         message = 'Calculating for paths for {} samples: '.format(
             num_start_nodes)
-    if isa_logging.show_pbars:
+    """if isa_logging.show_pbars:
         pbar = ProgressBar(
             min_value=0, max_value=num_start_nodes, widgets=[
                 message, SimpleProgress(), Bar(left=" |", right="| "),
                 ETA()]).start()
     else:
-        def pbar(x): return x
-    for start in pbar(start_nodes):
+        def pbar(x): return x"""
+    for start in start_nodes:
         # Find ends
-        if isinstance(start, Source):
+        node = G.indexes[start]
+        if isinstance(node, Source):
             # only look for Sample ends if start is a Source
-            for end in [x for x in nx.algorithms.descendants(G, start) if
-                        isinstance(x, Sample) and len(G.out_edges(x)) == 0]:
-                paths += list(nx.algorithms.all_simple_paths(G, start, end))
-        elif isinstance(start, Sample):
+            for end in [x for x in algorithms.descendants(G, start) if
+                        isinstance(G.indexes[x], Sample) and len(G.out_edges(x)) == 0]:
+                paths += list(algorithms.all_simple_paths(G, start, end))
+        elif isinstance(node, Sample):
             # only look for Process ends if start is a Sample
-            for end in [x for x in nx.algorithms.descendants(G, start) if
-                        isinstance(x, Process) and x.next_process is None]:
-                paths += list(nx.algorithms.all_simple_paths(G, start, end))
-    log.info("Found {} paths!".format(len(paths)))
+            for end in [x for x in algorithms.descendants(G, start) if
+                        isinstance(G.indexes[x], Process) and G.indexes[x].next_process is None]:
+                paths += list(algorithms.all_simple_paths(G, start, end))
+    # log.info("Found {} paths!".format(len(paths)))
     if len(paths) == 0:
-        log.debug([x.name for x in start_nodes])
+        log.debug([G.indexes[x].name for x in start_nodes])
     return paths
 
 
@@ -1182,7 +1187,7 @@ def write_study_table_files(inv_obj, output_dir):
         def flatten(l): return [item for sublist in l for item in sublist]
         columns = []
 
-        # start_nodes, end_nodes = _get_start_end_nodes(study_obj.graph)
+        start_nodes, end_nodes = _get_start_end_nodes(study_obj.graph)
         paths = _all_end_to_end_paths(
             study_obj.graph,
             [x for x in study_obj.graph.nodes() if isinstance(x, Source)])
@@ -1744,6 +1749,259 @@ def get_pv_columns(label, pv):
     columns.extend(get_value_columns(columns[0], pv))
     return columns
 
+def write_assay_table_files_new(inv_obj, output_dir, write_factor_values=False):
+    """Writes out assay table files according to pattern defined by
+
+    Sample Name,
+    Protocol Ref: 'sample collection', [ ParameterValue[], ... ],
+    Material Name, [ Characteristics[], ... ]
+    [ FactorValue[], ... ]
+
+    :param inv_obj: An Investigation object containing ISA content
+    :param output_dir: A path to a directory to write the ISA-Tab assay files
+    :param write_factor_values: Flag to indicate whether or not to write out
+    the Factor Value columns in the assay tables
+    :return: None
+    """
+
+    if not isinstance(inv_obj, Investigation):
+        raise NotImplementedError
+    protocol_types_dict = load_protocol_types_info()
+    for study_obj in inv_obj.studies:
+        for assay_obj in study_obj.assays:
+            a_graph = assay_obj.graph
+            if a_graph is None:
+                break
+            protrefcount = 0
+            protnames = dict()
+
+            def flatten(current_list):
+                return [item for sublist in current_list for item in sublist]
+
+            columns = []
+
+            start_nodes, end_nodes = _get_start_end_nodes(a_graph)
+            paths = _all_end_to_end_paths(
+                a_graph, [x for x in a_graph.nodes()
+                          if isinstance(a_graph.indexes[x], Sample)])
+            if len(paths) == 0:
+                log.info("No paths found, skipping writing assay file")
+                continue
+            if _longest_path_and_attrs(paths, a_graph.indexes) is None:
+                raise IOError(
+                    "Could not find any valid end-to-end paths in assay graph")
+            for node_index in _longest_path_and_attrs(paths, a_graph.indexes):
+                node = a_graph.indexes[node_index]
+                if isinstance(node, Sample):
+                    olabel = "Sample Name"
+                    # olabel = "Sample Name.{}".format(sample_in_path_count)
+                    # sample_in_path_count += 1
+                    columns.append(olabel)
+                    columns += flatten(
+                        map(lambda x: get_comment_column(olabel, x),
+                            node.comments))
+                    if write_factor_values:
+                        columns += flatten(
+                            map(lambda x: get_fv_columns(olabel, x),
+                                node.factor_values))
+
+                elif isinstance(node, Process):
+                    olabel = "Protocol REF.{}".format(
+                        node.executes_protocol.name)
+                    columns.append(olabel)
+                    if node.executes_protocol.name not in protnames.keys():
+                        protnames[node.executes_protocol.name] = protrefcount
+                        protrefcount += 1
+                    if node.date is not None:
+                        columns.append(olabel + ".Date")
+                    if node.performer is not None:
+                        columns.append(olabel + ".Performer")
+                    columns += flatten(map(lambda x: get_pv_columns(olabel, x),
+                                           node.parameter_values))
+                    if node.executes_protocol.protocol_type:
+                        oname_label = get_column_header(
+                            node.executes_protocol.protocol_type.term,
+                            protocol_types_dict
+                        )
+                        if oname_label is not None:
+                            columns.append(oname_label)
+                        elif node.executes_protocol.protocol_type.term.lower() \
+                                in protocol_types_dict["nucleic acid hybridization"][SYNONYMS]:
+                            columns.extend(
+                                ["Hybridization Assay Name",
+                                 "Array Design REF"])
+                    columns += flatten(
+                        map(lambda x: get_comment_column(olabel, x),
+                            node.comments))
+                    for output in [x for x in node.outputs if
+                                   isinstance(x, DataFile)]:
+                        columns.append(output.label)
+                        columns += flatten(
+                            map(lambda x: get_comment_column(output.label, x),
+                                output.comments))
+
+                elif isinstance(node, Material):
+                    olabel = node.type
+                    columns.append(olabel)
+                    columns += flatten(
+                        map(lambda x: get_characteristic_columns(olabel, x),
+                            node.characteristics))
+                    columns += flatten(
+                        map(lambda x: get_comment_column(olabel, x),
+                            node.comments))
+
+                elif isinstance(node, DataFile):
+                    pass  # handled in process
+
+            omap = get_object_column_map(columns, columns)
+
+            # load into dictionary
+            df_dict = dict(map(lambda k: (k, []), flatten(omap)))
+
+            def pbar(x):
+                return x
+
+            for path_ in pbar(paths):
+                for k in df_dict.keys():  # add a row per path
+                    df_dict[k].extend([""])
+
+                for node_index in path_:
+                    node = a_graph.indexes[node_index]
+                    if isinstance(node, Process):
+                        olabel = "Protocol REF.{}".format(
+                            node.executes_protocol.name
+                        )
+                        df_dict[olabel][-1] = node.executes_protocol.name
+                        if node.executes_protocol.protocol_type:
+                            oname_label = get_column_header(
+                                node.executes_protocol.protocol_type.term,
+                                protocol_types_dict
+                            )
+                            if oname_label is not None:
+                                df_dict[oname_label][-1] = node.name
+                            elif node.executes_protocol.protocol_type.term.lower() in \
+                                    protocol_types_dict["nucleic acid hybridization"][SYNONYMS]:
+                                df_dict["Hybridization Assay Name"][-1] = \
+                                    node.name
+                                df_dict["Array Design REF"][-1] = \
+                                    node.array_design_ref
+                        if node.date is not None:
+                            df_dict[olabel + ".Date"][-1] = node.date
+                        if node.performer is not None:
+                            df_dict[olabel + ".Performer"][-1] = node.performer
+                        for pv in node.parameter_values:
+                            pvlabel = "{0}.Parameter Value[{1}]".format(
+                                olabel, pv.category.parameter_name.term)
+                            write_value_columns(df_dict, pvlabel, pv)
+                        for co in node.comments:
+                            colabel = "{0}.Comment[{1}]".format(
+                                olabel, co.name)
+                            df_dict[colabel][-1] = co.value
+                        for output in [x for x in node.outputs if
+                                       isinstance(x, DataFile)]:
+                            olabel = output.label
+                            df_dict[olabel][-1] = output.filename
+                            for co in output.comments:
+                                colabel = "{0}.Comment[{1}]".format(
+                                    olabel, co.name)
+                                df_dict[colabel][-1] = co.value
+
+                    elif isinstance(node, Sample):
+                        olabel = "Sample Name"
+                        # olabel = "Sample Name.{}".format(sample_in_path_count)
+                        # sample_in_path_count += 1
+                        df_dict[olabel][-1] = node.name
+                        for co in node.comments:
+                            colabel = "{0}.Comment[{1}]".format(
+                                olabel, co.name)
+                            df_dict[colabel][-1] = co.value
+                        if write_factor_values:
+                            for fv in node.factor_values:
+                                fvlabel = "{0}.Factor Value[{1}]".format(
+                                    olabel, fv.factor_name.name)
+                                write_value_columns(df_dict, fvlabel, fv)
+
+                    elif isinstance(node, Material):
+                        olabel = node.type
+                        df_dict[olabel][-1] = node.name
+                        for c in node.characteristics:
+                            category_label = c.category.term if isinstance(c.category.term, str) \
+                                else c.category.term["annotationValue"]
+                            clabel = "{0}.Characteristics[{1}]".format(
+                                olabel, category_label)
+                            write_value_columns(df_dict, clabel, c)
+                        for co in node.comments:
+                            colabel = "{0}.Comment[{1}]".format(
+                                olabel, co.name)
+                            df_dict[colabel][-1] = co.value
+
+                    elif isinstance(node, DataFile):
+                        pass  # handled in process
+
+            DF = DataFrame(columns=columns)
+            DF = DF.from_dict(data=df_dict)
+            DF = DF[columns]  # reorder columns
+            try:
+                DF = DF.sort_values(by=DF.columns[0], ascending=True)
+            except ValueError as e:
+                log.critical('Error thrown: column labels are: {}'.format(DF.columns))
+                log.critical('Error thrown: data is: {}'.format(DF))
+                raise e
+            # arbitrary sort on column 0
+
+            for dup_item in set([x for x in columns if columns.count(x) > 1]):
+                for j, each in enumerate(
+                        [i for i, x in enumerate(columns) if x == dup_item]):
+                    columns[each] = ".".join([dup_item, str(j)])
+
+            DF.columns = columns
+
+            for i, col in enumerate(columns):
+                if col.endswith("Term Source REF"):
+                    columns[i] = "Term Source REF"
+                elif col.endswith("Term Accession Number"):
+                    columns[i] = "Term Accession Number"
+                elif col.endswith("Unit"):
+                    columns[i] = "Unit"
+                elif "Characteristics[" in col:
+                    if "material type" in col.lower():
+                        columns[i] = "Material Type"
+                    elif "label" in col.lower():
+                        columns[i] = "Label"
+                    else:
+                        columns[i] = col[col.rindex(".") + 1:]
+                elif "Factor Value[" in col:
+                    columns[i] = col[col.rindex(".") + 1:]
+                elif "Parameter Value[" in col:
+                    columns[i] = col[col.rindex(".") + 1:]
+                elif col.endswith("Date"):
+                    columns[i] = "Date"
+                elif col.endswith("Performer"):
+                    columns[i] = "Performer"
+                elif "Comment[" in col:
+                    columns[i] = col[col.rindex(".") + 1:]
+                elif "Protocol REF" in col:
+                    columns[i] = "Protocol REF"
+                elif "." in col:
+                    columns[i] = col[:col.rindex(".")]
+
+            log.debug("Rendered {} paths".format(len(DF.index)))
+            if len(DF.index) > 1:
+                if len(DF.index) > len(DF.drop_duplicates().index):
+                    log.debug("Dropping duplicates...")
+                    DF = DF.drop_duplicates()
+
+            log.debug("Writing {} rows".format(len(DF.index)))
+            # reset columns, replace nan with empty string, drop empty columns
+            DF.columns = columns
+            DF = DF.replace('', nan)
+            DF = DF.dropna(axis=1, how='all')
+
+            with open(path.join(
+                    output_dir, assay_obj.filename), 'w') as out_fp:
+                DF.to_csv(path_or_buf=out_fp, index=False, sep='\t',
+                          encoding='utf-8')
+                
 
 def read_investigation_file(fp):
     """Reads an investigatin file into a dictionary of DataFrames, each

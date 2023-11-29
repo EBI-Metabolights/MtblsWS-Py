@@ -280,6 +280,7 @@ def load_protocol_types_info() -> dict:
     Returns:
         A dictionary of protocol types
     """
-    filepath = os.path.join(os.path.dirname(__file__), '..', 'resources', 'config', 'yaml', 'protocol-types.yml')
+    isa_tools_path = '/net/isilonP/public/rw/homes/tc_cm01/development/felix/isa-api/isatools/'
+    filepath = os.path.join(os.path.dirname(__file__), isa_tools_path, 'resources', 'config', 'yaml', 'protocol-types.yml')
     with open(filepath) as yaml_file:
         return load(yaml_file, Loader=FullLoader)

@@ -93,5 +93,5 @@ class IsaApiClientV1:
 
         logger.info("Writing %s to %s", settings.investigation_file_name, std_path)
         i_file_name = settings.investigation_file_name
-        dump(inv_obj, std_path, i_file_name=i_file_name, skip_dump_tables=True)
+        dump(inv_obj, std_path, i_file_name=i_file_name, skip_dump_tables=False)
         return
