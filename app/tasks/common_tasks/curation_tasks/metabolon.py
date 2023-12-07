@@ -26,7 +26,7 @@ def metabolon_confirm(self, study_id: str, study_location: str, email: str, targ
 
     message = {}
     success = True
-    start = time.time()
+    start = datetime.datetime.now()
     try:
         message["task_status"] = 'Error'
         # Validate all mzML files, in both study and upload folders
@@ -78,19 +78,27 @@ def metabolon_confirm(self, study_id: str, study_location: str, email: str, targ
         else:
             message.update({'ISA file creation': 'Failed', "result": ""})
             success = False
-    
+        if success:
+            message["task_status"] = 'success'
     except Exception as ex:
         message.update({"Failure reason": f"{str(ex)}"})
         message["task_status"] = 'unexpected error'
         raise ex
     finally:
-        end = time.time()
+        end = datetime.datetime.now()
+        time_difference = end - start
+        hours, remainder = divmod(time_difference.total_seconds(), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        time_format = "{:02}:{:02}:{:02} [HH:MM:ss]".format(int(hours), int(minutes), int(seconds))
+
+
         result = {
             "status": success,
             "study_id": study_id,
             "result": message,
-            "start_time": datetime.datetime.fromtimestamp(start).strftime("%Y-%m-%d %H:%M:%S"),
-            "end_time": datetime.datetime.fromtimestamp(end).strftime("%Y-%m-%d %H:%M:%S"),
+            "start_time": start.strftime("%Y-%m-%d %H:%M:%S"),
+            "end_time": end.strftime("%Y-%m-%d %H:%M:%S"),
+            "elapsed_time": time_format,
             "report_time": current_time().strftime("%Y-%m-%d %H:%M:%S"),
             "executed_on":  os.uname().nodename
             }
