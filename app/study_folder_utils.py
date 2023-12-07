@@ -13,9 +13,8 @@ STOP_FOLDER_EXTENSIONS = {".raw", ".d", ".fid"}
 STOP_FOLDER_SAMPLE_FILES = {".raw": "_FUNC001.DAT", ".d": "SyncHelper", ".fid": "fid"}
 DEFAULT_SAMPLE_FILE_NAME = "_history"
 # SKIP_FOLDER_NAMES= {"audit", "chebi_pipeline_annotations", "__MACOSX", "AUDIT_FILES", "INTERNAL_FILES"}
-SKIP_FOLDER_CONTAINS_ANY = ["fid*", "ser*"]
+SKIP_FOLDER_CONTAINS_ANY = ["fid*", "ser*", "pdata"]
 SKIP_FOLDER_CONTAINS_FILE_NAME_PATTERN = "acqu*"
-
 SKIP_FILE_EXTENSIONS =  {".__MACOSX"}
 
 METADATA_FILE_PREFIXES = {"a_", "i_", "s_", "m_"}

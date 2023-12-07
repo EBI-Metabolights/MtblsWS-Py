@@ -103,23 +103,14 @@ class DataFolderUpdatePipeline():
 
     split_main_bucket_indices = {"_NEG": 1, "_POS": 2, "_ALT": 3}
 
-    non_standard_compressed_file_extensions = { ".tar.gz", ".rar", ".tar", ".gz", ".7z", ".z", ".g7z", ".arj",  ".bz2", ".war", }
-    non_standard_compressed_file_double_extensions = {".tar.gz"}
     
     acqu_file_column_name = "Acquisition Parameter Data File"
     fid_file_column_name = "Free Induction Decay Data File"
     raw_file_column_name = "Raw Spectral Data File"
     derived_file_column_name = "Derived Spectral Data File"
     maf_file_column_name = "Metabolite Assignment File"     
+    
 
-    double_extension_pairs = {".wiff.scan": ".wiff"}
-    raw_files_extensions: Set[str] = {".abf", ".cdf", ".cmp", ".d", ".dat", ".hr", 
-                                    ".ibd", ".jpf", ".lcd", ".mgf", ".qgd", 
-                                    ".raw", ".scan", ".wiff", ".xps"}
-    derived_files_extensions: Set[str] = {".cef", ".cnx", ".dx", ".imzml", ".mgf", 
-                                        ".msp", ".mzdata", ".mzml", ".nmrml", ".peakml"
-                                        ".smp", ".xml", ".xy"}
-    common_files_extensions = {".cdf", ".scan", ".wiff"}
 
     def __init__(self, study_id: str, files: Dict[str, FileDescriptor], sha256_dict: Dict[str, str]=None, summary_output_folder: str="data_folder_updates") -> None:
         filtered_map = {x:files[x]  for x in files if not files[x].is_dir or files[x].is_stop_folder or files[x].is_empty}
@@ -395,7 +386,7 @@ class DataFolderUpdatePipeline():
                 continue
             if not a_file.startswith(f"a_{self.study_id}"):
                 new_filename  = self.sanitise_metadata_filename(self.study_id, a_file)
-                self.actions[s_file_name].append(Action(action_name="RENAME", action_input=a_file, action_output=new_filename))
+                self.actions[a_file].append(Action(action_name="RENAME", action_input=a_file, action_output=new_filename))
                 self.actions[i_file_name].append(Action(action_name="UPDATE_CONTENT", action_input=a_file, action_output=new_filename, description="Update assay file name"))
                                 
             a_file_path = os.path.join(study_metadata_path, a_file)
