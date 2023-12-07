@@ -17,7 +17,7 @@ class RedisStorage(object):
         # redis = redis.Redis(host=host, password=password, port=port, db=db)
 
         
-    def get_redis(self, readonly: bool=False) -> redis.Redis:
+    def get_redis(self, readonly: bool=False):
 
         rs = get_settings().redis_cache.connection
         if rs.connection_type == "redis":

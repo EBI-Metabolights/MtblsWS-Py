@@ -278,9 +278,9 @@ def create_isa_files(study_id, study_location, target_location: str=None) -> Tup
     add_sample_id = True if len(sample_id_sample_name_map) > 1 else False
     for sample_id in sample_id_sample_name_map:
         if len(sample_id_sample_name_map) > 1:
-            peak_tables_search = glob.iglob(os.path.join(study_location, "FILES", f'*{sample_id}*Peak Area*Table*.xlsx'))
+            peak_tables_search = glob.iglob(os.path.join(study_location, "FILES", f'*{sample_id}*Peak Area*.xlsx'))
         else:
-            peak_tables_search = glob.iglob(os.path.join(study_location, "FILES", f'*Peak Area*Table*.xlsx'))
+            peak_tables_search = glob.iglob(os.path.join(study_location, "FILES", f'*Peak Area*.xlsx'))
         peak_table_paths: List[str] = [x for x in peak_tables_search]
         peak_table_paths.sort()
         if len(peak_table_paths) > 1:
@@ -326,12 +326,15 @@ def create_maf_file(study_id: str, study_location: str, sample_id: str, peak_tab
             parent_sample_column_index = temp_df.columns.get_loc(col)
             break
     first_data_row = -1
+    metbolite_identification_column_name = "BIOCHEMICAL"
     for i in range(10):
-        if len(main_table) > i and "BIOCHEMICAL" == main_table.iloc[i, 0]:
+        if len(main_table) > i and ("BIOCHEMICAL" == main_table.iloc[i, 0] or "CHEMICAL_NAME" == main_table.iloc[i, 0]):
+            if "CHEMICAL_NAME" == main_table.iloc[i, 0]:
+                metbolite_identification_column_name = "CHEMICAL_NAME"
             first_data_row = i
             break
     if first_data_row < 0:
-        raise Exception("BIOCHEMICAL column does not  exist.")
+        raise Exception("BIOCHEMICAL or CHEMICAL_NAME column does not  exist.")
             
     if parent_sample_row_index < 0:
         raise Exception("PARENT SAMPLE NAME column does not  exist.")
@@ -363,8 +366,8 @@ def create_maf_file(study_id: str, study_location: str, sample_id: str, peak_tab
     
     maf_template[list(table.columns)]  = table
 
-    maf_template["metabolite_identification"] = maf_template["BIOCHEMICAL"]
-    maf_template.drop(columns=["BIOCHEMICAL"], axis=1, inplace=True)
+    maf_template["metabolite_identification"] = maf_template[metbolite_identification_column_name]
+    maf_template.drop(columns=[metbolite_identification_column_name], axis=1, inplace=True)
     
 
     maf_file_name_prefix = f"m_{study_id}_{sample_id}" if use_sample_id_in_filename else f"m_{study_id}"
@@ -418,19 +421,19 @@ def create_sample_file(study_id, study_location, temp_folder, all_sample_names, 
 
 
 
-assay_method_params = {"Method1": {"prefix": "POS_1", 
+assay_method_params = {"METHOD1": {"prefix": "POS_1", 
                                      "column_model": "ACQUITY UPLC BEH C18 (1.7 µm, 2.1 mm x 100 mm; Waters)",
                                      "column_type": "reverse phase"
                                      }, 
-                        "Method2": {"prefix": "POS_2", 
+                        "METHOD2": {"prefix": "POS_2", 
                                      "column_model": "ACQUITY UPLC BEH C18 (1.7 µm, 2.1 mm x 100 mm; Waters)",
                                      "column_type": "reverse phase"
                                      }, 
-                        "Method3": {"prefix": "NEG_1", 
+                        "METHOD3": {"prefix": "NEG_1", 
                                      "column_model": "ACQUITY UPLC BEH C18 (1.7 µm, 2.1 mm x 100 mm; Waters)",
                                      "column_type": "reverse phase"
                                      }, 
-                        "Method4": {"prefix": "NEG_2", 
+                        "METHOD4": {"prefix": "NEG_2", 
                                      "column_model": "ACQUITY UPLC BEH Amide (1.7 µm, 2.1 mm x 150 mm; Waters)",
                                      "column_type": "HILIC"
                                      }, 
@@ -438,7 +441,7 @@ assay_method_params = {"Method1": {"prefix": "POS_1",
 
 def create_assay_file(study_id: str, study_location: str, merged_assay_df: DataFrame, sample_csv_map: Dict[str, DataFrame], sample_id: str, sample_csv_column_name: str):
     names = sample_csv_map[sample_id][sample_csv_column_name]
-    method_name = sample_csv_column_name.replace(" ", "")
+    method_name = sample_csv_column_name.replace(" ", "").upper()
     sample_col = "Sample Name"    
     splitted_assay_df = merged_assay_df.loc[merged_assay_df[sample_col].isin(names)]
     
@@ -487,7 +490,7 @@ def create_investigation_file(study_id, study_location, assay_file_names: List[s
         
         # Updating the ISA-Tab investigation file with the correct study id
         isa_study_input, isa_inv_input, std_path = iac.get_isa_study(
-            study_id=study_id, api_key=None, skip_load_tables=True, study_location=study_location)
+            study_id=study_id, api_key=None, skip_load_tables=True, study_location=str(study_location))
         isa_study: Study = isa_study_input
         isa_inv: Investigation = isa_inv_input
         # Adding the study identifier
@@ -544,11 +547,12 @@ def create_investigation_file(study_id, study_location, assay_file_names: List[s
 
     return status, message
 
-# if __name__ == '__main__':
-#     study_id = "MTBLS3446"
-#     settings = get_settings()
-#     study_root_path = pathlib.Path(settings.study.mounted_paths.study_metadata_files_root_path)
-#     target_root_path = pathlib.Path(settings.study.mounted_paths.study_internal_files_root_path)
-#     study_location = study_root_path / study_id
-#     target_location = target_root_path / study_id / "metabolon_pipeline"
-#     create_isa_files(study_id=study_id, study_location=str(study_location), target_location=target_location)
+if __name__ == '__main__':
+    study_id = "MTBLS850"
+    settings = get_settings()
+    study_root_path = pathlib.Path(settings.study.mounted_paths.study_metadata_files_root_path)
+    target_root_path = pathlib.Path(settings.study.mounted_paths.study_internal_files_root_path)
+    study_location = study_root_path / study_id
+    # target_location = target_root_path / study_id / "metabolon_pipeline"
+    target_location = study_root_path / study_id
+    create_isa_files(study_id=study_id, study_location=str(study_location), target_location=target_location)

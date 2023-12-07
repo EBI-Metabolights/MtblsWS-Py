@@ -189,7 +189,7 @@ class LocalStorage(Storage):
         result = SyncCalculationTaskResult()
         result.description = "There is no update on upload folder"
         if new_file_count + updated_files_count > 0:
-            result.last_update_time = datetime.fromtimestamp(last_updated_time, tz=timezone.utc)..strftime("%d/%m/%y %H:%M:%S.%f")
+            result.last_update_time = datetime.fromtimestamp(last_updated_time, tz=timezone.utc).strftime("%d/%m/%y %H:%M:%S.%f")
             result.description = f"New File Count: {new_file_count} Updated Files: {updated_files_count}"
 
         result.status = SyncCalculationStatus.SYNC_NEEDED if updated_files else SyncCalculationStatus.SYNC_NOT_NEEDED
