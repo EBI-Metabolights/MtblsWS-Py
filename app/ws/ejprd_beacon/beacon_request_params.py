@@ -1,4 +1,4 @@
-from enum import StrEnum, Enum
+from enum import Enum
 from typing import Mapping, List, Any
 
 import flask
@@ -26,13 +26,13 @@ class MtblsBeaconSchemas(Enum):
     FILTERINGTERMS = {"entityType": "filteringterms", "schema": "beacon-dataset-v2.0.0"}
 
 
-class Granularity(StrEnum):
+class Granularity(Enum):
     BOOLEAN = "boolean",
     COUNT = "count",
     RECORD = "record"
 
 
-class IncludeResultsetResponses(StrEnum):
+class IncludeResultsetResponses(Enum):
     ALL = "ALL",
     HIT = "HIT",
     MISS = "MISS",
