@@ -25,7 +25,10 @@ from flask_restful_swagger import swagger
 from app.config import get_settings
 
 from app.utils import metabolights_exception_handler
+from app.ws.ejprd_beacon.beacon_request_params import RequestParams
+from app.ws.ejprd_beacon.beacon_response_builder import build_beacon_info_response
 from app.ws.isaAssay import log_request
+from app.ws.mtblsWSclient import WsClient
 
 """
 MtblsWS-Py About
@@ -34,6 +37,7 @@ Basic description of the Web Service
 """
 
 logger = logging.getLogger('wslog')
+wsc = WsClient()
 
 
 class About(Resource):
@@ -100,8 +104,47 @@ class AboutServer(Resource):
     )
     @metabolights_exception_handler
     def get(self):
+        logger.info('Running a GET info request.')
         log_request(request)
 
         hostname = os.uname().nodename
         about = {'server_name': hostname}
         return about
+
+
+class AboutMtblsBeacon(Resource):
+
+    @swagger.operation(
+        summary="Information about the Metabolights Beacon (GA4GH)",
+        nickname="Beacon information",
+        parameters=[
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self):
+        """""This one is implied by the reference implementation to have information about the number of datasets.
+        For this purpose I will just reuse the public /studies/ bit of code """""
+        print('yeah whatever I am a beacon')
+        log_request(request)
+        beacon_request = RequestParams(**request.json()).from_request(request)
+        studies = wsc.get_public_studies()
+        response = build_beacon_info_response(studies, beacon_request, lambda x,y,z: x)
+        return response

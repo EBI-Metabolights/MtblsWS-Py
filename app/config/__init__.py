@@ -1,6 +1,7 @@
 import logging
 
 from app.config.model.auth import AuthSettings
+from app.config.model.beacon import BeaconConfiguration
 from app.config.model.bioportal import BioportalSettings
 from app.config.model.celery import CelerySettings
 from app.config.model.chebi import ChebiSettings
@@ -53,6 +54,7 @@ class ApplicationSettings(ApplicationBaseSettings):
     redis_cache: RedisSettings
     celery: CelerySettings
     external_dependencies: ExternalDependenciesSettings
+    beacon: BeaconConfiguration
 
 
 _application_settings: ApplicationSettings = None

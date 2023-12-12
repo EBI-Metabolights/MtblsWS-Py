@@ -24,7 +24,7 @@ from flask_restful_swagger import swagger
 from app.config import get_settings
 from app.utils import ValueMaskUtility
 
-from app.ws.about import About, AboutServer
+from app.ws.about import About, AboutServer, AboutMtblsBeacon
 from app.ws.app_status import MaintenanceStatus
 from app.ws.assay_protocol import GetProtocolForAssays
 from app.ws.auth.accounts import UserAccounts
@@ -197,6 +197,7 @@ def initialize_app(flask_app):
     res_path = context_path
     api.add_resource(About, res_path)
     api.add_resource(AboutServer, res_path + "/ebi-internal/server-info")
+    api.add_resource(AboutMtblsBeacon, res_path + "/ejprd-vp-beacon/info")
     api.add_resource(AuthLogin, res_path + "/auth/login")
     api.add_resource(AuthLoginWithToken, res_path + "/auth/login-with-token")
     api.add_resource(AuthValidation, res_path + "/auth/validate-token")
