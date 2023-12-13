@@ -23,8 +23,8 @@ class BeaconConfiguration(BaseModel):
     version: str
     welcome_url: str
     alternative_url: str
-    create_datetime: datetime
-    update_datetime: Union[datetime, None]
+    create_datetime: Union[str, datetime, None]
+    update_datetime: Union[str, datetime, None]
     service_type: str
     service_url: str
     entry_point: bool
