@@ -12,7 +12,7 @@ def build_beacon_info_response(data, beacon_request_object: RequestParams, func_
     config = get_settings()
     #beacon_request_object = RequestParams().from_request(request)
     beacon_response = {
-        'meta': build_meta(config, beacon_request_object, None, Granularity.RECORD),
+        'meta': build_meta(config, beacon_request_object, None, Granularity.RECORD.value),
         'response': {
             'id': config.beacon.beacon_id,
             'name': config.beacon.beacon_name,

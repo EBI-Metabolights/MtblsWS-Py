@@ -46,11 +46,11 @@ class Pagination(CamelModel):
 
 class RequestQuery(CamelModel):
     filters: List[dict] = []
-    include_resultset_responses: IncludeResultsetResponses = IncludeResultsetResponses.HIT
+    include_resultset_responses: str = IncludeResultsetResponses.HIT.value
     pagination: Pagination = Pagination()
     request_parameters: dict = {}
     test_mode: bool = False
-    requested_granularity: Granularity = Granularity(get_settings().beacon.default_beacon_granularity)
+    requested_granularity: str = Granularity(get_settings().beacon.default_beacon_granularity).value
 
 
 class RequestParams(CamelModel):
@@ -59,17 +59,18 @@ class RequestParams(CamelModel):
 
     def from_request(self, request: flask.Request):
         if request.method != "POST" or not request.data:
-            for k, v in request.json.items():
-                if k == "requestedSchema":
-                    self.meta.requested_schemas = [v]
-                elif k == "skip":
-                    self.query.pagination.skip = int(v)
-                elif k == "limit":
-                    self.query.pagination.limit = int(v)
-                elif k == "includeResultsetResponses":
-                    self.query.include_resultset_responses = IncludeResultsetResponses(v)
-                else:
-                    self.query.request_parameters[k] = v
+            if request.json is not None:
+                for k, v in request.json.items():
+                    if k == "requestedSchema":
+                        self.meta.requested_schemas = [v]
+                    elif k == "skip":
+                        self.query.pagination.skip = int(v)
+                    elif k == "limit":
+                        self.query.pagination.limit = int(v)
+                    elif k == "includeResultsetResponses":
+                        self.query.include_resultset_responses = IncludeResultsetResponses(v)
+                    else:
+                        self.query.request_parameters[k] = v
         return self
 
     def summary(self):

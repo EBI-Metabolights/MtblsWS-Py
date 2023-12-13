@@ -144,7 +144,7 @@ class AboutMtblsBeacon(Resource):
         For this purpose I will just reuse the public /studies/ bit of code """""
         print('yeah whatever I am a beacon')
         log_request(request)
-        beacon_request = RequestParams(**request.json()).from_request(request)
+        beacon_request = RequestParams().from_request(request)
         studies = wsc.get_public_studies()
         response = build_beacon_info_response(studies, beacon_request, lambda x,y,z: x)
         return response
