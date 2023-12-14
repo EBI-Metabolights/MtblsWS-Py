@@ -26,7 +26,7 @@ from app.config import get_settings
 
 from app.utils import metabolights_exception_handler
 from app.ws.ejprd_beacon.beacon_request_params import RequestParams
-from app.ws.ejprd_beacon.beacon_response_builder import build_beacon_info_response
+from app.ws.ejprd_beacon.beacon_response_builder import BeaconResponseBuilder
 from app.ws.isaAssay import log_request
 from app.ws.mtblsWSclient import WsClient
 
@@ -142,9 +142,142 @@ class AboutMtblsBeacon(Resource):
     def get(self):
         """""This one is implied by the reference implementation to have information about the number of datasets.
         For this purpose I will just reuse the public /studies/ bit of code """""
-        print('yeah whatever I am a beacon')
         log_request(request)
         beacon_request = RequestParams().from_request(request)
         studies = wsc.get_public_studies()
-        response = build_beacon_info_response(studies, beacon_request, lambda x,y,z: x)
+        response = BeaconResponseBuilder.build_beacon_info_response(studies, beacon_request, lambda x,y,z: x)
         return response
+
+
+class MtblsBeaconServiceInfo:
+
+    @swagger.operation(
+        summary="Service summary of the Metabolights Beacon (GA4GH)",
+        nickname="Beacon service summary",
+        parameters=[
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self):
+        log_request(request)
+        config = get_settings()
+        beacon_response = BeaconResponseBuilder.build_beacon_service_info_response(conf=config.beacon)
+        return beacon_response
+
+
+class MtblsBeaconConfiguration:
+
+    @swagger.operation(
+        summary="Schema and Metadata Configuration of the Metabolights Beacon (GA4GH)",
+        nickname="Beacon config summary",
+        parameters=[
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self):
+        log_request(request)
+        config = get_settings()
+        beacon_response = BeaconResponseBuilder.build_configuration_response(conf=config.beacon)
+        return beacon_response
+
+
+class MtblsBeaconEntryTypes:
+
+    @swagger.operation(
+        summary="Get the entry types (queryable models) available on the Metabolights Beacon (GA4GH)",
+        nickname="Available Beacon Entry Types",
+        parameters=[
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self):
+        log_request(request)
+        beacon_response = BeaconResponseBuilder.build_entry_type_response()
+        return beacon_response
+
+class MtblsBeaconMap:
+
+    @swagger.operation(
+        summary="Get the BeaconMap of the Metabolights Beacon (GA4GH)",
+        nickname="Get BeaconMap",
+        parameters=[
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self):
+        log_request(request)
+        config = get_settings()
+        beacon_response = BeaconResponseBuilder.build_configuration_response(conf=config.beacon, map=True)
+        return beacon_response
