@@ -400,6 +400,6 @@ def initialize_app(flask_app):
     api.add_resource(MtblsBeaconServiceInfo, res_path + "/ejprd-vp-beacon/service-info")
     api.add_resource(MtblsBeaconConfiguration, res_path + "/ejprd-vp-beacon/configuration")
     api.add_resource(MtblsBeaconEntryTypes, res_path + "/ejprd-vp-beacon/entry-types")
-    api.add_resource(MtblsBeaconMap, res_path + "ejprd-vp-beacon/map")
+    api.add_resource(MtblsBeaconMap, res_path + "/ejprd-vp-beacon/map")
      
     
