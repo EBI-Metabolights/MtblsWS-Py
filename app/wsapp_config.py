@@ -396,7 +396,6 @@ def initialize_app(flask_app):
     
     api.add_resource(ChebiImageProxy, res_path + "/proxy/images/chebi/<chebiIdentifier>")
 
-    api.add_resource(AboutMtblsBeacon, res_path + "/ejprd-vp-beacon/")
     api.add_resource(AboutMtblsBeacon, res_path + "/ejprd-vp-beacon/info")
     api.add_resource(MtblsBeaconServiceInfo, res_path + "/ejprd-vp-beacon/service-info")
     api.add_resource(MtblsBeaconConfiguration, res_path + "/ejprd-vp-beacon/configuration")
