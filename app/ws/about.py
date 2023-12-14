@@ -149,7 +149,7 @@ class AboutMtblsBeacon(Resource):
         return response
 
 
-class MtblsBeaconServiceInfo:
+class MtblsBeaconServiceInfo(Resource):
 
     @swagger.operation(
         summary="Service summary of the Metabolights Beacon (GA4GH)",
@@ -183,7 +183,7 @@ class MtblsBeaconServiceInfo:
         return beacon_response
 
 
-class MtblsBeaconConfiguration:
+class MtblsBeaconConfiguration(Resource):
 
     @swagger.operation(
         summary="Schema and Metadata Configuration of the Metabolights Beacon (GA4GH)",
@@ -217,7 +217,7 @@ class MtblsBeaconConfiguration:
         return beacon_response
 
 
-class MtblsBeaconEntryTypes:
+class MtblsBeaconEntryTypes(Resource):
 
     @swagger.operation(
         summary="Get the entry types (queryable models) available on the Metabolights Beacon (GA4GH)",
@@ -249,7 +249,7 @@ class MtblsBeaconEntryTypes:
         beacon_response = BeaconResponseBuilder.build_entry_type_response()
         return beacon_response
 
-class MtblsBeaconMap:
+class MtblsBeaconMap(Resource):
 
     @swagger.operation(
         summary="Get the BeaconMap of the Metabolights Beacon (GA4GH)",
