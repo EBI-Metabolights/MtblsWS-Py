@@ -236,6 +236,13 @@ def create_isa_files(study_id, study_location, target_location: str=None) -> Tup
             merged_assay_df = merged_assay_df.append(assay_df)
     assay_file_names: Dict[str, List[str]] = {}
     
+    files = glob.iglob(os.path.join(study_location, "FILES", '*.mzML'))  # Are there mzML files there?
+    files_list = [f for f in files]
+    files = glob.iglob(os.path.join(study_location, "FILES", '**/*.mzML'), recursive=True)
+    files_list.extend([f for f in files])
+    file_paths = DataFrame.from_records([{"File Name": os.path.basename(f), "File Path": f.replace(f"{study_location}/", "")} for f in files_list])
+    
+    
     samples_files_result = glob.iglob(os.path.join(study_location, "FILES", '*SSID Data*.csv'))
     samples_files = [x for x in samples_files_result]
     samples_files.sort()
@@ -264,7 +271,7 @@ def create_isa_files(study_id, study_location, target_location: str=None) -> Tup
             else:
                 sample_id_sample_name_map[sample_id] = sample_id_sample_name_map[sample_id].append(rows, ignore_index=True)
                 
-            assay_file_name = create_assay_file(study_id, target_location, merged_assay_df, sample_csv_map, sample_id, column_name)
+            assay_file_name = create_assay_file(study_id, target_location, merged_assay_df, sample_csv_map, sample_id, column_name, file_paths)
             assay_file_names[sample_id].append(assay_file_name)
             
     all_sample_names = None
@@ -439,7 +446,7 @@ assay_method_params = {"METHOD1": {"prefix": "POS_1",
                                      }, 
                          }
 
-def create_assay_file(study_id: str, study_location: str, merged_assay_df: DataFrame, sample_csv_map: Dict[str, DataFrame], sample_id: str, sample_csv_column_name: str):
+def create_assay_file(study_id: str, study_location: str, merged_assay_df: DataFrame, sample_csv_map: Dict[str, DataFrame], sample_id: str, sample_csv_column_name: str, file_paths: DataFrame):
     names = sample_csv_map[sample_id][sample_csv_column_name]
     method_name = sample_csv_column_name.replace(" ", "").upper()
     sample_col = "Sample Name"    
@@ -453,8 +460,10 @@ def create_assay_file(study_id: str, study_location: str, merged_assay_df: DataF
     splitted_assay_df.loc[:, "Parameter Value[Column model]"] = assay_method_params[method_name]["column_model"]
     splitted_assay_df.loc[:, "Parameter Value[Column type]"] = assay_method_params[method_name]["column_type"]
             
-    splitted_assay_df.loc[:, "Derived Spectral Data File"] = f"FILES/{sample_csv_column_name}/" + splitted_assay_df.loc[:, "Derived Spectral Data File"]
-            
+    # splitted_assay_df.loc[:, "Derived Spectral Data File"] = f"FILES/{sample_csv_column_name}/" + splitted_assay_df.loc[:, "Derived Spectral Data File"]
+    splitted_assay_df = splitted_assay_df.merge(file_paths, right_on="File Name", left_on="Derived Spectral Data File", how='left', sort=False)
+    splitted_assay_df["Derived Spectral Data File"] = splitted_assay_df["File Path"]
+    splitted_assay_df = splitted_assay_df.drop(columns=["File Name", "File Path"])
     prefix = f"{study_id}_{sample_id}_{method_name}_{assay_method_params[method_name]['prefix']}" if len(sample_csv_map) > 1 else f"{study_id}_{method_name}_{assay_method_params[method_name]['prefix']}" 
     file_name = f"a_{prefix}_metabolite_profiling_mass_spectrometry.txt"
     path = os.path.join(study_location, file_name)
@@ -553,6 +562,6 @@ if __name__ == '__main__':
     study_root_path = pathlib.Path(settings.study.mounted_paths.study_metadata_files_root_path)
     target_root_path = pathlib.Path(settings.study.mounted_paths.study_internal_files_root_path)
     study_location = study_root_path / study_id
-    # target_location = target_root_path / study_id / "metabolon_pipeline"
-    target_location = study_root_path / study_id
+    target_location = target_root_path / study_id / "metabolon_pipeline"
+    # target_location = study_root_path / study_id
     create_isa_files(study_id=study_id, study_location=str(study_location), target_location=target_location)

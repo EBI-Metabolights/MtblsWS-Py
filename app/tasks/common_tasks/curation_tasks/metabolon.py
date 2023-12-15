@@ -28,7 +28,7 @@ def metabolon_confirm(self, study_id: str, study_location: str, email: str, targ
     success = True
     start = datetime.datetime.now()
     try:
-        message["task_status"] = 'Error'
+        
         # Validate all mzML files, in both study and upload folders
         # This method also copy files to the study folder and adds a new extension in the upload folder.
         val_status = ''
@@ -78,11 +78,8 @@ def metabolon_confirm(self, study_id: str, study_location: str, email: str, targ
         else:
             message.update({'ISA file creation': 'Failed', "result": ""})
             success = False
-        if success:
-            message["task_status"] = 'success'
     except Exception as ex:
         message.update({"Failure reason": f"{str(ex)}"})
-        message["task_status"] = 'unexpected error'
         raise ex
     finally:
         end = datetime.datetime.now()
@@ -93,7 +90,7 @@ def metabolon_confirm(self, study_id: str, study_location: str, email: str, targ
 
 
         result = {
-            "status": success,
+            "status": "Successful" if success else "Failed",
             "study_id": study_id,
             "result": message,
             "start_time": start.strftime("%Y-%m-%d %H:%M:%S"),
