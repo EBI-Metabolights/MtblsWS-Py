@@ -3,6 +3,11 @@ from pydantic import BaseModel
 from typing import List, Dict, Union
 from datetime import datetime
 
+class ExperimentalElasticsearch(BaseModel):
+    user: str
+    password: str
+    host: str
+    port: str
 
 class BeaconConfiguration(BaseModel):
     beacon_id: str
@@ -35,6 +40,8 @@ class BeaconConfiguration(BaseModel):
     ga4gh_service_type_artifact: str
     ga4gh_service_type_version: str
     beacon_handovers: List[Dict[str, Union[Dict[str, str], str]]]
+    experimental_elasticsearch: ExperimentalElasticsearch
+
     # database_host: str
     # database_port: int
     # database_user: str

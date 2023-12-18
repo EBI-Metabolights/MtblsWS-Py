@@ -112,6 +112,11 @@ class BeaconResponseBuilder:
         return BeaconFramework.get_entry_types()
 
     @staticmethod
+    def build_filtering_terms_response():
+
+        return {'terms': BeaconFramework.get_filter_terms()}
+
+    @staticmethod
     def build_meta(config: ApplicationSettings, beacon_request: RequestParams, entity_schema: Optional[MtblsBeaconSchemas], returned_granularity: Granularity):
         """"Builds the `meta` part of the response
 

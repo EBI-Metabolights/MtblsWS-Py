@@ -1,7 +1,38 @@
+from app.config import get_settings
 from app.ws.ejprd_beacon.beacon_request_params import MtblsBeaconSchemas
+from elasticsearch import Elasticsearch
 
 
 class BeaconFramework:
+
+
+    @staticmethod
+    def get_filter_terms():
+        config = get_settings().beacon.experimental_elasticsearch
+        http_auth = (config.user, config.password)
+        es_client = Elasticsearch(f'{config.host}:{config.port}', http_auth=http_auth, verify_certs=False)
+        index_name = 'study'
+        query = {
+            "size": 0,
+            "aggs": {
+                "unique_study_designs": {
+                    "terms": {
+                        "field": "StudyDesignDescriptors",
+                        "size": 10000
+                    }
+                }
+            }
+        }
+        # Execute the search query
+        response = es_client.search(index=index_name, body=query)
+
+        # Extracting the aggregation results
+        unique_study_designs = response["aggregations"]["unique_study_designs"]["buckets"]
+
+        # Print the results
+        for design in unique_study_designs:
+            print(design['key'], design['doc_count'])
+        return unique_study_designs
 
     @staticmethod
     def get_entry_types():
