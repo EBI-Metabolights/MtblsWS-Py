@@ -25,7 +25,7 @@ from app.config import get_settings
 from app.utils import ValueMaskUtility
 
 from app.ws.about import About, AboutServer, AboutMtblsBeacon, MtblsBeaconServiceInfo, MtblsBeaconConfiguration, \
-    MtblsBeaconEntryTypes, MtblsBeaconMap
+    MtblsBeaconEntryTypes, MtblsBeaconMap, MtblsBeaconFilteringTerms
 from app.ws.app_status import MaintenanceStatus
 from app.ws.assay_protocol import GetProtocolForAssays
 from app.ws.auth.accounts import UserAccounts
@@ -401,5 +401,6 @@ def initialize_app(flask_app):
     api.add_resource(MtblsBeaconConfiguration, res_path + "/ejprd-vp-beacon/configuration")
     api.add_resource(MtblsBeaconEntryTypes, res_path + "/ejprd-vp-beacon/entry-types")
     api.add_resource(MtblsBeaconMap, res_path + "/ejprd-vp-beacon/map")
+    api.add_resource(MtblsBeaconFilteringTerms, res_path +"/ejprd-vp-beacon/filtering_terms")
      
     
