@@ -113,8 +113,14 @@ class BeaconResponseBuilder:
 
     @staticmethod
     def build_filtering_terms_response():
-
-        return {'terms': BeaconFramework.get_filter_terms()}
+        """
+        I need to
+        """
+        return {'response': {
+            "resources": BeaconFramework.get_all_metabolights_ontologies(),
+            "filteringTerms": BeaconFramework.get_filter_terms()
+            }
+        }
 
     @staticmethod
     def build_meta(config: ApplicationSettings, beacon_request: RequestParams, entity_schema: Optional[MtblsBeaconSchemas], returned_granularity: Granularity):
