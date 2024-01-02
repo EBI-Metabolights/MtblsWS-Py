@@ -60,31 +60,40 @@ class BeaconFramework:
 
     @staticmethod
     def get_all_metabolights_ontologies() -> List[ParsedOntology]:
+        """
+        Get all ontologies referenced in metabolights. We go over every study design descriptor, collecting the parent
+        onotlogy IE NCIT, and then remove any that aren't referenced in our preferred ontology lookup services (at the
+        time of implementation, OLS and BioPortal.
+        """
         ontologies = BeaconFramework.get_all_referenced_ontologies()
         ols_collection = BeaconFramework.get_ols_ontologies()
         bioportal_collection = BeaconFramework.get_bioportal_ontologies()
-        collections = [ols_collection, bioportal_collection]
 
+        collections = [ols_collection, bioportal_collection]
         intersection = BeaconFramework.cross_ref(elasticsearch_design_descriptors=ontologies, ontology_collections=collections)
+
         culler = Culler(intersection=intersection)
         culled_ols = culler.cull(collection=ols_collection)
         culled_bioportal = culler.cull(collection=bioportal_collection)
-        """"
-        I now have the two culled collections of ontologies, i need to parse and merge them, and then return them in the API 
-        response. 
-        """
+
         list_of_ontologies = []
         ols_parser = OLSParser()
         bioportal_parser = BioPortalParser()
+
         list_of_ontologies.extend(ols_parser.parse(culled_ols))
         list_of_ontologies.extend(bioportal_parser.parse(culled_bioportal))
         return list_of_ontologies
 
     @staticmethod
     def get_all_referenced_ontologies():
+        """
+        Get a list of all referenced ontologies in MetaboLights. Just the ontologies themselves IE NCIT not any specific
+        terms. We make an aggregation query to ElasticSearch to pick up every ontologySourceReferences.sourceName value,
+        and return that response.
+        """
         config = get_settings().beacon.experimental_elasticsearch
         http_auth = (config.user, config.password)
-        es_client = Elasticsearch(f'{config.host}:{config.port}', http_auth=http_auth, verify_certs=False)
+        es_client = Elasticsearch(f'https://{config.host}:{config.port}', http_auth=http_auth, verify_certs=False)
 
 
         index_name = 'study'
@@ -107,8 +116,8 @@ class BeaconFramework:
     @staticmethod
     def get_ols_ontologies() -> OntologyCollection:
         """
-        Get a list of all ontologies held in
-        :return:
+        Get a list of all ontologies held in OLS, and format them into an OntologyCollection object.
+        :return: OntologyCollection representing all ontologies held in OLS.
         """
         session = requests.Session()
         response = session.get('https://www.ebi.ac.uk/ols4/api/ontologies/?page=0&size=300')
@@ -149,10 +158,11 @@ class BeaconFramework:
     @staticmethod
     def cross_ref(elasticsearch_design_descriptors: List[dict], ontology_collections: List[OntologyCollection]):
         """
-        Using collections of third party ontologies, cull any unrecognisable ontology IDs from the design descriptor list we
-        got from our elasticsearch query,
-        :param elasticsearch_design_descriptors:
-        :param ontology_collections:
+        Using collections of third party ontologies, cull any unrecognisable ontology IDs from the design descriptor
+        list we got from our elasticsearch query, and return the intersection - or the union of IDs found in Mtbls
+        Study documents and third party ontology services.
+        :param elasticsearch_design_descriptors: List of design descriptors direct from ES query.
+        :param ontology_collections:List of Ontology Collection objects, where each object is a list of Ontologies and Ids.
         :return:
         """
         mtbls_ontology_ids = [dd['key'].lower() for dd in elasticsearch_design_descriptors]
@@ -160,7 +170,6 @@ class BeaconFramework:
         unified_third_party_ontology_ids = {id for collection in ontology_collections for id in collection.ontology_ids}
 
         intersection = list(set(mtbls_ontology_ids) & unified_third_party_ontology_ids)
-        print(intersection)
         return intersection
 
     @staticmethod

@@ -114,7 +114,12 @@ class BeaconResponseBuilder:
     @staticmethod
     def build_filtering_terms_response():
         """
-        I need to
+        Unclear whether this actually meets specification, it is unclear from the docs: https://docs.genomebeacons.org/filters/
+        I suspect we must also provide the fields of the data objects that are queryable. If so, this is limited to
+        - factors
+        - study design descriptors
+        so we can just return those in addition to the response below, if we do indeed need to tell users what fields
+        are being queried.
         """
         return {'response': {
             "resources": BeaconFramework.get_all_metabolights_ontologies(),
