@@ -281,3 +281,35 @@ class MtblsBeaconMap(Resource):
         config = get_settings()
         beacon_response = BeaconResponseBuilder.build_configuration_response(conf=config.beacon, map=True)
         return beacon_response
+
+class MtblsBeaconFilteringTerms(Resource):
+
+    @swagger.operation(
+        summary="Get the list of filtering terms. https://docs.genomebeacons.org/filters/",
+        nickname="Get Filtering Terms",
+        parameters=[
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self):
+        log_request(request)
+        beacon_response = BeaconResponseBuilder.build_filtering_terms_response()
+        return beacon_response

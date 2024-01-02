@@ -82,9 +82,11 @@ class BeaconFramework:
 
     @staticmethod
     def get_all_referenced_ontologies():
-        http_auth = ('cmartin', 'Test.123@*')
-        es_client = Elasticsearch('https://hx-rke-wp-webadmin-33-worker-1.caas.ebi.ac.uk:31777', http_auth=http_auth,
-                                  verify_certs=False)
+        config = get_settings().beacon.experimental_elasticsearch
+        http_auth = (config.user, config.password)
+        es_client = Elasticsearch(f'{config.host}:{config.port}', http_auth=http_auth, verify_certs=False)
+
+
         index_name = 'study'
         query = {
             "size": 0,
@@ -126,7 +128,8 @@ class BeaconFramework:
         This request takes upward of ten seconds to be resolved. I am considering saving a copy of the response to file.
         :return: an OntologyCollection representing the bioportal ontologies.
         """
-        token = '5ea9243d-223d-4dc5-bc33-30cf0fe5b385'
+        settings = get_settings()
+        token = settings.bioportal.api_token
         session = requests.Session()
         params = {
             'apikey': f'{token}',
