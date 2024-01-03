@@ -55,7 +55,7 @@ from app.ws.ftp.ftp_operations import (FtpFolderPermission,
 from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.internal import BannerMessage
-from app.ws.isaAssay import StudyAssay, StudyAssayDelete
+from app.ws.isaAssay import StudyAssay, StudyAssayDelete, StudySampleTemplate
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaStudy import (StudyContacts, StudyDescription, StudyDescriptors,
                              StudyFactors, StudyMetaInfo, StudyProtocols,
@@ -236,6 +236,7 @@ def initialize_app(flask_app):
     api.add_resource(UnzipFiles, res_path + "/studies/<string:study_id>/files/unzip")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")
     api.add_resource(IsaTabSampleFile, res_path + "/studies/<string:study_id>/sample")
+    api.add_resource(StudySampleTemplate, res_path + "/studies/<string:study_id>/sample-template")
     api.add_resource(IsaTabAssayFile, res_path + "/studies/<string:study_id>/assay")
     api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays")
     api.add_resource(StudyAssayDelete, res_path + "/studies/<string:study_id>/assays/<string:assay_file_name>")

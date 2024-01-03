@@ -318,6 +318,45 @@ def get_assay_headers_and_protcols(assay_type):
 
     return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, assay_mandatory_type
 
+
+def get_sample_headers_and_data(sample_type:None):
+    tidy_header_row = ""
+    tidy_data_row = ""
+    protocols = ""
+    sample_desc = ""
+    sample_data_type = ""
+    sample_file_type = ""
+    sample_mandatory_type = ""
+
+    if sample_type is None:
+        sample_type = 'minimum'
+
+    resource_folder = os.path.join(os.getcwd(), "resources")
+    logger.info(' - get_sample_headers_and_data for sample type ' + sample_type)
+    sample_master_template = os.path.join(resource_folder, 'MetaboLightsSampleMaster.tsv')
+    master_df = read_tsv(sample_master_template)
+
+    header_row = master_df.loc[master_df['name'] == sample_type + '-header']
+    data_row = master_df.loc[master_df['name'] == sample_type + '-data']
+    protocol_row = master_df.loc[master_df['name'] == sample_type + '-protocol']
+    sample_desc_row = master_df.loc[master_df['name'] == sample_type + '-sample']
+    sample_data_type_row = master_df.loc[master_df['name'] == sample_type + '-type']
+    sample_file_type_row = master_df.loc[master_df['name'] == sample_type + '-file']
+    sample_data_mandatory_row = master_df.loc[master_df['name'] == sample_type + '-mandatory']
+
+    try:
+        protocols = get_protocols_for_assay(protocol_row, sample_type)
+        sample_desc = get_desc_for_sample(sample_desc_row, sample_type)
+        sample_data_type = get_data_type_for_assay(sample_data_type_row, sample_type)
+        sample_file_type = get_file_type_for_assay(sample_file_type_row, sample_type)
+        sample_mandatory_type = get_mandatory_data_for_assay(sample_data_mandatory_row, sample_type)
+        tidy_header_row = tidy_template_row(header_row)  # Remove empty cells after end of column definition
+        tidy_data_row = tidy_template_row(data_row)
+    except:
+        logger.error('Could not retrieve all required template info for this sample type: ' + sample_type)
+
+    return tidy_header_row, tidy_data_row, protocols, sample_desc, sample_data_type, sample_file_type, sample_mandatory_type
+
 def delete_column_from_tsv_file(file_df: pd.DataFrame, column_name: str):
     column_index = -1
     deleted_column_names = [column_name]
@@ -532,6 +571,13 @@ def get_desc_for_assay(df_row, assay_type):
 
     for cell in row:
         if cell != '' and cell != assay_type + '-assay':  # return first cell that is not the label
+            return cell
+        
+def get_desc_for_sample(df_row, sample_type):
+    row = df_row.iloc[0]
+
+    for cell in row:
+        if cell != '' and cell != sample_type + '-sample':  # return first cell that is not the label
             return cell
 
 

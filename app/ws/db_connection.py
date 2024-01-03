@@ -1042,6 +1042,14 @@ def update_study_status_change_date(study_id, change_time: Union[None, datetime.
         return False
     return True
 
+def update_study_sample_type(study_id, sample_type):
+    val_acc(study_id)
+    query = "update studies set sample_type = %(sample_type)s where acc = %(study_id)s;"
+    status, msg = insert_update_data(query, {'study_id': study_id, "sample_type": sample_type})
+    if not status:
+        logger.error('Database update of study sample type failed with error ' + msg)
+        return False
+    return True
 
 def insert_update_data(query, inputs=None):
     try:
