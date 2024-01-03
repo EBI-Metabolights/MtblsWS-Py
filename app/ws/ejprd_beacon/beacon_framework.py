@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+import ssl
 
 from typing import List
 
@@ -93,7 +94,11 @@ class BeaconFramework:
         """
         config = get_settings().beacon.experimental_elasticsearch
         http_auth = (config.user, config.password)
-        es_client = Elasticsearch(f'https://{config.host}:{config.port}', http_auth=http_auth, verify_certs=False)
+        # Create a SSL context that does not verify certificates
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        es_client = Elasticsearch(f'https://{config.host}:{config.port}', http_auth=http_auth, verify_certs=False, ssl_context=context)
 
 
         index_name = 'study'
