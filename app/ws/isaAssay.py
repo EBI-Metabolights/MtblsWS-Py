@@ -16,7 +16,7 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-
+import glob
 import csv
 import json
 import logging
@@ -35,9 +35,10 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import AssaySchema, ProcessSchema, OtherMaterialSchema, DataFileSchema, SampleSchema
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
-from app.ws.utils import get_assay_type_from_file_name, get_assay_headers_and_protcols, write_tsv, remove_file, \
+from app.ws.utils import get_assay_type_from_file_name, get_assay_headers_and_protcols, get_sample_headers_and_data, write_tsv, remove_file, \
     get_maf_name_from_assay_name, add_new_protocols_from_assay, create_maf, add_ontology_to_investigation, read_tsv, \
-    log_request
+    log_request,copy_file, new_timestamped_folder
+from app.ws.db_connection import update_study_sample_type
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -1622,3 +1623,128 @@ class AssayDataFiles(Resource):
         if list_only:
             sch = DataFileSchema(only=('filename',), many=True)
         return extended_response(data={'dataFiles': sch.dump(found).data}, warns=warns)
+
+class StudySampleTemplate(Resource):
+    @swagger.operation(
+        summary="Init Sample sheet",
+        notes="""Initiate sample sheet for given type from the template""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "sample_type",
+                "description": "Type of Sample",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["minimum", "clinical", "in-vitro", "only-in-vitro", 
+                         "non-clinical-tox", "plant", "isotopologue", 
+                         "metaspace-imaging", "nmr-imaging", "ms-imaging", "minimum-bsd"],
+                "defaultValue": "minimum",
+                "default": "minimum"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def post(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('sample_type', help='Sample type name')
+        sampleType = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            sampleType = args['sample_type'].lower() if args['sample_type'] else 'minimum'
+
+        logger.info('Init Sample for %s; Type %s', study_id, sampleType)
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
+        if not is_curator:
+            abort(403)
+        
+        filename, protocols, update_status = create_sample_sheet(sample_type=sampleType, study_id=study_id)
+        
+        return {"success": "The sample sheet was initiated to study "+study_id,
+                "filename": filename,
+                "Dbupdate status": update_status
+                }
+
+def create_sample_sheet(sample_type, study_id):
+    settings = get_study_settings()
+    studies_path = settings.mounted_paths.study_metadata_files_root_path  # Root folder for all studies
+    study_path = os.path.join(studies_path, study_id)  # This particular study
+
+    tidy_header_row, tidy_data_row, protocols, sample_desc, sample_data_types, sample_file_type, \
+        sample_data_mandatory = get_sample_headers_and_data(sample_type)
+
+    file_name = 's_' + study_id.upper() + '.txt'                
+    file_name_fullpath = os.path.join(study_path, file_name)
+    
+    try:
+        #Create audit copy
+        update_path = os.path.join(settings.mounted_paths.study_audit_files_root_path, study_id, settings.audit_folder_name)
+        dest_path = new_timestamped_folder(update_path)
+        for sample_file in glob.glob(os.path.join(study_path, "s_*.txt")):
+                    sample_file_name = os.path.basename(sample_file)
+                    src_file = sample_file
+                    dest_file = os.path.join(dest_path, sample_file_name)
+                    logger.info("Copying %s to %s", src_file, dest_file)
+                    copy_file(src_file, dest_file)
+                    
+        file = open(file_name_fullpath, 'w', encoding="utf-8")
+        writer = csv.writer(file, delimiter="\t", quotechar='\"')
+        writer.writerow(tidy_header_row)
+        writer.writerow(tidy_data_row)
+        file.close()
+        update_status = update_study_sample_type(study_id=study_id, sample_type=sample_type)
+    except (FileNotFoundError, Exception):
+        abort(500, message='Could not write the Sample file')
+
+    return file_name, protocols, update_status
