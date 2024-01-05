@@ -578,7 +578,7 @@ def validate_study(study_id, study_location_old, user_token, obfuscation_code,
     """
     start_time = time.time()
     last_update_time = current_time()
-    last_update_timestamp = last_update_time.timestamp()
+    last_update_timestamp = int(last_update_time.timestamp())
     last_update_time_str = last_update_time.strftime('%Y-%m-%d-%H:%M')
     all_validations = []
     validation_schema = None
