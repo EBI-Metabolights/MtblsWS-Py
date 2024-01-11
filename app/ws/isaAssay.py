@@ -23,7 +23,8 @@ import logging
 import os
 import os.path
 from typing import Dict, List, Set, Tuple
-
+import numpy as np
+import pandas as pd
 from flask import request
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
@@ -37,7 +38,7 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.utils import get_assay_type_from_file_name, get_assay_headers_and_protcols, get_sample_headers_and_data, write_tsv, remove_file, \
     get_maf_name_from_assay_name, add_new_protocols_from_assay, create_maf, add_ontology_to_investigation, read_tsv, \
-    log_request,copy_file, new_timestamped_folder
+    log_request,copy_file, new_timestamped_folder, totuples
 from app.ws.db_connection import update_study_sample_type
 
 logger = logging.getLogger('wslog')
@@ -1627,7 +1628,7 @@ class AssayDataFiles(Resource):
 class StudySampleTemplate(Resource):
     @swagger.operation(
         summary="Init Sample sheet",
-        notes="""Initiate sample sheet for given type from the template""",
+        notes="""Initiate or Override sample sheet for given type from the template""",
         parameters=[
             {
                 "name": "study_id",
@@ -1658,6 +1659,18 @@ class StudySampleTemplate(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "force",
+                "description": "Force overriding of sample sheet regardless of sample data if set True. Do nothing if data present and value set false",
+                "required": False,
+                "allowMultiple": False,
+                "allowEmptyValue": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["True", "False"],
+                "defaultValue": "False",
+                "default": "False"
             }
         ],
         responseMessages=[
@@ -1697,11 +1710,16 @@ class StudySampleTemplate(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('sample_type', help='Sample type name')
+        parser.add_argument('force', help='Force overriding of sample')
         sampleType = None
+        force_override = False
         if request.args:
             args = parser.parse_args(req=request)
             sampleType = args['sample_type'].lower() if args['sample_type'] else 'minimum'
 
+            if args and "force" in args and args["force"]:
+                force_override = True if args["force"].lower() == "true" else False
+        
         logger.info('Init Sample for %s; Type %s', study_id, sampleType)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
@@ -1709,14 +1727,13 @@ class StudySampleTemplate(Resource):
         if not is_curator:
             abort(403)
         
-        filename, protocols, update_status = create_sample_sheet(sample_type=sampleType, study_id=study_id)
-        
-        return {"success": "The sample sheet was initiated to study "+study_id,
-                "filename": filename,
-                "Dbupdate status": update_status
-                }
-
-def create_sample_sheet(sample_type, study_id):
+        filename, protocols, update_status = create_sample_sheet(sample_type=sampleType, study_id=study_id, force_override=force_override)
+        if update_status:
+            return {"The sample sheet creation status" : "Successful","filename": filename}
+        else:
+            return {"The sample sheet creation status":"Unsuccessful"}
+            
+def create_sample_sheet(sample_type, study_id, force_override):
     settings = get_study_settings()
     studies_path = settings.mounted_paths.study_metadata_files_root_path  # Root folder for all studies
     study_path = os.path.join(studies_path, study_id)  # This particular study
@@ -1724,27 +1741,39 @@ def create_sample_sheet(sample_type, study_id):
     tidy_header_row, tidy_data_row, protocols, sample_desc, sample_data_types, sample_file_type, \
         sample_data_mandatory = get_sample_headers_and_data(sample_type)
 
-    file_name = 's_' + study_id.upper() + '.txt'                
-    file_name_fullpath = os.path.join(study_path, file_name)
-    
+    sample_file_name = 's_' + study_id.upper() + '.txt'                
+    sample_file_fullpath = os.path.join(study_path, sample_file_name)
+    update_status = False
     try:
-        #Create audit copy
-        update_path = os.path.join(settings.mounted_paths.study_audit_files_root_path, study_id, settings.audit_folder_name)
-        dest_path = new_timestamped_folder(update_path)
-        for sample_file in glob.glob(os.path.join(study_path, "s_*.txt")):
-                    sample_file_name = os.path.basename(sample_file)
-                    src_file = sample_file
-                    dest_file = os.path.join(dest_path, sample_file_name)
-                    logger.info("Copying %s to %s", src_file, dest_file)
-                    copy_file(src_file, dest_file)
-                    
-        file = open(file_name_fullpath, 'w', encoding="utf-8")
-        writer = csv.writer(file, delimiter="\t", quotechar='\"')
-        writer.writerow(tidy_header_row)
-        writer.writerow(tidy_data_row)
-        file.close()
-        update_status = update_study_sample_type(study_id=study_id, sample_type=sample_type)
-    except (FileNotFoundError, Exception):
+        sample_df = pd.read_csv(sample_file_fullpath, sep="\t", header=0, encoding='utf-8')
+        sample_df = sample_df.replace(np.nan, '', regex=True)  # Remove NaN
+        df_data_dict = totuples(sample_df.reset_index(), 'rows')
+        row_count = len(df_data_dict["rows"])
+        if force_override or row_count == 1:
+            create_audit_copy_and_write_table(sample_file_name=sample_file_name, study_id=study_id, tidy_header_row=tidy_header_row, 
+                                              tidy_data_row=tidy_data_row)
+            update_status = update_study_sample_type(study_id=study_id, sample_type=sample_type)            
+    except Exception as ex:
+        logger.error("Exception while overriding sample sheet - %s", ex)
         abort(500, message='Could not write the Sample file')
 
-    return file_name, protocols, update_status
+    return sample_file_name, protocols, update_status
+
+def create_audit_copy_and_write_table(sample_file_name, study_id, tidy_header_row, tidy_data_row):
+    #Create audit copy
+    settings = get_study_settings()
+    studies_path = settings.mounted_paths.study_metadata_files_root_path  # Root folder for all studies
+    study_path = os.path.join(studies_path, study_id)
+    sample_file_fullpath = os.path.join(study_path, sample_file_name)
+    update_path = os.path.join(settings.mounted_paths.study_audit_files_root_path, study_id, settings.audit_folder_name)
+    dest_path = new_timestamped_folder(update_path)
+    src_file = sample_file_fullpath
+    dest_file = os.path.join(dest_path, sample_file_name)
+    logger.info("Copying %s to %s", src_file, dest_file)
+    copy_file(src_file, dest_file)
+    #Write Table data
+    file = open(sample_file_fullpath, 'w', encoding="utf-8")
+    writer = csv.writer(file, delimiter="\t", quotechar='\"')
+    writer.writerow(tidy_header_row)
+    writer.writerow(tidy_data_row)
+    file.close()
