@@ -1745,14 +1745,25 @@ def create_sample_sheet(sample_type, study_id, force_override):
     sample_file_fullpath = os.path.join(study_path, sample_file_name)
     update_status = False
     try:
-        sample_df = pd.read_csv(sample_file_fullpath, sep="\t", header=0, encoding='utf-8')
-        sample_df = sample_df.replace(np.nan, '', regex=True)  # Remove NaN
-        df_data_dict = totuples(sample_df.reset_index(), 'rows')
-        row_count = len(df_data_dict["rows"])
-        if force_override or row_count == 1:
+        if force_override:
             create_audit_copy_and_write_table(sample_file_name=sample_file_name, study_id=study_id, tidy_header_row=tidy_header_row, 
-                                              tidy_data_row=tidy_data_row)
-            update_status = update_study_sample_type(study_id=study_id, sample_type=sample_type)            
+                                                tidy_data_row=tidy_data_row)
+            update_status = update_study_sample_type(study_id=study_id, sample_type=sample_type)
+        else:
+            if os.path.exists(sample_file_fullpath):
+                sample_df = pd.read_csv(sample_file_fullpath, sep="\t", header=0, encoding='utf-8')
+                sample_df = sample_df.replace(np.nan, '', regex=True)  # Remove NaN
+                df_data_dict = totuples(sample_df.reset_index(), 'rows')
+                row_count = len(df_data_dict["rows"])
+                if row_count == 1:
+                    create_audit_copy_and_write_table(sample_file_name=sample_file_name, study_id=study_id, tidy_header_row=tidy_header_row, 
+                                                    tidy_data_row=tidy_data_row)
+                    update_status = update_study_sample_type(study_id=study_id, sample_type=sample_type)
+            else:
+                create_audit_copy_and_write_table(sample_file_name=sample_file_name, study_id=study_id, tidy_header_row=tidy_header_row, 
+                                                    tidy_data_row=tidy_data_row)
+                update_status = update_study_sample_type(study_id=study_id, sample_type=sample_type)
+                           
     except Exception as ex:
         logger.error("Exception while overriding sample sheet - %s", ex)
         abort(500, message='Could not write the Sample file')
@@ -1765,12 +1776,13 @@ def create_audit_copy_and_write_table(sample_file_name, study_id, tidy_header_ro
     studies_path = settings.mounted_paths.study_metadata_files_root_path  # Root folder for all studies
     study_path = os.path.join(studies_path, study_id)
     sample_file_fullpath = os.path.join(study_path, sample_file_name)
-    update_path = os.path.join(settings.mounted_paths.study_audit_files_root_path, study_id, settings.audit_folder_name)
-    dest_path = new_timestamped_folder(update_path)
-    src_file = sample_file_fullpath
-    dest_file = os.path.join(dest_path, sample_file_name)
-    logger.info("Copying %s to %s", src_file, dest_file)
-    copy_file(src_file, dest_file)
+    if os.path.exists(sample_file_fullpath):
+        update_path = os.path.join(settings.mounted_paths.study_audit_files_root_path, study_id, settings.audit_folder_name)
+        dest_path = new_timestamped_folder(update_path)
+        src_file = sample_file_fullpath
+        dest_file = os.path.join(dest_path, sample_file_name)
+        logger.info("Copying %s to %s", src_file, dest_file)
+        copy_file(src_file, dest_file)
     #Write Table data
     file = open(sample_file_fullpath, 'w', encoding="utf-8")
     writer = csv.writer(file, delimiter="\t", quotechar='\"')
