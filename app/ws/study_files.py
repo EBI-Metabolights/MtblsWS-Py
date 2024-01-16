@@ -1069,7 +1069,7 @@ class StudyFilesReuse(Resource):
                 ftp_folder_path = os.path.join(ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}")
                 inputs = {"path": ftp_folder_path}
                 task = list_directory.apply_async(kwargs=inputs, expires=60*5)
-                output = task.get(timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds * 2)
+                output = task.get(timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds)
                 ftp_files = LiteFileSearchResult.model_validate(output).study
                 
                 search_result.latest = ftp_files  
