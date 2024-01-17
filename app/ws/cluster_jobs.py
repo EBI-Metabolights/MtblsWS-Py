@@ -55,7 +55,7 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
         return False, "JOB command should not be empty!", str(msg_out), str(msg_err)
 
     if queue is None:
-        queue = settings.hpc_cluster.compute.default_queue
+        queue = settings.hpc_cluster.compute.standard_queue
 
     if queue == settings.hpc_cluster.datamover.queue_name:
         lsf_host = settings.hpc_cluster.datamover.connection.host
