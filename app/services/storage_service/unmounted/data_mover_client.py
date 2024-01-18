@@ -11,7 +11,7 @@ from app.ws.cluster_jobs import submit_job, list_jobs
 import logging
 from app.ws.settings.utils import get_cluster_settings,get_study_settings
 
-logger = logging.getLogger('wslog_datamover')
+logger = logging.getLogger('wslog')
 
 
 class DataMoverAvailableStorage(object):
