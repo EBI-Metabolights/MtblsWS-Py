@@ -20,9 +20,12 @@ import logging
 from typing import Union
 
 from flask_restful import abort
+from app.config import get_settings
 
 from app.utils import MetabolightsException
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
+from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
+from app.ws.chebi.wsproxy import get_chebi_ws_proxy
 from app.ws.db_connection import create_empty_study, \
     get_release_date_of_study
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
@@ -40,16 +43,24 @@ logger = logging.getLogger('wslog')
 
 
 class WsClient:
-    search_manager: Union[None, ChebiSearchManager] = None
+    default_search_manager: Union[None, ChebiSearchManager] = None
     email_service: Union[None, EmailService] = None
     elasticsearch_service: Union[None, ElasticsearchService] = None
 
     def __init__(self, search_manager: Union[None, ChebiSearchManager] = None, email_service: Union[None, EmailService] = None,
                  elasticsearch_service: Union[None, ElasticsearchService] = None):
-        WsClient.email_service = email_service
-        WsClient.search_manager = search_manager
-        WsClient.elasticsearch_service = elasticsearch_service
-
+        self.search_manager = search_manager if search_manager else WsClient.default_search_manager
+        if not self.search_manager:
+            chebi_proxy = get_chebi_ws_proxy()
+            curation_table_file_path = get_settings().chebi.pipeline.curated_metabolite_list_file_location
+            curation_table = CuratedMetaboliteTable.get_instance(curation_table_file_path)
+            chebi_search_manager = ChebiSearchManager(ws_proxy=chebi_proxy, curated_metabolite_table=curation_table)
+            WsClient.default_search_manager = chebi_search_manager
+            self.search_manager = chebi_search_manager
+        
+        self.email_service = email_service if email_service else WsClient.email_service
+        self.elasticsearch_service = elasticsearch_service if elasticsearch_service else WsClient.elasticsearch_service
+            
     def get_study_location(self, study_id, user_token):
         return commons.get_study_location(study_id, user_token)
 
@@ -65,7 +76,8 @@ class WsClient:
             return None
 
         if not result or result.err:
-            logger.warning(f"Result is not valid {str(result.err)}")
+            if result.err:
+                logger.warning(f"Result is not valid {str(result.err)}")
             return None
 
         json_result = result.model_dump()

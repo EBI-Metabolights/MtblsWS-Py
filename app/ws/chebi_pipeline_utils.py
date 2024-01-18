@@ -1,6 +1,7 @@
 
 
 import glob
+import json
 import logging
 import os
 import re
@@ -52,7 +53,7 @@ logger = logging.getLogger('wslog_chebi')
 wsc = WsClient()
 iac = IsaApiClient()
 
-def run_chebi_pipeline(study_id, user_token, annotation_file_name, run_silently: bool = False, classyfire_search: bool=True, update_study_maf: bool=False, run_on_cluster: bool=True, ):
+def run_chebi_pipeline(study_id, user_token, annotation_file_name, run_silently: bool = False, classyfire_search: bool=True, update_study_maf: bool=False, run_on_cluster: bool=True, email=None, task_name=None):
 
     settings = get_settings()
     http_base_location = settings.server.service.ws_app_base_link
@@ -99,7 +100,7 @@ def run_chebi_pipeline(study_id, user_token, annotation_file_name, run_silently:
                 opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised = \
                     search_and_update_maf(study_id, study_metadata_location, file_name, classyfire_search, user_token,
                                             run_silently=run_silently, update_study_maf=update_study_maf,
-                                            obfuscation_code=obfuscation_code)
+                                            obfuscation_code=obfuscation_code, email=email, task_name=task_name)
                 if maf_len != new_maf_len:
                     maf_changed += 1
     else:
@@ -120,7 +121,7 @@ def run_chebi_pipeline(study_id, user_token, annotation_file_name, run_silently:
             chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised  = \
             search_and_update_maf(study_id, study_metadata_location, annotation_file_name, classyfire_search, user_token,
                                         run_silently=run_silently, update_study_maf=update_study_maf,
-                                        obfuscation_code=obfuscation_code)
+                                        obfuscation_code=obfuscation_code, email=email, task_name=task_name)
             pubchem_file = http_file_location + pubchem_file.split('/' + study_id)[1]
 
         # if file still present rmeove it
@@ -563,7 +564,7 @@ def get_cas_from_synonyms(synonyms):
 
 
 def search_and_update_maf(study_id: str, study_metadata_location: str, annotation_file_name: str, classyfire_search, user_token,
-                          run_silently=None, update_study_maf=None, obfuscation_code=None):
+                          run_silently=None, update_study_maf=None, obfuscation_code=None, email: str=None, task_name: str=None):
     sdf_file_list = []
     exiting_pubchem_file = False
     sample_compound_name = 'aspirin'
@@ -1122,8 +1123,8 @@ def search_and_update_maf(study_id: str, study_metadata_location: str, annotatio
     compressed_chebi_annotations_folder_path = os.path.join(zip_file_folder_path, f"{folder_name}.zip")
     try:
         if os.path.exists(compressed_chebi_annotations_folder_path):
-            compressed_chebi_annotations_folder_path = os.path.join(zip_file_folder_path, f"{folder_name}_old.zip")
-            shutil.move(compressed_chebi_annotations_folder_path, f"{anno_sub_folder_path}_old.zip")
+            compressed_chebi_annotations_folder_archive_path = os.path.join(zip_file_folder_path, f"{folder_name}_old.zip")
+            shutil.move(compressed_chebi_annotations_folder_path, compressed_chebi_annotations_folder_archive_path)
     except Exception as e:
         logger.error("chebi folder zip move error")
         print(f"An error occurred: {e}")
@@ -1156,13 +1157,15 @@ def search_and_update_maf(study_id: str, study_metadata_location: str, annotatio
         commands.append(rsync_command)
         command = " && ".join(commands)
         
-        inputs = {"command": command }
+        inputs = {"command": command, "email": email, "task_name": task_name}
         task = execute_bash_command.apply_async(kwargs=inputs, expires=60*5)
-        try:
-            output = task.get(timeout=get_settings().hpc_cluster.configuration.task_get_timeout_in_seconds*3)
-            print_log(f"ChEBI pipeline FTP rsync is completed.\n {output}")
-        except Exception as ex:
-                print_log(f"ChEBI pipeline FTP rsync is not completed. {str(ex)}")
+        print_log(f"ChEBI pipeline FTP rsync task is started. Task id: {task.id}")
+        print_log(f"Command: {json.dumps(inputs, indent=4)}")
+        # try:
+        #     output = task.get(timeout=get_settings().hpc_cluster.configuration.task_get_timeout_in_seconds*3)
+        #     print_log(f"ChEBI pipeline FTP rsync is completed.\n {output}")
+        # except Exception as ex:
+        #         print_log(f"ChEBI pipeline FTP rsync is not completed. {str(ex)}")
         
     return maf_len, pubchem_df_len, pubchem_file,dimedb_search_status,cactus_search_status,opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised
 

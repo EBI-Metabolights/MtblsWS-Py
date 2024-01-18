@@ -48,6 +48,7 @@ common_tasks = [
     "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
     "app.tasks.common_tasks.curation_tasks.metabolon",
     "app.tasks.common_tasks.curation_tasks.validation",
+    "app.tasks.common_tasks.curation_tasks.chebi_pipeline",
     "app.tasks.common_tasks.basic_tasks.email",
     "app.tasks.common_tasks.basic_tasks.elasticsearch",
 ]
@@ -77,6 +78,7 @@ celery = Celery(
         "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
         "app.tasks.common_tasks.curation_tasks.metabolon",
         "app.tasks.common_tasks.curation_tasks.validation",
+        "app.tasks.common_tasks.curation_tasks.chebi_pipeline",
         "app.tasks.common_tasks.basic_tasks.email",
         "app.tasks.common_tasks.basic_tasks.elasticsearch",
         "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",

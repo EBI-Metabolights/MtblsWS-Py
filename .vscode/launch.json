@@ -11,6 +11,7 @@
                 "python3",
                 "run_flask_server.py"
             ],
+            "justMyCode": false,
         }, 
         {
             "name": "Poetry Celery Worker",
