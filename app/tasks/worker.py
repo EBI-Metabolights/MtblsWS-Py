@@ -16,12 +16,61 @@ from app.ws.study.user_service import UserService
 
 settings: CelerySettings = get_settings().celery
 
-rs: RedisConnection = settings.broker
-#broker_url = f'redis+sentinel://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}'
+rs: redis_cache.RedisConnection = settings.broker
+# broker_url = f'redis+sentinel://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}'
+broker_url = None
+broker_transport_options = None
+result_backend_transport_options = None
+if rs.connection_type == "redis":
+    rc = rs.redis_connection
+    broker_url = (
+        f"redis://:{rs.redis_password}@{rc.redis_host}:{rc.redis_port}/{rs.redis_db}"
+    )
+    result_backend = broker_url
+else:
+    sc = rs.sentinel_connection
+    broker_url = ";".join(
+        [
+            f"sentinel://:{rs.redis_password}@{host.name}:{host.port}/{rs.redis_db}"
+            for host in sc.hosts
+        ]
+    )
+    broker_transport_options = {
+        "master_name": sc.master_name,
+        "sentinel_kwargs": {"password": rs.redis_password},
+    }
+    result_backend_transport_options = broker_transport_options
+    result_backend = broker_url
 
 
-broker_url = f"redis://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}"
-result_backend = broker_url
+common_tasks = [
+    "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
+    "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
+    "app.tasks.common_tasks.curation_tasks.metabolon",
+    "app.tasks.common_tasks.curation_tasks.validation",
+    "app.tasks.common_tasks.curation_tasks.chebi_pipeline",
+    "app.tasks.common_tasks.basic_tasks.email",
+    "app.tasks.common_tasks.basic_tasks.elasticsearch",
+]
+datamover_tasks = [
+    "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",
+    "app.tasks.datamover_tasks.basic_tasks.file_management",
+    "app.tasks.datamover_tasks.curation_tasks.data_file_operations",
+    "app.tasks.datamover_tasks.basic_tasks.execute_commands",
+]
+
+
+admin_tasks = [
+    "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
+    "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
+    "app.tasks.system_monitor_tasks.heartbeat",
+    "app.tasks.system_monitor_tasks.worker_maintenance",
+    "app.tasks.system_monitor_tasks.integration_check",
+]
+
+
+compute_tasks = []
+
 celery = Celery(
     __name__,
     include=[
@@ -30,6 +79,7 @@ celery = Celery(
         "app.tasks.common_tasks.report_tasks.eb_eye_search",
         "app.tasks.common_tasks.curation_tasks.metabolon",
         "app.tasks.common_tasks.curation_tasks.validation",
+        "app.tasks.common_tasks.curation_tasks.chebi_pipeline",
         "app.tasks.common_tasks.basic_tasks.email",
         "app.tasks.common_tasks.basic_tasks.elasticsearch",
         "app.tasks.common_tasks.basic_tasks.ftp_operations",

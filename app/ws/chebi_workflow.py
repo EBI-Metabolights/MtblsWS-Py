@@ -40,6 +40,7 @@ from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage import Storage
 from app.services.storage_service.storage_service import StorageService
 from app.tasks.bash_client import BashClient
+from app.tasks.common_tasks.curation_tasks.chebi_pipeline import run_chebi_pipeline_task
 from app.tasks.lsf_client import LsfClient
 from app.ws.chebi_pipeline_utils import check_maf_for_pipes, print_log, run_chebi_pipeline
 from app.ws.cluster_jobs import submit_job
@@ -51,11 +52,16 @@ from app.ws.study.folder_utils import write_audit_files, get_all_files_from_file
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.utils import read_tsv, write_tsv, get_assay_file_list, safe_str
+from app.ws.redis.redis import RedisStorage, get_redis_server
+from celery.result import AsyncResult
+from app.tasks.worker import celery
 
 logger = logging.getLogger('wslog_chebi')
 
 # MetaboLights (Java-Based) WebService client
 wsc = WsClient()
+
+NOT_COMPLETED_STATES = {"PENDING", "STARTED", "INITIATED", "RECEIVED", "STARTED", "RETRY", "PROGRESS"}
 
 
 class ChEBIPipeLine(Resource):
@@ -163,8 +169,9 @@ class ChEBIPipeLine(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance().validate_user_has_curator_role(user_token)
-
+        user = UserService.get_instance().validate_user_has_curator_role(user_token)
+        email = user['username']
+        
         cluster_job = None
         try:
             cluster_job = request.args['source']
@@ -204,7 +211,29 @@ class ChEBIPipeLine(Resource):
         # task_name=f"chebi_pipeline_{study_id}"
         
         # job_id, messages = client.run_singularity(task_name, command=command, command_arguments=command_arguments, unique_task_name=True, hpc_queue_name=None)
-        return run_chebi_pipeline(study_id, user_token, annotation_file_name, run_silently=run_silently, classyfire_search=classyfire_search, update_study_maf=update_study_maf, run_on_cluster=run_on_cluster)
+        redis = get_redis_server()
+        key = f"chebi_pipeline:{study_id}"
+        task_id = None
+        try:
+            task_id = redis.get_value(key).decode()
+        except Exception as exc:
+            logger.warning("Error parsing redis value")
+
+        if task_id:
+            result: AsyncResult = celery.AsyncResult(task_id)
+            if result and result.state in NOT_COMPLETED_STATES:
+                abort(401, message=f"There is a task ({result.id}) in queue with status {result.state}")
+
+        inputs = {"study_id": study_id, "user_token": user_token, 
+                  "annotation_file_name": annotation_file_name, 
+                  "classyfire_search": classyfire_search, 
+                  "update_study_maf": update_study_maf,
+                  "email": email
+                  }
+        # run_chebi_pipeline_task(study_id: str, user_token: str, annotation_file_name: str, classyfire_search: bool = True, update_study_maf: bool = False):
+        task = run_chebi_pipeline_task.apply_async(kwargs=inputs, expires=60)
+        return {"message": f"CHEBI Pipeline task is started for {study_id} {annotation_file_name}. Task id: {task.id}. Results will be send by email."}
+        # return run_chebi_pipeline(study_id, user_token, annotation_file_name, run_silently=run_silently, classyfire_search=classyfire_search, update_study_maf=update_study_maf, run_on_cluster=run_on_cluster)
         # return {"job_id": job_id, "messages": messages}
 
 
