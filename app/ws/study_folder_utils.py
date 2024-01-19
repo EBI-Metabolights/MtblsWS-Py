@@ -180,18 +180,21 @@ def get_referenced_file_set(study_id, metadata_path: str) -> Set[str]:
                     referenced_files.add(assay.filename)
                     assay_file_path = os.path.join(metadata_path, assay.filename)
                     if os.path.exists(assay_file_path):
-                        with open(assay_file_path, encoding="utf-8", errors="ignore") as fp:
-                            df: pd.DataFrame = pd.read_csv(fp, delimiter="\t", header=0, dtype=str)
-                        if df is not None:
-                            df = df.fillna("")
-                        referenced_file_columns: List[str] = []
-                        for column in df.columns:
-                            if " Data File" in column or "Metabolite Assignment File" in column:
-                                referenced_file_columns.append(column)
-                                file_names = df[column].unique()
-                                for item in file_names:
-                                    if item:
-                                        referenced_files.add(item)
+                        try:
+                            with open(assay_file_path, encoding="utf-8", errors="ignore") as fp:
+                                df: pd.DataFrame = pd.read_csv(fp, delimiter="\t", header=0, dtype=str)
+                            if df is not None:
+                                df = df.fillna("")
+                            referenced_file_columns: List[str] = []
+                            for column in df.columns:
+                                if " Data File" in column or "Metabolite Assignment File" in column:
+                                    referenced_file_columns.append(column)
+                                    file_names = df[column].unique()
+                                    for item in file_names:
+                                        if item:
+                                            referenced_files.add(item)
+                        except Exception as ex:
+                            logger.error(f"Error reading assay file of {study_id} {assay.filename}. Skipping...")
                         # df: pd.DataFrame = pd.read_csv(assay_file_path, delimiter="\t", header=0, names=referenced_file_columns, dtype=str)
                         # if df is not None:
                         #     df = df.fillna("")
