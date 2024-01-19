@@ -40,14 +40,25 @@ from app.utils import current_time
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.ontology_info import getWormsTerm, removeDuplicated, getBioportalTerm, getZoomaTerm, getOLSTerm, \
-    getMetaboZoomaTerm, getMetaboTerm, getOnto_Name, getOnto_info, setPriority, reorder
+from app.ws.ontology_info import getWormsTerm, remove_duplicated_terms, getBioportalTerm, getZoomaTerm, getOLSTerm, \
+    getMetaboZoomaTerm, getMetaboTerm, getOnto_Name, getOnto_info, sort_terms_by_priority, reorder
 from app.ws.utils import log_request
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
 
+
+def parse_set_str(input_data: str, lowercase: bool=False):
+    result = None
+    if input_data:
+        input_list = input_data.strip().strip("{").strip("}").split(",")
+        if lowercase:
+            result = [x.strip().lower() for x in input_list if x.strip()]
+        else:
+            result = [x.strip() for x in input_list if x.strip()]
+    
+    return result if result else None
 
 class Ontology(Resource):
 
@@ -134,67 +145,25 @@ class Ontology(Resource):
         parser = reqparse.RequestParser()
 
         parser.add_argument('term', help="Ontology term")
-        term = None
-        if request.args:
-            args = parser.parse_args(req=request)
-            term = args['term']
-            if term:
-                term = term.strip()
-
         parser.add_argument('branch', help='Starting branch of ontology')
-        branch = None
-        if request.args:
-            args = parser.parse_args(req=request)
-            branch = args['branch']
-            if branch:
-                branch = branch.strip()
-
         parser.add_argument('mapping', help='Mapping approaches')
-        mapping = None
-        if request.args:
-            args = parser.parse_args(req=request)
-            mapping = args['mapping']
-
         parser.add_argument('queryFields', help='query Fields')
-        queryFields = None  # ['MTBLS', 'MTBLS_Zooma', 'Zooma','OLS', 'Bioportal']
-        if request.args:
-            args = parser.parse_args(req=request)
-            queryFields = args['queryFields']
-            if queryFields:
-                try:
-                    reg = '\{([^}]+)\}'
-                    queryFields = re.findall(reg, queryFields)[0].split(',')
-                except:
-                    try:
-                        queryFields = queryFields.split(',')
-                    except Exception as e:
-                        # print(e.args)
-                        pass
-
         parser.add_argument('ontology', help='ontology')
-        ontology = None
-        if request.args:
-            args = parser.parse_args(req=request)
-            ontology = args['ontology']
-            if ontology:
-                try:
-                    reg = '\{([^}]+)\}'
-                    ontology = re.findall(reg, ontology)[0].split(',')
-                except:
-                    try:
-                        ontology = ontology.split(',')
-                    except Exception as e:
-                        print(e.args)
 
-        if ontology:
-            ontology = [x.lower() for x in ontology]
+        args = parser.parse_args(req=request)
+        term = args['term'].strip() if args['term'] else None
+        branch = args['branch'].strip() if args['branch'] else None
+        mapping = args['mapping'].strip() if args['mapping'] else None
+        queryFields = parse_set_str(args['queryFields'])
+        ontology = parse_set_str(args['ontology'], lowercase=True)
+        
 
         result = []
 
-        if term in [None, ''] and branch is None:
-            return []
+        if not term and not branch:
+            return result
 
-        if ontology not in [None, '']:  # if has ontology searching restriction
+        if ontology:  # if has ontology searching restriction
             logger.info('Search %s in' % ','.join(ontology))
             print('Search %s in' % ','.join(ontology))
             try:
@@ -206,7 +175,7 @@ class Ontology(Resource):
                 logger.info(e.args)
 
         else:
-            if queryFields in [None, '']:  # if found the term, STOP
+            if not queryFields:  # if found the term, STOP
 
                 # is_url = term.startswith('http')
                 regex = re.compile(
@@ -278,47 +247,46 @@ class Ontology(Resource):
                     result += getBioportalTerm(term)
 
         response = []
-
-        result = removeDuplicated(result)
-
         # add WoRMs terms as a entity
         if branch == 'taxonomy':
             r = getWormsTerm(term)
             result += r
         else:
             pass
-
-        if term not in [None, '']:
+        
+        term = term if term else ""
+        exact = []
+        rest = result
+        if term:
             exact = [x for x in result if x.name.lower() == term.lower()]
             rest = [x for x in result if x not in exact]
 
-            # "factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
-            #                          "column type", "instruments", "confidence", "sample type"
+        # "factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
+        #                          "column type", "instruments", "confidence", "sample type"
+        if branch == 'role':
+            priority = {'MTBLS': 0, 'NCIT': 10}
+        if branch == 'taxonomy':
+            priority = {'MTBLS': 0, 'NCBITAXON': 10, 'WoRMs': 20, 'EFO': 30, 'BTO': 40, 'NCIT': 50, 'CHEBI': 60,
+                        'CHMO': 70, 'PO': 80}
+        elif branch == 'unit':
+            priority = {'UO': 0, 'MTBLS': 1}
+        elif branch == 'factor':
+            priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+        elif branch == 'design descriptor':
+            priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+        elif branch == 'organism part':
+            priority = {'MTBLS': 0, 'BTO': 1, 'EFO': 2, 'PO': 3, 'CHEBI': 4, 'BAO': 5}
+        else:
+            priority = {'MTBLS': 0, 'EFO': 1, 'NCBITAXON': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
 
-            if branch == 'taxonomy':
-                priority = {'MTBLS': 0, 'NCBITAXON': 1, 'WoRMs': 2, 'EFO': 3, 'BTO': 4, 'NCIT': 5, 'CHEBI': 6,
-                            'CHMO': 7, 'PO': 8}
+        prioritrised_ontology_names = { x.upper():priority[x] for x in priority}
+        exact = sort_terms_by_priority(exact, prioritrised_ontology_names)
+        rest = sort_terms_by_priority(rest, prioritrised_ontology_names)
+        # rest = reorder(rest, term)
+        result = exact + rest
+        result = remove_duplicated_terms(result)
 
-            elif branch == 'unit':
-                priority = {'UO': 0, 'MTBLS': 1}
-
-            elif branch == 'factor':
-                priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
-
-            elif branch == 'design descriptor':
-                priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
-
-            if branch == 'organism part':
-                priority = {'MTBLS': 0, 'BTO': 1, 'EFO': 2, 'PO': 3, 'CHEBI': 4, 'BAO': 5}
-
-            else:
-                priority = {'MTBLS': 0, 'EFO': 1, 'NCBITAXON': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
-
-            exact = setPriority(exact, priority)
-            rest = reorder(rest, term)
-            result = exact + rest
-
-        # result = removeDuplicated(result)
+        # result = remove_duplicated_terms(result)
 
         for cls in result:
             temp = '''    {

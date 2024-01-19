@@ -99,7 +99,7 @@ def getMetaboTerm(keyword, branch, mapping=''):
             try:
                 # cls += onto.search(label=keyword + '*', _case_sensitive=False)
                 cls += onto.search(label='*' + keyword + '*', _case_sensitive=False)
-            except:
+            except Exception as ex:
                 logger.info("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
                 print("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
 
@@ -308,6 +308,12 @@ def OLSbranchSearch(keyword, branchName, ontoName):
         res.append(enti)
     return res
 
+@lru_cache(1)
+def get_metabo_zooma_terms_dataframe() -> pd.DataFrame:
+    fileName = get_settings().file_resources.mtbls_zooma_file # metabolights_zooma.tsv
+    df = pd.read_csv(fileName, sep="\t", header=0, encoding='utf-8')
+    df = df.drop_duplicates(subset='PROPERTY_VALUE', keep="last")
+    return df
 
 def getMetaboZoomaTerm(keyword, mapping):
     logger.info('Searching Metabolights-zooma.tsv')
@@ -318,10 +324,7 @@ def getMetaboZoomaTerm(keyword, mapping):
         return res
 
     try:
-        fileName = get_settings().file_resources.mtbls_zooma_file # metabolights_zooma.tsv
-        df = pd.read_csv(fileName, sep="\t", header=0, encoding='utf-8')
-        df = df.drop_duplicates(subset='PROPERTY_VALUE', keep="last")
-
+        df = get_metabo_zooma_terms_dataframe()
         if mapping == 'exact':
             temp = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
         else:
@@ -603,8 +606,9 @@ def getOnto_url(pre_fix):
         return ''
 
 
-def setPriority(res_list, priority):
-    res = sorted(res_list, key=lambda x: priority.get(x.ontoName, 1000))
+
+def sort_terms_by_priority(res_list, priority):
+    res = sorted(res_list, key=lambda x: priority.get(x.ontoName.upper(), 1000))
     return res
 
 
@@ -633,14 +637,16 @@ def reorder(res_list, keyword):
         return res_list
 
 
-def removeDuplicated(res_list):
-    iri_pool = []
+def remove_duplicated_terms(res_list):
+    iri_pool = set()
+    
+    new_list = []
     for res in res_list:
-        if res.iri in iri_pool:
-            res_list.remove(res)
-        else:
-            iri_pool.append(res.iri)
-    return res_list
+        if res.iri not in iri_pool:
+            iri_pool.add(res.iri)
+            new_list.append(res)
+            
+    return new_list
 
 
 def getDescriptionURL(ontoName, iri):
