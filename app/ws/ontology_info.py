@@ -33,7 +33,7 @@ from owlready2.namespace import Ontology
 from pydantic import BaseModel, ConfigDict
 
 from app.config import get_settings
-from app.utils import ttl_cache
+from app.utils import current_time, ttl_cache
 
 logger = logging.getLogger('wslog')
 
