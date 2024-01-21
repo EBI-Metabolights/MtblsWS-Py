@@ -2452,13 +2452,16 @@ dev = ["black", "mypy", "pytest"]
 
 [[package]]
 name = "owlready2"
-version = "0.23"
+version = "0.45"
 description = "A package for ontology-oriented programming in Python: load OWL 2.0 ontologies as Python objects, modify them, save them, and perform reasoning via HermiT. Includes an optimized RDF quadstore."
 optional = false
-python-versions = "*"
+python-versions = ">=3.6"
 files = [
-    {file = "Owlready2-0.23.tar.gz", hash = "sha256:77af50b2a93457de3e869e4c48910dc40e3a0713b7229ebfe14d6cfb48b108e6"},
+    {file = "owlready2-0.45.tar.gz", hash = "sha256:44a501ace1bc5b7be1c2f5aa98dd14825c590ce0c5d4e3bc353f458df522dca7"},
 ]
+
+[package.extras]
+test = ["flask", "gevent", "rdflib"]
 
 [[package]]
 name = "packaging"
@@ -4302,4 +4305,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.10"
-content-hash = "a5344f063bc0e745ba6213bc6ebfd07e8d20bfa8ebf3a57d7c0dc8f10d0354c1"
+content-hash = "18b621c268feba1849b051574c84a1a0d71a302935d307c2a993d7bd8478a508"
