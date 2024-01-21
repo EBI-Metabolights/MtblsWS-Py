@@ -221,7 +221,7 @@
             sample, which undergoes all laboratory process of preparation as used for test samples
             and used as a negative control to evaluate contamination effect and artefacts caused by
             reactions occurring during the sample preparation steps of test samples.</rdfs:isDefinedBy>
-        <rdfs:label xml:lang="en">Sample preparation blank</rdfs:label>
+        <rdfs:label xml:lang="en">sample preparation blank</rdfs:label>
     </owl:Class>
 
 
@@ -246,6 +246,17 @@
         <oboI:hasRelatedSynonym>Humo sapiens</oboI:hasRelatedSynonym>
         <rdfs:label>Homo sapiens</rdfs:label>
     </owl:Class>
+
+    <!-- http://purl.obolibrary.org/obo/NCBITaxon_10092 -->
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCBITaxon_10092">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
+        <oboI:hasRelatedSynonym>Mus praetextus</oboI:hasRelatedSynonym>
+        <oboI:hasRelatedSynonym>Mus musculus praetextus</oboI:hasRelatedSynonym>
+        <oboI:hasRelatedSynonym>Mus domesticus</oboI:hasRelatedSynonym>
+        <rdfs:label>Mus musculus domesticus</rdfs:label>
+    </owl:Class>
+
+
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/NCBITaxon_9606" />
         <owl:annotatedProperty
@@ -4251,6 +4262,7 @@
     </owl:Class>
 
 
+
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000218 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000218">
@@ -4261,6 +4273,41 @@
         <rdfs:label xml:lang="en">experimental blank</rdfs:label>
     </owl:Class>
 
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_2304 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_2304">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
+        <rdfs:isDefinedBy></rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">blank</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MSIO_0000026 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MSIO_0000026">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
+        <rdfs:isDefinedBy>A material entity corresponding to ‘solvent’ (mobile phase in chromatography context) only,
+        containing no biological sample and used as a negative control to evaluate carry over effect between injections of test samples.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">solvent blank</rdfs:label>
+    </owl:Class>
+
+    <!-- http://purl.obolibrary.org/obo/NCBITaxon_2582415 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCBITaxon_2582415">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
+        <rdfs:isDefinedBy>Empty sample.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">blank sample</rdfs:label>
+    </owl:Class>
+
+    <!-- http://purl.obolibrary.org/obo/ENVO_00002149 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/ENVO_00002149">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
+        <rdfs:isDefinedBy>Water which has physicochemical properties that have been determined by the processes occuring in a sea or ocean.</rdfs:isDefinedBy>
+        <oboI:hasExactSynonym>seawater</oboI:hasExactSynonym>
+        <oboI:hasExactSynonym>ocean water</oboI:hasExactSynonym>
+        <rdfs:label xml:lang="en">sea water</rdfs:label>
+    </owl:Class>
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000219 -->
 

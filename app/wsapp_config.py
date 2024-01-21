@@ -82,6 +82,7 @@ from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
                                ReindexStudy, RetryReindexStudies, StudyFolderSynchronization,
                                UnindexedStudy)
 from app.ws.mtblsWSclient import WsClient
+from app.ws.mtbls_ontology import MtblsOntologyTerms, MtblsOntologyTerm
 from app.ws.mzML2ISA import Convert2ISAtab, ValidateMzML
 from app.ws.ontology import Cellosaurus, Ontology, Placeholder
 from app.ws.organism import Organism
@@ -329,6 +330,9 @@ def initialize_app(flask_app):
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
     api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
+
+    api.add_resource(MtblsOntologyTerms, res_path + "/mtbls-ontology/terms")
+    api.add_resource(MtblsOntologyTerm, res_path + "/mtbls-ontology/terms/<string:term_id>")  
 
     # EBI utils
     api.add_resource(Ontology, res_path + "/ebi-internal/ontology")  # Add ontology resources
