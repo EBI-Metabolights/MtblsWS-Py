@@ -141,7 +141,7 @@ class MetaboLightsOntology():
     
     
     def __add_entity(self, entity, children=None):
-        label =  re.sub("\s+", " ", " ", str(entity.label[0]))
+        label =  re.sub("\s+", " ", str(entity.label[0]))
         self.iri_set.add(entity.iri)
         self.label_set.add(label)
         mtbls_entity = MetaboLightsEntity(label=label, iri=entity.iri, children=children)
