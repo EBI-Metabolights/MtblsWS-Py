@@ -377,13 +377,18 @@ def get_ontology_search_result(term, branch, ontology, mapping, queryFields):
         pass
     
     term = term if term else ""
-    exact = []
-    starts_with = []
+    exact_case_sensitive = []
+    exact_case_insensitive = []
+    starts_with_case_sensitive = []
+    starts_with_incase_sensitive = []
     rest = result
     if term:
-        exact = [x for x in result if x.name.lower() == term.lower()]
-        starts_with = [x for x in result if x not in exact and x.name.startswith(term)]
-        rest = [x for x in result if x not in exact and x not in starts_with ]
+        selected = set()
+        exact_case_sensitive = [x for x in result if x.name == term if x.name and not selected.add(x.name)]
+        exact_case_insensitive = [x for x in result if x.name.lower() == term.lower() and x.name and x.name not in selected and not selected.add(x.name)]
+        starts_with_case_sensitive = [x for x in result if x.name and x.name not in selected and x.name.startswith(term) and not selected.add(x.name)]
+        starts_with_incase_sensitive = [x for x in result if x.name and x.name not in selected and x.name.lower().startswith(term.lower()) and not selected.add(x.name)]
+        rest = [x for x in result if x.name and x.name not in selected and not selected.add(x.name)]
 
     # "factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
     #                          "column type", "instruments", "confidence", "sample type"
@@ -404,11 +409,13 @@ def get_ontology_search_result(term, branch, ontology, mapping, queryFields):
         priority = {'MTBLS': 0, 'EFO': 1, 'NCBITAXON': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
 
     prioritrised_ontology_names = { x.upper():priority[x] for x in priority}
-    exact = sort_terms_by_priority(exact, prioritrised_ontology_names)
-    starts_with = sort_terms_by_priority(exact, prioritrised_ontology_names)
+    exact_case_sensitive = sort_terms_by_priority(exact_case_sensitive, prioritrised_ontology_names)
+    exact_case_insensitive = sort_terms_by_priority(exact_case_insensitive, prioritrised_ontology_names)
+    starts_with_case_sensitive = sort_terms_by_priority(starts_with_case_sensitive, prioritrised_ontology_names)
+    starts_with_incase_sensitive = sort_terms_by_priority(starts_with_incase_sensitive, prioritrised_ontology_names)
     rest = sort_terms_by_priority(rest, prioritrised_ontology_names)
     # rest = reorder(rest, term)
-    result = exact + rest
+    result = exact_case_sensitive + exact_case_insensitive + starts_with_case_sensitive + starts_with_incase_sensitive + rest
     result = remove_duplicated_terms(result)
 
     # result = remove_duplicated_terms(result)
@@ -469,8 +476,14 @@ def load_ontology_file(filepath)-> MetaboLightsOntology:
     
     return None
 
-# @ttl_cache(2048)
-def getMetaboTerm(keyword, branch, mapping='', limit=50):
+def initiate_mtbls_model(): 
+    file = get_settings().file_resources.mtbls_ontology_file
+    load_ontology_file(file)
+
+initiate_mtbls_model()
+
+@ttl_cache(2048)
+def getMetaboTerm(keyword, branch, mapping='', limit=100):
     file = get_settings().file_resources.mtbls_ontology_file
     mtbls_ontology: MetaboLightsOntology = load_ontology_file(file)
     if not mtbls_ontology:

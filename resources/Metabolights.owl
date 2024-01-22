@@ -1721,6 +1721,20 @@
         <rdfs:label>nanogram per milliliter</rdfs:label>
     </owl:Class>
 
+    <!-- http://purl.obolibrary.org/obo/UO_0000227 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000227">
+        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046" />
+        <rdfs:label>magnetic flux density unit</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000228">
+        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000227" />
+        <rdfs:isDefinedBy>Unit of magnetic flux density in the International System of Units. One tesla is equal to one weber per square metre.</rdfs:isDefinedBy>
+        <rdfs:label>tesla</rdfs:label>
+    </owl:Class>
+
+
 
     <!-- http://purl.obolibrary.org/obo/UO_0000301 -->
 
