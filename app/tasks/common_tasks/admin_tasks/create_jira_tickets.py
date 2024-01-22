@@ -1,98 +1,21 @@
-#  EMBL-EBI MetaboLights - https://www.ebi.ac.uk/metabolights
-#  Metabolomics team
-#
-#  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
-#
-#  Last modified: 2020-Jan-17
-#  Modified by:   kenneth
-#
-#  Copyright 2020 EMBL - European Bioinformatics Institute
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
 import logging
 
-import pandas as pd
-from flask import request
-from flask_restful import Resource, abort
-from flask_restful_swagger import swagger
-from jira import JIRA
-
-from app.config import get_settings
-
+from app.tasks.worker import (MetabolightsTask, celery, send_email)
 from app.ws.db_connection import get_all_studies
-from app.ws.mtblsWSclient import WsClient
-from app.ws.study.user_service import UserService
+from app.config import get_settings
+from jira import JIRA
 from app.ws.utils import safe_str
-from app.tasks.common_tasks.admin_tasks.create_jira_tickets import update_or_create_jira_issue_task
 
-# https://jira.readthedocs.io
+logger = logging.getLogger(__name__)
 options = {
     'server': 'https://www.ebi.ac.uk/panda/jira/'}
-logger = logging.getLogger('wslog')
-wsc = WsClient()
 project = 12732  # The id for the 'METLIGHT' project
 curation_epic = 'METLIGHT-1'  # id 10236 'METLIGHT-1 Epic'
 curation_lable = 'curation'
 
-
-class Jira(Resource):
-    @swagger.operation(
-        summary="Create (or update) Jira tickets for MetaboLights study curation (curator only)",
-        parameters=[
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a study id and a valid user token"
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
-    )
-    def put(self):
-        user_token = None
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if user_token is None:
-            abort(401)
-
-        # param validation
-
-        UserService.get_instance().validate_user_has_curator_role(user_token)
-        inputs = {"user_token": user_token}
-        task = update_or_create_jira_issue_task.apply_async(kwargs=inputs)
-        return {"message": f"Sent test email task is stated with id : {task.id}"}
-
-
-def update_or_create_jira_issue(user_token, is_curator):
+@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.admin_tasks.create_jira_tickets.update_or_create_jira_issue_task")
+def update_or_create_jira_issue_task(user_token: str):
+    email = "metabolights-dev@ebi.ac.uk"
     try:
         params = get_settings().jira.connection
         user_name = params.username
@@ -108,9 +31,7 @@ def update_or_create_jira_issue(user_token, is_curator):
         # Get the MetaboLights project
         mtbls_project = jira.project(project)
 
-        if is_curator:
-            studies = get_all_studies(user_token)
-
+        studies = get_all_studies(user_token)
         for study in studies:
             study_id = None
             user_name = None
@@ -226,11 +147,12 @@ def update_or_create_jira_issue(user_token, is_curator):
                 logger.info('Updated Jira case for study ' + study_id)
                 print('Updated Jira case for study ' + study_id)
     except Exception as e:
-        logger.error("Jira updated failed for " + study_id + ". " + str(e))
+        logger.error("Jira updated failed !" + str(e))
+        send_email("Jira Tickets creation Task", "Ticket(s) update failed", None, email, None)
         return False, 'Update failed: ' + str(e), str(study_id)
+    send_email("Jira Tickets creation Task", "Ticket(s) updated successfully", None, email, None)
     return True, 'Ticket(s) updated successfully', updated_studies
-
-
+        
 def maintain_jira_labels(issue, study_status, user_name):
     # Add the 'curation' label if needed
     labels = issue.fields.labels
@@ -300,4 +222,4 @@ def maintain_jira_labels(issue, study_status, user_name):
     if "Metaspace" in user_name and not metaspace_flag:
         labels.append(metaspace_label)
 
-    return labels
+    return labels   

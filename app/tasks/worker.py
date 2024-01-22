@@ -63,6 +63,7 @@ datamover_tasks = [
 admin_tasks = [
     "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
     "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
+    "app.tasks.common_tasks.admin_tasks.create_jira_tickets",
     "app.tasks.system_monitor_tasks.heartbeat",
     "app.tasks.system_monitor_tasks.worker_maintenance",
     "app.tasks.system_monitor_tasks.integration_check",
@@ -76,6 +77,7 @@ celery = Celery(
     include=[
         "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
         "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
+        "app.tasks.common_tasks.admin_tasks.create_jira_tickets",
         "app.tasks.common_tasks.curation_tasks.metabolon",
         "app.tasks.common_tasks.curation_tasks.validation",
         "app.tasks.common_tasks.curation_tasks.chebi_pipeline",
