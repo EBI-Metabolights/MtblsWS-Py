@@ -193,6 +193,137 @@
      -->
 
 
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001090 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001091">
+        <rdfs:isDefinedBy>Terms for Metabolights ISA metadata files</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">metadata file terms</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001092">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001091" />
+        <rdfs:isDefinedBy>Terms for MetaboLights ISA investigation file</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">investigation file terms</rdfs:label>
+    </owl:Class>
+
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001093">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001091" />
+        <rdfs:isDefinedBy>Terms for MetaboLights ISA study file</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">sample file terms</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001094">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001091" />
+        <rdfs:isDefinedBy>Terms for MetaboLights ISA assay file</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">assay file terms</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001095">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001093" />
+        <rdfs:isDefinedBy>Terms for Characteristics[Organism] column.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Characteristics[Organism]</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001096">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001093" />
+        <rdfs:isDefinedBy>Terms for Characteristics[Organism part] column.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Characteristics[Organism part]</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001097">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001093" />
+        <rdfs:isDefinedBy>Terms for Characteristics[Sample type] column.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Characteristics[Sample type]</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001098">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001093" />
+        <rdfs:isDefinedBy>Terms for Characteristics[Variant] column.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Characteristics[Variant]</rdfs:label>
+    </owl:Class>
+
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001099">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001093" />
+        <rdfs:isDefinedBy>Terms for Protocol REF column.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Sample Protocol REF</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001100">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001099" />
+        <rdfs:isDefinedBy>Terms for Protocol REF column.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Sample collection</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/BTO_0000131">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001096" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
+        <rdfs:isDefinedBy>The fluid portion of the blood in which the particulate components are suspended.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">blood plasma</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/BTO_0000133">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001096" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
+        <rdfs:isDefinedBy>The cell-free portion of the blood from which the fibrinogen has been separated in the process of clotting.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">blood serum</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/BTO_0001419">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001096" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
+        <rdfs:isDefinedBy>Waste material that is secreted by the kidney in vertebrates, is rich in end products of protein metabolism together with salts and pigments, and forms a clear amber and usually slightly acid fluid in mammals but is semisolid in birds and reptiles.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">urine</rdfs:label>
+    </owl:Class>
+     <owl:Class rdf:about="http://purl.obolibrary.org/obo/BTO_0000440">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001096" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
+        <rdfs:isDefinedBy>Waste matter discharged from the body; especially: waste (as feces) discharged from the alimentary canal.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">feces</rdfs:label>
+    </owl:Class>
+
+     <owl:Class rdf:about="http://purl.obolibrary.org/obo/BTO_0000713">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001096" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
+        <rdfs:isDefinedBy>A lateral outgrowth from a plant stem that is typically a flattened expanded variably shaped greenish organ, constitutes a unit of the foliage, and functions primarily in food manufacture by photosynthesis.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">leaf</rdfs:label>
+    </owl:Class>
+
+     <owl:Class rdf:about="http://purl.obolibrary.org/obo/BTO_0000733">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001096" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
+        <rdfs:isDefinedBy>The outermost layer of the pericarp of a fruit. The skin or rind of a fruit.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">exocarp</rdfs:label>
+    </owl:Class>
+
+     <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCIT_C13413">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001096" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
+        <rdfs:isDefinedBy>Considering the organism as a whole.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Whole Organism</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000131 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000131">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001096" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
+        <rdfs:label xml:lang="en">exometabolome</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000125 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000125">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001096" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
+        <rdfs:label xml:lang="en">endometabolome</rdfs:label>
+    </owl:Class>
+
+
+
     <!-- http://purl.obolibrary.org/obo/GENO_0000152 -->
 
     <owl:Class rdf:about="http://purl.obolibrary.org/obo/GENO_0000152">
@@ -213,22 +344,11 @@
     </owl:Class>
 
 
-    <!-- http://purl.obolibrary.org/obo/MSIO_0000025 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MSIO_0000025">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000093" />
-        <rdfs:isDefinedBy>a material entity corresponding to a sample containing no biological
-            sample, which undergoes all laboratory process of preparation as used for test samples
-            and used as a negative control to evaluate contamination effect and artefacts caused by
-            reactions occurring during the sample preparation steps of test samples.</rdfs:isDefinedBy>
-        <rdfs:label xml:lang="en">sample preparation blank</rdfs:label>
-    </owl:Class>
-
-
     <!-- http://purl.obolibrary.org/obo/NCBITaxon_9606 -->
 
     <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCBITaxon_9606">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001095" />
         <oboI:hasExactSynonym>human</oboI:hasExactSynonym>
         <oboI:hasExactSynonym>man</oboI:hasExactSynonym>
         <oboI:hasRelatedSynonym>Home sapiens</oboI:hasRelatedSynonym>
@@ -248,14 +368,93 @@
     </owl:Class>
 
     <!-- http://purl.obolibrary.org/obo/NCBITaxon_10092 -->
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCBITaxon_10092">
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCBITaxon_10090">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
-        <oboI:hasRelatedSynonym>Mus praetextus</oboI:hasRelatedSynonym>
-        <oboI:hasRelatedSynonym>Mus musculus praetextus</oboI:hasRelatedSynonym>
-        <oboI:hasRelatedSynonym>Mus domesticus</oboI:hasRelatedSynonym>
-        <rdfs:label>Mus musculus domesticus</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001095" />
+        <oboI:hasExactSynonym>House mouse</oboI:hasExactSynonym>
+        <oboI:hasExactSynonym>mouse</oboI:hasExactSynonym>
+        <rdfs:label>Mus musculus</rdfs:label>
     </owl:Class>
 
+    <!-- http://purl.obolibrary.org/obo/NCBITaxon_10116 -->
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCBITaxon_10116">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001095" />
+        <oboI:hasExactSynonym>brown rat</oboI:hasExactSynonym>
+        <oboI:hasExactSynonym>Norway rat</oboI:hasExactSynonym>
+        <oboI:hasExactSynonym>rats</oboI:hasExactSynonym>
+        <oboI:hasExactSynonym>rat</oboI:hasExactSynonym>
+        <rdfs:label>Rattus norvegicus</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://purl.obolibrary.org/obo/NCBITaxon_3702 -->
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCBITaxon_3702">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001095" />
+        <oboI:hasExactSynonym>thale cress</oboI:hasExactSynonym>
+        <oboI:hasExactSynonym>thale-cress</oboI:hasExactSynonym>
+        <oboI:hasExactSynonym>mouse-ear cress</oboI:hasExactSynonym>
+        <rdfs:label>Arabidopsis thaliana</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://purl.obolibrary.org/obo/NCBITaxon_29760 -->
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCBITaxon_29760">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001095" />
+        <oboI:hasExactSynonym>wine grape</oboI:hasExactSynonym>
+        <rdfs:label>Vitis vinifera</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://purl.obolibrary.org/obo/NCBITaxon_562 -->
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCBITaxon_562">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001095" />
+        <oboI:hasExactSynonym>Escherichia/Shigella coli</oboI:hasExactSynonym>
+        <oboI:hasExactSynonym>E. coli</oboI:hasExactSynonym>
+        <rdfs:label>Escherichia coli</rdfs:label>
+    </owl:Class>
+
+
+
+    <!-- http://purl.obolibrary.org/obo/NCBITaxon_5691 -->
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCBITaxon_5691">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001095" />
+        <rdfs:label>Trypanosoma brucei</rdfs:label>
+    </owl:Class>
+
+    <!-- http://purl.obolibrary.org/obo/ENVO_00002149 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/ENVO_00002149">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001095" />
+        <rdfs:isDefinedBy>Water which has physicochemical properties that have been determined by the processes occuring in a sea or ocean.</rdfs:isDefinedBy>
+        <oboI:hasExactSynonym>seawater</oboI:hasExactSynonym>
+        <oboI:hasExactSynonym>ocean water</oboI:hasExactSynonym>
+        <rdfs:label xml:lang="en">sea water</rdfs:label>
+    </owl:Class>
+    
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002304 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002304">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001095" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001096" />
+        <rdfs:isDefinedBy>An experimental control sample without any organism.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">blank</rdfs:label>
+    </owl:Class>
+
+
+
+    <!-- http://purl.obolibrary.org/obo/MSIO_0000023 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MSIO_0000023">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001095" />
+        <rdfs:isDefinedBy>a reference compound is a chemical entity of know origin, formula and established spectral fingerprint added to a solution of unknown component in known quantities in order to provide a basis (hence the term reference) with which to establish a comparison, be used for calibration or quality control or quantitation estimate for unknown compound in spectral analysis such as NMR or mass spectrometry.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">reference compound</rdfs:label>
+    </owl:Class>
 
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/NCBITaxon_9606" />
@@ -372,6 +571,7 @@
         <rdfs:isDefinedBy>A portion of an organism.</rdfs:isDefinedBy>
         <rdfs:label>Organism Part</rdfs:label>
     </owl:Class>
+
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/NCIT_C103199" />
         <owl:annotatedProperty rdf:resource="http://www.w3.org/2000/01/rdf-schema#isDefinedBy" />
@@ -443,14 +643,14 @@
     </owl:Axiom>
 
 
-    <!-- http://purl.obolibrary.org/obo/NCIT_C45910 -->
+    <!-- http://purl.obolibrary.org/obo/NCIT_C45910
 
     <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCIT_C45910">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000093" />
         <rdfs:isDefinedBy>A mix of specimens from multiple individuals representing multiple sex
             groups</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">Pooled sample</rdfs:label>
-    </owl:Class>
+    </owl:Class> -->
 
 
     <!-- http://purl.obolibrary.org/obo/NCIT_C51812 -->
@@ -2338,18 +2538,16 @@
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000017 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000017">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
         <rdfs:label xml:lang="en">blood metabolome</rdfs:label>
     </owl:Class>
 
 
-    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000018 -->
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000018
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000018">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
         <rdfs:isDefinedBy>Excretion in liquid state processed by the kidney.[FMA]</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">urine</rdfs:label>
-    </owl:Class>
+    </owl:Class> -->
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000019 -->
@@ -3101,10 +3299,73 @@
     </owl:Class>
 
 
-    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000093 -->
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/ v -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000093">
         <rdfs:label xml:lang="en">sample type</rdfs:label>
+    </owl:Class>
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/CHMO_0002746 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/CHMO_0002746">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000093" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001097" />
+        <rdfs:isDefinedBy>A portion of material that is the subject of an experiment.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">experimental sample</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001090 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001090">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000093" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001097" />
+        <rdfs:isDefinedBy>pooled quality control sample</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">pooled quality control sample</rdfs:label>
+    </owl:Class>
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000218 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000218">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000093" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001097" />
+        <rdfs:isDefinedBy>An experimental control sample including matrix, reagents or other that is
+            used to measure residual bias in the measurement device or process, which contributes to
+            the value obtained for the quantity in the analytical procedure.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">experimental blank</rdfs:label>
+    </owl:Class>
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MSIO_0000026 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MSIO_0000026">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000093" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001097" />
+        <rdfs:isDefinedBy>A material entity corresponding to ‘solvent’ (mobile phase in chromatography context) only,
+        containing no biological sample and used as a negative control to evaluate carry over effect between injections of test samples.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">solvent blank</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://purl.obolibrary.org/obo/MSIO_0000025 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MSIO_0000025">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000093" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001097" />
+        <rdfs:isDefinedBy>a material entity corresponding to a sample containing no biological
+            sample, which undergoes all laboratory process of preparation as used for test samples
+            and used as a negative control to evaluate contamination effect and artefacts caused by
+            reactions occurring during the sample preparation steps of test samples.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">sample preparation blank</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://purl.obolibrary.org/obo/MSIO_0000024 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MSIO_0000024">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000093" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001097" />
+        <rdfs:isDefinedBy>a reference compound mix is a material entity which consists of composite solution of several molecular entities acting as reference compound and present in known quantity in the mixture, with which to establish a comparison, be used for calibration or quality control or quantitation estimate for unknown compound in spectral analysis such as NMR or mass spectrometry</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">reference compound mix</rdfs:label>
     </owl:Class>
 
 
@@ -3420,14 +3681,6 @@
     </owl:Class>
 
 
-    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000125 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000125">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
-        <rdfs:label xml:lang="en">endometabolome</rdfs:label>
-    </owl:Class>
-
-
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000126 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000126">
@@ -3461,14 +3714,14 @@
     </owl:Class>
 
 
-    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000129 -->
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000129
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000129">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
         <rdfs:isDefinedBy>Water which has physicochemical properties that have been determined by
             the processes occuring in a sea or ocean.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">sea water</rdfs:label>
-    </owl:Class>
+    </owl:Class> -->
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000130 -->
@@ -3478,13 +3731,6 @@
         <rdfs:label xml:lang="en">metabolic phenotyping</rdfs:label>
     </owl:Class>
 
-
-    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000131 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000131">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
-        <rdfs:label xml:lang="en">exometabolome</rdfs:label>
-    </owl:Class>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000132 -->
@@ -4277,33 +4523,6 @@
 
 
 
-    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000218 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000218">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
-        <rdfs:isDefinedBy>An experimental control sample including matrix, reagents or other that is
-            used to measure residual bias in the measurement device or process, which contributes to
-            the value obtained for the quantity in the analytical procedure.</rdfs:isDefinedBy>
-        <rdfs:label xml:lang="en">experimental blank</rdfs:label>
-    </owl:Class>
-
-    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_2304 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_2304">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
-        <rdfs:isDefinedBy></rdfs:isDefinedBy>
-        <rdfs:label xml:lang="en">blank</rdfs:label>
-    </owl:Class>
-
-
-    <!-- http://www.ebi.ac.uk/metabolights/ontology/MSIO_0000026 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MSIO_0000026">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
-        <rdfs:isDefinedBy>A material entity corresponding to ‘solvent’ (mobile phase in chromatography context) only,
-        containing no biological sample and used as a negative control to evaluate carry over effect between injections of test samples.</rdfs:isDefinedBy>
-        <rdfs:label xml:lang="en">solvent blank</rdfs:label>
-    </owl:Class>
 
     <!-- http://purl.obolibrary.org/obo/NCBITaxon_2582415 -->
 
@@ -4313,15 +4532,6 @@
         <rdfs:label xml:lang="en">blank sample</rdfs:label>
     </owl:Class>
 
-    <!-- http://purl.obolibrary.org/obo/ENVO_00002149 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/ENVO_00002149">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003" />
-        <rdfs:isDefinedBy>Water which has physicochemical properties that have been determined by the processes occuring in a sea or ocean.</rdfs:isDefinedBy>
-        <oboI:hasExactSynonym>seawater</oboI:hasExactSynonym>
-        <oboI:hasExactSynonym>ocean water</oboI:hasExactSynonym>
-        <rdfs:label xml:lang="en">sea water</rdfs:label>
-    </owl:Class>
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000219 -->
 

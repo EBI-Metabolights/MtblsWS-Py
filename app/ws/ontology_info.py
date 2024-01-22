@@ -23,6 +23,7 @@ import logging
 import os
 import re
 import ssl
+import sys
 from typing import Callable, Dict, List, Set, Union
 import urllib
 from urllib.parse import quote_plus
@@ -240,12 +241,10 @@ class MetaboLightsOntology():
                         result = self.search_entities[sub_item.iri]
                         self.branch_map[label].append(result)
                         
-                self.branch_map[label].sort(key=lambda x: x.name)
+                self.branch_map[label].sort(key=lambda x: x.name.lower())
                 
-                if label == 'design descriptor':
-                    initial_ontology_terms = [272, 279, 69, 42, 40, 225, 54,]
-                    mtbls_ontology_iri_prefix = "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_"
-                    first_priority_terms = [f"{mtbls_ontology_iri_prefix}{x:06}" for x in initial_ontology_terms]
+                if label in TERM_PRIORITY_MAP:
+                    first_priority_terms = TERM_PRIORITY_MAP[label]
                     remaining_terms = [x for x in self.branch_map[label] if x.iri not in first_priority_terms]
                     initial_terms = [x for x in self.branch_map[label] if x.iri in first_priority_terms]
                     initial_terms.sort(key=lambda x: first_priority_terms.index(x.iri))
@@ -270,6 +269,40 @@ class MetaboLightsOntology():
                 entity_set.add(label)
             self.collect_all_child_entities(v, entity_set=entity_set)
 
+TERM_PRIORITY_MAP = {
+    "Characteristics[Organism]": [
+        "http://purl.obolibrary.org/obo/NCBITaxon_9606",
+        "http://purl.obolibrary.org/obo/NCBITaxon_10090",
+        "http://purl.obolibrary.org/obo/NCBITaxon_10116",
+        "http://purl.obolibrary.org/obo/NCBITaxon_3702",
+        "http://purl.obolibrary.org/obo/NCBITaxon_29760",
+        "http://purl.obolibrary.org/obo/NCBITaxon_562",
+        "http://purl.obolibrary.org/obo/NCBITaxon_5691",
+        "http://purl.obolibrary.org/obo/ENVO_00002149",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002304",
+        "http://purl.obolibrary.org/obo/MSIO_0000023"
+    ],
+    "Characteristics[Organism part]": [
+        "http://purl.obolibrary.org/obo/BTO_0000131",
+        "http://purl.obolibrary.org/obo/BTO_0000133",
+        "http://purl.obolibrary.org/obo/BTO_0001419",
+        "http://purl.obolibrary.org/obo/BTO_0000440",
+        "http://purl.obolibrary.org/obo/BTO_0000713",
+        "http://purl.obolibrary.org/obo/BTO_0000733",
+        "http://purl.obolibrary.org/obo/NCIT_C13413",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000131",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000125",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002304",
+    ],
+    "Characteristics[Sample type]": [
+        "http://purl.obolibrary.org/obo/CHMO_0002746",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001090",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000218",
+        "http://purl.obolibrary.org/obo/MSIO_0000026",
+        "http://purl.obolibrary.org/obo/MSIO_0000025",
+        "http://purl.obolibrary.org/obo/MSIO_0000024"
+    ]
+}
 
 def get_ontology_search_result(term, branch, ontology, mapping, queryFields):
     result = []
@@ -305,7 +338,7 @@ def get_ontology_search_result(term, branch, ontology, mapping, queryFields):
             logger.info('Search %s from resources one by one' % term)
             # print('Search %s from resources one by one' % term)
             result = getMetaboTerm(term, branch, mapping)
-            
+
             branch_mappings = {"instruments": {"root_label": "instrument", "ontology_name": "msio"},
                                 "column type": {"root_label": "chromatography", "ontology_name": "chmo"},
                                 "unit": {"root_label": "unit", "ontology_name": "uo"},
@@ -377,45 +410,40 @@ def get_ontology_search_result(term, branch, ontology, mapping, queryFields):
         pass
     
     term = term if term else ""
-    exact_case_sensitive = []
-    exact_case_insensitive = []
-    starts_with_case_sensitive = []
-    starts_with_incase_sensitive = []
+    exact = []
+    starts_with = []
     rest = result
     if term:
         selected = set()
-        exact_case_sensitive = [x for x in result if x.name == term if x.name and not selected.add(x.name)]
-        exact_case_insensitive = [x for x in result if x.name.lower() == term.lower() and x.name and x.name not in selected and not selected.add(x.name)]
-        starts_with_case_sensitive = [x for x in result if x.name and x.name not in selected and x.name.startswith(term) and not selected.add(x.name)]
-        starts_with_incase_sensitive = [x for x in result if x.name and x.name not in selected and x.name.lower().startswith(term.lower()) and not selected.add(x.name)]
+        exact = [x for x in result if x.name.lower() == term.lower() and x.name and x.name not in selected and not selected.add(x.name)]
+        starts_with = [x for x in result if x.name and x.name not in selected and x.name.lower().startswith(term.lower()) and not selected.add(x.name)]
         rest = [x for x in result if x.name and x.name not in selected and not selected.add(x.name)]
 
-    # "factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
-    #                          "column type", "instruments", "confidence", "sample type"
-    if branch == 'role':
-        priority = {'MTBLS': 0, 'NCIT': 10}
-    elif branch == 'taxonomy':
-        priority = {'MTBLS': 0, 'NCBITAXON': 10, 'WoRMs': 20, 'EFO': 30, 'BTO': 40, 'NCIT': 50, 'CHEBI': 60,
-                    'CHMO': 70, 'PO': 80}
-    elif branch == 'unit':
-        priority = {'UO': 0, 'MTBLS': 1}
-    elif branch == 'factor':
-        priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
-    elif branch == 'design descriptor':
-        priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
-    elif branch == 'organism part':
-        priority = {'MTBLS': 0, 'BTO': 1, 'EFO': 2, 'PO': 3, 'CHEBI': 4, 'BAO': 5}
-    else:
-        priority = {'MTBLS': 0, 'EFO': 1, 'NCBITAXON': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+        # "factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
+        #                          "column type", "instruments", "confidence", "sample type"
+        if branch == 'role':
+            priority = {'MTBLS': 0, 'NCIT': 10}
+        elif branch == 'Characteristics[Organism]':
+            priority = {'NCBITAXON': 0, 'MTBLS': 10, 'WoRMs': 20, 'ENVO': 30, 'EFO': 40, 'NCIT': 50, 'MSOI': 60}
+        elif branch == 'Characteristics[Organism part]':
+            priority = {'BTO': 0, 'MTBLS': 10, 'EFO': 20, 'NCIT': 30, 'PO': 40, 'ENVO': 50, 'CHEBI': 60}
+        elif branch == 'Characteristics[Sample type]':
+            priority = {'CHMO': 0, 'MTBLS': 10, 'MSIO': 20}
+        elif branch == 'unit':
+            priority = {'UO': 0, 'MTBLS': 10, "EFO": 30, "NCIT": 40}
+        elif branch == 'factor':
+            priority = {'EFO': 0, 'NCIT': 1, 'ENVO': 2, 'MTBLS': 3, 'CHEBI': 4, 'CHMO': 5, 'MESH': 6, 'PO': 7}
+        elif branch == 'design descriptor':
+            priority = {'EFO': 1, 'NCIT': 2, 'MTBLS': 3, 'CHEBI': 4, 'CHMO': 5, 'GO': 6, 'MESH': 7}
+        else:
+            priority = {'MTBLS': 0, 'EFO': 1, 'NCBITAXON': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
 
-    prioritrised_ontology_names = { x.upper():priority[x] for x in priority}
-    exact_case_sensitive = sort_terms_by_priority(exact_case_sensitive, prioritrised_ontology_names)
-    exact_case_insensitive = sort_terms_by_priority(exact_case_insensitive, prioritrised_ontology_names)
-    starts_with_case_sensitive = sort_terms_by_priority(starts_with_case_sensitive, prioritrised_ontology_names)
-    starts_with_incase_sensitive = sort_terms_by_priority(starts_with_incase_sensitive, prioritrised_ontology_names)
-    rest = sort_terms_by_priority(rest, prioritrised_ontology_names)
-    # rest = reorder(rest, term)
-    result = exact_case_sensitive + exact_case_insensitive + starts_with_case_sensitive + starts_with_incase_sensitive + rest
+        prioritrised_ontology_names = { x.upper():priority[x] for x in priority}
+        exact = sort_terms_by_priority(exact, prioritrised_ontology_names)
+        starts_with = sort_terms_by_priority(starts_with, prioritrised_ontology_names)
+        rest = sort_terms_by_priority(rest, prioritrised_ontology_names)
+        # rest = reorder(rest, term)
+        result = exact + starts_with + rest
     result = remove_duplicated_terms(result)
 
     # result = remove_duplicated_terms(result)
@@ -998,10 +1026,12 @@ def get_ontology_name(iri):
                 substring = substring.rsplit('_')[0]
             return ''.join(x for x in substring if x.isalpha()), ''
 
+def term_sort_key(term: Entity, ontology_priority_map):
+    priority = ontology_priority_map.get(term.onto_name.upper(), 100000)
+    return f"{priority:08}:{term.name.lower()}"
 
-
-def sort_terms_by_priority(res_list, priority):
-    res = sorted(res_list, key=lambda x: priority.get(x.onto_name.upper(), 1000))
+def sort_terms_by_priority(res_list: List[Entity], ontology_priority_map):
+    res = sorted(res_list, key=lambda x: term_sort_key(x, ontology_priority_map))
     return res
 
 
