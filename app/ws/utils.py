@@ -638,6 +638,7 @@ def get_mandatory_data_for_assay(df_row, assay_type):
 
 
 def write_tsv(dataframe, file_name):
+    basename = os.path.basename(file_name)
     try:
         # Remove all ".n" numbers at the end of duplicated column names
         dataframe.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
@@ -645,9 +646,9 @@ def write_tsv(dataframe, file_name):
         # Write the new row back in the file
         dataframe.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
     except:
-        return 'Error: Could not write/update the file ' + file_name
+        return 'Error: Could not write/update the file ' + basename
 
-    return 'Success. Update file ' + file_name
+    return 'Success. Update file ' + basename
 
 
 def add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, study_id, isa_study):

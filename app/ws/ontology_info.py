@@ -331,6 +331,37 @@ TERM_PRIORITY_MAP = {
         "http://purl.obolibrary.org/obo/MSIO_0000026",
         "http://purl.obolibrary.org/obo/MSIO_0000025",
         "http://purl.obolibrary.org/obo/MSIO_0000024"
+    ],
+    "Study Design Type": [
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000279",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000272",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000218",
+        "http://purl.obolibrary.org/obo/CHMO_0000591",
+        "http://purl.obolibrary.org/obo/CHMO_0000715",
+        "http://purl.obolibrary.org/obo/CHMO_0000497",
+        "http://purl.obolibrary.org/obo/CHMO_0000575",
+        "http://purl.obolibrary.org/obo/PRIDE_0000461",
+        "http://www.ebi.ac.uk/efo/EFO_0004982",
+        "http://purl.obolibrary.org/obo/NCIT_C16269",
+    ],
+    "Study Publication Status": [
+        "http://www.ebi.ac.uk/efo/EFO_0001795",
+        "http://www.ebi.ac.uk/efo/EFO_0001794",
+        "http://www.ebi.ac.uk/efo/EFO_0010558",
+        "http://www.ebi.ac.uk/efo/EFO_0001796"
+    ],
+    "Study Factor Type": [
+        "http://www.ebi.ac.uk/efo/EFO_0000724",
+        "http://www.ebi.ac.uk/efo/EFO_0000727",
+        "http://www.ebi.ac.uk/efo/EFO_0000513",
+        "http://www.ebi.ac.uk/efo/EFO_0000246",
+        "http://www.ebi.ac.uk/efo/EFO_0002755",
+        "http://www.ebi.ac.uk/efo/EFO_0000408",
+        "http://www.ebi.ac.uk/efo/EFO_0000410",
+        "http://www.ebi.ac.uk/efo/EFO_0000487",
+        "http://www.ebi.ac.uk/efo/EFO_0002091",
+        "http://www.ebi.ac.uk/efo/EFO_0002090"
+        
     ]
 }
 
@@ -451,7 +482,9 @@ def get_ontology_search_result(term, branch, ontology, mapping, queryFields):
 
         # "factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
         #                          "column type", "instruments", "confidence", "sample type"
-        if branch == 'role':
+        if branch == 'Study Publication Status':
+            priority = {'EFO': 0, 'MTBLS': 10}
+        elif branch == 'role':
             priority = {'MTBLS': 0, 'NCIT': 10}
         elif branch == 'Characteristics[Organism]':
             priority = {'NCBITAXON': 0, 'MTBLS': 10, 'WoRMs': 20, 'ENVO': 30, 'EFO': 40, 'NCIT': 50, 'MSOI': 60}
@@ -461,12 +494,12 @@ def get_ontology_search_result(term, branch, ontology, mapping, queryFields):
             priority = {'CHMO': 0, 'MTBLS': 10, 'MSIO': 20}
         elif branch == 'unit':
             priority = {'UO': 0, 'MTBLS': 10, "EFO": 30, "NCIT": 40}
-        elif branch == 'factor':
+        elif branch == 'factor' or 'Study Factor Type':
             priority = {'EFO': 0, 'NCIT': 1, 'ENVO': 2, 'MTBLS': 3, 'CHEBI': 4, 'CHMO': 5, 'MESH': 6, 'PO': 7}
-        elif branch == 'design descriptor':
+        elif branch == 'design descriptor' or 'Study Design Type':
             priority = {'EFO': 1, 'NCIT': 2, 'MTBLS': 3, 'CHEBI': 4, 'CHMO': 5, 'GO': 6, 'MESH': 7}
         else:
-            priority = {'MTBLS': 0, 'EFO': 1, 'NCBITAXON': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+            priority = {'EFO': 10, 'NCBITAXON': 20, 'UO': 25, 'BTO': 30, 'MTBLS': 0,  'CHMO': 50, 'NCIT': 60, 'PO': 70, 'CHEBI': 40,}
 
         prioritrised_ontology_names = { x.upper():priority[x] for x in priority}
         exact = sort_terms_by_priority(exact, prioritrised_ontology_names)

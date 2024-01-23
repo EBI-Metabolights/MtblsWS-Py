@@ -604,8 +604,11 @@ class ColumnsRows(Resource):
             abort(403)
         file_basename = file_name
         file_name = os.path.join(study_location, file_name)
+        headers = {}
         try:
             table_df: pd.DataFrame = read_tsv(file_name)
+            for idx, column in enumerate(table_df.columns):
+                headers[idx] = column
         except FileNotFoundError:
             abort(404, message="The file " + file_name + " was not found or not valid")
 
@@ -633,9 +636,6 @@ class ColumnsRows(Resource):
             message = write_tsv(table_df, file_name)
             success = True if "success" in message.lower() else False
             # df_data_dict = totuples(table_df.reset_index(), 'rows')
-            headers = {}
-            for idx, column in enumerate(table_df.columns):
-                headers[idx] = column
             # Get an indexed header row
             # df_header = get_table_header(table_df)
             # df_data_dict, df_header = filter_dataframe(file_basename, table_df, df_data_dict, df_header)
