@@ -629,13 +629,13 @@ class ColumnsRows(Resource):
 
         # Write the new row back in the file
         message = write_tsv(table_df, file_name)
-
-        df_data_dict = totuples(table_df.reset_index(), 'rows')
+        success = True if "success" in message.lower() else False
+        # df_data_dict = totuples(table_df.reset_index(), 'rows')
 
         # Get an indexed header row
         df_header = get_table_header(table_df)
-        df_data_dict, df_header = filter_dataframe(file_basename, table_df, df_data_dict, df_header)
-        return {'header': df_header, 'rows': df_data_dict, 'message': message}
+        # df_data_dict, df_header = filter_dataframe(file_basename, table_df, df_data_dict, df_header)
+        return {'header': df_header, 'updates': columns_rows, "status": success, 'message': message}
 
 
 class AddRows(Resource):
