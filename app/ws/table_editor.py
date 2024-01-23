@@ -604,7 +604,7 @@ class ColumnsRows(Resource):
         file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
-            table_df = read_tsv(file_name)
+            table_df: pd.DataFrame = read_tsv(file_name)
         except FileNotFoundError:
             abort(400, message="The file " + file_name + " was not found")
 
@@ -631,11 +631,13 @@ class ColumnsRows(Resource):
         message = write_tsv(table_df, file_name)
         success = True if "success" in message.lower() else False
         # df_data_dict = totuples(table_df.reset_index(), 'rows')
-
+        headers = {}
+        for idx, column in enumerate(table_df.columns):
+            headers[idx] = column
         # Get an indexed header row
-        df_header = get_table_header(table_df)
+        # df_header = get_table_header(table_df)
         # df_data_dict, df_header = filter_dataframe(file_basename, table_df, df_data_dict, df_header)
-        return {'header': df_header, 'updates': columns_rows, "status": success, 'message': message}
+        return {'header': headers, 'updates': columns_rows, "success": success, 'message': message}
 
 
 class AddRows(Resource):
