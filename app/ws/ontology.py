@@ -40,7 +40,7 @@ from app.utils import current_time
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.ontology_info import get_ontology_name, get_ontology_search_result, getOnto_info
+from app.ws.ontology_info import DefaultControlLists, MetaboLightsOntology, get_ontology_name, get_ontology_search_result, getOnto_info, load_ontology_file
 from app.ws.utils import log_request
 
 logger = logging.getLogger('wslog')
@@ -60,6 +60,56 @@ def parse_set_str(input_data: str, lowercase: bool=False):
     
     return result if result else None
 
+
+class MtblsControlLists(Resource):
+
+    @swagger.operation(
+        summary="Get Metabolights default control lists for ISA metadata files.",
+        notes="Get Metabolights default control lists for ISA metadata files.",
+        parameters=[
+            {
+                "name": "name",
+                "description": "Ontology query term",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            }
+
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self):
+        log_request(request)
+        parser = reqparse.RequestParser()
+
+        parser.add_argument('name', help="Control list name")
+
+        args = parser.parse_args(req=request)
+        name = args['name'].strip() if args['name'] else None
+        filepath = get_settings().file_resources.mtbls_ontology_file
+        mtbl_ontology: MetaboLightsOntology = load_ontology_file(filepath)
+        return jsonify(mtbl_ontology.get_default_control_lists(name))
+        
+        
 class Ontology(Resource):
 
     @swagger.operation(

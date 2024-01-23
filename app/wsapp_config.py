@@ -84,7 +84,7 @@ from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
 from app.ws.mtblsWSclient import WsClient
 from app.ws.mtbls_ontology import MtblsOntologyTerms, MtblsOntologyTerm
 from app.ws.mzML2ISA import Convert2ISAtab, ValidateMzML
-from app.ws.ontology import Cellosaurus, Ontology, Placeholder
+from app.ws.ontology import Cellosaurus, MtblsControlLists, Ontology, Placeholder
 from app.ws.organism import Organism
 from app.ws.partner_utils import Metabolon
 from app.ws.pathway import fellaPathway, keggid
@@ -333,6 +333,7 @@ def initialize_app(flask_app):
 
     api.add_resource(MtblsOntologyTerms, res_path + "/mtbls-ontology/terms")
     api.add_resource(MtblsOntologyTerm, res_path + "/mtbls-ontology/terms/<string:term_id>")  
+    api.add_resource(MtblsControlLists, res_path + "/ebi-internal/control-lists")
 
     # EBI utils
     api.add_resource(Ontology, res_path + "/ebi-internal/ontology")  # Add ontology resources

@@ -219,6 +219,160 @@
         <rdfs:label xml:lang="en">assay file terms</rdfs:label>
     </owl:Class>
 
+    <!-- Investigation file terms -->
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001113">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001092" />
+        <rdfs:isDefinedBy>The status of a publication describing the experiment.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Study Publication Status</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001092" />
+        <rdfs:isDefinedBy>The name of the factor driving an experiment, e.g. Dose, Collection Time Point, Compound, and so forth.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Study Factor Type</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000724">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
+        <rdfs:isDefinedBy>Time point at which a sample or observation is made or taken from a biomaterial as measured from some reference point.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">timepoint</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000727">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
+        <rdfs:isDefinedBy>A planned process intended to modify or alter a condition or characteristic of an organism or individual.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">treatment</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000513">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
+        <rdfs:isDefinedBy>The total sum of the genetic information of an organism that is known and relevant to the experiment being performed, including chromosomal, plasmid, viral or other genetic material which has been introduced into the organism either prior to or during the experiment.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">genotype</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000246">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
+        <rdfs:isDefinedBy>A temporal measurement of the time period elapsed since an identifiable point in the life cycle of an organism. If a developmental stage is specified, the identifiable point would be the beginning of that stage. Otherwise the identifiable point must be specified such as planting (e.g. 3 days post planting).</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">age</rdfs:label>
+    </owl:Class>
+
+<owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002755">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
+        <rdfs:isDefinedBy>The customary allowance of food and drink taken by a person or an animal from day to day, particularly one especially planned to meet specific requirements of the individual, including or excluding certain items of food; a prescribed course of eating and drinking in which the amount and kind of food, as well as the times at which it is to be taken, are regulated for therapeutic purposes or selected with reference to a particular state of health.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">diet</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000408">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
+        <rdfs:isDefinedBy>A disease is a disposition to undergo pathological processes that exists in an organism because of one or more disorders in that organism.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">disease</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000410">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
+        <rdfs:isDefinedBy>The stage or progression of a disease in an organism. Includes pathological staging of cancers and other disease progression. E.g. Dukes C stage describing colon cancer.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">disease staging</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000487">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
+        <rdfs:isDefinedBy>The act of subjecting someone or something to an influencing experience. E.g. exposure to cigarette smoke.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">exposure</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002091">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
+        <rdfs:isDefinedBy>A biological replicate is a replicate role that consists of independent biological replicates made from different individual biosamples.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">biological replicate</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002090">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
+        <rdfs:isDefinedBy>A technical replicate is a replicate role where the same BioSample is use e.g. the same pool of RNA used to assess technical (as opposed to biological) variation within an experiment.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">technical replicate</rdfs:label>
+    </owl:Class>
+
+
+    <!-- Design Type -->
+
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001115">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001092" />
+        <rdfs:isDefinedBy>Terms describing study design type eg. ultra-performance liquid chromatography-mass spectrometry, targeted or untargeted metabolomics</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Study Design Type</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000279">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001115" />
+        <rdfs:label xml:lang="en">untargeted metabolites</rdfs:label>
+    </owl:Class>
+
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000272">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001115" />
+        <rdfs:label xml:lang="en">targeted metabolites</rdfs:label>
+    </owl:Class>
+
+     <owl:Class rdf:about="http://purl.obolibrary.org/obo/CHMO_0000591">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001115" />
+        <rdfs:isDefinedBy>Spectroscopy where the energy states of spin-active nuclei placed in a static magnetic field are interrogated by inducing transitions between the states via radio frequency irradiation.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">nuclear magnetic resonance spectroscopy</rdfs:label>
+    </owl:Class>
+
+     <owl:Class rdf:about="http://purl.obolibrary.org/obo/CHMO_0000591">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001115" />
+        <rdfs:isDefinedBy>A method where a sample mixture is first separated by ultra-performance liquid chromatography before being converted into ions which are characterised by their mass-to-charge ratio and relative abundance.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">ultra-performance liquid chromatography-mass spectrometry</rdfs:label>
+    </owl:Class>
+
+     <owl:Class rdf:about="http://purl.obolibrary.org/obo/CHMO_0000497">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001115" />
+        <rdfs:isDefinedBy>Any method where a sample mixture is first separated by gas chromatography then ionised and characterised according to mass-to-charge ratio and relative abundance.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">gas chromatography-mass spectrometry</rdfs:label>
+    </owl:Class>
+
+     <owl:Class rdf:about="http://purl.obolibrary.org/obo/CHMO_0000575">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001115" />
+        <rdfs:isDefinedBy>Mass spectrometry involving multiple mass-selection steps, with some form of fragmentation occurring between each stage.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">tandem mass spectrometry</rdfs:label>
+    </owl:Class>
+
+     <owl:Class rdf:about="http://purl.obolibrary.org/obo/PRIDE_0000461">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001115" />
+        <rdfs:isDefinedBy>Studies that use various omics methods like proteomics, genomics, transcriptomics, metabolomics to analyse the same biological samples.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Multi-omics study</rdfs:label>
+    </owl:Class>
+
+     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004982">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001115" />
+        <rdfs:isDefinedBy>A collection or collectivity of microorganisms.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">microbiome</rdfs:label>
+    </owl:Class>
+
+     <owl:Class rdf:about="http://purl.obolibrary.org/obo/MONDO_0004992">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001115" />
+        <rdfs:isDefinedBy>A tumor composed of atypical neoplastic, often pleomorphic cells that invade other tissues. Malignant neoplasms often metastasize to distant anatomic sites and may recur after excision. The most common malignant neoplasms are carcinomas (adenocarcinomas or squamous cell carcinomas), Hodgkin and non-Hodgkin lymphomas, leukemias, melanomas, and sarcomas.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">cancer</rdfs:label>
+    </owl:Class>
+
+     <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCIT_C16269">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001115" />
+        <rdfs:isDefinedBy>The process of change in the structure and function of an organism that occurs with the passage of time.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">aging</rdfs:label>
+    </owl:Class>
+
+
+
+    <!-- Assay File terms-->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001094">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001091" />
+        <rdfs:isDefinedBy>Terms for MetaboLights ISA assay file</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">assay file terms</rdfs:label>
+    </owl:Class>
+
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001095">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001093" />
         <rdfs:isDefinedBy>Terms for Characteristics[Organism] column.</rdfs:isDefinedBy>
@@ -250,11 +404,101 @@
         <rdfs:label xml:lang="en">Sample Protocol REF</rdfs:label>
     </owl:Class>
 
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001101">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001094" />
+        <rdfs:isDefinedBy>Terms for Protocol REF columns in an assay file.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Assay Protocol REF</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001102">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001101" />
+        <rdfs:isDefinedBy>Terms for Protocol REF columns in an Nuclear magnetic resonance (NMR) spectrometry assay file.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">NMR Protocol REF</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001103">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001101" />
+        <rdfs:isDefinedBy>Terms for Protocol REF columns in an LC-MS assay.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">LC-MS Protocol REF</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001104">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001101" />
+        <rdfs:isDefinedBy>Terms for Protocol REF columns in a GC-MS assay.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">GC-MS Protocol REF</rdfs:label>
+    </owl:Class>
+
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001100">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001099" />
-        <rdfs:isDefinedBy>Terms for Protocol REF column.</rdfs:isDefinedBy>
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001102" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001103" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001104" />
+        <rdfs:isDefinedBy>Collection of a representative sample from a population prior to a chemical analysis.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">Sample collection</rdfs:label>
     </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001105">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001102" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001103" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001104" />
+        <rdfs:isDefinedBy>Extraction.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Extraction</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001106">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001102" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001103" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001104" />
+        <rdfs:isDefinedBy>Data transformation.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Data transformation</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001107">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001102" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001103" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001104" />
+        <rdfs:isDefinedBy>Metabolite identification.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Metabolite identification</rdfs:label>
+    </owl:Class>
+
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001108">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001103" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001104" />
+        <rdfs:isDefinedBy>Chromatography.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Chromatography</rdfs:label>
+    </owl:Class>
+
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001109">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001103" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001104" />
+        <rdfs:isDefinedBy>Mass spectrometry.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Mass spectrometry</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001110">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001102" />
+        <rdfs:label xml:lang="en">NMR sample</rdfs:label>
+    </owl:Class>
+
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001111">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001102" />
+        <rdfs:isDefinedBy>NMR spectrometry.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">NMR spectroscopy</rdfs:label>
+    </owl:Class>
+
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001112">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001102" />
+        <rdfs:isDefinedBy>NMR assay.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">NMR assay</rdfs:label>
+    </owl:Class>
+
+
+    <!-- Organism Part -->
 
     <owl:Class rdf:about="http://purl.obolibrary.org/obo/BTO_0000131">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001096" />
@@ -1988,6 +2232,7 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0001794">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0001742" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/MTBLS_001113" />
         <rdfs:isDefinedBy>Publication submitted to a journal for publication.</rdfs:isDefinedBy>
         <rdfs:label>submitted</rdfs:label>
     </owl:Class>
@@ -1997,6 +2242,7 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0001795">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0001742" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/MTBLS_001113" />
         <rdfs:isDefinedBy>Publication in preparation before submitting to a journal.</rdfs:isDefinedBy>
         <rdfs:label>in preparation</rdfs:label>
     </owl:Class>
@@ -2006,10 +2252,18 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0001796">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0001742" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/MTBLS_001113" />
         <rdfs:isDefinedBy>Publication published in a journal.</rdfs:isDefinedBy>
         <rdfs:label>published</rdfs:label>
     </owl:Class>
 
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0010558">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0001742" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/MTBLS_001113" />
+        <rdfs:isDefinedBy>publications that have URL/DOI for an online copy that can be viewed by anyone but is not the final version</rdfs:isDefinedBy>
+        <rdfs:label>preprint</rdfs:label>
+    </owl:Class>
 
     <!-- http://www.ebi.ac.uk/efo/EFO_0002897 -->
 
@@ -2398,8 +2652,7 @@
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000001 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000001">
-        <rdfs:isDefinedBy>A chemical substance, often an enzyme, that plays a crucial role in a
-            biological process.</rdfs:isDefinedBy>
+        <rdfs:isDefinedBy>A chemical substance, often an enzyme, that plays a crucial role in a biological process.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">factor</rdfs:label>
     </owl:Class>
 
@@ -2419,13 +2672,14 @@
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000004 -->
-
+<!-- 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0010558">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0001742" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/MTBLS_001113" />
         <rdfs:isDefinedBy>publications that have URL/DOI for an online copy that can be viewed by
             anyone but is not the final version</rdfs:isDefinedBy>
         <rdfs:label>preprint</rdfs:label>
-    </owl:Class>
+    </owl:Class> -->
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000005 -->
@@ -2871,7 +3125,6 @@
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000050 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000050">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
         <rdfs:isDefinedBy>Spectroscopy where the energy states of spin-active nuclei placed in a
             static magnetic field are interrogated by inducing transitions between the states via
             radio frequency irradiation.</rdfs:isDefinedBy>
@@ -5006,15 +5259,6 @@
         <rdfs:label xml:lang="en">Systems biology</rdfs:label>
     </owl:Class>
 
-
-    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000272 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000272">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
-        <rdfs:label xml:lang="en">targeted metabolites</rdfs:label>
-    </owl:Class>
-
-
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000273 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000273">
@@ -5064,14 +5308,6 @@
             using techniques such as gas chromatography mass spectrometry, liquid chromatography
             mass spectrometry, NMR spectroscopy.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">untargeted metabolite profiling</rdfs:label>
-    </owl:Class>
-
-
-    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000279 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000279">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
-        <rdfs:label xml:lang="en">untargeted metabolites</rdfs:label>
     </owl:Class>
 
 

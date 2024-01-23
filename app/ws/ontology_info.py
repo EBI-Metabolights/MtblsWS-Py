@@ -15,6 +15,7 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+from __future__ import annotations
 
 from enum import Enum
 from functools import lru_cache
@@ -22,9 +23,11 @@ import json
 import logging
 import os
 import re
+import socket
 import ssl
 import sys
-from typing import Callable, Dict, List, Set, Union
+import traceback
+from typing import Any, Callable, Dict, List, Set, Union
 import urllib
 from urllib.parse import quote_plus
 
@@ -33,6 +36,7 @@ from flask import current_app as app
 from owlready2 import get_ontology, urllib, IRIS
 from owlready2.namespace import Ontology
 from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 
 from app.config import get_settings
 from app.utils import current_time, ttl_cache
@@ -40,16 +44,14 @@ from app.utils import current_time, ttl_cache
 logger = logging.getLogger('wslog')
 
 
-class Entity(object):
-    def __init__(self, name, iri='', onto_name='', provenance_name='', provenance_uri='',
-                 zooma_confidence='', definition=''):
-        self.name: str = name
-        self.iri: str  = iri
-        self.onto_name: str  = onto_name
-        self.provenance_name: str  = provenance_name
-        self.zooma_confidence: str  = zooma_confidence
-        self.definition: str  = definition
-        self.provenance_uri: str =provenance_uri
+class Entity(BaseModel):
+        name: str = ""
+        iri: str  = "iri"
+        onto_name: str  = ""
+        provenance_name: str  = ""
+        zooma_confidence: str  = ""
+        definition: str  = ""
+        provenance_uri: str =""
 
 
 class factor(object):
@@ -66,12 +68,13 @@ class Descriptor(object):
         self.design_type = design_type
         self.iri = iri
         
-class MetaboLightsEntity(object):
-    def __init__(self, label, iri, description= '', children=None):
-        self.label = label
-        self.iri = iri
-        self.description = description
-        self.children: Dict[str, MetaboLightsEntity] = children if children else {}
+class MetaboLightsEntity(BaseModel):
+    label: str = ""
+    iri: str = ""
+    description: str = ""
+    children: Dict[str, MetaboLightsEntity] = {}
+
+MetaboLightsEntity.model_rebuild()
 
 class FilterType(int, Enum):
     EXACT_MATCH=0
@@ -93,7 +96,10 @@ def filter_term_by_keyword(filter_type: FilterType, keyword: str, current_value:
         return keyword.lower() in current_value.lower() if case_insensitive else keyword in current_value
     return False
 
-
+class DefaultControlLists(BaseModel):
+    control_lists: Dict[str, List[Entity]] = {}
+    model_config = ConfigDict(alias_generator=to_camel)
+    
 class MetaboLightsOntology():
     
     OBO_ONTOLOGY_PREFIX = "http://purl.obolibrary.org/obo"
@@ -109,7 +115,29 @@ class MetaboLightsOntology():
         self.branch_map: Dict[str, List[Entity]]  = {}
         self.sorted_search_entities: List[Entity] = []
         self.initiate()
-        
+        default_list: DefaultControlLists = DefaultControlLists()
+        default_list.control_lists = self.branch_map
+        self.control_lists: DefaultControlLists = default_list
+        self.control_lists_dict: Dict[str, Any] = self.control_lists.model_dump(by_alias=True)
+
+    def get_default_control_lists(self, name: str=''):
+        if name:
+            default_list: DefaultControlLists = DefaultControlLists()
+            default_list.control_lists={name: self.branch_map[name]}
+            return default_list.model_dump(by_alias=True) if name in self.branch_map else {}
+        if not self.control_lists.control_lists:
+            self.control_lists.control_lists = self.branch_map
+            self.control_lists_dict = self.control_lists.model_dump(by_alias=True)
+        return self.control_lists_dict
+
+    def get_control_lists_file_path(self):
+        file_path = os.path.join(get_settings().server.log.log_path, f"temp_control_list_{socket.gethostname()}.json")
+        if not os.path.exists(file_path):
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(self.control_lists_dict, f, indent=4)
+        return file_path
+
+
     def get_branch_entities(self, name: str) -> List[Entity]:
         if not name:
             return self.sorted_search_entities
@@ -167,6 +195,8 @@ class MetaboLightsOntology():
         label =  re.sub("\s+", " ", str(entity.label[0]))
         self.iri_set.add(entity.iri)
         self.label_set.add(label)
+        if not children:
+            children = {}
         mtbls_entity = MetaboLightsEntity(label=label, iri=entity.iri, children=children)
         if label not in self.label_map:
             self.label_map[label] = []
@@ -500,6 +530,8 @@ def load_ontology_file(filepath)-> MetaboLightsOntology:
         if ontology:
             return MetaboLightsOntology(ontology=ontology)
     except Exception as ex:
+        print(f"Error loading ontology file. {str(ex)}")
+        print(traceback.format_exc())
         logger.info("Fail to load ontology from {path}. {ex}".format(path=filepath, ex=str(ex)))
     
     return None
