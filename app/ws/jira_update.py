@@ -89,9 +89,9 @@ class Jira(Resource):
         UserService.get_instance().validate_user_has_curator_role(user_token)
         inputs = {"user_token": user_token}
         task = update_or_create_jira_issue_task.apply_async(kwargs=inputs)
-        return {"message": f"Sent test email task is stated with id : {task.id}"}
+        return {"message": f"Creating JIRA ticket task is stated with id : {task.id}"}
 
-
+# deprecated funtion - moved to celery worker
 def update_or_create_jira_issue(user_token, is_curator):
     try:
         params = get_settings().jira.connection
