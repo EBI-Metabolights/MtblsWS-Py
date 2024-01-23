@@ -568,6 +568,7 @@ class ColumnsRows(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def put(self, study_id, file_name):
 
         try:
@@ -606,7 +607,7 @@ class ColumnsRows(Resource):
         try:
             table_df: pd.DataFrame = read_tsv(file_name)
         except FileNotFoundError:
-            abort(400, message="The file " + file_name + " was not found")
+            abort(404, message="The file " + file_name + " was not found or not valid")
 
         for column in columns_rows:
             cell_value = column['value']
@@ -626,19 +627,21 @@ class ColumnsRows(Resource):
                              + cell_value + ", row: " + row_index + ", column: " + column + ". " + str(e))
                 abort(417, message="(IndexError) Unable to find the required 'value', 'row' and 'column' values. Value: "
                       + cell_value + ", row: " + row_index + ", column: " + column)
-
-        # Write the new row back in the file
-        message = write_tsv(table_df, file_name)
-        success = True if "success" in message.lower() else False
-        # df_data_dict = totuples(table_df.reset_index(), 'rows')
-        headers = {}
-        for idx, column in enumerate(table_df.columns):
-            headers[idx] = column
-        # Get an indexed header row
-        # df_header = get_table_header(table_df)
-        # df_data_dict, df_header = filter_dataframe(file_basename, table_df, df_data_dict, df_header)
-        return {'header': headers, 'updates': columns_rows, "success": success, 'message': message}
-
+        success = False
+        try: 
+            # Write the new row back in the file
+            message = write_tsv(table_df, file_name)
+            success = True if "success" in message.lower() else False
+            # df_data_dict = totuples(table_df.reset_index(), 'rows')
+            headers = {}
+            for idx, column in enumerate(table_df.columns):
+                headers[idx] = column
+            # Get an indexed header row
+            # df_header = get_table_header(table_df)
+            # df_data_dict, df_header = filter_dataframe(file_basename, table_df, df_data_dict, df_header)
+            return {'header': headers, 'updates': columns_rows, "success": success, 'message': message}
+        except Exception as ex:
+            raise MetabolightsException(http_code=500, message= f"Update error {str(ex)}")
 
 class AddRows(Resource):
     @swagger.operation(
