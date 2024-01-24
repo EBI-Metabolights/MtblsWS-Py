@@ -219,6 +219,105 @@
         <rdfs:label xml:lang="en">assay file terms</rdfs:label>
     </owl:Class>
 
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001116">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001094" />
+        <rdfs:isDefinedBy>Terms for Parameter Value[Ion source] in MetaboLights ISA assay file</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">GC-MS Parameter Value[Ion source]</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001117">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001094" />
+        <rdfs:isDefinedBy>Terms for Parameter Value[Ion source] in MetaboLights ISA assay file</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">LC-MS Parameter Value[Ion source]</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001118">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001094" />
+        <rdfs:isDefinedBy>Terms for Parameter Value[Mass analyzer] in MetaboLights ISA assay file</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Parameter Value[Mass analyzer]</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001119">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001094" />
+        <rdfs:isDefinedBy>Terms for Parameter Value[Column type] in MetaboLights ISA assay file</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">LC-MS Parameter Value[Column type]</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001120">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001094" />
+        <rdfs:isDefinedBy>Terms for Parameter Value[Column type] in MetaboLights ISA assay file</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">GC-MS Parameter Value[Column type]</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://purl.obolibrary.org/obo/MS_1000389 -->
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000389">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001116" />
+        <rdfs:isDefinedBy>The ionization of an atom or molecule by electrons that are typically accelerated to energies between 50 and 150 eV. Usually 70 eV electrons are used to produce positive ions. The term 'electron impact' is not recommended.</rdfs:isDefinedBy>
+        <rdfs:label>electron ionization</rdfs:label>
+    </owl:Class>
+
+    
+    <!-- http://purl.obolibrary.org/obo/MS_1000071 -->
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000071">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001116" />
+        <rdfs:isDefinedBy>The formation of a new ion by the reaction of a neutral species with an ion. The process may involve transfer of an electron, a proton or other charged species between the reactants. When a positive ion results from chemical ionization the term may be used without qualification. When a negative ion results the term negative ion chemical ionization should be used. Note that this term is not synonymous with chemi-ionization.</rdfs:isDefinedBy>
+        <rdfs:label>chemical ionization</rdfs:label>
+    </owl:Class>
+    
+    <!-- http://purl.obolibrary.org/obo/MS_1000071 -->
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000258">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001116" />
+        <rdfs:isDefinedBy>The removal of electrons from any species by interaction with a high electric field.</rdfs:isDefinedBy>
+        <rdfs:label>field ionization</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://purl.obolibrary.org/obo/MS_1000073 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000073">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001117" />
+        <rdfs:isDefinedBy>A process in which ionized species in the gas phase are produced from an analyte-containing solution via highly charged fine droplets, by means of spraying the solution from a narrow-bore needle tip at atmospheric pressure in the presence of a high electric field. When a pressurized gas is used to aid in the formation of a stable spray, the term pneumatically assisted electrospray ionization is used. The term ion spray is not recommended.</rdfs:isDefinedBy>
+        <rdfs:label>electrospray ionization</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://purl.obolibrary.org/obo/MS_1000398 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000398">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001117" />
+        <rdfs:isDefinedBy>Electrospray ionization at a flow rate less than ; 25 nL/min. Nanoelectrospray is synonymous with nanospray. The flow is dependent on the potenial on the tip of the electrospray needle and/or a gas presure to push the sample through the needle. See also electrospray ionization and microelectrospray.</rdfs:isDefinedBy>
+        <rdfs:label>nanoelectrospray</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://purl.obolibrary.org/obo/MS_1000070 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000070">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001117" />
+        <rdfs:isDefinedBy>Chemical ionization that takes place at atmospheric pressure as opposed to the reduced pressure is normally used for chemical ionization.</rdfs:isDefinedBy>
+        <rdfs:label>atmospheric pressure chemical ionization</rdfs:label>
+    </owl:Class>
+
+
+    <!-- http://purl.obolibrary.org/obo/MS_1000075 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000075">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001117" />
+        <rdfs:isDefinedBy>The formation of gas-phase ions from molecules that are present in a solid or solvent matrix that is irradiated with a pulsed laser.</rdfs:isDefinedBy>
+        <rdfs:label>matrix-assisted laser desorption ionization</rdfs:label>
+    </owl:Class>
+
+    <!-- http://purl.obolibrary.org/obo/MS_1002011 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1002011">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001117" />
+        <rdfs:isDefinedBy>Combination of electrospray and desorption ionization method that ionizes gases, liquids and solids in open air under atmospheric pressure.</rdfs:isDefinedBy>
+        <rdfs:label>desorption electrospray ionization</rdfs:label>
+    </owl:Class>
+
+
     <!-- Investigation file terms -->
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001113">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001092" />
@@ -231,6 +330,13 @@
         <rdfs:isDefinedBy>The name of the factor driving an experiment, e.g. Dose, Collection Time Point, Compound, and so forth.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">Study Factor Type</rdfs:label>
     </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001121">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001092" />
+        <rdfs:isDefinedBy>Term to classify the role performed by the person in the context of the study or investigation, which means that the roles reported here need not correspond to roles held withing their affiliated organization.</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Study Person Role</rdfs:label>
+    </owl:Class>
+
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000724">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
@@ -843,8 +949,8 @@
 
     <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCIT_C19924">
         <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/NCIT_C25936" />
-        <rdfs:isDefinedBy>An investigator who is responsible for all aspects of the conduct of a
-            study.</rdfs:isDefinedBy>
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001121" />
+        <rdfs:isDefinedBy>An investigator who is responsible for all aspects of the conduct of a study.</rdfs:isDefinedBy>
         <rdfs:label>Principal Investigator</rdfs:label>
     </owl:Class>
     <owl:Axiom>
@@ -856,10 +962,20 @@
     </owl:Axiom>
 
 
+    
+
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCIT_C42781">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001121" />
+        <rdfs:isDefinedBy>The writer of a book, article, or other text.</rdfs:isDefinedBy>
+        <rdfs:label>Author</rdfs:label>
+    </owl:Class>
+
     <!-- http://purl.obolibrary.org/obo/NCIT_C25936 -->
 
     <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCIT_C25936">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000002" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001121" />
         <rdfs:isDefinedBy>An individual who conducts scientific research. In a clinical setting
             this individual actually conducts and/or supervises the clinical investigation and
             study-related procedures. The investigator monitors the safety of the trial subjects and
@@ -2232,7 +2348,7 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0001794">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0001742" />
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/MTBLS_001113" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001113" />
         <rdfs:isDefinedBy>Publication submitted to a journal for publication.</rdfs:isDefinedBy>
         <rdfs:label>submitted</rdfs:label>
     </owl:Class>
@@ -2242,7 +2358,7 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0001795">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0001742" />
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/MTBLS_001113" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001113" />
         <rdfs:isDefinedBy>Publication in preparation before submitting to a journal.</rdfs:isDefinedBy>
         <rdfs:label>in preparation</rdfs:label>
     </owl:Class>
@@ -2252,7 +2368,7 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0001796">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0001742" />
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/MTBLS_001113" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001113" />
         <rdfs:isDefinedBy>Publication published in a journal.</rdfs:isDefinedBy>
         <rdfs:label>published</rdfs:label>
     </owl:Class>
@@ -2260,7 +2376,7 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0010558">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0001742" />
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/MTBLS_001113" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001113" />
         <rdfs:isDefinedBy>publications that have URL/DOI for an online copy that can be viewed by anyone but is not the final version</rdfs:isDefinedBy>
         <rdfs:label>preprint</rdfs:label>
     </owl:Class>
@@ -9315,60 +9431,75 @@
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000688 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000688">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000688">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000312" />
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000317" />
         <rdfs:label>electrospray ionization</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000689 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000689">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000689">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000317" />
         <oboI:hasExactSynonym>http://purl.obolibrary.org/obo/MS_1000398</oboI:hasExactSynonym>
         <rdfs:label>nanoelectrospray</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000690 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000690">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000317" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001117" />
         <rdfs:label>secondary electrospray ionization</rdfs:label>
     </owl:Class>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000691 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000691">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000691">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000317" />
         <rdfs:label>atmospheric pressure chemical ionization</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000692 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000692">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000692">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
-        <rdfs:label>triple quadrapole</rdfs:label>
-    </owl:Class>
+        <rdfs:label>triple quadrupole</rdfs:label>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000693 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000693">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000693">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
-        <oboI:hasExactSynonym>http://purl.obolibrary.org/obo/MS_1000264</oboI:hasExactSynonym>
+        <rdfs:label>ion trap</rdfs:label>
+    </owl:DeprecatedClass>
+
+    <!-- http://purl.obolibrary.org/obo/MS_1000264 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000264">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001118" />
         <rdfs:label>ion trap</rdfs:label>
     </owl:Class>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000694 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000694">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000694">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
-        <oboI:hasExactSynonym>http://purl.obolibrary.org/obo/MS_1000082</oboI:hasExactSynonym>
+        <rdfs:label>quadrupole ion trap</rdfs:label>
+    </owl:DeprecatedClass>
+
+
+
+    <!-- http://purl.obolibrary.org/obo/MS_1000082 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000082">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001118" />
         <rdfs:label>quadrupole ion trap</rdfs:label>
     </owl:Class>
 
@@ -9377,31 +9508,49 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000695">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001118" />
         <rdfs:label>hybrid triple quadrupole-linear ion trap</rdfs:label>
     </owl:Class>
 
 
-    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000696 -->
+    <!-- http://purl.obolibrary.org/obo/CHMO_0000964 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000696">
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/CHMO_0000964">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001118" />
+        <rdfs:isDefinedBy>A piece of apparatus consisting of paired trapping plates, receiver plates and transmitter plates which provides a magnetic field that coherently excites ions according to their cyclotron frequencies which depend on their mass-to-charge ratio.</rdfs:isDefinedBy>
         <rdfs:label>ion cyclotron resonance cell</rdfs:label>
     </owl:Class>
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000696 -->
+
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000696">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
+        <rdfs:label>ion cyclotron resonance cell</rdfs:label>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000697 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000697">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000313" />
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000484">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001118" />
+        <rdfs:isDefinedBy>An ion trapping device that consists of an outer barrel-like electrode and a coaxial inner spindle-like electrode that form an electrostatic field with quadro-logarithmic potential distribution. The frequency of harmonic oscillations of the orbitally trapped ions along the axis of the electrostatic field is independent of the ion velocity and is inversely proportional to the square root of m/z so that the trap can be used as a mass analyzer.</rdfs:isDefinedBy>
         <rdfs:label>orbitrap</rdfs:label>
     </owl:Class>
 
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000697 -->
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000697">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000313" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
+        <rdfs:label>orbitrap</rdfs:label>
+    </owl:DeprecatedClass>
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000698 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000698">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001118" />
         <rdfs:label>triple quadrupole</rdfs:label>
     </owl:Class>
 
@@ -9410,6 +9559,7 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000699">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001118" />
         <rdfs:label>quadrupole time-of-flight</rdfs:label>
     </owl:Class>
 
@@ -9418,25 +9568,40 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000700">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001118" />
         <rdfs:label>ion trap time-of-flight</rdfs:label>
     </owl:Class>
 
 
-    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000701 -->
+    <!-- http://purl.obolibrary.org/obo/CHMO_0000969 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000701">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/CHMO_0000969">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001118" />
+        <rdfs:isDefinedBy>A mass-to-charge analyser that uses a two-dimensional quadrupole field (generated by four parallel electrodes) to constrain ions radially into trajectories that correspond to their mass-to-charge ratio.</rdfs:isDefinedBy>
         <rdfs:label>linear quadrupole ion trap mass-to-charge analyser</rdfs:label>
     </owl:Class>
 
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000701 -->
+
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000701">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
+        <rdfs:label>linear quadrupole ion trap mass-to-charge analyser</rdfs:label>
+    </owl:DeprecatedClass>
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000702 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000702">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000702">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
         <rdfs:label>time-of-flight</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
+    <!-- http://purl.obolibrary.org/obo/MS_1000084 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000084">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001118" />
+        <rdfs:isDefinedBy>Instrument that separates ions by m/z in a field-free region after acceleration to a fixed acceleration energy.</rdfs:isDefinedBy>
+        <rdfs:label>time-of-flight</rdfs:label>
+    </owl:Class>
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000703 -->
 
@@ -11616,6 +11781,8 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000853">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000323" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001119" />
+        <rdfs:isDefinedBy>Liquid chromatography where the mobile phase is significantly more polar than the stationary phase, for example a microporous silica-based material with chemically bonded alkyl chains.</rdfs:isDefinedBy>
         <rdfs:label>reverse phase</rdfs:label>
     </owl:Class>
 
@@ -11623,7 +11790,7 @@
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000854 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000854">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000323" />
+        <!-- <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000323" /> -->
         <rdfs:label></rdfs:label>
     </owl:Class>
 
@@ -11632,6 +11799,8 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000855">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000323" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001119" />
+        <rdfs:isDefinedBy>Liquid chromatography where the stationary phase is more polar than the mobile phase. This is the default for liquid chromatography.</rdfs:isDefinedBy>
         <rdfs:label>normal phase</rdfs:label>
     </owl:Class>
 
@@ -11640,6 +11809,8 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000856">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000323" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001119" />
+        <rdfs:isDefinedBy>Liquid chromatography where the stationary phase is hydrophilic, the mobile phase is organic and separation is achieved based on polarity.</rdfs:isDefinedBy>
         <rdfs:label>HILIC</rdfs:label>
     </owl:Class>
 
@@ -13094,6 +13265,7 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000989">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000341" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001120" />
         <rdfs:label>medium polarity</rdfs:label>
     </owl:Class>
 
@@ -13102,6 +13274,7 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000990">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000341" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001120" />
         <rdfs:label>low polarity</rdfs:label>
     </owl:Class>
 
@@ -13110,6 +13283,7 @@
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000991">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000341" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001120" />
         <rdfs:label>high polarity</rdfs:label>
     </owl:Class>
 
@@ -13676,11 +13850,19 @@
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001029 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001029">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001029">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000331" />
         <rdfs:label>quadrupole</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
+
+    <!-- http://purl.obolibrary.org/obo/MS_1000081 -->
+
+    <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000081">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001118" />
+        <rdfs:isDefinedBy>A mass spectrometer that consists of four parallel rods whose centers form the corners of a square and whose opposing poles are connected. The voltage applied to the rods is a superposition of a static potential and a sinusoidal radio frequency potential. The motion of an ion in the x and y dimensions is described by the Matthieu equation whose solutions show that ions in a particular m/z range can be transmitted along the z axis.</rdfs:isDefinedBy>
+        <rdfs:label>quadrupole</rdfs:label>
+    </owl:Class>
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001030 -->
 
@@ -14100,10 +14282,10 @@
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001084 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001084">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001084">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000312" />
         <rdfs:label xml:lang="en">matrix-assisted laser desorption ionization</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001085 -->
@@ -15118,10 +15300,10 @@
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002122 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002122">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002122">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000340" />
         <rdfs:label>chemical ionization</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002123 -->
@@ -15318,18 +15500,21 @@
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002147 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002147">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002147">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000340" />
         <rdfs:label>electron ionization</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
+
+
+
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002148 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002148">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002148">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000340" />
         <rdfs:label>field ionization</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002149 -->

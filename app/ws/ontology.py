@@ -205,9 +205,19 @@ class Ontology(Resource):
         branch = args['branch'].strip() if args['branch'] else None
         mapping = args['mapping'].strip() if args['mapping'] else None
         queryFields = parse_set_str(args['queryFields'])
-        ontology = parse_set_str(args['ontology'], lowercase=True)
-        
-        result = get_ontology_search_result(term, branch, ontology, mapping, queryFields)
+        ontologies = parse_set_str(args['ontology'], lowercase=False)
+        if ":" in term:
+            splitted_term = term.split(":")
+            listed_ontologies = parse_set_str(splitted_term[0], lowercase=False)
+            if not ontologies:
+                ontologies = listed_ontologies
+            else:
+                ontologies.extend(listed_ontologies)
+            
+            term = splitted_term[1]
+        if ontologies:
+            ontologies = ",".join(set(ontologies))
+        result = get_ontology_search_result(term, branch, ontologies, mapping, queryFields)
         return jsonify(result)
         
 

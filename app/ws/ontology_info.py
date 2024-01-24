@@ -299,6 +299,18 @@ class MetaboLightsOntology():
                 entity_set.add(label)
             self.collect_all_child_entities(v, entity_set=entity_set)
 
+PROTOCOL_REF_ORDER = [
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001100",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001105",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001108",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001109",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001110",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001111",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001112",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001106",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001107"
+    ]
+
 TERM_PRIORITY_MAP = {
     "Characteristics[Organism]": [
         "http://purl.obolibrary.org/obo/NCBITaxon_9606",
@@ -361,21 +373,57 @@ TERM_PRIORITY_MAP = {
         "http://www.ebi.ac.uk/efo/EFO_0000487",
         "http://www.ebi.ac.uk/efo/EFO_0002091",
         "http://www.ebi.ac.uk/efo/EFO_0002090"
-        
+    ],
+    "LC-MS Protocol REF": PROTOCOL_REF_ORDER,
+    "GC-MS Protocol REF": PROTOCOL_REF_ORDER,
+    "NMR Protocol REF": PROTOCOL_REF_ORDER,
+    "Parameter Value[Mass analyzer]": [
+        "http://purl.obolibrary.org/obo/MS_1000484",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000698",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000699",
+        "http://purl.obolibrary.org/obo/MS_1000084",
+    ],
+    "LC-MS Parameter Value[Ion source]": [
+        "http://purl.obolibrary.org/obo/MS_1000073",
+        "http://purl.obolibrary.org/obo/MS_1000398",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000690",
+        "http://purl.obolibrary.org/obo/MS_1000070",
+        "http://purl.obolibrary.org/obo/MS_1000075",
+        "http://purl.obolibrary.org/obo/MS_1002011",
+    ],
+    "GC-MS Parameter Value[Ion source]": [
+        "http://purl.obolibrary.org/obo/MS_1000389",
+        "http://purl.obolibrary.org/obo/MS_1000071",
+        "http://purl.obolibrary.org/obo/MS_1000258"
+    ],
+    "LC-MS Parameter Value[Column type]": [
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000853",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000856",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000855"
+    ],
+    "GC-MS Parameter Value[Column type]": [
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000991",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000990",
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000989"
+    ],
+    "Study Person Role": [
+        "http://purl.obolibrary.org/obo/NCIT_C42781",
+        "http://purl.obolibrary.org/obo/NCIT_C19924",
+        "http://purl.obolibrary.org/obo/NCIT_C25936"
     ]
 }
 
-def get_ontology_search_result(term, branch, ontology, mapping, queryFields):
+def get_ontology_search_result(term, branch, ontologies, mapping, queryFields):
     result = []
     if not term and not branch:
         return result
 
-    if ontology:  # if has ontology searching restriction
-        logger.info('Search %s in' % ','.join(ontology))
-        print('Search %s in' % ','.join(ontology))
+    if ontologies:  # if has ontology searching restriction
+        logger.info('Search ontology %s in' % ontologies)
+        print('Searching ontology  %s' % ontologies)
         try:
-            result = getOLSTerm(term, mapping, ontology=ontology)
-            result += getBioportalTerm(term, ontology=ontology)
+            result = getOLSTerm(term, mapping, ontologies=ontologies)
+            result += getBioportalTerm(term, ontologies=ontologies)
 
         except Exception as e:
             print(e.args)
@@ -707,12 +755,12 @@ def getMetaboTerm(keyword, branch, mapping='', limit=100):
     # return res
 
 @ttl_cache(1024)
-def getOLSTerm(keyword, map, ontology=''):
+def getOLSTerm(keyword, map, ontologies=''):
     logger.info('Requesting OLS...')
     print('Requesting OLS...')
     res = []
 
-    if keyword in [None, '']:
+    if not keyword:
         return res
 
     elif 'http:' in keyword:
@@ -739,15 +787,15 @@ def getOLSTerm(keyword, map, ontology=''):
         if map == 'exact':
             url += '&exact=true'
 
-        if ontology not in [None, '']:
-            onto_list = ','.join(ontology)
+        if ontologies:
+            onto_list = ",".join([x.strip() for x in ontologies.split(",")])
             url += '&ontology=' + onto_list
 
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
         responses = j_content["response"]['docs']
-
+        ontologies_uppercase = ontologies.upper().split(",")
         for term in responses:
             # name = ' '.join([w.capitalize() if w.islower() else w for w in term['label'].split()])
 
@@ -761,12 +809,11 @@ def getOLSTerm(keyword, map, ontology=''):
                 onto_name, _ = get_ontology_name(term['iri'])
             except:
                 onto_name = ''
-
-            base_url = get_settings().external_dependencies.api.ols_api_url
-            enti = Entity(name=name, iri=term['iri'], definition=definition, onto_name=onto_name,
-                          provenance_name="OLS", provenance_uri=base_url)
-
-            res.append(enti)
+            if onto_name.upper() in ontologies_uppercase:
+                base_url = get_settings().external_dependencies.api.ols_api_url
+                enti = Entity(name=name, iri=term['iri'], definition=definition, onto_name=onto_name,
+                            provenance_name="OLS", provenance_uri=base_url)
+                res.append(enti)
             if len(res) >= 20:
                 break
 
@@ -921,7 +968,7 @@ def getZoomaTerm(keyword, mapping=''):
     return res
 
 @ttl_cache(1024)
-def getBioportalTerm(keyword, ontology=''):
+def getBioportalTerm(keyword, ontologies=''):
     logger.info('Requesting Bioportal...')
     print('Requesting Bioportal...')
     res = []
@@ -937,9 +984,7 @@ def getBioportalTerm(keyword, ontology=''):
         base_url = get_settings().external_dependencies.api.bioontology_api_url
         url = os.path.join(base_url, uri)
 
-        if ontology:
-            ontology = [x.upper() for x in ontology]
-        onto_list = ','.join(ontology)
+        onto_list = ','.join([x.strip().upper() for x in ontologies.split(",")])
         url += '&ontologies=' + onto_list + '&require_exact_match=true'
 
         request = urllib.request.Request(url)
