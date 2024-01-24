@@ -201,9 +201,9 @@ class Ontology(Resource):
         parser.add_argument('ontology', help='ontology')
 
         args = parser.parse_args(req=request)
-        term = args['term'].strip() if args['term'] else None
-        branch = args['branch'].strip() if args['branch'] else None
-        mapping = args['mapping'].strip() if args['mapping'] else None
+        term = args['term'].strip() if args['term'] else ""
+        branch = args['branch'].strip() if args['branch'] else ""
+        mapping = args['mapping'].strip() if args['mapping'] else ""
         queryFields = parse_set_str(args['queryFields'])
         ontologies = parse_set_str(args['ontology'], lowercase=False)
         if ":" in term:

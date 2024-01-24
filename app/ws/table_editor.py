@@ -602,7 +602,8 @@ class ColumnsRows(Resource):
             study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-        file_basename = file_name
+        file_basename: str = file_name
+        maf_file = True if file_basename.startswith("m_") and file_basename.endswith(".tsv") else False
         file_name = os.path.join(study_location, file_name)
         headers = {}
         try:
@@ -611,11 +612,13 @@ class ColumnsRows(Resource):
                 headers[idx] = column
         except FileNotFoundError:
             abort(404, message="The file " + file_name + " was not found or not valid")
-
+        other_columns = {}
         for column in columns_rows:
             cell_value = column['value']
             row_index = column['row']
             column_index = column['column']
+            if maf_file:
+                other_columns[column_index] = table_df.columns[column_index]
             #  Need to add values for column and row (not header)
             try:
                 # for row_val in range(table_df.shape[0]):
@@ -639,7 +642,14 @@ class ColumnsRows(Resource):
             # Get an indexed header row
             # df_header = get_table_header(table_df)
             # df_data_dict, df_header = filter_dataframe(file_basename, table_df, df_data_dict, df_header)
-            return {'header': headers, 'updates': columns_rows, "success": success, 'message': message}
+            
+            if maf_file:
+                filtered_headers = other_columns
+                filtered_headers.update({x:headers[x] for x in headers if headers[x] in default_maf_columns})
+            else:
+                filtered_headers = headers
+                
+            return {'header': filtered_headers, 'updates': columns_rows, "success": success, 'message': message}
         except Exception as ex:
             raise MetabolightsException(http_code=500, message= f"Update error {str(ex)}")
 

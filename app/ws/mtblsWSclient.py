@@ -26,6 +26,7 @@ from app.utils import MetabolightsException
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.wsproxy import get_chebi_ws_proxy
+from app.ws.db.dbmanager import DBManager
 from app.ws.db_connection import create_empty_study, \
     get_release_date_of_study
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
@@ -60,6 +61,13 @@ class WsClient:
         
         self.email_service = email_service if email_service else WsClient.email_service
         self.elasticsearch_service = elasticsearch_service if elasticsearch_service else WsClient.elasticsearch_service
+        if not self.elasticsearch_service:
+            db_manager = DBManager.get_instance()
+            study_settings = get_settings().study
+            elasticsearch_settings = get_settings().elasticsearch
+            self.elasticsearch_service = ElasticsearchService(settings=elasticsearch_settings,
+                                                        db_manager=db_manager, study_settings=study_settings)
+            WsClient.elasticsearch_service = self.elasticsearch_service
             
     def get_study_location(self, study_id, user_token):
         return commons.get_study_location(study_id, user_token)
