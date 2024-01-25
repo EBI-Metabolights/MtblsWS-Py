@@ -425,10 +425,10 @@ def get_ontology_search_result(term, branch, ontologies, mapping, queryFields):
 
     if ontologies:  # if has ontology searching restriction
         logger.info('Search ontology %s in' % ontologies)
-        print('Searching ontology  %s' % ontologies)
+        # print('Searching ontology  %s' % ontologies)
         try:
             result = getOLSTerm(term, mapping, ontologies=ontologies)
-            result += getBioportalTerm(term, ontologies=ontologies)
+            result += getBioportalTerm(term, mapping, ontologies=ontologies)
 
         except Exception as e:
             print(e.args)
@@ -759,10 +759,10 @@ def getMetaboTerm(keyword, branch, mapping='', limit=100):
 
     # return res
 
-@ttl_cache(1024)
-def getOLSTerm(keyword, map, ontologies=''):
-    logger.info('Requesting OLS...')
-    print('Requesting OLS...')
+@ttl_cache(1024, 60*60)
+def getOLSTerm(keyword, map, ontologies='', limit=50):
+    logger.info('Requesting OLS... for keyword ' + keyword)
+    # print('Requesting OLS...')
     res = []
 
     if not keyword:
@@ -796,11 +796,11 @@ def getOLSTerm(keyword, map, ontologies=''):
             onto_list = ",".join([x.strip() for x in ontologies.split(",")])
             url += '&ontology=' + onto_list
 
-        fp = urllib.request.urlopen(url)
+        fp = urllib.request.urlopen(url, timeout=5)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
         responses = j_content["response"]['docs']
-        ontologies_uppercase = ontologies.upper().split(",")
+        ontologies_uppercase = [x for x in ontologies.upper().split(",") if x]
         for term in responses:
             # name = ' '.join([w.capitalize() if w.islower() else w for w in term['label'].split()])
 
@@ -811,15 +811,15 @@ def getOLSTerm(keyword, map, ontologies=''):
                 definition = ''
 
             try:
-                onto_name, _ = get_ontology_name(term['iri'])
+                onto_name = term['ontology_prefix']
             except:
                 onto_name = ''
-            if onto_name.upper() in ontologies_uppercase:
+            if not ontologies_uppercase or onto_name.upper() in ontologies_uppercase:
                 base_url = get_settings().external_dependencies.api.ols_api_url
                 enti = Entity(name=name, iri=term['iri'], definition=definition, onto_name=onto_name,
                             provenance_name="OLS", provenance_uri=base_url)
                 res.append(enti)
-            if len(res) >= 20:
+            if len(res) >= limit:
                 break
 
     except Exception as e:
@@ -827,7 +827,7 @@ def getOLSTerm(keyword, map, ontologies=''):
         logger.error('getOLS' + str(e))
     return res
 
-@ttl_cache(256)
+@ttl_cache(256, 60*60)
 def getStartIRI(start, onto_name):
     uri = 'search?q=' + start + '&ontology=' + onto_name + '&queryFields=label'
     url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
@@ -837,7 +837,7 @@ def getStartIRI(start, onto_name):
     res = json_str['response']['docs'][0]['iri']
     return urllib.parse.quote_plus(res)
 
-@ttl_cache(1024)
+@ttl_cache(1024, 60*60)
 def OLSbranchSearch(keyword, branch_name, onto_name):
     res = []
     if not keyword:
@@ -872,7 +872,7 @@ def get_metabo_zooma_terms_dataframe() -> pd.DataFrame:
 @ttl_cache(1024)
 def getMetaboZoomaTerm(keyword, mapping):
     logger.info('Searching Metabolights-zooma.tsv')
-    print('Searching Metabolights-zooma.tsv')
+    # print('Searching Metabolights-zooma.tsv')
     res = []
 
     if keyword in [None, '']:
@@ -919,7 +919,7 @@ def getMetaboZoomaTerm(keyword, mapping):
 @ttl_cache(1024, ttl=60*60)
 def getZoomaTerm(keyword, mapping='', limit=50):
     logger.info('Requesting Zooma...')
-    print('Requesting Zooma...')
+    # print('Requesting Zooma...')
     res = []
 
     if keyword in [None, '']:
@@ -954,9 +954,9 @@ def getZoomaTerm(keyword, mapping='', limit=50):
             if not enti.onto_name:
                 enti.onto_name = ""
             try:
-                enti.provenance_name = term['provenance']['source']['name']
+                enti.provenance_name = term['provenance']['source']['name'].upper()
             except:
-                enti.provenance_name = "Zooma"
+                enti.provenance_name = "ZOOMA"
 
             try:
                 enti.provenance_uri = term['provenance']['source']['uri']
@@ -972,9 +972,9 @@ def getZoomaTerm(keyword, mapping='', limit=50):
     return res
 
 @ttl_cache(1024)
-def getBioportalTerm(keyword, ontologies='', limit=50):
+def getBioportalTerm(keyword, mapping=False, ontologies='', limit=50):
     logger.info('Requesting Bioportal...')
-    print('Requesting Bioportal...')
+    # print('Requesting Bioportal...')
     res = []
 
     if keyword in [None, '']:
@@ -988,12 +988,12 @@ def getBioportalTerm(keyword, ontologies='', limit=50):
         base_url = get_settings().external_dependencies.api.bioontology_api_url
         url = os.path.join(base_url, uri)
 
-        onto_list = ','.join([x.strip().upper() for x in ontologies.split(",")])
-        url += '&ontologies=' + onto_list + '&require_exact_match=true'
-
+        onto_list = ','.join([x.strip().upper() for x in ontologies.split(",") if x])
+        url += '&ontologies=' + onto_list + '&require_exact_match=' + ('true' if mapping == 'exact' else 'false')
+        
         request = urllib.request.Request(url)
         request.add_header('Authorization', 'apikey token=' + get_settings().bioportal.api_token)
-        response = urllib.request.urlopen(request)
+        response = urllib.request.urlopen(request, timeout=5)
         content = response.read().decode('utf-8')
         j_content = json.loads(content)
 
@@ -1008,9 +1008,17 @@ def getBioportalTerm(keyword, ontologies='', limit=50):
                 onto_name = term['links']['ontology'].split('/')[-1]
             except:
                 onto_name = get_ontology_name(iri)[0]
-
-            enti = Entity(name=term['prefLabel'],
-                          iri=iri,
+            try:
+                definition = term['definition'][0] 
+            except:
+                definition = ""
+            try:
+                synonymn = ", ".join(term['definition'])
+            except:
+                synonymn = ""                
+            
+            enti = Entity(name=term['prefLabel'], iri=iri,
+                          definition=f"{definition}. {synonymn}" if definition else synonymn,
                           onto_name=onto_name, provenance_name="BioPortal", provenance_uri=base_url)
             res.append(enti)
             iri_record.add(iri)
@@ -1118,6 +1126,8 @@ def getOnto_info(pre_fix):
 @ttl_cache(1024)
 def get_ontology_name(iri):
     # get ontology name by giving iri of entity
+    ontology_name = ""
+    description = ""
     try:
         uri = 'terms/findByIdAndIsDefiningOntology?iri=' + iri
         url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
@@ -1126,20 +1136,24 @@ def get_ontology_name(iri):
         j_content = json.loads(content)
         item = j_content['_embedded']['terms'][0]
         try:
-            return item['ontology_name'] if item['ontology_name'] else "", \
-                   item['ontology_name']['description'][0]
+            try:
+                substring = iri.split('/')[-1]
+                ontology_name = substring.split('_')[0]
+            except:
+                pass
+            try:
+                description = item['ontology_name']['description'][0]
+            except:
+                pass
+            
+            if not ontology_name and item['ontology_name']:
+                ontology_name = item['ontology_name'].upper() 
         except:
-            return item['ontology_name'] if item['ontology_name'] else "", ''
+            pass
     except:
-        if 'MTBLS' in iri:
-            return 'MTBLS', 'Metabolights'
-        elif 'BAO' in iri:
-            return 'BAO', ''
-        else:
-            substring = iri.rsplit('/', 1)[-1]
-            if '_' in substring:
-                substring = substring.rsplit('_')[0]
-            return ''.join(x for x in substring if x.isalpha()), ''
+        if 'BAO' in iri:
+            return 'BAO', description
+    return ontology_name, description
 
 def term_sort_key(term: Entity, ontology_priority_map):
     priority = ontology_priority_map.get(term.onto_name.upper(), 100000)
@@ -1184,7 +1198,7 @@ def remove_duplicated_terms(res_list: List[Entity]):
             iri_pool.add(res.iri)
             new_list.append(res)
         res.onto_name = res.onto_name if res.onto_name else ""
-        res.onto_name = res.name if res.name else ""
+        res.name = res.name if res.name else ""
         res.provenance_name = res.provenance_name if res.provenance_name else ""
         res.provenance_uri = res.provenance_uri if res.provenance_uri else ""
             
