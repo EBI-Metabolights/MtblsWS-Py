@@ -312,6 +312,11 @@ PROTOCOL_REF_ORDER = [
     ]
 
 TERM_PRIORITY_MAP = {
+    "Characteristics": [
+        "http://www.ebi.ac.uk/efo/EFO_0000513",
+        "http://www.ebi.ac.uk/efo/EFO_0000408",
+        "http://www.ebi.ac.uk/efo/EFO_0000246"
+    ],
     "Characteristics[Organism]": [
         "http://purl.obolibrary.org/obo/NCBITaxon_9606",
         "http://purl.obolibrary.org/obo/NCBITaxon_10090",

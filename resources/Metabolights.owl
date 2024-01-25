@@ -351,25 +351,28 @@
     </owl:Class>
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000513">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" /> 
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001122" />
         <rdfs:isDefinedBy>The total sum of the genetic information of an organism that is known and relevant to the experiment being performed, including chromosomal, plasmid, viral or other genetic material which has been introduced into the organism either prior to or during the experiment.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">genotype</rdfs:label>
     </owl:Class>
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000246">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />  
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001122" />
         <rdfs:isDefinedBy>A temporal measurement of the time period elapsed since an identifiable point in the life cycle of an organism. If a developmental stage is specified, the identifiable point would be the beginning of that stage. Otherwise the identifiable point must be specified such as planting (e.g. 3 days post planting).</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">age</rdfs:label>
     </owl:Class>
 
-<owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002755">
+    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002755">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
         <rdfs:isDefinedBy>The customary allowance of food and drink taken by a person or an animal from day to day, particularly one especially planned to meet specific requirements of the individual, including or excluding certain items of food; a prescribed course of eating and drinking in which the amount and kind of food, as well as the times at which it is to be taken, are regulated for therapeutic purposes or selected with reference to a particular state of health.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">diet</rdfs:label>
     </owl:Class>
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000408">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" /> 
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001122" />
         <rdfs:isDefinedBy>A disease is a disposition to undergo pathological processes that exists in an organism because of one or more disorders in that organism.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">disease</rdfs:label>
     </owl:Class>
@@ -508,6 +511,12 @@
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001093" />
         <rdfs:isDefinedBy>Terms for Protocol REF column.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">Sample Protocol REF</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001122">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001093" />
+        <rdfs:isDefinedBy>Other characteristics of the study .</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Characteristics</rdfs:label>
     </owl:Class>
 
 
@@ -2801,8 +2810,7 @@
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000005 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000005">
-        <rdfs:isDefinedBy>The distinguishing qualities or prominent aspect of a person, object,
-            action, process, or substance.</rdfs:isDefinedBy>
+        <rdfs:isDefinedBy>The distinguishing qualities or prominent aspect of a person, object, action, process, or substance.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">characteristic</rdfs:label>
     </owl:Class>
 

@@ -158,7 +158,7 @@ def evaluate_files_in_detail(
     return file_search_result
 
 
-def get_referenced_file_set(study_id, metadata_path: str) -> Set[str]:
+def get_referenced_file_set(study_id, metadata_path: str) -> List[str]:
     referenced_files: Set[str] = set()
     try:
         investigation_file_name = get_settings().study.investigation_file_name
@@ -166,10 +166,16 @@ def get_referenced_file_set(study_id, metadata_path: str) -> Set[str]:
         investigation: Union[None, Investigation] = None
         if not os.path.exists(investigation_file_path):
             return []
-
-        with open(investigation_file_path, encoding="utf-8", errors="ignore") as fp:
-            # loading tables also load Samples and Assays
-            investigation = isatab.load(fp, skip_load_tables=True)
+        try:
+            with open(investigation_file_path, encoding="utf-8", errors="ignore") as fp:
+                # loading tables also load Samples and Assays
+                investigation = isatab.load(fp, skip_load_tables=True)
+        except Exception as ex:
+            logger.warning(f"Error while loading investigation file '{study_id}")
+            with open(investigation_file_path, encoding="latin-1") as fp:
+                # loading tables also load Samples and Assays
+                investigation = isatab.load(fp, skip_load_tables=True)
+                            
         referenced_files.add(investigation_file_name)
         if investigation and investigation.studies and investigation.studies[0]:
             study: Study = investigation.studies[0]
@@ -181,8 +187,14 @@ def get_referenced_file_set(study_id, metadata_path: str) -> Set[str]:
                     assay_file_path = os.path.join(metadata_path, assay.filename)
                     if os.path.exists(assay_file_path):
                         try:
-                            with open(assay_file_path, encoding="utf-8", errors="ignore") as fp:
-                                df: pd.DataFrame = pd.read_csv(fp, delimiter="\t", header=0, dtype=str)
+                            df = None
+                            try:
+                                with open(assay_file_path, encoding="utf-8", errors="ignore") as fp:
+                                    df: pd.DataFrame = pd.read_csv(fp, delimiter="\t", header=0, dtype=str)
+                            except Exception as ex:
+                                logger.warning(f"Error while loading assay file '{study_id} {assay.filename}")
+                                with open(assay_file_path, encoding="latin-1", errors="ignore") as fp:
+                                    df: pd.DataFrame = pd.read_csv(fp, delimiter="\t", header=0, dtype=str)
                             if df is not None:
                                 df = df.fillna("")
                             referenced_file_columns: List[str] = []
@@ -203,9 +215,10 @@ def get_referenced_file_set(study_id, metadata_path: str) -> Set[str]:
                         #     for item in file_names:
                         #         if item:
                         #             referenced_files.add(item)
-        file_list = list(referenced_files)
-        file_list.sort()
-        return file_list
+
     except Exception as exc:
         logger.error(f"Error reading investigation file of {study_id}")
-        raise exc
+        
+    file_list = list(referenced_files)
+    file_list.sort()
+    return file_list
