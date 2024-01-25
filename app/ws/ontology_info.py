@@ -46,7 +46,7 @@ logger = logging.getLogger('wslog')
 
 class Entity(BaseModel):
         name: str = ""
-        iri: str  = "iri"
+        iri: str  = ""
         onto_name: str  = ""
         provenance_name: str  = ""
         zooma_confidence: str  = ""
@@ -453,30 +453,30 @@ def get_ontology_search_result(term, branch, ontologies, mapping, queryFields):
             # print('Search %s from resources one by one' % term)
             result = getMetaboTerm(term, branch, mapping)
 
-            branch_mappings = {"instruments": {"root_label": "instrument", "ontology_name": "msio"},
-                                "column type": {"root_label": "chromatography", "ontology_name": "chmo"},
-                                "unit": {"root_label": "unit", "ontology_name": "uo"},
-                                }
-            if branch in branch_mappings:
-                branch_mapping = branch_mappings[branch]
-                search_term = term if term else "*"
-                result += OLSbranchSearch(search_term, branch_mapping["root_label"], branch_mapping["ontology_name"])
+            # branch_mappings = {"instruments": {"root_label": "instrument", "ontology_name": "msio"},
+            #                     "column type": {"root_label": "chromatography", "ontology_name": "chmo"},
+            #                     "unit": {"root_label": "unit", "ontology_name": "uo"},
+            #                     }
+            # if branch in branch_mappings:
+            #     branch_mapping = branch_mappings[branch]
+            #     search_term = term if term else "*"
+            #     result += OLSbranchSearch(search_term, branch_mapping["root_label"], branch_mapping["ontology_name"])
                 
         
-            if not result and not is_url:
-                # print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
-                logger.info("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
-                try:
-                    result = getMetaboZoomaTerm(term, mapping)
-                except Exception as e:
-                    print(e.args)
-                    logger.info(e.args)
+            # if not result and not is_url:
+            #     # print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
+            #     logger.info("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
+            #     try:
+            #         result = getMetaboZoomaTerm(term, mapping)
+            #     except Exception as e:
+            #         print(e.args)
+            #         logger.info(e.args)
 
             if not result:
                 # print("Can't query it in Zooma.tsv, requesting OLS")
                 logger.info("Can't query it in Zooma.tsv, requesting OLS")
                 try:
-                    result = getOLSTerm(term, mapping, ontology=ontology)
+                    result = getOLSTerm(term, mapping, ontologies=ontologies)
                 except Exception as e:
                     print(e.args)
                     logger.info(e.args)
@@ -517,7 +517,7 @@ def get_ontology_search_result(term, branch, ontologies, mapping, queryFields):
 
     response = []
     # add WoRMs terms as a entity
-    if branch == 'taxonomy':
+    if branch == 'taxonomy' or branch == 'Parameter Value[Organism]':
         r = getWormsTerm(term)
         result += r
     else:
@@ -589,7 +589,7 @@ def get_ontology_search_result(term, branch, ontologies, mapping, queryFields):
             if branch == 'taxonomy':
                 d['wormsID'] = cls.iri.rsplit('id=', 1)[-1]
             d["termAccession"] = cls.iri
-            d['termSource']['name'] = cls.onto_name
+            d['termSource']['name'] = cls.onto_name if cls.onto_name else ""
             d['termSource']['provenanceName'] = cls.provenance_name
             d['termSource']['file'] = cls.provenance_uri
 
@@ -908,7 +908,7 @@ def getMetaboZoomaTerm(keyword, mapping):
             try:
                 enti.onto_name, enti.definition = get_ontology_name(iri)
             except:
-                enti.onto_name = 'MTBLS'
+                enti.onto_name = ''
 
             res.append(enti)
     except Exception as e:
@@ -916,8 +916,8 @@ def getMetaboZoomaTerm(keyword, mapping):
 
     return res
 
-@ttl_cache(1024)
-def getZoomaTerm(keyword, mapping=''):
+@ttl_cache(1024, ttl=60*60)
+def getZoomaTerm(keyword, mapping='', limit=50):
     logger.info('Requesting Zooma...')
     print('Requesting Zooma...')
     res = []
@@ -951,29 +951,28 @@ def getZoomaTerm(keyword, mapping=''):
 
             if enti.onto_name == '':
                 enti.onto_name, enti.definition = get_ontology_name(iri)
-
+            if not enti.onto_name:
+                enti.onto_name = ""
             try:
-                enti.provenance_name = term['derivedFrom']['provenance']['source']['name']
+                enti.provenance_name = term['provenance']['source']['name']
             except:
-                enti.provenance_name = "zooma"
+                enti.provenance_name = "Zooma"
 
             try:
-                enti.provenance_uri = term['derivedFrom']['provenance']['source']['uri']
+                enti.provenance_uri = term['provenance']['source']['uri']
             except:
                 enti.provenance_uri = "http://www.ebi.ac.uk/spot/zooma"
-            if enti.provenance_name == 'Metabolights':
-                res = [enti] + res
-            else:
-                res.append(enti)
+            
+            res.append(enti)
 
-            if len(res) >= 10:
+            if len(res) >= limit:
                 break
     except Exception as e:
         logger.error('getZooma' + str(e))
     return res
 
 @ttl_cache(1024)
-def getBioportalTerm(keyword, ontologies=''):
+def getBioportalTerm(keyword, ontologies='', limit=50):
     logger.info('Requesting Bioportal...')
     print('Requesting Bioportal...')
     res = []
@@ -998,7 +997,7 @@ def getBioportalTerm(keyword, ontologies=''):
         content = response.read().decode('utf-8')
         j_content = json.loads(content)
 
-        iri_record = []
+        iri_record = set()
 
         for term in j_content['collection']:
             iri = term['@id']
@@ -1012,17 +1011,17 @@ def getBioportalTerm(keyword, ontologies=''):
 
             enti = Entity(name=term['prefLabel'],
                           iri=iri,
-                          onto_name=onto_name, provenance_name="Bioportal", provenance_uri=base_url)
+                          onto_name=onto_name, provenance_name="BioPortal", provenance_uri=base_url)
             res.append(enti)
-            iri_record.append(iri)
-            if len(res) >= 10:
+            iri_record.add(iri)
+            if len(res) >= limit:
                 break
     except Exception as e:
         logger.error('getBioportal' + str(e))
     return res
 
 @ttl_cache(1024)
-def getWormsTerm(keyword):
+def getWormsTerm(keyword, limit=50):
     logger.info('Requesting WoRMs ...')
     print('Requesting WoRMs ...')
 
@@ -1035,7 +1034,7 @@ def getWormsTerm(keyword):
             keyword=keyword.replace(' ', '%20'))
         base_url = get_settings().external_dependencies.api.marine_species_api_url
         url = os.path.join(base_url, uri)
-        fp = urllib.request.urlopen(url)
+        fp = urllib.request.urlopen(url, timeout=5)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
 
@@ -1051,7 +1050,7 @@ def getWormsTerm(keyword):
                               provenance_name=provenance_name, provenance_uri=base_url)
                 res.append(enti)
 
-            if len(res) >= 10:
+            if len(res) >= limit:
                 break
     except Exception as e:
         logger.error(str(e))
@@ -1125,11 +1124,12 @@ def get_ontology_name(iri):
         fp = urllib.request.urlopen(url, timeout=5)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
+        item = j_content['_embedded']['terms'][0]
         try:
-            return j_content['_embedded']['terms'][0]['ontology_prefix'], \
-                   j_content['_embedded']['terms'][0]['description'][0]
+            return item['ontology_name'] if item['ontology_name'] else "", \
+                   item['ontology_name']['description'][0]
         except:
-            return j_content['_embedded']['terms'][0]['ontology_prefix'], ''
+            return item['ontology_name'] if item['ontology_name'] else "", ''
     except:
         if 'MTBLS' in iri:
             return 'MTBLS', 'Metabolights'
@@ -1175,7 +1175,7 @@ def reorder(res_list, keyword):
         return res_list
 
 
-def remove_duplicated_terms(res_list):
+def remove_duplicated_terms(res_list: List[Entity]):
     iri_pool = set()
     
     new_list = []
@@ -1183,6 +1183,10 @@ def remove_duplicated_terms(res_list):
         if res.iri not in iri_pool:
             iri_pool.add(res.iri)
             new_list.append(res)
+        res.onto_name = res.onto_name if res.onto_name else ""
+        res.onto_name = res.name if res.name else ""
+        res.provenance_name = res.provenance_name if res.provenance_name else ""
+        res.provenance_uri = res.provenance_uri if res.provenance_uri else ""
             
     return new_list
 
