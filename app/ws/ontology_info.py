@@ -103,7 +103,7 @@ class DefaultControlLists(BaseModel):
 class MetaboLightsOntology():
     
     OBO_ONTOLOGY_PREFIX = "http://purl.obolibrary.org/obo"
-    
+    DEPRICATED_CLASS_IRI = "http://www.w3.org/2002/07/owl#DeprecatedClass"
     def __init__(self, ontology: Ontology) -> None:
         self.ontology = ontology
         self.label_set: Set[str] = set()
@@ -223,11 +223,12 @@ class MetaboLightsOntology():
                 prefix_list = entity.iri.split("/")
                 prefix = ""
                 if len(prefix_list) > 1:
-                    prefix = "/".join(prefix_list[:-1])
-                    if prefix == MetaboLightsOntology.OBO_ONTOLOGY_PREFIX:
-                        iri_last_part = prefix_list[-1].split("_")
-                        if len(iri_last_part) > 1:
-                            onto_name = iri_last_part[0]
+                    prefix: List[str]  = prefix_list[-1].split("#")
+                    id_part = prefix[1:] if len(prefix) == 0 else prefix_list[-1]
+                    # if prefix == MetaboLightsOntology.OBO_ONTOLOGY_PREFIX:
+                    iri_last_part = id_part.split("_")
+                    if len(iri_last_part) > 1:
+                        onto_name = iri_last_part[0]
                 else:      
                     onto_name = get_ontology_name(entity.iri)[0]
             except Exception as ex:
@@ -238,12 +239,27 @@ class MetaboLightsOntology():
             self.search_entities[entity.iri].provenance_name = "Metabolights"
             self.search_entities[entity.iri].provenance_uri="http://www.ebi.ac.uk/metabolights/ontology"
         return mtbls_entity
-        
+    
+    def is_deprecated(self, onto_class) -> bool:
+        try:
+            if not onto_class or not hasattr(onto_class, "is_a") or not onto_class.is_a:
+                return True
+            for ins in onto_class.is_a:
+                if not hasattr(ins, "iri"):
+                    return True
+                if ins.iri == MetaboLightsOntology.DEPRICATED_CLASS_IRI:
+                    return True
+        except Exception as ex:
+            raise ex
+        return False
+                
     def initiate(self):
         classes = [cls for cls in self.ontology.classes() ]
         for onto_class in classes:
+            if self.is_deprecated(onto_class):
+                continue
             if (onto_class.iri and str(onto_class.label[0])) and (onto_class.iri not in self.entities or not self.entities[onto_class.iri].children):
-                children = [x for x in self.ontology.search(subclass_of=onto_class) if x.iri != onto_class.iri]
+                children = [x for x in self.ontology.search(subclass_of=onto_class) if x.iri != onto_class.iri and not self.is_deprecated(x)]
                 children_dict: Dict[str, MetaboLightsEntity] = {}            
                 for child in children:
                     if child.iri in self.entities:
@@ -422,8 +438,17 @@ def get_ontology_search_result(term, branch, ontologies, mapping, queryFields):
     result = []
     if not term and not branch:
         return result
-
-    if ontologies:  # if has ontology searching restriction
+    exact_search = None
+    mtbls_term_prefix = "//www.ebi.ac.uk/metabolights/ontology/"
+    if term.startswith(mtbls_term_prefix):
+        term = "http:" + term
+        file = get_settings().file_resources.mtbls_ontology_file
+        mtbls_ontology: MetaboLightsOntology = load_ontology_file(file)
+        if mtbls_ontology:
+            exact_search = mtbls_ontology.get_entity_by_iri(term)
+    if exact_search:
+        result = exact_search
+    elif ontologies:  # if has ontology searching restriction
         logger.info('Search ontology %s in' % ontologies)
         # print('Searching ontology  %s' % ontologies)
         try:
@@ -433,7 +458,6 @@ def get_ontology_search_result(term, branch, ontologies, mapping, queryFields):
         except Exception as e:
             print(e.args)
             logger.info(e.args)
-
     else:
         if not queryFields:  # if found the term, STOP
             # is_url = term.startswith('http')
@@ -448,7 +472,7 @@ def get_ontology_search_result(term, branch, ontologies, mapping, queryFields):
 
             if is_url and not term.startswith('http:'):
                 term = 'http:' + term
-
+                
             logger.info('Search %s from resources one by one' % term)
             # print('Search %s from resources one by one' % term)
             result = getMetaboTerm(term, branch, mapping)
