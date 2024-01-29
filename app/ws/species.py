@@ -1,8 +1,9 @@
+from __future__ import annotations
 import json
 import os.path
-from typing import List, Set
+from typing import List, Set, Union
 
-from flask import current_app as app, jsonify
+from flask import jsonify
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 from app.config import get_settings
@@ -21,11 +22,12 @@ class SpeciesTreeNode(BaseModel):
     
 class SpeciesTreeLeaf(SpeciesTreeNode):
     size: int = 1
-    
-class SpeciesTreeParent(SpeciesTreeNode):
-    children: List[SpeciesTreeNode] = []
-    
 
+
+class SpeciesTreeParent(SpeciesTreeNode):
+    children: List[Union[SpeciesTreeLeaf, SpeciesTreeParent]] = []
+    
+SpeciesTreeParent.model_rebuild()
     
 class SpeciesTree(Resource):
     @swagger.operation(
@@ -58,8 +60,8 @@ class SpeciesTree(Resource):
             redis = get_redis_server()
             tree = redis.get_value(key)
             
-            if tree:
-                return json.loads(tree)
+            # if tree:
+            #     return json.loads(tree)
         except Exception:
             # no cache or invalid cache
             pass
@@ -131,7 +133,7 @@ class SpeciesTree(Resource):
                 else:
                     self.update_tree(item, tree.level + 1)
             else:
-                item.level = item.level + 1
+                item.level = tree.level + 1
         if empty_item_list:
             for empty_item in empty_item_list:
                 tree.children.remove(empty_item)
