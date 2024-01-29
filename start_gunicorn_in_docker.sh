@@ -26,6 +26,6 @@ LOG_PATH=$APPDIR/logs
 
 cd $APPDIR
 
-echo Command: gunicorn -b 0.0.0.0:$SERVER_PORT --workers $NUMBER_OF_WORKERS  wsapp:application --forwarded-allow-ips \"*\"  --pid $LOG_PATH/app_${HOST}_${SERVER_PORT}.pid  --log-level info
+echo Command: gunicorn -b 0.0.0.0:$SERVER_PORT --timeout=300 --workers $NUMBER_OF_WORKERS  wsapp:application --forwarded-allow-ips \"*\"  --pid $LOG_PATH/app_${HOST}_${SERVER_PORT}.pid  --log-level info
 
-gunicorn -b 0.0.0.0:$SERVER_PORT --workers $NUMBER_OF_WORKERS  wsapp:application --forwarded-allow-ips "*"  --pid $LOG_PATH/app_${HOST}_${SERVER_PORT}.pid  --log-level info
+gunicorn -b 0.0.0.0:$SERVER_PORT --timeout 300 --workers $NUMBER_OF_WORKERS  wsapp:application --forwarded-allow-ips "*"  --pid $LOG_PATH/app_${HOST}_${SERVER_PORT}.pid  --log-level info
