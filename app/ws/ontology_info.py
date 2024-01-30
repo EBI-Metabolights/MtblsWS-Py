@@ -783,7 +783,7 @@ def getMetaboTerm(keyword, branch, mapping='', limit=100):
 
     # return res
 
-@ttl_cache(1024, 60*60)
+# @ttl_cache(1024, 60*60)
 def getOLSTerm(keyword, map, ontologies='', limit=50):
     logger.info('Requesting OLS... for keyword ' + keyword)
     # print('Requesting OLS...')
@@ -815,7 +815,8 @@ def getOLSTerm(keyword, map, ontologies='', limit=50):
         url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
         if map == 'exact':
             url += '&exact=true'
-
+        if not ontologies:
+            ontologies = ""
         if ontologies:
             onto_list = ",".join([x.strip() for x in ontologies.split(",")])
             url += '&ontology=' + onto_list
@@ -1102,7 +1103,7 @@ def getWoRMsID(term):
     except:
         return ''
 
-@ttl_cache(512)
+# @ttl_cache(512)
 def getOLSTermInfo(iri):
     # enti = Entity(name=name, iri=term['iri'], definition=definition, onto_name=onto_name, provenance_name=provenance_name)
 
