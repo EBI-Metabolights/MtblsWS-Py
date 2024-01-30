@@ -488,7 +488,7 @@ def log_request(request_obj):
         else:
             logger.debug('REQUEST JSON    -> EMPTY')
 
-def read_tsv(file_name, col_names=None, sep="\t"):
+def read_tsv(file_name, col_names=None, sep="\t", **kwargs):
     table_df = pd.DataFrame()  # Empty file
     try:
         # Enforce str datatype for all columns we read from ISA-Tab table
@@ -502,12 +502,12 @@ def read_tsv(file_name, col_names=None, sep="\t"):
                 logger.error("Could not read file " + file_name)
             else:
                 if filter:
-                    table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='utf-8', usecols=col_names, dtype=types_dict)
+                    table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='utf-8', usecols=col_names, dtype=types_dict, **kwargs)
                 else:
-                    table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='utf-8', dtype=types_dict)
+                    table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='utf-8', dtype=types_dict, **kwargs)
         except Exception as e:  # Todo, should check if the file format is Excel. ie. not in the exception handler
             if os.path.getsize(file_name) > 0:
-                table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='ISO-8859-1', dtype=types_dict)  # Excel format
+                table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='ISO-8859-1', dtype=types_dict, **kwargs)  # Excel format
                 logger.info("Tried to open as Excel tsv file 'ISO-8859-1' file " + file_name + ". " + str(e))
     except Exception as e:
         logger.error("Could not read file " + file_name + ". " + str(e))

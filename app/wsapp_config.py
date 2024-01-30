@@ -102,7 +102,7 @@ from app.ws.study_files import (CopyFilesFolders, DeleteAsperaFiles, FileList,
                                 UnzipFiles)
 from app.ws.system import SystemTestEmail
 from app.ws.table_editor import (AddRows, ColumnsRows, ComplexColumns,
-                                 GetAssayMaf, GetTsvFile, SimpleColumns)
+                                 GetAssayMaf, GetTsvFile, SimpleColumns, TsvFileRows)
 # from app.ws.tasks.study_file_encoding import FileEncodingChecker
 from app.ws.tasks.create_json_files import (PublicStudyJsonExporter,
                                             StudyJsonExporter)
@@ -316,6 +316,8 @@ def initialize_app(flask_app):
     api.add_resource(AddRows, res_path + "/studies/<string:study_id>/rows/<string:file_name>")
     api.add_resource(GetTsvFile, res_path + "/studies/<string:study_id>/<string:file_name>")
     api.add_resource(CompareTsvFiles, res_path + "/studies/<string:study_id>/compare-files")
+    api.add_resource(TsvFileRows, res_path + "/studies/<string:study_id>/isa-table-rows")
+
 
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")

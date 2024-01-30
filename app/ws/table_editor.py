@@ -19,6 +19,7 @@
 import json
 import logging
 import os
+from flask.json import jsonify
 
 import numpy as np
 import pandas as pd
@@ -1342,6 +1343,191 @@ class GetTsvFile(Resource):
         df_header = get_table_header(file_df, study_id, file_name_param)
         df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
         return {'header': df_header, 'data': df_data_dict}
+
+
+class TsvFileRows(Resource):
+    @swagger.operation(
+        summary="Get TSV table rows for a study using filename, column names and page number",
+        nickname="Get TSV table rows for a study using filename, column names and page number",
+        notes="""Get a given TSV table rows and columns for a MTBLS Study with in JSON format. Only '.tsv' and txt files are allowed
+        <code><pre>
+        {
+            "data": {
+                "isaFileName": "m_xyz.tsv",
+                "columnNames": ['database_identifier', 'smiles'],
+                "pageNumber": 0,
+                "pageSize": 50
+            }
+        }
+        </pre>
+        </code>
+        """,
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "data",
+                "description": "data input",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The TSV table is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def post(self, study_id):
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            request_data = data_dict['data']
+        except KeyError:
+            request_data = None
+            
+        # param validation
+        if not study_id or not request_data or "isaFileName" not in request_data or not request_data["isaFileName"]:
+            logger.info('No study_id or file name')
+            abort(404)
+        file_name = request_data["isaFileName"]
+        
+        _, ext = os.path.splitext(file_name)
+        ext = ext.lower()
+        if ext not in ('.tsv', '.txt'):
+            abort(400, message="The file " + file_name + " is not a valid TSV or CSV file")
+
+        study_id = study_id.upper()
+        page_number = 0
+        if "pageNumber" in request_data and request_data["pageNumber"]:
+            page_number = int(request_data["pageNumber"])
+
+        page_size = 100
+        if "pageSize" in request_data and request_data["pageSize"]:
+            page_size = int(request_data["pageSize"])
+        column_names = []
+        if "columnNames" in request_data and request_data["columnNames"]:
+            column_names = request_data["columnNames"]
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+            
+        logger.info('Assay Table: Getting ISA-JSON Study Assay Table: Getting ISA-JSON Study %s', study_id)
+        # check for access rights
+        
+        permission: StudyAccessPermission = get_permission_by_study_id(study_id, user_token)
+        
+        # permission.view
+        # is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        #     study_status = commons.get_permissions(study_id, user_token, obfuscation_code)
+        if not permission.view:
+            abort(403)
+        metadata = {
+            "file": file_name,
+            "columnNames": [],
+            "pageNumber": 0,
+            "pageSize": 0,
+            "defaultPageSize": 100,
+            "totalSize": 0,
+            "columns": [],
+            "currentFilters": [],
+            "currentSortOptions": []
+        }
+        try:
+            study_location = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
+            file_path = os.path.join(study_location, file_name)
+            
+            if not os.path.exists(file_path):
+                raise MetabolightsException(http_code=404, message=f"{file_name} does not exist on {study_id} metadata folder.")
+
+            logger.info('Trying to load TSV file (%s) for Study %s', file_path, study_id)
+            
+            file_column_names = pd.read_csv(file_path, sep="\t", nrows=0).columns
+
+            if len(file_column_names) > 0:
+                columns = []
+                for idx, name in enumerate(file_column_names):
+                    data = { "columnDef": name, "header": name, "sticky": "false", "targetColumnIndex": int(idx), "calculated": False}
+                    columns.append(data)
+                valid_column_names = file_column_names
+                if column_names: 
+                    valid_column_names = [x for x in column_names if x in file_column_names]
+                    columns = [x for x in columns if x["columnDef"] in valid_column_names]
+                    file_df = read_tsv(file_path, col_names=valid_column_names, skiprows=range(1, page_size*page_number), nrows=page_size)
+                else:
+                    file_df = read_tsv(file_path, col_names=None, skiprows=range(1, page_size*page_number), nrows=page_size)
+                df_data_dict = to_tuple_with_index(file_df, skippedRows=page_size*page_number)
+                # for row in df_data_dict["rows"]:
+                #     row.index = int(row.index)
+                file_df_total = read_tsv(file_path, col_names=[valid_column_names[0]])
+                metadata["totalSize"] = int(file_df_total.size)
+                metadata["columnNames"] = valid_column_names
+                metadata["pageNumber"] = int(page_number)
+                metadata["pageSize"] = int(file_df.size)
+                metadata["columns"] = columns
+                
+                return jsonify({"content": {'metadata': metadata, 'rows': df_data_dict}})
+            return jsonify({"content": {'metadata': metadata, 'rows': []}})
+        except FileNotFoundError:
+            abort(400, message="The file " + file_path + " was not found or file is not valid.")
+
+        
+
+        # Get an indexed header row
+        
+def to_tuple_with_index(df: pd.DataFrame, skippedRows=0):
+    rows = []
+    for index, row in df.iterrows():
+        data = dict([
+            (colname, row[i])
+            for i, colname in enumerate(df.columns)
+        ])
+        data["index"] = index + skippedRows
+        rows.append(data)
+    
+    return rows
+
+        
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
 
 
 default_maf_columns = {
