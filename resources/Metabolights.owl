@@ -3572,14 +3572,14 @@
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000083 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000083">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000083">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
         <rdfs:isDefinedBy>A developmental process that is a deterioration and loss of function over
             time. Aging includes loss of functions such as resistance to disease, homeostasis, and
             fertility, as well as wear and tear. Aging includes cellular senescence, but is more
             inclusive. May precede death and may succeed developmental maturation (GO:0021700).</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">aging</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000084 -->
