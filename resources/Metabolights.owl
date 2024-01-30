@@ -430,7 +430,7 @@
         <rdfs:label xml:lang="en">nuclear magnetic resonance spectroscopy</rdfs:label>
     </owl:Class>
 
-     <owl:Class rdf:about="http://purl.obolibrary.org/obo/CHMO_0000591">
+     <owl:Class rdf:about="http://purl.obolibrary.org/obo/CHMO_0000715">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001115" />
         <rdfs:isDefinedBy>A method where a sample mixture is first separated by ultra-performance liquid chromatography before being converted into ions which are characterised by their mass-to-charge ratio and relative abundance.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">ultra-performance liquid chromatography-mass spectrometry</rdfs:label>
@@ -3137,10 +3137,10 @@
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000040 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000040">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000040">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
         <rdfs:label xml:lang="en">gas chromatography-mass spectrometry</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000041 -->
@@ -3248,12 +3248,12 @@
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000050 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000050">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000050">
         <rdfs:isDefinedBy>Spectroscopy where the energy states of spin-active nuclei placed in a
             static magnetic field are interrogated by inducing transitions between the states via
             radio frequency irradiation.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">nuclear magnetic resonance spectroscopy</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000051 -->
@@ -3290,13 +3290,13 @@
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000054 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000054">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000054">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
         <rdfs:isDefinedBy>Tandem mass spectrometry is a data transformation that uses two or more
             analyzers separated by a region in which ions can be induced to fragment by transfer of
             energy (frequently by collision with other molecules).</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">tandem mass spectrometry</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000055 -->
@@ -3626,13 +3626,13 @@
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000088 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000088">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000088">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
         <rdfs:isDefinedBy>A disease of cellular proliferation that is malignant and primary,
             characterized by uncontrolled cellular proliferation, local cell invasion and
             metastasis.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">cancer</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000089 -->

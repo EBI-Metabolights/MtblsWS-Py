@@ -45,14 +45,16 @@ logger = logging.getLogger('wslog')
 
 
 class Entity(BaseModel):
-        name: str = ""
-        iri: str  = ""
-        onto_name: str  = ""
-        provenance_name: str  = ""
-        zooma_confidence: str  = ""
-        definition: str  = ""
-        provenance_uri: str =""
+    name: str = ""
+    iri: str  = ""
+    onto_name: str  = ""
+    provenance_name: str  = ""
+    zooma_confidence: str  = ""
+    definition: str  = ""
+    provenance_uri: str =""
 
+    def onto_str(self):
+        return f"{self.onto_name}:{self.name}:{self.iri}"
 
 class factor(object):
     def __init__(self, studyID, name, type, iri):
@@ -553,32 +555,38 @@ def get_ontology_search_result(term, branch, ontologies, mapping, queryFields):
     rest = result
     if term:
         selected = set()
-        exact = [x for x in result if x.name.lower() == term.lower() and x.name and x.name not in selected and not selected.add(x.name)]
-        starts_with = [x for x in result if x.name and x.name not in selected and x.name.lower().startswith(term.lower()) and not selected.add(x.name)]
-        rest = [x for x in result if x.name and x.name not in selected and not selected.add(x.name)]
+        exact = [x for x in result if x.name.lower() == term.lower() and x.name and x.onto_str() not in selected and not selected.add(x.onto_str())]
+        starts_with = [x for x in result if x.name and x.onto_str() not in selected and x.name.lower().startswith(term.lower()) and not selected.add(x.onto_str())]
+        rest = [x for x in result if x.name and x.onto_str() not in selected and not selected.add(x.onto_str())]
 
         # "factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
         #                          "column type", "instruments", "confidence", "sample type"
+        default_priority = {'EFO': 500, 'NCBITAXON': 510, 'UO': 520, 'BTO': 530, 'MTBLS': 540, 
+                        'CHMO': 550, 'NCIT': 560, 'WoRMS': 565, 'PO': 570, 'CHEBI': 580, 
+                        'GO': 590, 'ENVO': 600, 'MSOI': 610, 'MESH': 620  }
+        
         if branch == 'Study Publication Status':
             priority = {'EFO': 0, 'MTBLS': 10}
         elif branch == 'role':
             priority = {'MTBLS': 0, 'NCIT': 10}
         elif branch == 'Characteristics[Organism]':
-            priority = {'NCBITAXON': 0, 'MTBLS': 10, 'WoRMs': 20, 'ENVO': 30, 'EFO': 40, 'NCIT': 50, 'MSOI': 60}
+            priority = {'NCBITAXON': 0, 'MTBLS': 10, 'WoRMS': 20, 'ENVO': 30, 'EFO': 40, 'NCIT': 50, 'MSOI': 60}
         elif branch == 'Characteristics[Organism part]':
             priority = {'BTO': 0, 'MTBLS': 10, 'EFO': 20, 'NCIT': 30, 'PO': 40, 'ENVO': 50, 'CHEBI': 60}
         elif branch == 'Characteristics[Sample type]':
             priority = {'CHMO': 0, 'MTBLS': 10, 'MSIO': 20}
         elif branch == 'unit':
             priority = {'UO': 0, 'MTBLS': 10, "EFO": 30, "NCIT": 40}
-        elif branch == 'factor' or 'Study Factor Type':
+        elif branch == 'factor' or branch == 'Study Factor Type':
             priority = {'EFO': 0, 'NCIT': 1, 'ENVO': 2, 'MTBLS': 3, 'CHEBI': 4, 'CHMO': 5, 'MESH': 6, 'PO': 7}
-        elif branch == 'design descriptor' or 'Study Design Type':
+        elif branch == 'design descriptor' or branch == 'Study Design Type':
             priority = {'EFO': 1, 'NCIT': 2, 'MTBLS': 3, 'CHEBI': 4, 'CHMO': 5, 'GO': 6, 'MESH': 7}
         else:
-            priority = {'EFO': 10, 'NCBITAXON': 20, 'UO': 25, 'BTO': 30, 'MTBLS': 0,  'CHMO': 50, 'NCIT': 60, 'PO': 70, 'CHEBI': 40,}
+            priority = default_priority
 
         prioritrised_ontology_names = { x.upper():priority[x] for x in priority}
+        not_selected_ontologies = { x.upper():default_priority[x] for x in default_priority if x not in prioritrised_ontology_names }
+        prioritrised_ontology_names.update(not_selected_ontologies)
         exact = sort_terms_by_priority(exact, prioritrised_ontology_names)
         starts_with = sort_terms_by_priority(starts_with, prioritrised_ontology_names)
         rest = sort_terms_by_priority(rest, prioritrised_ontology_names)
@@ -783,7 +791,7 @@ def getMetaboTerm(keyword, branch, mapping='', limit=100):
 
     # return res
 
-# @ttl_cache(1024, 60*60)
+@ttl_cache(1024, 60*60)
 def getOLSTerm(keyword, map, ontologies='', limit=50):
     logger.info('Requesting OLS... for keyword ' + keyword)
     # print('Requesting OLS...')
@@ -836,7 +844,7 @@ def getOLSTerm(keyword, map, ontologies='', limit=50):
                 definition = ''
 
             try:
-                onto_name = term['ontology_prefix']
+                onto_name = term['short_form'].split("_")[0] if term['short_form'] else term['ontology_prefix']
             except:
                 onto_name = ''
             if not ontologies_uppercase or onto_name.upper() in ontologies_uppercase:
@@ -1012,7 +1020,8 @@ def getBioportalTerm(keyword, mapping=False, ontologies='', limit=50):
             uri = 'search?q=' + keyword.replace(' ', "+")
         base_url = get_settings().external_dependencies.api.bioontology_api_url
         url = os.path.join(base_url, uri)
-
+        if not ontologies:
+            ontologies = ""
         onto_list = ','.join([x.strip().upper() for x in ontologies.split(",") if x])
         url += '&ontologies=' + onto_list + '&require_exact_match=' + ('true' if mapping == 'exact' else 'false')
         
@@ -1103,7 +1112,7 @@ def getWoRMsID(term):
     except:
         return ''
 
-# @ttl_cache(512)
+@ttl_cache(2048)
 def getOLSTermInfo(iri):
     # enti = Entity(name=name, iri=term['iri'], definition=definition, onto_name=onto_name, provenance_name=provenance_name)
 
