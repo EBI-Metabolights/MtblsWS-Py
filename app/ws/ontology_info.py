@@ -247,9 +247,7 @@ class MetaboLightsOntology():
             if not onto_class or not hasattr(onto_class, "is_a") or not onto_class.is_a:
                 return True
             for ins in onto_class.is_a:
-                if not hasattr(ins, "iri"):
-                    return True
-                if ins.iri == MetaboLightsOntology.DEPRICATED_CLASS_IRI:
+                if hasattr(ins, "iri") and ins.iri == MetaboLightsOntology.DEPRICATED_CLASS_IRI:
                     return True
         except Exception as ex:
             raise ex
@@ -1249,5 +1247,4 @@ def getDescriptionURL(onto_name, iri):
 if __name__ == "__main__":
     filepath = get_settings().file_resources.mtbls_ontology_file
     ontology_input = load_ontology_file(filepath)
-    ontology_model = MetaboLightsOntology(ontology=ontology_input)
-    
+    ontology_model = ontology_input
