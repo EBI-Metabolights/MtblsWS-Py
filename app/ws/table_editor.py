@@ -1354,7 +1354,7 @@ class TsvFileRows(Resource):
         {
             "data": {
                 "isaFileName": "m_xyz.tsv",
-                "columnNames": ['database_identifier', 'smiles'],
+                "columnNames": ["database_identifier", "smiles"],
                 "pageNumber": 0,
                 "pageSize": 50
             }
@@ -1484,9 +1484,9 @@ class TsvFileRows(Resource):
                 if column_names: 
                     valid_column_names = [x for x in column_names if x in file_column_names]
                     columns = [x for x in columns if x["columnDef"] in valid_column_names]
-                    file_df = read_tsv(file_path, col_names=valid_column_names, skiprows=range(1, page_size*page_number), nrows=page_size)
+                    file_df = read_tsv(file_path, col_names=valid_column_names, skiprows=range(1, page_size*page_number + 1), nrows=page_size)
                 else:
-                    file_df = read_tsv(file_path, col_names=None, skiprows=range(1, page_size*page_number), nrows=page_size)
+                    file_df = read_tsv(file_path, col_names=None, skiprows=range(1, page_size*page_number + 1), nrows=page_size)
                 df_data_dict = to_tuple_with_index(file_df, skippedRows=page_size*page_number)
                 # for row in df_data_dict["rows"]:
                 #     row.index = int(row.index)
