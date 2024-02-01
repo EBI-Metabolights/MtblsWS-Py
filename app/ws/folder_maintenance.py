@@ -719,17 +719,18 @@ class StudyFolderMaintenanceTask(object):
                 created_folders,
                 deleted_folders,
             )
-
+            self.update_permission(private_ftp_root_path, permission)
+            
             sub_folder = os.path.join(private_ftp_root_path, "RAW_FILES")
             self._create_folder_future_actions(
                 sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
             )
-
+            self.update_permission(sub_folder, 0o770)
             sub_folder = os.path.join(private_ftp_root_path, "DERIVED_FILES")
             self._create_folder_future_actions(
                 sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
             )
-            self.update_permission(private_ftp_root_path, permission)
+            self.update_permission(sub_folder, 0o770)
         else:
             if self.study_status == StudyStatus.SUBMITTED:
                 self.update_permission(private_ftp_root_path, 0o770)
@@ -737,12 +738,12 @@ class StudyFolderMaintenanceTask(object):
                 self._create_folder_future_actions(
                     sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
                 )
-
+                self.update_permission(sub_folder, 0o770)
                 sub_folder = os.path.join(private_ftp_root_path, "DERIVED_FILES")
                 self._create_folder_future_actions(
                     sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
                 )                
-                         
+                self.update_permission(sub_folder, 0o770)
             self.update_permission(private_ftp_root_path, permission)
         
         
