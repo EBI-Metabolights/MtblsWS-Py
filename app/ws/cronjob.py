@@ -219,7 +219,6 @@ def curation_log_database_query():
         with psycopg2.connect(**params) as conn:
             sql = open('./resources/updateDB.sql', 'r').read()
             data = pd.read_sql_query(sql, conn)
-
         percentage_known = round(
             data['maf_known'].astype('float').div(data['maf_rows'].replace(0, np.nan)).fillna(0) * 100, 2)
 
@@ -227,12 +226,6 @@ def curation_log_database_query():
 
         google_sheet_api = get_settings().google.connection.google_sheet_api
         google_sheet_api_dict = google_sheet_api.__dict__
-
-        google_df = getGoogleSheet(get_settings().google.sheets.mtbls_curation_log, 'Database Query',
-                                   google_sheet_api_dict)
-
-        data.columns = google_df.columns
-
         replaceGoogleSheet(data, get_settings().google.sheets.mtbls_curation_log, 'Database Query',
                            google_sheet_api_dict)
         return jsonify({'curationlog sheet update': "Success"})

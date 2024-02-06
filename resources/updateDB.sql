@@ -1,38 +1,4 @@
-drop table curation_log_temp;
-create table curation_log_temp as
-select s.acc,
-       s.studysize,
-       'Study status'::text                       as status,
-       to_char(s.releasedate, 'YYYY-MM-DD')       as releasedate,
-       to_char(s.submissiondate, 'YYYY-MM-DD')    as submissiondate,
-       'This is where the username will go'::text as username,
-       s.studytype,
-       lpad(replace(acc, 'MTBLS', ''), 4, '0')    as acc_short,
-       s.id                                       as studyid,
-       to_char(s.updatedate, 'YYYY-MM-DD')        as updatedate,
-       0                                          as nmr_size,
-       0                                          as ms_size,
-       to_char(s.releasedate, 'YYYYMM')           as relmonth,
-       to_char(s.submissiondate, 'YYYYMM')        as submonth,
-       curator,
-       override,
-       species,
-       sample_rows,
-       assay_rows,
-       maf_rows,
-       biostudies_acc,
-       placeholder,
-       'country'::text                            as country,
-       'validation_status'::text                  as validation_status,
-       status_date,
-       'maf_known'::text                          as maf_known,
-       number_of_files
-from studies s where 1 = 2 order by acc_short asc;
-
-alter table curation_log_temp alter column studysize type bigint;
-alter table curation_log_temp alter column nmr_size type bigint;
-alter table curation_log_temp alter column ms_size type bigint;
-alter table curation_log_temp alter column number_of_files type bigint;
+TRUNCATE table curation_log_temp;
 DO
 $$
     DECLARE maxacc integer;
@@ -102,10 +68,6 @@ $$
         update curation_log_temp set ms_size  = (studysize - 12000), nmr_size = 12000 where acc = 'MTBLS103';
         update curation_log_temp set ms_size  = (studysize - 355000), nmr_size = 355000 where acc = 'MTBLS336';
         update curation_log_temp set status = 'Placeholder' where placeholder = '1' and username = 'MetaboLights Placeholder';
-
     END
 $$;
-
-commit;
-
 select * from curation_log_temp order by acc_short asc;
