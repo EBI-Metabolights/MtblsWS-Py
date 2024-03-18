@@ -69,7 +69,8 @@ class CompressRawDataFolders(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "string"
+                "dataType": "string",
+                "enum": ["*.d", "*.raw"]
             },
             {
                 "name": "user_token",
