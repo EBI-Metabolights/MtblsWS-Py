@@ -443,7 +443,7 @@ class StudyRawAndDerivedDataFiles(Resource):
             if not search_pattern.startswith(search_pattern_prefix):
                 raise MetabolightsException(http_code=401, message=f"Search pattern should start with {f'{data_files_subfolder}/'}")
 
-        UserService.get_instance().validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_read_access(user_token, study_id, None)
         StudyService.get_instance().get_study_by_acc(study_id)
 
         study_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
