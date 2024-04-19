@@ -891,7 +891,7 @@ def uniqueOrganism(studyID):
     '''
     try:
         host = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port)
-        url = f'{host}/{studyID}/organisms'
+        url = f'{host}{get_settings().server.service.resources_path}/studies/{studyID}/organisms'
         resp = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
         data = resp.json()
         org = []
@@ -900,8 +900,8 @@ def uniqueOrganism(studyID):
         org = [x for x in org if len(x) > 0]
         return list(set(org))
     except Exception as e:
-        print('Fail to load organism from {study_id}'.format(study_id=studyID))
-        logger.info('Fail to load organism from {study_id}'.format(study_id=studyID))
+        logger.error(f'Exception while fetching organism {str(e)}')
+        logger.error(f'Fail to load organism for study -  {studyID}')
         return ''
 
 
