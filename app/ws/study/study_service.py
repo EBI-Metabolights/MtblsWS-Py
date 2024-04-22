@@ -1,3 +1,6 @@
+import glob
+import logging
+import os
 from app.config import get_settings
 from app.utils import MetabolightsDBException, MetabolightsFileOperationException, MetabolightsException
 from app.ws.db.dbmanager import DBManager
@@ -5,8 +8,9 @@ from app.ws.db.models import StudyModel
 from app.ws.db.schemes import Study, User, Stableid, StudyTask
 from app.ws.db.types import UserStatus, UserRole, StudyStatus
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
+from app.ws.utils import read_tsv_with_filter, totuples
 
-
+logger = logging.getLogger('wslog')
 
 def identify_study_id(study_id: str, obfuscation_code: str = None):
     if study_id.lower().startswith("reviewer"):
@@ -92,6 +96,53 @@ class StudyService(object):
 
         return m_study
 
+    def get_public_study_from_db(self, study_id) -> StudyModel:
+         with self.db_manager.session_maker() as db_session:
+            query = db_session.query(Study)
+            query = query.filter(Study.status == StudyStatus.PUBLIC.value, Study.acc == study_id)
+            study = query.first()
+            if not study:
+                raise MetabolightsDBException(f"{study_id} does not exist or is not public")
+            m_study = create_study_model_from_db_study(study)
+            return m_study
+        
+    def get_study_maf_rows(self, study_id, sheet_number):
+        if study_id is None or sheet_number is None:
+            raise MetabolightsDBException("StudyId and sheet number needs to be passed")
+        study_id = study_id.upper()
+
+        with DBManager.get_instance().session_maker() as db_session:
+            query = db_session.query(Study)
+            query = query.filter(Study.status == StudyStatus.PUBLIC.value,
+                                 Study.acc == study_id)
+            study = query.first()
+
+            if not study:
+                raise MetabolightsDBException(f"{study_id} does not exist or is not public")
+        logger.info(' Got study details from DB -  %s', study_id)
+        logger.info(' Assay number -  %d', sheet_number)
+        study_path = get_settings().study.mounted_paths.study_metadata_files_root_path
+        study_location = os.path.join(study_path, study_id)
+        maflist = []
+
+        for maf in glob.glob(os.path.join(study_location, "m_*.tsv")):
+            maf_file_name = os.path.basename(maf)
+            logger.info(' Adding MAF file :- %s', maf_file_name)
+            maflist.append(maf_file_name)
+
+        logger.info(' Requested Sheet number :- %d', sheet_number)
+
+        maf_file = maflist[sheet_number-1]
+        logger.info(' maf_file path :- %s', maf_file)
+        maf_file_path = os.path.join(study_location, maf_file)
+        try:
+            file_df = read_tsv_with_filter(maf_file_path)
+        except FileNotFoundError:
+            raise MetabolightsDBException(f"{maf_file_path} MAF not found")
+        df_data_dict = totuples(file_df.reset_index(), 'rows')
+        
+        return df_data_dict
+    
     def get_all_authorized_study_ids(self, user_token):
         with self.db_manager.session_maker() as db_session:
             db_user = db_session.query(User).filter(User.apitoken == user_token).first()

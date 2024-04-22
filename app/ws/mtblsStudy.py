@@ -22,7 +22,9 @@ import logging
 import os
 from datetime import datetime
 
-from flask import jsonify, request, send_file
+from flask import jsonify, request, send_file, make_response
+from xml.dom.minidom import Document
+from app.services.external.eb_eye_search import EbEyeSearchService
 from flask_restful import Resource, abort, reqparse
 from flask_restful_swagger import swagger
 from app.config import get_settings
@@ -90,6 +92,26 @@ class MtblsStudies(Resource):
         pub_list = wsc.get_public_studies()
         return jsonify(pub_list)
 
+
+class EbEyeStudies(Resource):
+    @swagger.operation(
+        summary="Process studies for EB EYE Search",
+        notes="Process studies for EB EYE Search.",
+        responseMessages=[
+            {"code": 200, "message": "OK."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+        ],
+    )
+    def get(self):
+        pub_study = StudyService.get_instance().get_public_study_from_db(study_id='MTBLS2')
+        settings = get_study_settings()
+        study_folders = settings.mounted_paths.study_metadata_files_root_path
+        update_study_model_from_directory(pub_study, study_folders)
+        doc = EbEyeSearchService.process_study(study=pub_study)
+        xml_str = doc.toprettyxml(indent="  ")                                      
+        response = make_response(xml_str)                                           
+        response.headers['Content-Type'] = 'text/xml; charset=utf-8'            
+        return response
 
 class MtblsPrivateStudies(Resource):
     @swagger.operation(

@@ -524,3 +524,10 @@ class ESMetaboLightsCompound(MetaboLightsCompoundIndexModel):
     class Config:
         orm_mode = True
         allow_population_by_field_name = True
+
+class EntryModel(BaseModel):
+    id: int = None
+    name: str = Field(None, alias="name")
+    description: str = Field(None, alias="description")
+    class Config:
+        orm_mode = True
