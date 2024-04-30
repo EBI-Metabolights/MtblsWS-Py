@@ -3,7 +3,7 @@ DO
 $$
     DECLARE maxacc integer;
     BEGIN
-        SELECT max(lpad(replace(acc, 'MTBLS', ''), 4, '0')) as acc_short from studies order by acc_short asc into maxacc;
+        SELECT max(lpad(replace(acc, 'MTBLS', ''), 5, '0')) as acc_short from studies order by acc_short asc into maxacc;
         FOR i_acc in 1..maxacc
             LOOP
                 insert into curation_log_temp(acc, acc_short)
@@ -40,8 +40,6 @@ $$
             number_of_files   = s.number_of_files
         from studies s
         where s.acc = curation_log_temp.acc;
-
-        update curation_log_temp set acc_short = lpad(acc_short, 4, '0');
 
         update curation_log_temp clt set username = us.uname, country=us.country
         from (
