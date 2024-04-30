@@ -228,11 +228,6 @@ def curation_log_database_query():
         google_sheet_api = get_settings().google.connection.google_sheet_api
         google_sheet_api_dict = google_sheet_api.__dict__
 
-        google_df = getGoogleSheet(get_settings().google.sheets.mtbls_curation_log, 'Database Query',
-                                   google_sheet_api_dict)
-
-        data.columns = google_df.columns
-
         replaceGoogleSheet(data, get_settings().google.sheets.mtbls_curation_log, 'Database Query',
                            google_sheet_api_dict)
         return jsonify({'curationlog sheet update': "Success"})
