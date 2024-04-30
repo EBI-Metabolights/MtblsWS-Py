@@ -212,7 +212,7 @@ def initialize_app(flask_app):
     # api.add_resource(V1StudyDetail, res_path + "/v1/security/studies/obfuscationcode/<string:obfuscationcode>/view")
     
     api.add_resource(MtblsStudies, res_path + "/studies")
-    api.add_resource(EbEyeStudies, res_path + "/studies/eb-eye")
+    api.add_resource(EbEyeStudies, res_path + "/studies/eb-eye/<string:study_id>")
     api.add_resource(MtblsPrivateStudies, res_path + "/studies/private")
     api.add_resource(MtblsStudiesWithMethods, res_path + "/studies/technology")
     api.add_resource(MyMtblsStudiesDetailed, res_path + "/studies/user")

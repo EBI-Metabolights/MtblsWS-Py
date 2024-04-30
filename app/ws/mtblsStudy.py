@@ -50,10 +50,10 @@ from app.tasks.hpc_study_rsync_client import VALID_FOLDERS, StudyFolder, StudyFo
 from app.utils import MetabolightsDBException, MetabolightsException, metabolights_exception_handler
 from app.ws import db_connection as db_proxy
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.models import StudyTaskModel
+from app.ws.db.models import StudyTaskModel, UserModel
 from app.ws.db.schemes import Study, StudyTask, User
 from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus, UserRole
-from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
+from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory, get_user_model
 from app.ws.db_connection import (
     add_placeholder_flag,
     create_empty_study,
@@ -97,20 +97,47 @@ class EbEyeStudies(Resource):
     @swagger.operation(
         summary="Process studies for EB EYE Search",
         notes="Process studies for EB EYE Search.",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            },
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string",
+            }
+            
+        ],
         responseMessages=[
             {"code": 200, "message": "OK."},
-            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."}
         ],
     )
-    def get(self):
-        pub_study = StudyService.get_instance().get_public_study_from_db(study_id='MTBLS2')
-        settings = get_study_settings()
-        study_folders = settings.mounted_paths.study_metadata_files_root_path
-        update_study_model_from_directory(pub_study, study_folders)
-        doc = EbEyeSearchService.process_study(study=pub_study)
-        xml_str = doc.toprettyxml(indent="  ")                                      
-        response = make_response(xml_str)                                           
-        response.headers['Content-Type'] = 'text/xml; charset=utf-8'            
+    def get(self, study_id: str):
+        log_request(request)
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        if study_id == "all":
+            EbEyeSearchService.export_public_studies()
+            response = {'message':'process intiated!'}
+        else:
+            doc = EbEyeSearchService.get_study(study_id=study_id)
+            xml_str = doc.toprettyxml(indent="  ")                                      
+            response = make_response(xml_str)                                           
+            response.headers['Content-Type'] = 'text/xml; charset=utf-8'            
         return response
 
 class MtblsPrivateStudies(Resource):

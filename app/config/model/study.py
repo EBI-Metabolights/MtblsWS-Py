@@ -23,6 +23,7 @@ class StudyMountedPaths(BaseModel):
     private_ftp_recycle_bin_root_path: str = ""
     public_ftp_root_path: str = ""
     public_ftp_recycle_bin_root_path: str = ""
+    public_ftp_download_path:str = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public"
     
     reports_root_path: str
     compounds_root_path: str
@@ -63,3 +64,4 @@ class StudySettings(BaseModel):
     validation_script: str = "/nfs/www-prod/web_hx2/cm/metabolights/scripts/cluster_scripts/val/validation.sh"
     missing_files_name: str = "missing_files.txt"
     max_validation_messages_count_in_response: int = 50
+    metabolights_website_link = "https://www.ebi.ac.uk/metabolights"
