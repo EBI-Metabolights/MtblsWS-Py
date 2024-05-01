@@ -2,9 +2,14 @@ import logging
 import os
 import pathlib
 import datetime
+import time
 from xml.dom.minidom import Document, Element
 from app.config import get_settings
+from app.tasks.worker import send_email
+from app.utils import MetabolightsDBException
+from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import ContactModel, PublicationModel, StudyModel
+from app.ws.db.schemes import User
 from app.ws.db.wrappers import update_study_model_from_directory
 from app.ws.db_connection import get_public_studies, add_metabolights_data
 from app.ws.dom_utils import create_generic_element, create_generic_element_attribute
@@ -27,9 +32,10 @@ class EbEyeSearchService():
     content_type_xml = "xml"
     
     @staticmethod
-    def export_public_studies():
-        
+    def export_public_studies(user_token: str):
+        start_time = time.time()
         study_list = get_public_studies()
+        email = EbEyeSearchService.get_email_by_token(user_token=user_token)
         
         doc = Document()
         root = doc.createElement('database')
@@ -47,13 +53,14 @@ class EbEyeSearchService():
             doc = EbEyeSearchService.process_study(doc=doc, root=entries, study_id=study_id[0])
             logger.info(f"processing completed for the study  - {study_id[0]}")
             i = i+1
-            #if i ==2:
-                #break
         logger.info(f"processing completed for all the studies; Processed count  - {i}")
         xml_str = doc.toprettyxml(indent="")
         add_metabolights_data(content_name=EbEyeSearchService.eb_eye_public_studies_content, data_format=EbEyeSearchService.content_type_xml, content=xml_str)
         logger.info("Data stored to DB!")
-        return doc
+        processed_time = (time.time() - start_time)/60
+        result = f"Processed study count - {i}; Process completed in {processed_time} minutes"
+        send_email("EB EYE public studies export completed", result, None, email, None)
+        return {"processed_studies": i, "completed_in": processed_time}
     
     @staticmethod
     def get_study(study_id: str):        
@@ -448,3 +455,13 @@ class EbEyeSearchService():
             return str
         else:
             return ""
+        
+    @staticmethod
+    def get_email_by_token(user_token: str):
+        with DBManager.get_instance().session_maker() as db_session:
+            user = db_session.query(User.email).filter(User.apitoken == user_token).first()
+            if not user:
+                raise MetabolightsDBException("No user")
+            
+            email = user.email
+        return email

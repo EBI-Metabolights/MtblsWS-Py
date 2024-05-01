@@ -44,6 +44,7 @@ from app.tasks.common_tasks.basic_tasks.email import (
     send_technical_issue_email,
 )
 from app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization import sync_studies_on_es_and_db
+from app.tasks.common_tasks.report_tasks.eb_eye_search import eb_eye_build_public_studies
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import delete_study_folders, maintain_storage_study_folders
 from app.tasks.hpc_study_rsync_client import VALID_FOLDERS, StudyFolder, StudyFolderLocation, StudyFolderType, StudyRsyncClient
 
@@ -131,8 +132,9 @@ class EbEyeStudies(Resource):
 
         UserService.get_instance().validate_user_has_curator_role(user_token)
         if study_id == "all":
-            EbEyeSearchService.export_public_studies()
-            response = {'message':'process intiated!'}
+            inputs = {"user_token": user_token}
+            task = eb_eye_build_public_studies.apply_async(kwargs=inputs, expires=60*5)
+            response = {'Task started':f'Task id {task.id}'}
         else:
             doc = EbEyeSearchService.get_study(study_id=study_id)
             xml_str = doc.toprettyxml(indent="  ")                                      
