@@ -22,6 +22,23 @@ class UserRole(Enum):
             return UserRole.SYSTEM_ADMIN
         return UserRole.ANONYMOUS
 
+class CurationRequest(int, Enum):
+    MANUAL_CURATION = 0
+    NO_CURATION = 1
+    SEMI_AUTOMATED_CURATION = 2
+    
+    @staticmethod
+    def from_name(name: str):
+        if not name:
+            return None
+        if name.upper() == "Manual Curation".upper():
+            return CurationRequest.MANUAL_CURATION
+        elif name.upper() == "No Curation".upper():
+            return CurationRequest.NO_CURATION
+        elif name.upper() == "Semi-automated Curation".upper():
+            return CurationRequest.SEMI_AUTOMATED_CURATION
+        return None
+    
 class UserStatus(Enum):
     NEW = 0
     VERIFIED = 1
@@ -48,8 +65,34 @@ class StudyStatus(Enum):
     INREVIEW = 2
     PUBLIC = 3
     DORMANT = 4
+    @staticmethod
+    def from_name(name: str):
+        if not name:
+            return StudyStatus.SUBMITTED
+        if name.replace(" ", "").upper() == "SUBMITTED":
+            return StudyStatus.INCURATION
+        elif name.replace(" ", "").upper() == "INCURATION":
+            return StudyStatus.INREVIEW
+        elif name.replace(" ", "").upper() == "INREVIEW":
+            return StudyStatus.PUBLIC
+        elif name.replace(" ", "").upper() == "PUBLIC":
+            return StudyStatus.DORMANT
+        return StudyStatus.DORMANT
 
-
+    @staticmethod
+    def from_int(value: int):
+        if value == 0:
+            return StudyStatus.SUBMITTED
+        if value == 1:
+            return StudyStatus.INCURATION
+        elif value == 2:
+            return StudyStatus.INREVIEW
+        elif value == 3:
+            return StudyStatus.PUBLIC
+        elif value == 4:
+            return StudyStatus.DORMANT
+        return StudyStatus.DORMANT
+    
 class StudyTaskStatus(str, Enum):
     NOT_EXECUTED = 'NOT_EXECUTED'
     EXECUTING = 'EXECUTING'

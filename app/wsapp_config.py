@@ -95,7 +95,7 @@ from app.ws.settings.utils import get_study_settings
 from app.ws.species import SpeciesTree
 from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
 from app.ws.stats import StudyStats
-from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
+from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet, StudyModificationTime
 from app.ws.study_files import (CopyFilesFolders, DeleteAsperaFiles, FileList,
                                 SampleStudyFiles, StudyFiles, StudyFilesReuse,
                                 StudyFilesTree, StudyRawAndDerivedDataFiles, SyncFolder,
@@ -246,6 +246,8 @@ def initialize_app(flask_app):
     api.add_resource(DeleteStudy, res_path + "/studies/<string:study_id>/delete")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/upload")
     api.add_resource(StudyStatus, res_path + "/studies/<string:study_id>/status")
+    
+    api.add_resource(StudyModificationTime, res_path + "/studies/<string:study_id>/modification-time")
     api.add_resource(ToggleAccess, res_path + "/studies/<string:study_id>/access/toggle")
     api.add_resource(ToggleAccessGet, res_path + "/studies/<string:study_id>/access")
     api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/sync")
