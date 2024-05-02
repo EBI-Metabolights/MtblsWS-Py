@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from sqlalchemy import func
 
@@ -167,6 +167,10 @@ class UserService(object):
             return m_user
         else:
             raise MetabolightsAuthorizationException(message=f"User not in database")
+
+    def get_db_user_by_user_token(self, user_token: str) -> Union[None, User]:
+        filter_clause = lambda query: query.filter(User.apitoken == user_token)
+        return  self.get_db_user_by_filter_clause(filter_clause=filter_clause)
 
 
     def get_db_user_by_user_name(self, user_name: str) -> Optional[UserModel]:

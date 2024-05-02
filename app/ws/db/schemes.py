@@ -96,6 +96,7 @@ class Study(Base):
     status_date = Column(DateTime)
     number_of_files = Column(BigInteger)
     comment = Column(String)
+    curation_request = Column(BigInteger, nullable=False)
 
     users = relationship('User', secondary='study_user', back_populates="studies")
 
