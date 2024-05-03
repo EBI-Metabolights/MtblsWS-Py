@@ -28,11 +28,12 @@ class EbEyeSearchService():
     derived_files_list = get_settings().file_filters.derived_files_list
     study_resource_name = "MetaboLights"
     study_resource_description = "MetaboLights is a database for Metabolomics experiments and derived information"
-    eb_eye_public_studies_content = "eb-eye_metabolights_studies.xml"
+    eb_eye_public_studies_ebi = "eb-eye_metabolights_studies.xml"
+    eb_eye_public_studies_thomson = "thomsonreuters_metabolights_studies.xml"
     content_type_xml = "xml"
     
     @staticmethod
-    def export_public_studies(user_token: str):
+    def export_public_studies(user_token: str, thomson_reuters: bool=False):
         start_time = time.time()
         study_list = get_public_studies()
         email = EbEyeSearchService.get_email_by_token(user_token=user_token)
@@ -50,12 +51,15 @@ class EbEyeSearchService():
         i=1
         for study_id in study_list:
             logger.info(f"EB EYE search export processing for the study  - {study_id[0]}")
-            doc = EbEyeSearchService.process_study(doc=doc, root=entries, study_id=study_id[0])
+            doc = EbEyeSearchService.process_study(doc=doc, root=entries, study_id=study_id[0], thomson_reuters=thomson_reuters)
             logger.info(f"processing completed for the study  - {study_id[0]}")
             i = i+1
         logger.info(f"processing completed for all the studies; Processed count  - {i}")
         xml_str = doc.toprettyxml(indent="")
-        add_metabolights_data(content_name=EbEyeSearchService.eb_eye_public_studies_content, data_format=EbEyeSearchService.content_type_xml, content=xml_str)
+        if thomson_reuters:
+            add_metabolights_data(content_name=EbEyeSearchService.eb_eye_public_studies_thomson, data_format=EbEyeSearchService.content_type_xml, content=xml_str)
+        else:
+            add_metabolights_data(content_name=EbEyeSearchService.eb_eye_public_studies_ebi, data_format=EbEyeSearchService.content_type_xml, content=xml_str)
         logger.info("Data stored to DB!")
         processed_time = (time.time() - start_time)/60
         result = f"Processed study count - {i}; Process completed in {processed_time} minutes"
@@ -63,7 +67,7 @@ class EbEyeSearchService():
         return {"processed_studies": i, "completed_in": processed_time}
     
     @staticmethod
-    def get_study(study_id: str):        
+    def get_study(study_id: str, thomson_reuters: bool=False):        
         doc = Document()
         root = doc.createElement('database')
         doc.appendChild(root)
@@ -74,11 +78,11 @@ class EbEyeSearchService():
         doc = create_generic_element(doc, root, 'entry_count', "1")
         entries = doc.createElement('entries')
         root.appendChild(entries)
-        doc = EbEyeSearchService.process_study(doc=doc, root=entries, study_id=study_id)
+        doc = EbEyeSearchService.process_study(doc=doc, root=entries, study_id=study_id, thomson_reuters=thomson_reuters)
         return doc
     
     @staticmethod
-    def process_study(doc: Document, root: Element, study_id: str):
+    def process_study(doc: Document, root: Element, study_id: str, thomson_reuters: bool):
         try:
             study: StudyModel = StudyService.get_instance().get_public_study_with_detailed_user(study_id=study_id)
             update_study_model_from_directory(study, EbEyeSearchService.study_root)
@@ -89,7 +93,10 @@ class EbEyeSearchService():
             doc = create_generic_element(doc, entry, 'description', EbEyeSearchService.filter_non_printable(study.description))
             doc = EbEyeSearchService.add_cross_references(doc=doc, root=entry, study=study)
             doc = EbEyeSearchService.add_dates(doc=doc, root=entry, study=study)
-            doc = EbEyeSearchService.add_additional_fields(doc=doc, root=entry, study=study)
+            if thomson_reuters:
+                doc = EbEyeSearchService.add_detailed_authors(doc=doc, root=entry, study=study)
+                doc = EbEyeSearchService.add_structured_publication(doc=doc, root=entry, study=study)
+            doc = EbEyeSearchService.add_additional_fields(doc=doc, root=entry, study=study, thomson_reuters=thomson_reuters)
         except Exception as ex:
             logger.error(f"Exception while processing study - {study_id}; reason: {str(ex)}")
         return doc
@@ -188,13 +195,14 @@ class EbEyeSearchService():
         return doc
     
     @staticmethod
-    def add_additional_fields(doc: Document, root: Element, study: StudyModel):
+    def add_additional_fields(doc: Document, root: Element, study: StudyModel, thomson_reuters: bool):
         additional_fields = doc.createElement('additional_fields')
         doc = create_generic_element_attribute(doc=doc, root=additional_fields, 
                                                item_name='field', item_value='MetaboLights', attr_name='name', attr_value='repository')
         doc = create_generic_element_attribute(doc=doc, root=additional_fields, 
                                                item_name='field', item_value='Metabolomics', attr_name='name', attr_value='omics_type')
-        doc = EbEyeSearchService.add_authors(doc=doc, additional_fields=additional_fields, study=study)
+        if thomson_reuters is False:
+            doc = EbEyeSearchService.add_authors(doc=doc, additional_fields=additional_fields, study=study)
         doc = EbEyeSearchService.add_protocols(doc=doc, additional_fields=additional_fields, study=study)
         doc = EbEyeSearchService.add_assay(doc=doc, additional_fields=additional_fields, study=study)
         doc = EbEyeSearchService.add_files(doc=doc, additional_fields=additional_fields, study=study)
@@ -214,7 +222,8 @@ class EbEyeSearchService():
         doc = EbEyeSearchService.add_study_design_descriptors(doc=doc, additional_fields=additional_fields, study=study)
         doc = EbEyeSearchService.add_study_factors(doc=doc, additional_fields=additional_fields, study=study)
         doc = EbEyeSearchService.add_organism(doc=doc, additional_fields=additional_fields, study=study)
-        doc = EbEyeSearchService.add_publication(doc=doc, additional_fields=additional_fields, study=study)
+        if thomson_reuters is False:
+            doc = EbEyeSearchService.add_publication(doc=doc, additional_fields=additional_fields, study=study)
         doc = EbEyeSearchService.add_metabolites(doc=doc, additional_fields=additional_fields, study=study)
         
         root.appendChild(additional_fields)
@@ -248,11 +257,36 @@ class EbEyeSearchService():
                                                        item_name='field', item_value=EbEyeSearchService.get_author(contact=contact), attr_name='name', 
                                                        attr_value='author')
         return doc
-        
+    
+    @staticmethod
+    def add_detailed_authors(doc: Document, root: Element, study: StudyModel):
+        authorship = doc.createElement('authorship')
+        for contact in study.contacts:
+            if contact is not None:
+                author = doc.createElement('author')
+                name = contact.firstName + " " +contact.lastName
+                if EbEyeSearchService.check_for_empty(name):
+                     doc = create_generic_element(doc, author, 'name', name)
+                affliation = contact.affiliation
+                if EbEyeSearchService.check_for_empty(affliation):
+                    doc = create_generic_element(doc, author, 'affliation', affliation)
+                address = contact.address
+                if EbEyeSearchService.check_for_empty(address):
+                    doc = create_generic_element(doc, author, 'address', address)
+                email =  contact.email
+                if EbEyeSearchService.check_for_empty(email):
+                    doc = create_generic_element(doc, author, 'email', email)
+                phone = contact.phone
+                if EbEyeSearchService.check_for_empty(phone):
+                    doc = create_generic_element(doc, author, 'phone', phone)
+                authorship.appendChild(author)
+        root.appendChild(authorship)
+        return doc
+    
     @staticmethod
     def get_author(contact: ContactModel):
         complete_author = ""
-        name = contact.firstName + contact.lastName
+        name = contact.firstName + " " +contact.lastName
         if EbEyeSearchService.check_for_empty(name):
             complete_author = complete_author + name + ". "
         if EbEyeSearchService.check_for_empty(contact.affiliation):
@@ -367,6 +401,25 @@ class EbEyeSearchService():
                     doc = create_generic_element_attribute(doc=doc, root=additional_fields, 
                                                        item_name='field', item_value=complete_publication, attr_name='name', 
                                                        attr_value='publication')
+        return doc
+    
+    @staticmethod
+    def add_structured_publication(doc: Document, root: Element, study: StudyModel):
+        publications_elem = doc.createElement('publications')
+        for publication in study.publications:
+            if publication is not None:
+                publication_elem = doc.createElement('publication')
+                title = publication.title
+                pubmed = EbEyeSearchService.tidy_pubmed(publication.pubmedId)
+                doi = EbEyeSearchService.tidy_doi(publication.doi)
+                if EbEyeSearchService.check_for_empty(title.strip()):
+                    doc = create_generic_element(doc, publication_elem, 'title', title.strip())
+                if EbEyeSearchService.check_for_empty(pubmed):
+                    doc = create_generic_element(doc, publication_elem, 'pubmed',pubmed)
+                if EbEyeSearchService.check_for_empty(doi):
+                    doc = create_generic_element(doc, publication_elem, 'doi',doi)
+                publications_elem.appendChild(publication_elem)
+        root.appendChild(publications_elem)
         return doc
                     
     @staticmethod

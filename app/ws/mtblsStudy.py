@@ -108,8 +108,8 @@ class EbEyeStudies(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "study_id",
-                "description": "Study Identifier",
+                "name": "consumer",
+                "description": "Provide Consumber ebi or thomson",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
@@ -124,19 +124,23 @@ class EbEyeStudies(Resource):
             {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."}
         ],
     )
-    def get(self, study_id: str):
+    def get(self, consumer: str):
         log_request(request)
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
         UserService.get_instance().validate_user_has_curator_role(user_token)
-        if study_id == "all":
-            inputs = {"user_token": user_token}
+        if consumer == "ebi":
+            inputs = {"user_token": user_token, "thomson_reuters": False }
+            task = eb_eye_build_public_studies.apply_async(kwargs=inputs, expires=60*5)
+            response = {'Task started':f'Task id {task.id}'}
+        elif consumer == "thomson":
+            inputs = {"user_token": user_token, "thomson_reuters": True }
             task = eb_eye_build_public_studies.apply_async(kwargs=inputs, expires=60*5)
             response = {'Task started':f'Task id {task.id}'}
         else:
-            doc = EbEyeSearchService.get_study(study_id=study_id)
+            doc = EbEyeSearchService.get_study(study_id=consumer, thomson_reuters=False)
             xml_str = doc.toprettyxml(indent="  ")                                      
             response = make_response(xml_str)                                           
             response.headers['Content-Type'] = 'text/xml; charset=utf-8'            
