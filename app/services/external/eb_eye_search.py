@@ -8,12 +8,13 @@ from app.config import get_settings
 from app.tasks.worker import send_email
 from app.utils import MetabolightsDBException
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.models import ContactModel, PublicationModel, StudyModel
+from app.ws.db.models import ContactModel, MetaboLightsCompoundModel, PublicationModel, StudyModel
 from app.ws.db.schemes import User
 from app.ws.db.wrappers import update_study_model_from_directory
 from app.ws.db_connection import get_public_studies, add_metabolights_data
 from app.ws.dom_utils import create_generic_element, create_generic_element_attribute
 from app.ws.study.study_service import StudyService
+from app.services.compound.compound_service import CompoundService
 from app.ws.settings.utils import get_study_settings
 
 logger = logging.getLogger("wslog")
@@ -24,11 +25,13 @@ class EbEyeSearchService():
     public_ftp_download = get_study_settings().mounted_paths.public_ftp_download_path
     metabolights_website_link = get_study_settings().metabolights_website_link
     metabolite_list = []
+    study_acc_list = []
     raw_files_list = get_settings().file_filters.raw_files_list
     derived_files_list = get_settings().file_filters.derived_files_list
     study_resource_name = "MetaboLights"
     study_resource_description = "MetaboLights is a database for Metabolomics experiments and derived information"
     eb_eye_public_studies_ebi = "eb-eye_metabolights_studies.xml"
+    eb_eye_public_compounds_ebi = "eb-eye_metabolights_compounds.xml"
     eb_eye_public_studies_thomson = "thomsonreuters_metabolights_studies.xml"
     content_type_xml = "xml"
     
@@ -48,7 +51,7 @@ class EbEyeSearchService():
         doc = create_generic_element(doc, root, 'entry_count', str(len(study_list)))
         entries = doc.createElement('entries')
         root.appendChild(entries)
-        i=1
+        i=0
         for study_id in study_list:
             logger.info(f"EB EYE search export processing for the study  - {study_id[0]}")
             doc = EbEyeSearchService.process_study(doc=doc, root=entries, study_id=study_id[0], thomson_reuters=thomson_reuters)
@@ -518,3 +521,139 @@ class EbEyeSearchService():
             
             email = user.email
         return email
+    
+    @staticmethod
+    def get_compound(compound_acc: str):
+        doc = Document()
+        root = doc.createElement('database')
+        doc.appendChild(root)
+        doc = create_generic_element(doc, root, 'name', EbEyeSearchService.study_resource_name)
+        doc = create_generic_element(doc, root, 'description', EbEyeSearchService.study_resource_description)
+        doc = create_generic_element(doc, root, 'release', "1.0")
+        doc = create_generic_element(doc, root, 'release_date', datetime.date.today().strftime('%Y-%m-%d'))
+        entries = doc.createElement('entries')
+        root.appendChild(entries)
+        doc = EbEyeSearchService.process_compound(doc=doc, root=entries, compound_acc=compound_acc)
+        return doc
+    
+    @staticmethod
+    def export_compounds(user_token: str):
+        start_time = time.time()
+        email = EbEyeSearchService.get_email_by_token(user_token=user_token)
+        compound_list = CompoundService.get_instance().get_all_compounds()
+        doc = Document()
+        root = doc.createElement('database')
+        doc.appendChild(root)
+        doc = create_generic_element(doc, root, 'name', EbEyeSearchService.study_resource_name)
+        doc = create_generic_element(doc, root, 'description', EbEyeSearchService.study_resource_description)
+        doc = create_generic_element(doc, root, 'release', "1.0")
+        doc = create_generic_element(doc, root, 'release_date', datetime.date.today().strftime('%Y-%m-%d'))
+        doc = create_generic_element(doc, root, 'entry_count', str(len(compound_list)))
+        entries = doc.createElement('entries')
+        root.appendChild(entries)
+        i=0
+        for compound_acc in compound_list:
+            logger.info(f"EB EYE search export processing starting for compound  - {compound_acc}")
+            doc = EbEyeSearchService.process_compound(doc=doc, root=entries, compound_acc=compound_acc)
+            logger.info(f"processing completed for the compound  - {compound_acc}")
+            i = i+1
+        logger.info(f"processing completed for all the compounds; Processed count  - {i}")
+        xml_str = doc.toprettyxml(indent="")
+        add_metabolights_data(content_name=EbEyeSearchService.eb_eye_public_compounds_ebi, data_format=EbEyeSearchService.content_type_xml, content=xml_str)
+        logger.info("Data stored to DB!")
+        processed_time = (time.time() - start_time)/60
+        result = f"Processed compounds count - {i}; Process completed in {processed_time} minutes"
+        send_email("EB EYE Compounds export completed", result, None, email, None)
+        return {"processed_compounds": i, "completed_in": processed_time}
+    
+    @staticmethod
+    def process_compound(doc: Document, root: Element, compound_acc: str):
+        try:
+            compound = CompoundService.get_instance().get_compound(compound_acc=compound_acc)
+            entry = doc.createElement('entry')
+            entry.setAttribute(attname='id', value=compound_acc)
+            root.appendChild(entry)
+            if EbEyeSearchService.check_for_empty(compound.name):
+                doc = create_generic_element(doc, entry, 'name', EbEyeSearchService.filter_non_printable(compound.name))
+            if EbEyeSearchService.check_for_empty(compound.description):
+                doc = create_generic_element(doc, entry, 'description', EbEyeSearchService.filter_non_printable(compound.description))
+            doc = EbEyeSearchService.add_cross_references_for_compound(doc=doc, root=entry, compound=compound)
+            doc = EbEyeSearchService.add_dates_for_compound(doc=doc, root=entry, compound=compound)
+            doc = EbEyeSearchService.add_additional_fields_for_compounds(doc=doc, root=entry, compound=compound) 
+                
+        except Exception as ex:
+            logger.error(f"Exception while processing compound - {compound_acc}; reason: {str(ex)}")
+        return doc
+    
+    @staticmethod
+    def add_cross_references_for_compound(doc: Document, root: Element, compound: MetaboLightsCompoundModel):
+        EbEyeSearchService.study_acc_list = []
+        xrefs = doc.createElement('cross_references')
+        for cross_reference in compound.crossReference:
+            if cross_reference is not None:
+                db_name = cross_reference.db.name
+                if db_name.upper() == 'MTBLS':
+                    if cross_reference.accession not in EbEyeSearchService.study_acc_list:
+                        EbEyeSearchService.study_acc_list.append(cross_reference.accession)
+                    ref = doc.createElement('ref')
+                    ref.setAttribute(attname= 'dbkey', value= cross_reference.accession)
+                    ref.setAttribute(attname= 'dbname', value= db_name.upper())
+                    xrefs.appendChild(ref)
+                    
+                elif db_name.upper() == 'CHEBI':
+                    if cross_reference.accession != compound.chebiId:
+                        ref = doc.createElement('ref')
+                        ref.setAttribute(attname= 'dbkey', value= cross_reference.accession)
+                        ref.setAttribute(attname= 'dbname', value= db_name)
+                        xrefs.appendChild(ref)
+                else:
+                    ref = doc.createElement('ref')
+                    ref.setAttribute(attname= 'dbkey', value= cross_reference.accession)
+                    ref.setAttribute(attname= 'dbname', value= db_name)
+                    xrefs.appendChild(ref)
+        # Add Chebi crossreference
+        ref = doc.createElement('ref')
+        ref.setAttribute(attname= 'dbkey', value= compound.chebiId)
+        ref.setAttribute(attname= 'dbname', value= 'ChEBI')
+        xrefs.appendChild(ref)
+        root.appendChild(xrefs)
+        return doc
+        
+    @staticmethod
+    def add_dates_for_compound(doc: Document, root: Element, compound: MetaboLightsCompoundModel):
+        dates_elem = doc.createElement('dates')
+        date_elem = doc.createElement('date')
+        date_elem.setAttribute(attname= 'type', value= 'last_modification')
+        date_elem.setAttribute(attname= 'value', value= compound.updatedDate)
+        dates_elem.appendChild(date_elem)
+        root.appendChild(dates_elem)
+        return doc
+    
+    @staticmethod
+    def add_additional_fields_for_compounds(doc: Document, root: Element, compound: MetaboLightsCompoundModel):
+        additional_fields = doc.createElement('additional_fields')
+        if EbEyeSearchService.check_for_empty(compound.inchi):
+            doc = create_generic_element_attribute(doc=doc, root=additional_fields, 
+                                               item_name='field', item_value=compound.inchi, attr_name='name', attr_value='inchi')
+        if EbEyeSearchService.check_for_empty(compound.iupacNames):
+            doc = create_generic_element_attribute(doc=doc, root=additional_fields, 
+                                               item_name='field', item_value=compound.iupacNames, attr_name='name', attr_value='iupac')
+        if EbEyeSearchService.check_for_empty(compound.formula):
+            doc = create_generic_element_attribute(doc=doc, root=additional_fields, 
+                                               item_name='field', item_value=compound.formula, attr_name='name', attr_value='formula')
+        for met_species in compound.metSpecies:
+            if EbEyeSearchService.check_for_empty(met_species.species):
+                doc = create_generic_element_attribute(doc=doc, root=additional_fields, 
+                                               item_name='field', item_value=met_species.species, attr_name='name', attr_value='organism')
+                #if met_species.species.lower() == 'reference compound':
+                     # Todo
+                #else:
+                if met_species.speciesMember is not None:
+                    doc = create_generic_element_attribute(doc=doc, root=additional_fields, 
+                                               item_name='field', item_value=met_species.speciesMember.speciesGroup.name, attr_name='name', attr_value='organism_group')
+                    
+        for study_acc in EbEyeSearchService.study_acc_list:
+            doc = create_generic_element_attribute(doc=doc, root=additional_fields, 
+                                               item_name='field', item_value=study_acc, attr_name='name', attr_value='study')
+        root.appendChild(additional_fields)
+        return doc

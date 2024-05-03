@@ -67,7 +67,7 @@ from app.ws.metabolight_statistics import MetabolightsStatistics
 from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.mtbls_maf import (CombineMetaboliteAnnotationFiles,
                               MetaboliteAnnotationFile, MtblsMAFSearch)
-from app.ws.mtblsCompound import (MtblsCompoundFile, MtblsCompoundIndex, MtblsCompoundIndexAll,
+from app.ws.mtblsCompound import (EbEyeCompounds, EbEyeCompoundsAll, MtblsCompoundFile, MtblsCompoundIndex, MtblsCompoundIndexAll,
                                   MtblsCompoundIndexSync, MtblsCompoundSpectraFile, MtblsCompounds,
                                   MtblsCompoundsDetails)
 from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
@@ -278,6 +278,8 @@ def initialize_app(flask_app):
     
     
     api.add_resource(MtblsCompoundsDetails, res_path + "/compounds/<string:accession>")
+    api.add_resource(EbEyeCompounds, res_path + "/compounds/eb-eye/<string:accession>")
+    api.add_resource(EbEyeCompoundsAll, res_path + "/compounds/eb-eye/all")
     
     api.add_resource(MtblsCompoundFile, res_path + "/compounds/<string:accession>/file")
     api.add_resource(MtblsCompoundSpectraFile, res_path + "/compounds/<string:accession>/<string:spectra_id>/file")
