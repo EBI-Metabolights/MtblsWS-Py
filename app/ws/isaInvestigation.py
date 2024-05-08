@@ -25,12 +25,13 @@ from marshmallow import ValidationError
 from flask_restful_swagger import swagger
 from app.study_folder_utils import get_all_metadata_files
 from app.utils import metabolights_exception_handler
+from app.ws.db.types import CurationRequest
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import IsaInvestigationSchema
 from app.ws.mtblsWSclient import WsClient
 import logging
 
-from app.ws.study.study_service import identify_study_id
+from app.ws.study.study_service import StudyService, identify_study_id
 from app.ws.utils import log_request
 
 
@@ -144,6 +145,7 @@ class IsaInvestigation(Resource):
             study_status = wsc.get_permissions(study_id, user_token, obfuscation_code)
         if not read_access:
             abort(403)
+        study = StudyService.get_instance().get_study_by_acc(study_id)
         metadata_files = get_all_metadata_files(study_location)
         investigation_file = [x for x in metadata_files if os.path.basename(x).lower() == "i_investigation.txt"]
         if not investigation_file:
@@ -160,6 +162,11 @@ class IsaInvestigation(Resource):
                         isaInvestigation={},
                         validation={})
         response['mtblsStudy']['studyStatus'] = study_status
+        response['mtblsStudy']['curationRequest'] = ""
+        if hasattr(study, 'curation_request'):
+            response['mtblsStudy']['curationRequest'] = CurationRequest(study.curation_request).name
+        response['mtblsStudy']['modifiedTime'] = study.updatedate.isoformat()
+        response['mtblsStudy']['statusUpdateTime'] = study.status_date.isoformat() if study.status_date else ""
         response['mtblsStudy']['read_access'] = read_access
         response['mtblsStudy']['write_access'] = write_access
         response['mtblsStudy']['is_curator'] = is_curator

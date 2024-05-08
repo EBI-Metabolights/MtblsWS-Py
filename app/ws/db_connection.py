@@ -28,6 +28,7 @@ import psycopg2.extras
 from psycopg2 import pool
 from app.config import get_settings
 from app.utils import MetabolightsDBException, current_time, current_utc_time_without_timezone
+from app.ws.db.types import CurationRequest
 from app.ws.settings.utils import get_study_settings
 
 from app.ws.utils import get_single_file_information, check_user_token, val_email, fixUserDictKeys
@@ -98,7 +99,11 @@ query_studies_user = """
            when s.status = 1 then 'In Curation'
            when s.status = 2 then 'In Review' 
            when s.status = 3 then 'Public' 
-           else 'Dormant' end 
+           else 'Dormant' end,
+      case when s.curation_request = 0 then 'MANUAL_CURATION' 
+           when s.curation_request = 1 then 'NO_CURATION'
+           when s.curation_request = 2 then 'SEMI_AUTOMATED_CURATION' 
+           else 'MANUAL_CURATION' end 
     from studies s, users u, study_user su 
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
@@ -322,6 +327,7 @@ def get_all_private_studies_for_user(user_token):
         release_date = row[1]
         submission_date = row[2]
         status = row[3]
+        curation_request = row[4]
 
         if status.strip() == "Submitted":
             complete_study_location = os.path.join(study_location, study_id)
@@ -346,7 +352,8 @@ def get_all_private_studies_for_user(user_token):
                                   'createdDate': submission_date,
                                   'status': status.strip(),
                                   'title': title.strip(),
-                                  'description': description.strip()})
+                                  'description': description.strip(),
+                                  'curationRequest': curation_request.strip()})
 
     return complete_list
 
@@ -371,7 +378,8 @@ def get_all_studies_for_user(user_token):
         release_date = row[1]
         submission_date = row[2]
         status = row[3]
-
+        curation_request = row[4]
+        
         complete_study_location = os.path.join(study_location, study_id)
         complete_file_name = os.path.join(complete_study_location, file_name)
 
@@ -405,7 +413,8 @@ def get_all_studies_for_user(user_token):
                               'createdDate': submission_date,
                               'status': status.strip(),
                               'title': title.strip(),
-                              'description': description.strip()})
+                              'description': description.strip(),
+                            'curationRequest': curation_request.strip()})
 
     return complete_list
 
@@ -1101,7 +1110,43 @@ def update_study_status(study_id, study_status, is_curator=False):
         logger.error('Database update of study status failed with error ' + str(e))
         return False
 
+def update_curation_request(study_id, curation_request: Union[CurationRequest, None] = None):
+    val_acc(study_id)
+    if curation_request is None:
+        return False
+    current = current_time()
+    query = "UPDATE studies SET curation_request = %(curation_request)s"
+    query +=  ", updatedate = %(current)s, status_date = %(current)s"
+    query += " WHERE acc = %(study_id)s;"
 
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query, {'study_id': study_id, 'curation_request': curation_request.value, "current": current})
+        conn.commit()
+        release_connection(postgresql_pool, conn)
+        return True
+    except Exception as e:
+        logger.error('Database update of study curation_request failed with error ' + str(e))
+        return False
+    
+def update_modification_time(study_id, update_time: Union[datetime.datetime, None] = None):
+    val_acc(study_id)
+    if not update_time:
+        update_time = "CURRENT_TIME"
+    query = "UPDATE studies SET updatedate = %(date_time)s"
+    query += " WHERE acc = %(study_id)s;"
+
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query, {'study_id': study_id, "date_time": update_time})
+        conn.commit()
+        release_connection(postgresql_pool, conn)
+        return True
+    except Exception as e:
+        logger.error('Database update of study modification time failed with error ' + str(e))
+        return False
+    
+    
 def execute_select_query(query, user_token):
     if not user_token:
         return None
