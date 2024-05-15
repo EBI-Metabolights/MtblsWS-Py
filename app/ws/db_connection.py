@@ -1265,6 +1265,25 @@ def add_maf_info_data(acc, database_identifier, metabolite_identification, datab
         return False, str(e)
     return status, msg
 
+def add_metabolights_data(content_name, data_format, content):
+    status = False
+    msg = None
+    sql = """
+        insert into metabolights_data_reuse(content_name, data_format, content) values(
+                                %(content_name)s, 
+                                %(data_format)s, 
+                                %(content)s
+                                );
+    """
+    input_data = {'content_name': content_name,
+                  'data_format': data_format,
+                  "content": content}
+    try:
+        status, msg = insert_update_data(sql, input_data)
+    except Exception as e:
+        return False, str(e)
+    return status, msg
+
 
 def val_acc(study_id=None):
     if study_id:

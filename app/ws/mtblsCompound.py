@@ -10,6 +10,9 @@ from flask import send_file, make_response
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefMetabolite
 from app.ws.settings.utils import get_study_settings
+from app.ws.study.user_service import UserService
+from app.services.external.eb_eye_search import EbEyeSearchService
+from app.tasks.common_tasks.report_tasks.eb_eye_search import eb_eye_build_compounds
 from app.ws.utils import log_request
 from app.ws.db import models
 
@@ -45,7 +48,92 @@ class MtblsCompounds(Resource):
         result = {'content': acc_list, 'message': None, "err": None}
         return result
 
+class EbEyeCompounds(Resource):
+    @swagger.operation(
+        summary="Export Metabolights Compound for EB Eye",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            },
+            {
+                "name": "accession",
+                "description": "Compound Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            }
+        ],
+        responseMessages=[
+        {"code": 200, "message": "OK."},
+        {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+        {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
+        {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."}
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self, accession):
+        log_request(request)
+        # param validation
+        if accession is None:
+            abort(401, message="Missing accession")
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
 
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+
+        accession = accession.upper()
+        compounds_details = MtblsCompoundsDetails()
+        compounds_details.validate_requested_accession(accession)
+
+        logger.info(f'Getting EB EYE export for Compound  {accession}')
+        doc = EbEyeSearchService.get_compound(compound_acc=accession)
+        xml_str = doc.toprettyxml(indent="  ")                                      
+        response = make_response(xml_str)                                           
+        response.headers['Content-Type'] = 'text/xml; charset=utf-8' 
+        return response
+    
+    
+class EbEyeCompoundsAll(Resource):
+    @swagger.operation(
+        summary="Export Metabolights Compound for EB Eye",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            }
+        ],
+        responseMessages=[
+        {"code": 200, "message": "OK."},
+        {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+        {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
+        {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."}
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self):
+        log_request(request)
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        inputs = {"user_token": user_token}
+        task = eb_eye_build_compounds.apply_async(kwargs=inputs, expires=60*5)
+        response = {'Task started':f'Task id {task.id}'}
+        return response
+    
+    
 class MtblsCompoundsDetails(Resource):
     @swagger.operation(
         summary="Get details for a Metabolights Compound",

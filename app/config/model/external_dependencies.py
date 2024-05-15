@@ -6,6 +6,7 @@ class ApiConfiguration(BaseModel):
     bioontology_api_url: str
     zooma_api_url: str
     marine_species_api_url: str
+    europe_pmc_api_url: str
 
 
 class ExternalDependenciesSettings(BaseModel):
