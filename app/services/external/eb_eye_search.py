@@ -93,8 +93,6 @@ class EbEyeSearchService():
                 EbEyeSearchService.linked_studies = EbEyeSearchService.linked_studies + 1
                 EbEyeSearchService.articles_linked = EbEyeSearchService.articles_linked + pubs_count
             i = i+1
-            if i==10:
-                break
         logger.info(f"processing completed for all the studies; Processed count  - {i}")
         xml_str = doc.toprettyxml(indent="")        
         add_metabolights_data(content_name=EbEyeSearchService.europe_pmc_study, data_format=EbEyeSearchService.content_type_xml, content=xml_str)
