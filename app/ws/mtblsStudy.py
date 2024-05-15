@@ -44,7 +44,7 @@ from app.tasks.common_tasks.basic_tasks.email import (
     send_technical_issue_email,
 )
 from app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization import sync_studies_on_es_and_db
-from app.tasks.common_tasks.report_tasks.eb_eye_search import eb_eye_build_public_studies
+from app.tasks.common_tasks.report_tasks.eb_eye_search import eb_eye_build_public_studies, build_studies_for_europe_pmc
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import delete_study_folders, maintain_storage_study_folders
 from app.tasks.hpc_study_rsync_client import VALID_FOLDERS, StudyFolder, StudyFolderLocation, StudyFolderType, StudyRsyncClient
 
@@ -109,7 +109,7 @@ class EbEyeStudies(Resource):
             },
             {
                 "name": "consumer",
-                "description": "Provide Consumber ebi or thomson",
+                "description": "Provide Consumber ebi or thomson or europe_pmc",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
@@ -138,6 +138,10 @@ class EbEyeStudies(Resource):
         elif consumer == "thomson":
             inputs = {"user_token": user_token, "thomson_reuters": True }
             task = eb_eye_build_public_studies.apply_async(kwargs=inputs, expires=60*5)
+            response = {'Task started':f'Task id {task.id}'}
+        elif consumer == "europe_pmc":
+            inputs = {"user_token": user_token }
+            task = build_studies_for_europe_pmc.apply_async(kwargs=inputs, expires=60*5)
             response = {'Task started':f'Task id {task.id}'}
         else:
             doc = EbEyeSearchService.get_study(study_id=consumer, thomson_reuters=False)

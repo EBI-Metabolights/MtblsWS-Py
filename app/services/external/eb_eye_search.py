@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import pathlib
@@ -16,6 +17,7 @@ from app.ws.dom_utils import create_generic_element, create_generic_element_attr
 from app.ws.study.study_service import StudyService
 from app.services.compound.compound_service import CompoundService
 from app.ws.settings.utils import get_study_settings
+import urllib
 
 logger = logging.getLogger("wslog")
 
@@ -24,15 +26,21 @@ class EbEyeSearchService():
     study_root = get_study_settings().mounted_paths.study_metadata_files_root_path
     public_ftp_download = get_study_settings().mounted_paths.public_ftp_download_path
     metabolights_website_link = get_study_settings().metabolights_website_link
+    europe_pmc_url = get_settings().external_dependencies.api.europe_pmc_api_url
     metabolite_list = []
     study_acc_list = []
+    linked_studies = 0
+    articles_linked = 0
     raw_files_list = get_settings().file_filters.raw_files_list
     derived_files_list = get_settings().file_filters.derived_files_list
     study_resource_name = "MetaboLights"
     study_resource_description = "MetaboLights is a database for Metabolomics experiments and derived information"
-    eb_eye_public_studies_ebi = "eb-eye_metabolights_studies.xml"
-    eb_eye_public_compounds_ebi = "eb-eye_metabolights_compounds.xml"
+    eb_eye_public_studies_ebi = "eb_eye_metabolights_studies.xml"
+    eb_eye_public_compounds_ebi = "eb_eye_metabolights_compounds.xml"
     eb_eye_public_studies_thomson = "thomsonreuters_metabolights_studies.xml"
+    europe_pmc_study = "europe_PMC_metabolights_studies.xml"
+    europe_pmc_provider_id = "1782"
+    europe_pmc_pmid_src = "MED"
     content_type_xml = "xml"
     
     @staticmethod
@@ -55,7 +63,6 @@ class EbEyeSearchService():
         for study_id in study_list:
             logger.info(f"EB EYE search export processing for the study  - {study_id[0]}")
             doc = EbEyeSearchService.process_study(doc=doc, root=entries, study_id=study_id[0], thomson_reuters=thomson_reuters)
-            logger.info(f"processing completed for the study  - {study_id[0]}")
             i = i+1
         logger.info(f"processing completed for all the studies; Processed count  - {i}")
         xml_str = doc.toprettyxml(indent="")
@@ -69,6 +76,94 @@ class EbEyeSearchService():
         send_email("EB EYE public studies export completed", result, None, email, None)
         return {"processed_studies": i, "completed_in": processed_time}
     
+    @staticmethod
+    def export_europe_pmc(user_token: str):
+        start_time = time.time()
+        study_list = get_public_studies()
+        email = EbEyeSearchService.get_email_by_token(user_token=user_token)
+        
+        doc = Document()
+        links = doc.createElement('links')
+        doc.appendChild(links)
+        i=0
+        for study_id in study_list:
+            logger.info(f"Exporting  the study {study_id[0]} for EuropePMC")
+            doc, study_linked, pubs_count = EbEyeSearchService.process_study_for_europmc(doc=doc, root=links, study_id=study_id)
+            if study_linked:
+                EbEyeSearchService.linked_studies = EbEyeSearchService.linked_studies + 1
+                EbEyeSearchService.articles_linked = EbEyeSearchService.articles_linked + pubs_count
+            i = i+1
+            if i==10:
+                break
+        logger.info(f"processing completed for all the studies; Processed count  - {i}")
+        xml_str = doc.toprettyxml(indent="")        
+        add_metabolights_data(content_name=EbEyeSearchService.europe_pmc_study, data_format=EbEyeSearchService.content_type_xml, content=xml_str)
+        logger.info(f"Data stored to DB")
+        processed_time = (time.time() - start_time)/60
+        result = f"Processed study count - {i}; Process completed in {processed_time} minutes. \n  {EbEyeSearchService.linked_studies} Studies linked with EuropePMC. Those studies got {EbEyeSearchService.articles_linked} publications"
+        logger.info(f"Processed study count - {i}; Process completed in {processed_time} minutes. \n  {EbEyeSearchService.linked_studies} Metabolights Studies linked with EuropePMC. Those studies got {EbEyeSearchService.articles_linked} publications")
+        send_email("EuropePMC export processing completed", result, None, email, None)
+        return {"processed_studies": i, "completed_in": processed_time}
+    
+    @staticmethod
+    def process_study_for_europmc(doc: Document, root: Element, study_id: str):
+        pmid_found = []
+        preprint_doi_found = []
+        study_text_found = []
+        pubs_count = 0
+        study_linked = False
+        try:
+            study: StudyModel = StudyService.get_instance().get_public_study_with_detailed_user(study_id=study_id)
+            update_study_model_from_directory(study, EbEyeSearchService.study_root)
+            publications = study.publications
+            if  publications is not None and len(publications) > 0:
+                for publication in study.publications:
+                    link = doc.createElement('link')
+                    link.setAttribute(attname='providerId', value=EbEyeSearchService.europe_pmc_provider_id)
+                    resource = doc.createElement('resource')
+                    doc = create_generic_element(doc, resource, 'title', EbEyeSearchService.filter_non_printable(study.title))
+                    doc = create_generic_element(doc, resource, 'url', f'{EbEyeSearchService.metabolights_website_link}/{study.studyIdentifier}')
+                    link.appendChild(resource)
+                    if EbEyeSearchService.check_for_empty(publication.pubmedId):
+                        resource = doc.createElement('record')
+                        doc = create_generic_element(doc, resource, 'source', EbEyeSearchService.europe_pmc_pmid_src)
+                        doc = create_generic_element(doc, resource, 'id', publication.pubmedId)
+                        link.appendChild(resource)
+                        root.appendChild(link)
+                        study_linked = True
+                        pubs_count = pubs_count+1
+                    else:
+                        if EbEyeSearchService.check_for_empty(publication.doi):
+                            query = f'doi:{publication.doi}'
+                            output = EbEyeSearchService.europe_pmc_query(query=query)
+                            hitcount = output['hitCount']
+                            if hitcount == 1:
+                                doc = create_generic_element(doc, link, 'doi', publication.doi)
+                                root.appendChild(link)
+                                study_linked = True
+                                pubs_count = pubs_count+1
+                            else:
+                                query = f'title:{publication.title}'
+                                query = urllib.parse.quote(query)
+                                output = EbEyeSearchService.europe_pmc_query(query=query)
+                                hitcount = output['hitCount']
+                                if hitcount == 1:
+                                    doc = create_generic_element(doc, link, 'doi', publication.doi)
+                                    root.appendChild(link)
+                                    study_linked = True
+                                    pubs_count = pubs_count+1
+        except Exception as ex:
+            logger.error(f"Exception while processing study - {study_id}; reason: {str(ex)}")
+        return doc, study_linked, pubs_count
+    
+    @staticmethod
+    def europe_pmc_query(query: str):
+        url = f'{EbEyeSearchService.europe_pmc_url}/search?query={query}&format=json'
+        result = urllib.request.urlopen(url)
+        content = result.read().decode('utf-8')
+        output = json.loads(content)
+        return output
+                
     @staticmethod
     def get_study(study_id: str, thomson_reuters: bool=False):        
         doc = Document()
