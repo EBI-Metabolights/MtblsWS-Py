@@ -267,6 +267,8 @@ class SlurmClient(object):
                 }
         if not hpc_queue_name:
             hpc_queue_name = settings.hpc_cluster.datamover.queue_name
+        
+        if hpc_queue_name == settings.hpc_cluster.datamover.queue_name:
             inputs["SHARED_PATHS"] = worker_config.shared_paths
                         
         if additional_mounted_paths:
