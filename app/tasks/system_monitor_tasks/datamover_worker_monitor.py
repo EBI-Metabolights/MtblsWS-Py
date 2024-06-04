@@ -3,7 +3,8 @@ import os
 from typing import Any, Dict, List, Set
 from app.config import get_settings
 
-from app.tasks.lsf_client import HpcJob, LsfClient
+from app.tasks.hpc_client import HpcClient, HpcJob
+from app.tasks.hpc_utils import get_new_hpc_client
 from app.tasks.system_monitor_tasks.utils import (
     check_and_get_monitor_session,
     generate_random_name,
@@ -39,7 +40,7 @@ def maintain_datamover_workers(
         if number_of_workers < 0:
             number_of_workers = max(number_of_workers, 1)
 
-        client = LsfClient()
+        client: HpcClient = get_new_hpc_client()
         worker_name_prefix = f"{job_project_name}_{queue_name}_worker"
 
         current_worker_identifiers = set()
@@ -76,10 +77,10 @@ def maintain_datamover_workers(
         runnig_jobs: List[HpcJob] = []
         for worker in current_workers:
             status: str = worker.status
-            if status.upper() == "PEND":
+            if status.upper().startswith("PEND"):
                 pending_jobs.append(worker)
                 results[worker.name].append("It is in pending state.")
-            elif status.upper() == "RUN":
+            elif status.upper().startswith("RUN"):
                 results[worker.name].append("It is up and running.")
                 runnig_jobs.append(worker)
             else:
@@ -118,7 +119,7 @@ def create_datamover_worker(
 ):
     random_name = generate_random_name(current_names=worker_identifiers)
     name = f"{worker_name_prefix}_{random_name}"
-    client: LsfClient = LsfClient()
+    client: HpcClient = get_new_hpc_client()
     settings = get_settings()
     worker_config = settings.workers.datamover_workers
     command = os.path.join(
@@ -126,7 +127,9 @@ def create_datamover_worker(
         worker_config.start_datamover_worker_script,
     )
     args = worker_config.broker_queue_names
-    client.run_singularity(name, command, args, unique_task_name=False)
+    sif_image_file_url = os.environ.get("SINGULARITY_IMAGE_FILE_URL")
+
+    client.run_singularity(name, command, args, unique_task_name=False, sif_image_file_url=sif_image_file_url)
     message = "New worker is triggered."
     results[name] = [message]
     logger.info(message)
@@ -139,7 +142,7 @@ def kill_duplicate_jobs(results: Dict[str, List[str]], current_workers_map):
             duplicate_jobs: List[HpcJob] = current_workers_map[job_name]["job"]
             duplicate_jobs.sort(key=lambda x: x.submit_time, reverse=False)
             job_ids = [x.job_id for x in duplicate_jobs if x != duplicate_jobs[0]]
-            client = LsfClient()
+            client: HpcClient = get_new_hpc_client()
             client.kill_jobs(job_id_list=job_ids, failing_gracefully=True)
             name = current_workers_map[job_name]["job"][0].name
             message = f"Duplicate jobs are killed. {name}"
@@ -170,7 +173,7 @@ def maintain_extra_workers(
             if not status or status.decode() != "1":
                 celery.control.broadcast("shutdown", destination=[key])
                 redis.set_value(redis_key, "1", ex=shutdown_signal_wait_time)
-                message = "Shutdown signal was sent to unxepected worker"
+                message = "Shutdown signal was sent to unexpected worker"
                 results[worker_name].append(message)
                 return True
     return False
@@ -222,7 +225,7 @@ def maintain_expired_workers(
             and ("key" not in c_map[x.name] or not c_map[x.name]["key"])
         ]
         if inactive_worker_job_ids:
-            client = LsfClient()
+            client: HpcClient = get_new_hpc_client()
             client.kill_jobs(inactive_worker_job_ids, failing_gracefully=True)
 
     if expired_active_worker_keys:

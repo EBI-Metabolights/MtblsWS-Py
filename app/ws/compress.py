@@ -3,12 +3,13 @@ import os
 import time
 from app.config import get_settings
 from app.tasks.bash_client import BashClient
-from app.tasks.lsf_client import LsfClient
 from typing import Dict, List, Set, Tuple
 
 from flask import request, current_app as app
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
+from app.tasks.hpc_client import HpcClient
+from app.tasks.hpc_utils import get_new_hpc_client
 from app.ws.db.models import SimplifiedUserModel
 
 from app.ws.study.user_service import UserService
@@ -16,7 +17,7 @@ logger = logging.getLogger('wslog')
 
 def compress_raw_data_folders(task_name: str, study_id: str, filename_pattern: str, email: str):
     settings = get_settings()
-    client = LsfClient()
+    client: HpcClient = get_new_hpc_client(submit_with_ssh=True)
     messages = []
     inputs = {
             "ROOT_PATH": settings.hpc_cluster.datamover.mounted_paths.cluster_study_readonly_files_actual_root_path,

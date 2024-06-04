@@ -52,12 +52,16 @@ class HpcDataMoverSettings(BaseModel):
     queue_name: str
     cluster_private_ftp_user_home_path: str
     mounted_paths: DataMoverPathConfiguration
+    workload_manager: str = "slurm"
+
 
 class HpcComputeSettings(BaseModel):
     connection: HpcConnection
     standard_queue: str ="standard"
     long_process_queue: str ="long"
     default_queue: str = "standard"
+    workload_manager: str = "slurm"
+
 
 
 class HpcClusterSettings(BaseModel):

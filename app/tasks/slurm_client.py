@@ -2,23 +2,26 @@
 
 
 import datetime
+from enum import Enum
 import logging
 import os
+from pathlib import Path
 import re
-import uuid
-from enum import Enum
+import shutil
 from typing import List, Union
-
+import uuid
 from app.config import get_settings
 from app.config.model.hpc_cluster import HpcClusterConfiguration
 from app.tasks.bash_client import BashClient, CapturedBashExecutionResult
 from app.tasks.hpc_client import HpcClient, HpcJob
+from app.tasks.hpc_rsync_worker import HpcRsyncWorker
 from app.utils import MetabolightsException, current_time
+
+from app.ws.settings.utils import get_cluster_settings
 
 logger = logging.getLogger('wslog')
 
 from pydantic import BaseModel
-
 
 class JobState(str, Enum):
     PEND = "PEND"
@@ -26,24 +29,21 @@ class JobState(str, Enum):
     DONE = "DONE"
     UNKOWN = "UNKOWN"
 
-    
-
-    
-class LsfClient(HpcClient):
+class SlurmClient(HpcClient):
     
     def __init__(self, cluster_settings: Union[None, HpcClusterConfiguration] = None, submit_with_ssh: bool=True) -> None:
-        super(LsfClient, self).__init__(cluster_settings, submit_with_ssh, datetime_format="%b %d %H:%M")
+        super(SlurmClient, self).__init__(cluster_settings, submit_with_ssh, datetime_format="%Y-%m-%dT%H:%M:%S")
 
         
     def submit_hpc_job(self, script_path: str, job_name: str, output_file=None, error_file=None, account=None, queue: Union[None, str] = None, timeout: Union[None, float]=30.0) -> int:
         if not queue:
             queue = get_settings().hpc_cluster.datamover.queue_name
-        bsub_command = self._get_submit_command(script_path, queue, job_name, output_file, error_file, account)
-        result: CapturedBashExecutionResult = BashClient.execute_command(bsub_command, timeout=timeout)
+        hpc_command = self._get_submit_command(script_path, queue, job_name, output_file, error_file, account)
+        result: CapturedBashExecutionResult = BashClient.execute_command(hpc_command, timeout=timeout)
         stdout = result.stdout
         status_line = result.stdout[0] if result.stdout else ""
         job_id = ""
-        pattern = re.compile('Job <(.+)> is submitted to queue <(.+)>.*', re.IGNORECASE)
+        pattern = re.compile('Submitted batch job (.+).*', re.IGNORECASE)
         match =  pattern.match(status_line)
         if match:
             match_result = match.groups()
@@ -51,35 +51,25 @@ class LsfClient(HpcClient):
                 raise MetabolightsException(message=f"No job id is defined.")
             else:
                 job_id = int(match_result[0])
-            if match_result[1] != queue:
-                raise MetabolightsException(message=f"Unexpected queue, job submitted to {match_result[1]}.")
-            message = f"Script was sumbitted: Job name: {job_name}, queue: {match_result[1]}, job id: {match_result[0]}"
+
+            message = f"Script was sumbitted: Job name: {job_name}, queue: {queue}, job id: {match_result[0]}"
             logger.info(message) 
             print(message)
         else:
             raise MetabolightsException(message="output does not have a job id.")
             
         return job_id, stdout, result.stderr
-
-
+            
     def kill_jobs(self, job_id_list: List[str], failing_gracefully=False, timeout: Union[None, float]=15.0):
-        kill_command = f"{self.cluster_settings.job_kill_command} {' '.join(job_id_list)}"
+        kill_command = f"scancel {' '.join(job_id_list)}"
         command = self._get_hpc_ssh_command(kill_command)
         result: CapturedBashExecutionResult = BashClient.execute_command(command, timeout=timeout)
-        pattern = re.compile('Job <(.+)>.*', re.IGNORECASE)
-        lines = result.stdout
-        killed_job_id_list = []
-        for line in lines:
-            if line.strip():
-                match =  pattern.match(line)
-                if match:
-                    match_result = match.groups()
-                    if not match_result[0] or not match_result[0].isnumeric() and not failing_gracefully:
-                        raise MetabolightsException(message=f"No job id is defined.")
-
-                    killed_job_id_list.append(match_result[0])
-        return killed_job_id_list, result.stdout, result.stderr       
-
+        if result.returncode == 0:
+            return job_id_list, result.stdout, result.stderr
+        if not failing_gracefully:
+            raise MetabolightsException(message=f"No job id is defined.")
+        return [], result.stdout, result.stderr
+        
 
     def get_job_status(self, job_names: Union[None, str, List[str]]=None, timeout: Union[None, float]=15.0) -> List[HpcJob]:
         if not job_names:
@@ -95,23 +85,28 @@ class LsfClient(HpcClient):
             lines = result.stdout
             for line in lines:
                 if line.strip():
-                    columns = line.split()
+                    
+                    columns = line.split("::")
                     if len(columns) < 7:
                         raise MetabolightsException(message=f"Return format is not valid.")
+                    job_name = ""
+                    if not columns[6].strip().startswith(f"{self.cluster_settings.job_project_name}---"):
+                        continue
+                    else:
+                        job_name = columns[6].strip().replace(f"{self.cluster_settings.job_project_name}---", "")
                     status = columns[2]
                     job_id = columns[0]
                     submit_time_str = " ".join(columns[7:]) if columns[7] else ""
                     submit_time = 0
                     try:
                         submit_datetime = datetime.datetime.strptime(submit_time_str, self.datetime_format)
-                        submit_datetime = submit_datetime.replace(year=current_time().year)
                         submit_time = submit_datetime.timestamp()
 
                     except Exception as ex:
                         pass
                     item = HpcJob(job_id=job_id, status=status, name=columns[6].strip(), submit_time=submit_time)
                     if  job_names:
-                        if columns[6].strip() in job_names:
+                        if job_name in job_names:
                             results.append(item)
                     else:
                         results.append(item)
@@ -120,16 +115,16 @@ class LsfClient(HpcClient):
             raise MetabolightsException(message=f"No result returned.")
         
     def _get_job_status_command(self):
-        command = f"{self.cluster_settings.job_running_command} -noheader -w -P {self.cluster_settings.job_project_name}"
+        command = f'squeue -h --format=%i::%P::%T::%u::%l::%A::%j::%V'
         return self._get_hpc_ssh_command(command)
     
     
     def _get_submit_command(self, script: str, job_name: str, queue=None, output_file=None, error_file=None, account=None) -> int:
         script_file_path = self._prepare_script_to_submit_on_hpc(script, queue, job_name, output_file, error_file, account)
-        submission_command = f"bsub < {script_file_path}"
+        submission_command = f"sbatch < {script_file_path}"
         return self._get_hpc_ssh_command(submission_command)
-    
-    def _prepare_script_to_submit_on_hpc(self, script_path: str, job_name: str, queue=None, output_file=None, error_file=None, account=None, runtime_limit: Union[None, str] = None, cpu:int = 1, rusage: str = "rusage[mem=2048]"):
+  
+    def _prepare_script_to_submit_on_hpc(self, script_path: str, job_name: str, queue=None, output_file=None, error_file=None, account=None, runtime_limit: Union[None, str] = None, cpu:int = 1, rusage: str = "4G"):
         if not os.path.exists(script_path):
             raise MetabolightsException(message=f"Script path {script_path} does not exist.")
         lines = []
@@ -144,36 +139,46 @@ class LsfClient(HpcClient):
         
         inputs = [x.strip() for x in lines]
         
-        bsub_comments = []
-        bsub_comments.append(f"-P {self.cluster_settings.job_project_name}")
+        hpc_comments = []
+        # hpc_comments.append(f"-P {self.cluster_settings.job_project_name}")
         
-        bsub_comments.append(f"-J {job_name}")
+        hpc_comments.append(f"-J {self.cluster_settings.job_project_name}---{job_name}")
         if queue:
-            bsub_comments.append(f"-q {queue}")
+            hpc_comments.append(f"-p {queue}")
         if account:
-            bsub_comments.append(f"-u {account}")
+            hpc_comments.append(f"-A {account}")
         if output_file:
-            bsub_comments.append(f"-o {output_file}")
+            hpc_comments.append(f"-o {output_file}")
         if error_file:
-            bsub_comments.append(f"-e {error_file}")
+            hpc_comments.append(f"-e {error_file}")
         if runtime_limit:
-            bsub_comments.append(f"-W {runtime_limit}")
+            hpc_comments.append(f"--time={runtime_limit}")
+        else:
+            hpc_comments.append(f"--time=12:00:00")
         if rusage:
-            bsub_comments.append(f"-R {rusage}")
-        bsub_comments.append(f"-n {str(cpu)}")
+            hpc_comments.append(f"--mem={rusage}")
+        hpc_comments.append(f"-n {str(cpu)}")
         
-        bsub_comments = [f"#BSUB {x}" for x in bsub_comments]
+        hpc_comments = [f"#SBATCH {x}" for x in hpc_comments]
         content = ["#!/bin/bash"]
-        content.extend(bsub_comments)
+        content.extend(hpc_comments)
         content.append("")
         content.extend(inputs)
         basename = os.path.basename(script_path).replace(".", "_")
         
         content = [f"{x}\n" for x in content]
-        temp_file_name =  f"{basename}_bsub_script_{str(uuid.uuid4())}.sh"
+        temp_file_name =  f"{basename}_slurm_script_{str(uuid.uuid4())}.sh"
         file_input_path = os.path.join(get_settings().server.temp_directory_path, temp_file_name)
         
         with open(file_input_path, "w") as f:
             f.writelines(content)
         return file_input_path
+    
 
+
+
+if __name__ == "__main__":
+    client = SlurmClient()
+    script_path = "/nfs/public/rw/metabolomics/development/ozgur/MtblsWS-Py/test.sh"
+    jobs = client.get_job_status()
+    # client.submit_hpc_job(script_path, job_name="test")

@@ -6,13 +6,14 @@ from typing import List
 import kombu
 
 from app.config import get_settings
-from app.tasks.lsf_client import HpcJob, LsfClient
+from app.tasks.hpc_client import HpcClient, HpcJob
+from app.tasks.hpc_utils import get_new_hpc_client
 from app.tasks.system_monitor_tasks import heartbeat
 from app.tasks.worker import celery as app
 
 
 def get_status(worker_name: str):
-    client: LsfClient = LsfClient()
+    client: HpcClient = get_new_hpc_client()
     project_name = get_settings().hpc_cluster.configuration.job_project_name
     name = f"{project_name}_{worker_name}"
     jobs: List[HpcJob] = client.get_job_status([name])
@@ -21,7 +22,7 @@ def get_status(worker_name: str):
 def create_datamover_worker(worker_name: str):
     project_name = get_settings().hpc_cluster.configuration.job_project_name
     name = f"{project_name}_{worker_name}"
-    client: LsfClient = LsfClient()
+    client: HpcClient = get_new_hpc_client()
     settings = get_settings()
     worker_config = settings.workers.datamover_workers
     command = os.path.join(
@@ -29,13 +30,16 @@ def create_datamover_worker(worker_name: str):
         worker_config.start_datamover_worker_script,
     )
     args = worker_config.broker_queue_names.split(",")
-    args.append(name)
+    # args.append(name)
+    sif_image_file_url = os.environ.get("SINGULARITY_IMAGE_FILE_URL")
+
     job_id, _ = client.run_singularity(
-        name, command, ",".join(args), unique_task_name=False
+        name, command, ",".join(args) + f" {name}", 
+        unique_task_name=False,
+        sif_image_file_url=sif_image_file_url
     )
 
     return job_id
-
 
 def create_queue(name: str):
     if not app.conf.task_queues:
@@ -71,7 +75,7 @@ def delete_current_workers(worker_name: str):
         jobs: List[HpcJob] = get_status(worker_name)
         if jobs:
             job_ids = [job.job_id for job in jobs]
-            client: LsfClient = LsfClient()
+            client: HpcClient = get_new_hpc_client()
             killed_ids, stdout, stderr = client.kill_jobs(
                 job_ids, failing_gracefully=True
             )
@@ -156,3 +160,8 @@ def ping_datamover_worker(worker_name: str):
             print(f"No response from datamover worker {name}: {str(ex)}")
 
     return None
+
+
+if __name__ == "__main__":
+    # create_datamover_worker("slurm-test")
+    delete_current_workers("slurm-test")
