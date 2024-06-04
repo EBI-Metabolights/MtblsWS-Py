@@ -306,6 +306,37 @@ def create_isa_files(study_id, study_location, target_location: str=None) -> Tup
     return True, "ISA files are created successfully."
 
 
+def validate_peak_table(peak_table_file_path: str):
+
+    metabolon_template_path = get_settings().file_resources.study_partner_metabolon_template_path
+    maf_template: DataFrame = read_tsv(os.path.join(metabolon_template_path, "m_metabolite_profiling_mass_spectrometry_v2_maf.tsv"))
+    
+    maf_template = maf_template[0:0]
+    main_table: DataFrame = pd.read_excel(peak_table_file_path, engine='openpyxl', dtype=str, index_col=None, header=None)
+    main_table.dropna(axis=0, how="all", inplace=True)
+    main_table.replace(np.nan, "", regex=True, inplace=True)
+    temp_df = main_table[:2]
+
+    parent_sample_row_index = -1
+    for col in temp_df.columns:
+        for i in range(2):
+            if "SAMPLE" in temp_df.iloc[i][col].upper(): 
+                parent_sample_row_index = i
+                break
+
+    first_data_row = -1
+    for i in range(10):
+        if len(main_table) > i and ("BIOCHEMICAL" == main_table.iloc[i, 0] or "CHEMICAL_NAME" == main_table.iloc[i, 0]):
+            first_data_row = i
+            break
+
+    if first_data_row < 0:
+        raise Exception("BIOCHEMICAL or CHEMICAL_NAME column does not exist.")
+            
+    if parent_sample_row_index < 0:
+        raise Exception("PARENT SAMPLE NAME column does not exist in first 2 rows.")
+    
+
 def create_maf_file(study_id: str, study_location: str, sample_id: str, peak_table_file_path: str, use_sample_id_in_filename: bool = False):
 
     metabolon_template_path = get_settings().file_resources.study_partner_metabolon_template_path
@@ -365,7 +396,7 @@ def create_maf_file(study_id: str, study_location: str, sample_id: str, peak_tab
     
     if client_id_row_index >= 0:
         table = main_table[first_data_row:]
-        table.iloc[0, :] = temp_df.iloc[0, :]
+        table.iloc[0, :] = temp_df.iloc[client_id_row_index, :]
     else:
         table = main_table[first_data_row+1:]
         
