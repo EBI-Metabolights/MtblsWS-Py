@@ -428,14 +428,24 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                     success, val_sequence=4.2, log_category=log_category)
 
         try:
-            if is_ms and (maf_header['mass_to_charge'] or maf_header['retention_time']):
+            if is_ms and ("mass_to_charge" in maf_header):
                 check_maf_rows(validations, val_section, maf_df, 'mass_to_charge', is_ms=is_ms,
-                               log_category=log_category)
-            elif not is_ms and maf_header['chemical_shift']:
-                check_maf_rows(validations, val_section, maf_df, 'chemical_shift', is_ms=is_ms,
                                log_category=log_category)
         except:
             logger.info("No mass_to_charge column found in the MS MAF")
+        try:
+            if is_ms and "retention_time" in maf_header:
+                check_maf_rows(validations, val_section, maf_df, 'retention_time', is_ms=is_ms,
+                               log_category=log_category)
+        except:
+            logger.info("No retention_time column found in the MS MAF")
+            
+        try:
+            if not is_ms and "chemical_shift" in maf_header:
+                check_maf_rows(validations, val_section, maf_df, 'chemical_shift', is_ms=is_ms,
+                               log_category=log_category)
+        except:
+            logger.info("No chemical_shift column found in the NMR MAF")
 
         # NMR/MS Assay Names OR Sample Names are added to the sheet
         missing_maf_columns = []
@@ -487,12 +497,12 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
     if col_rows != all_rows:
         # For MS we should have m/z values, for NMR the chemical shift is equally important.
         if (is_ms and (column_name == 'mass_to_charge' or 'retention_time')) or (not is_ms and column_name == 'chemical_shift'):
-            add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF." +
-                    str(col_rows) + " rows found, but there should be " + str(all_rows),
+            add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF. " +
+                    str(col_rows) + " row(s) found, but there should be " + str(all_rows),
                     error, val_sequence=10, log_category=log_category)
         else:
             add_msg(validations, val_section, "Missing values for sample '" + column_name + "' in the MAF. " +
-                    str(col_rows) + " rows found, but there should be " + str(all_rows),
+                    str(col_rows) + " row(s) found, but there should be " + str(all_rows),
                     info, val_sequence=11, log_category=log_category)
 
 
@@ -1068,7 +1078,7 @@ def validate_assays(isa_study, readonly_files_folder, metadata_files_folder, int
             is_ms = True
 
         assay_header = get_table_header(assay_dataframe, study_id, assay_file_name)
-        required_columns = {"chromatography instrument", 'column model', "column type", "scan polarity"}
+        required_columns = {"chromatography instrument", 'column model', "column type"}
         found_columns = {}
         for header in assay_header:
             if len(header) == 0:
@@ -1170,8 +1180,8 @@ def validate_assays(isa_study, readonly_files_folder, metadata_files_folder, int
                             else:
                                 add_msg(validations,
                                         val_section,
-                                        "Assay sheet '" + assay.filename + "' column '" + a_header + "' is missing some values. " +
-                                        str(col_rows) + " rows found, but there should be " + str(all_rows),
+                                        "Assay sheet '" + assay.filename + "' column '" + a_header + "' has missing some values. " +
+                                        str(col_rows) + " row(s) found, but there should be " + str(all_rows),
                                         val_type, assay.filename, val_sequence=4.1, log_category=log_category)
 
                         # Correct MAF?
@@ -1505,7 +1515,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                     val_stat = info
 
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' has missing values. " +
-                        str(col_rows) + " rows found, but there should be " + str(all_rows), val_stat, file_name,
+                        str(col_rows) + " row(s) found, but there should be " + str(all_rows), val_stat, file_name,
                         val_sequence=6, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' has correct number of rows",
