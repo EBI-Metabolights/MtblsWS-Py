@@ -481,7 +481,7 @@
 			"columns": {
 			  "Parameter Value[Chromatography Instrument]": {
 				"data-type": "ontology",
-				"is-required": "false",
+				"is-required": "true",
 				"is-hidden": "false",
 				"is-read-only": "false",
 				"technique": "mass spectrometry",
@@ -498,7 +498,7 @@
 			  },
 			  "Parameter Value[Column model]": {
 				"data-type": "string",
-				"is-required": "false",
+				"is-required": "true",
 				"is-hidden": "false",
 				"is-read-only": "false",
 				"technique": "mass spectrometry",
@@ -515,7 +515,7 @@
 			  },
 			  "Parameter Value[Column type]": {
 				"data-type": "string",
-				"is-required": "false",
+				"is-required": "true",
 				"is-hidden": "false",
 				"is-read-only": "false",
 				"technique": "mass spectrometry",
@@ -582,7 +582,7 @@
 			"columns": {
 			  "Parameter Value[Scan polarity]": {
 				"data-type": "list",
-				"is-required": "false",
+				"is-required": "true",
 				"is-read-only": "true",
 				"is-hidden": "false",
 				"technique": "Mass spectrometry",

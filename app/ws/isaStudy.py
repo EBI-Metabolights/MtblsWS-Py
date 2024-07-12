@@ -2329,7 +2329,7 @@ class StudyFactors(Resource):
 
     def get_factor(self, factor_list, factor_name):
         for factor in factor_list:
-            if factor.name.lower() == factor_name.lower():
+            if factor and factor.name is not None and str(factor.name).lower() == factor_name.lower():
                 return factor
         return None
 
@@ -2492,7 +2492,7 @@ class StudyFactors(Resource):
         found = False
         old_factor = ""
         for idx, factor in enumerate(isa_study.factors):
-            if factor.name == factor_name:
+            if factor and factor.name is not None and str(factor.name).lower() == factor_name.lower():
                 found = True
                 old_factor = factor.name
                 # update factor details
