@@ -30,27 +30,26 @@ import re
 import shutil
 import string
 import time
-from typing import Dict, List, Tuple
 import uuid
-from os.path import normpath, basename
+from os.path import basename, normpath
+from typing import Dict, List, Tuple
+from urllib import request as urllib_request
 
 import numpy as np
 import pandas as pd
-from isatools.model import Study, Assay, Investigation, OntologySource, Protocol, ProtocolParameter, OntologyAnnotation
-
-from urllib import request as urllib_request
-from flask_restful import abort
+from dirsync import sync
 from flask import request
+from flask_restful import abort
+from isatools.model import (Assay, Investigation, OntologyAnnotation,
+                            OntologySource, Protocol, ProtocolParameter, Study)
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
 from pandas import DataFrame, Series
-from dirsync import sync
 from app.config import get_settings
 from app.config.utils import get_host_internal_url
 from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files
 from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
-
 from app.ws.settings.utils import get_study_settings
 from app.ws.utils import copy_file, get_year_plus_one, read_tsv, write_tsv
 
@@ -74,7 +73,7 @@ def validate_mzml_files(study_id):
     xmlschema_doc = etree.parse(xsd_path)
     xmlschema = etree.XMLSchema(xmlschema_doc)  
     # Getting xsd schema for validation
-
+    invalid_files = {}
     for file_loc in [study_folder]:
         if os.path.isdir(file_loc):  # Only check if the folder exists
             files = glob.iglob(os.path.join(file_loc, '*.mzML'))  # Are there mzML files there?
@@ -87,26 +86,52 @@ def validate_mzml_files(study_id):
                     logger.info('Validating mzML file ' + file)
                     status, result = validate_xml(xml=file, xmlschema=xmlschema)
                     if not status:
-                        return status, result
+                        invalid_files[file] = result
+                        # return status, result
                 except Exception as e:
+                    invalid_files[file] = str(e)
                     return False, f'Error while validating file {file}: {str(e)}'
 
-    return status, result
+    if invalid_files:
+        return False, json.dumps(invalid_files)
+    return True, ''
 
+
+def validate_mzml_file(file_path: str):
+
+    status, result = True, "All mzML files validated in both study and upload folder"
+    settings = get_settings()
+    xsd_path = settings.file_resources.mzml_xsd_schema_file_path
+    xmlschema_doc = etree.parse(xsd_path)
+    xmlschema = etree.XMLSchema(xmlschema_doc)  
+    # Getting xsd schema for validation
+
+    try:
+        logger.info('Validating mzML file ' + file_path)
+        status, result = validate_xml(xml=file_path, xmlschema=xmlschema)
+        if not status:
+            return status, result
+    except Exception as e:
+        return False, f'Error while validating file {file_path}: {str(e)}'
+
+    return status, result
 
 def validate_xml(xml=None, xmlschema=None):
     # parse xml
     try:
         doc = etree.parse(xml)
     except IOError:
+        print('Schema validation error. File read error: ' + xml)
         return False, {"Error": "Can not read the file " + xml}
     except etree.XMLSyntaxError:
+        print('Schema validation error. Invalid XML, schema validation failed: ' + xml)
+
         return False, {"Error": "File " + xml + " is not a valid XML file"}
 
     # validate against schema
     try:
         xmlschema.assertValid(doc)
-        print('XML valid, schema validation ok: ' + xml)
+        # print('XML valid, schema validation ok: ' + xml)
         return True, "File " + xml + " is a valid XML file"
     except etree.DocumentInvalid:
         print('Schema validation error. ' + xml)
@@ -117,6 +142,7 @@ def to_isa_tab(study_id, input_folder, output_folder):
     try:
         isa_convert(input_folder, output_folder, study_id, jobs=1, verbose=True)
     except Exception as e:
+        print("Could not convert mzML to ISA-Tab study " + study_id + ". " + output_folder)
         return False, "Could not convert mzML to ISA-Tab study " + study_id + ". " + str(e)
 
     return True, "ISA-Tab files generated for study " + study_id
@@ -202,9 +228,11 @@ def convert_to_isa(study_location, study_id):
         # subfolders: List[str] = split_files_to_subfolders(input_folder)
         output_folder = study_location + "/"
         for sub_path in subfolders:
-            input_files = os.path.join(sub_path, "FILES")
-            print(os.path.basename(sub_path))
-            status, message = to_isa_tab("", input_files, sub_path)
+            file_path = os.path.join(sub_path, "i_Investigation.txt")
+            if not os.path.exists(file_path):
+                input_files = os.path.join(sub_path, "FILES")
+                print(os.path.basename(sub_path))
+                status, message = to_isa_tab("", input_files, sub_path)
 
         return status, message
     except Exception as exc:
@@ -587,12 +615,17 @@ def create_investigation_file(study_id, study_location, assay_file_names: List[s
 
     return status, message
 
-if __name__ == '__main__':
-    study_id = "MTBLS850"
-    settings = get_settings()
-    study_root_path = pathlib.Path(settings.study.mounted_paths.study_metadata_files_root_path)
-    target_root_path = pathlib.Path(settings.study.mounted_paths.study_internal_files_root_path)
-    study_location = study_root_path / study_id
-    target_location = target_root_path / study_id / "metabolon_pipeline"
-    # target_location = study_root_path / study_id
-    create_isa_files(study_id=study_id, study_location=str(study_location), target_location=target_location)
+# if __name__ == '__main__':
+#     study_id = "MTBLS2307"
+#     settings = get_settings()
+#     study_root_path = pathlib.Path(settings.study.mounted_paths.study_metadata_files_root_path)
+#     target_root_path = pathlib.Path(settings.study.mounted_paths.study_internal_files_root_path)
+#     study_location = study_root_path / study_id
+#     # target_location = target_root_path / study_id / "metabolon_pipeline"
+#     target_location = study_root_path / study_id
+#     # convert_to_isa(study_location=str(study_location), study_id=study_id)
+#     # create_isa_files(study_id=study_id, study_location=str(study_location), target_location=target_location)
+#     # target_location = target_root_path / study_id / "metabolon_pipeline/MZML_0015"
+#     # status, message = to_isa_tab("", str(target_location / "FILES"), str(target_location))
+#     status, report = validate_mzml_files(study_id)
+#     print(status)

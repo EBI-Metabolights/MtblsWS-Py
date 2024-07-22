@@ -45,8 +45,9 @@ def metabolon_confirm(self, study_id: str, study_location: str, email: str, targ
         if val_status:
             message.update({'mzML validation': 'Successful'})
         else:
-            message.update({'mzML validation': 'Failed', "result": ""})
+            message.update({'mzML validation': 'Failed', "result": val_message})
             success = False
+            raise Exception("Metabolon pipeline: mzML file validation failed.")
 
         # Create ISA-Tab files using mzml2isa
         conv_status =''
