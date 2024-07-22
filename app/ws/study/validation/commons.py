@@ -30,22 +30,23 @@ from typing import List, Union
 import numpy as np
 import pandas as pd
 import requests
-from app.config import get_settings
-from app.utils import current_time
+from isatools.model import Assay, Protocol, Study
 
+from app.config import get_settings
+from app.config.model.study import StudySettings
+from app.utils import current_time
 from app.ws.cluster_jobs import submit_job
 from app.ws.db.schemes import Study
-from app.ws.db_connection import  update_validation_status
+from app.ws.db_connection import update_validation_status
 from app.ws.isaApiClient import IsaApiClient
-from app.config.model.study import StudySettings
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import get_files_for_validation
 from app.ws.study.study_service import StudyService
 from app.ws.study_folder_utils import FileSearchResult
-from app.ws.utils import read_tsv, map_file_type, find_text_in_isatab_file, get_table_header, \
-    get_assay_type_from_file_name, get_assay_headers_and_protcols
-from isatools.model import Assay, Protocol, Study
-
+from app.ws.utils import (find_text_in_isatab_file,
+                          get_assay_headers_and_protcols,
+                          get_assay_type_from_file_name, get_table_header,
+                          map_file_type, read_tsv)
 
 iac = IsaApiClient()
 
@@ -205,7 +206,7 @@ def return_validations(section, validations, override_list=None, comment_list=No
 
 def remove_nonprintable(text):
     import string
-    
+
     # Get the difference of all ASCII characters from the set of printable characters
     nonprintable = set([chr(i) for i in range(128)]).difference(string.printable)
     # Use translate to remove all non-printable characters
@@ -1468,10 +1469,13 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
         all_rows = isa_samples.shape[0]
         for s_header in samples:
             col_rows = 0  # col_rows = isa_samples[s_header].count()
+            row_values = set()
             for row in isa_samples[s_header]:
                 if str(row):  # Float values with 0.0 are not counted, so convert to string first
                     col_rows += 1
-                if s_header == 'Characteristics[Organism]':
+                if row and row.strip() and s_header.lower().startswith('factor value['):
+                    row_values.add(row.strip())
+                elif s_header == 'Characteristics[Organism]':
                     if 'human' == row.lower() or 'man' == row.lower():
                         human_found = True
                     elif len(row) < 4:  # ToDo, read from all_val[idx][ontology-details][rules][0][value]
@@ -1499,10 +1503,12 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                         row = str(row)
                         if row != "Sample collection":
                             sample_coll_found = False
-
+            if not row_values and s_header.lower().startswith('factor value['):
+                add_msg(validations, val_section, "Sample sheet column '" + s_header + "' is empty. At least one row should be filled.", error, file_name,
+                        val_sequence=20.1, log_category=log_category)
             if not sample_coll_found and s_header.lower() == prot_ref:
-                add_msg(validations, val_section, "Sample sheet column '" + s_header + "' has missing required values. "
-                                                                                       "All rows must contain the text 'Sample collection'",
+                add_msg(validations, val_section, "Sample sheet column '" + s_header + "' has missing required values. " 
+                        + "All rows must contain the text 'Sample collection'",
                         error, file_name, val_sequence=7.8, log_category=log_category)
 
             if col_rows < all_rows:
@@ -2035,7 +2041,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
                 add_msg(validations, val_section, "Successfully found one or more factors", success, file_name,
                         val_sequence=14, log_category=log_category)
             else:
-                add_msg(validations, val_section, "Could not find any factor",
+                add_msg(validations, val_section, "Could not find any factor. Please define at least one factor value in sample sheet.",
                         error, file_name, val_sequence=15, log_category=log_category)
 
             if isa_study.design_descriptors:
