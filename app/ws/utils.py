@@ -324,14 +324,19 @@ def delete_column_from_tsv_file(file_df: pd.DataFrame, column_name: str):
     if column_name in file_df.columns:
         column_index = file_df.columns.get_loc(column_name)
     if column_index >= 0:
-        if (column_index + 1) < len(file_df.columns):
-            next_column_name = file_df.columns[column_index + 1]
-            if next_column_name.startswith("Term Source REF") or next_column_name.startswith("Term Accession Number") :
+        next_column_index = column_index + 1
+        if next_column_index < len(file_df.columns):
+            next_column_name = file_df.columns[next_column_index]
+            if next_column_name.lower().startswith("unit"):
                 deleted_column_names.append(next_column_name)
-            if (column_index + 2) < len(file_df.columns):
-                next_column_name = file_df.columns[column_index + 2]
-                if next_column_name.startswith("Term Source REF") or next_column_name.startswith("Term Accession Number") :
+                next_column_index += 1
+        for _ in range(2):
+            # check next two columns
+            if next_column_index < len(file_df.columns):
+                next_column_name = file_df.columns[next_column_index]
+                if next_column_name.lower().startswith("term source ref") or next_column_name.lower().startswith("term accession number"):
                     deleted_column_names.append(next_column_name)
+                    next_column_index += 1
         for column in deleted_column_names:
             file_df.drop(column, axis=1, inplace=True)
     else:
@@ -622,10 +627,6 @@ def add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, s
         obj = isa_study.get_prot(prot_name)
         if obj:
             continue
-
-        protocol_type = 'mass spectrometry'
-        if assay_type == 'NMR':
-            protocol_type = 'nmr spectroscopy'
 
         protocol = Protocol(
             name=prot_name,
