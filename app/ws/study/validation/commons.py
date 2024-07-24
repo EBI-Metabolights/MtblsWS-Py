@@ -498,7 +498,7 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
     # else:
     if col_rows != all_rows:
         # For MS we should have m/z values, for NMR the chemical shift is equally important.
-        if (is_ms and (column_name == 'mass_to_charge' or 'retention_time')) or (not is_ms and column_name == 'chemical_shift'):
+        if (is_ms and column_name in ('mass_to_charge', 'retention_time')) or (not is_ms and column_name == 'chemical_shift'):
             add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF. " +
                     str(col_rows) + " row(s) found, but there should be " + str(all_rows),
                     error, val_sequence=10, log_category=log_category)
