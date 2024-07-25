@@ -16,11 +16,9 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import base64
 import datetime
 import glob
 import hashlib
-import io
 import json
 import logging
 import os
@@ -28,26 +26,16 @@ import pathlib
 import random
 import re
 import shutil
-import string
-import time
-import uuid
-from os.path import basename, normpath
-from typing import Dict, List, Tuple
-from urllib import request as urllib_request
+from typing import Dict, List, Set, Tuple
 
 import numpy as np
 import pandas as pd
-from dirsync import sync
-from flask import request
-from flask_restful import abort
-from isatools.model import (Assay, Investigation, OntologyAnnotation,
-                            OntologySource, Protocol, ProtocolParameter, Study)
+from isatools.model import Assay, Investigation, OntologyAnnotation, Study
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
-from pandas import DataFrame, Series
+from pandas import DataFrame
+
 from app.config import get_settings
-from app.config.utils import get_host_internal_url
-from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files
 from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
@@ -74,24 +62,29 @@ def validate_mzml_files(study_id):
     xmlschema = etree.XMLSchema(xmlschema_doc)  
     # Getting xsd schema for validation
     invalid_files = {}
-    for file_loc in [study_folder]:
-        if os.path.isdir(file_loc):  # Only check if the folder exists
-            files = glob.iglob(os.path.join(file_loc, '*.mzML'))  # Are there mzML files there?
-            if files.gi_yieldfrom is None:  # No files, check sub-folders
-                logger.info('Could not find any mzML files, checking any sub-folders')
-                files = glob.iglob(os.path.join(file_loc, '**/*.mzML'), recursive=True)
-
-            for file in files:
-                try:
-                    logger.info('Validating mzML file ' + file)
-                    status, result = validate_xml(xml=file, xmlschema=xmlschema)
-                    if not status:
-                        invalid_files[file] = result
-                        # return status, result
-                except Exception as e:
-                    invalid_files[file] = str(e)
-                    return False, f'Error while validating file {file}: {str(e)}'
-
+    if os.path.isdir(study_folder):  # Only check if the folder exists
+        top_file_set = set(glob.iglob(os.path.join(study_folder, '*.mzML')))  # Are there mzML files there?
+        # if len(top_file_list) == 0:  # No files, check sub-folders
+        #     logger.info('Could not find any mzML files, checking any sub-folders')
+        subfolder_file_set = set(glob.iglob(os.path.join(study_folder, '**/*.mzML'), recursive=True))
+        all_mzml_files_set = subfolder_file_set.union(top_file_set)
+        all_mzml_files = list(all_mzml_files_set)
+        all_mzml_files.sort()
+        if len(all_mzml_files) == 0:
+            message = f"No mzML files within study folder: {study_folder}"
+            logger.error(message)
+            return False, message
+        for file in all_mzml_files:
+            try:
+                logger.info('Validating mzML file ' + file)
+                status, result = validate_xml(xml=file, xmlschema=xmlschema)
+                if not status:
+                    invalid_files[file] = result
+            except Exception as e:
+                invalid_files[file] = str(e)
+                return False, f'Error while validating file {file}: {str(e)}'
+    else:
+        return False, f"Study folder does not exist: {study_folder}"
     if invalid_files:
         return False, json.dumps(invalid_files)
     return True, ''
@@ -142,8 +135,8 @@ def to_isa_tab(study_id, input_folder, output_folder):
     try:
         isa_convert(input_folder, output_folder, study_id, jobs=1, verbose=True)
     except Exception as e:
-        print("Could not convert mzML to ISA-Tab study " + study_id + ". " + output_folder)
-        return False, "Could not convert mzML to ISA-Tab study " + study_id + ". " + str(e)
+        print("Could not convert mzML to ISA-Tab study " + study_id + ". " + input_folder)
+        return False, "Could not convert mzML to ISA-Tab study " + study_id + ": " + input_folder + ". " + str(e)
 
     return True, "ISA-Tab files generated for study " + study_id
 
@@ -221,31 +214,68 @@ def split_files_to_subfolders(mzml_files: List[str], files_folder, working_path:
     return list(all_sub_paths.keys())
 
 def convert_to_isa(study_location, study_id):
-    input_folder = ""
     try:
         subfolders: List[str] = collect_all_mzml_files(study_id)
         
-        # subfolders: List[str] = split_files_to_subfolders(input_folder)
-        output_folder = study_location + "/"
         for sub_path in subfolders:
             file_path = os.path.join(sub_path, "i_Investigation.txt")
+            input_files_path = os.path.join(sub_path, "FILES")
             if not os.path.exists(file_path):
-                input_files = os.path.join(sub_path, "FILES")
-                print(os.path.basename(sub_path))
-                status, message = to_isa_tab("", input_files, sub_path)
-
-        return status, message
+                status, message = to_isa_tab("", input_files_path, sub_path)
+                if not status:
+                    return status, message
+        return True, ""
     except Exception as exc:
-        print(str(exc))
-    finally:
-        if input_folder:
-            dirpath = pathlib.Path(input_folder)
-            if dirpath.exists() and dirpath.is_dir():
-                shutil.rmtree(dirpath)
+        logger.error(str(exc))
+        return False, str(exc)
 
 ss_id_pattern = re.compile(r"(.*)SSID Data.*\.csv", re.IGNORECASE)
 
+def check_input_files(study_id: str, study_location: str):
+    samples_files_result = glob.iglob(os.path.join(study_location, "FILES", '*SSID Data*.csv'))
+    samples_files = [x for x in samples_files_result]
+    samples_files.sort()
+    sample_ids: Set[str] = set()
+    
+    for sample_file in samples_files:
+        basename = os.path.basename(sample_file)
+        match =  ss_id_pattern.match(basename)
+        match_result = match.groups()[0].strip() if match else ""
+        if match_result:
+            sample_ids.add(match_result)
+    
+    if len(sample_ids) == 0:
+        return False, f"There are no *SSID Data*.csv file."
+    else:
+        search_pattern = '*Peak Area*.xlsx'
+        if len(sample_ids) > 1:
+            search_pattern = f'*{sample_id}*Peak Area*.xlsx'
+        peak_table_paths = list(glob.iglob(os.path.join(study_location, "FILES", search_pattern)))
+        
+        if len(peak_table_paths) > 1:
+            return False, f"There are multiple Peak Area Table xlsx for {sample_id}."
+        elif len(peak_table_paths) == 0:
+            return False, f"There is no Peak Area Table xlsx table for {sample_id}."
+        
+    for sample_id in sample_ids:
+        if len(sample_ids) > 1:
+            peak_tables_search = glob.iglob(os.path.join(study_location, "FILES", f'*{sample_id}*Peak Area*.xlsx'))
+        else:
+            peak_tables_search = glob.iglob(os.path.join(study_location, "FILES", f'*Peak Area*.xlsx'))
+        peak_table_paths: List[str] = [x for x in peak_tables_search]
+        peak_table_paths.sort()
+        if len(peak_table_paths) > 1:
+            return False, f"There are multiple Peak Area Table xlsx table."
+        if len(peak_table_paths) == 0:
+            return False, f"There is no Peak Area Table xlsx table for {sample_id}."
 
+
+    for peak_table_file_path in peak_table_paths:
+        try:
+            validate_peak_table(peak_table_file_path)
+        except Exception as ex:
+            return False, f"Peak table validation failed for {peak_table_file_path}."
+    return True, ""
 def create_isa_files(study_id, study_location, target_location: str=None) -> Tuple[bool, str]:
     settings = get_study_settings()
     if not target_location:
