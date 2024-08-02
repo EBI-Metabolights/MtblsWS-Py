@@ -22,7 +22,9 @@ import logging
 import os
 from datetime import datetime
 
-from flask import jsonify, request, send_file
+from flask import jsonify, request, send_file, make_response
+from xml.dom.minidom import Document
+from app.services.external.eb_eye_search import EbEyeSearchService
 from flask_restful import Resource, abort, reqparse
 from flask_restful_swagger import swagger
 from app.config import get_settings
@@ -42,16 +44,17 @@ from app.tasks.common_tasks.basic_tasks.email import (
     send_technical_issue_email,
 )
 from app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization import sync_studies_on_es_and_db
+from app.tasks.common_tasks.report_tasks.eb_eye_search import eb_eye_build_public_studies, build_studies_for_europe_pmc
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import delete_study_folders, maintain_storage_study_folders
 from app.tasks.hpc_study_rsync_client import VALID_FOLDERS, StudyFolder, StudyFolderLocation, StudyFolderType, StudyRsyncClient
 
 from app.utils import MetabolightsDBException, MetabolightsException, metabolights_exception_handler
 from app.ws import db_connection as db_proxy
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.models import StudyTaskModel
+from app.ws.db.models import StudyTaskModel, UserModel
 from app.ws.db.schemes import Study, StudyTask, User
 from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus, UserRole
-from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
+from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory, get_user_model
 from app.ws.db_connection import (
     add_placeholder_flag,
     create_empty_study,
@@ -90,6 +93,62 @@ class MtblsStudies(Resource):
         pub_list = wsc.get_public_studies()
         return jsonify(pub_list)
 
+
+class EbEyeStudies(Resource):
+    @swagger.operation(
+        summary="Process studies for EB EYE Search",
+        notes="Process studies for EB EYE Search.",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            },
+            {
+                "name": "consumer",
+                "description": "Provide Consumber ebi or thomson or europe_pmc",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string",
+            }
+            
+        ],
+        responseMessages=[
+            {"code": 200, "message": "OK."},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."}
+        ],
+    )
+    def get(self, consumer: str):
+        log_request(request)
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        if consumer == "ebi":
+            inputs = {"user_token": user_token, "thomson_reuters": False }
+            task = eb_eye_build_public_studies.apply_async(kwargs=inputs, expires=60*5)
+            response = {'Task started':f'Task id {task.id}'}
+        elif consumer == "thomson":
+            inputs = {"user_token": user_token, "thomson_reuters": True }
+            task = eb_eye_build_public_studies.apply_async(kwargs=inputs, expires=60*5)
+            response = {'Task started':f'Task id {task.id}'}
+        elif consumer == "europe_pmc":
+            inputs = {"user_token": user_token }
+            task = build_studies_for_europe_pmc.apply_async(kwargs=inputs, expires=60*5)
+            response = {'Task started':f'Task id {task.id}'}
+        else:
+            doc = EbEyeSearchService.get_study(study_id=consumer, thomson_reuters=False)
+            xml_str = doc.toprettyxml(indent="  ")                                      
+            response = make_response(xml_str)                                           
+            response.headers['Content-Type'] = 'text/xml; charset=utf-8'            
+        return response
 
 class MtblsPrivateStudies(Resource):
     @swagger.operation(

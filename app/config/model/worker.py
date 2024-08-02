@@ -23,6 +23,8 @@ class DatamoverWorkerSettings(BaseModel):
     shutdown_signal_wait_time: int
     minimum_datamover_workers: int
     maximum_datamover_workers: int
+    worker_memory: str
+    worker_job_walltime: str
     start_datamover_worker_script: str
     maximum_uptime_in_seconds: int
     broker_queue_names: str

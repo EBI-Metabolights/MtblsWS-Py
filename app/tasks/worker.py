@@ -27,6 +27,7 @@ celery = Celery(
     include=[
         "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
         "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
+        "app.tasks.common_tasks.report_tasks.eb_eye_search",
         "app.tasks.common_tasks.curation_tasks.metabolon",
         "app.tasks.common_tasks.curation_tasks.validation",
         "app.tasks.common_tasks.basic_tasks.email",

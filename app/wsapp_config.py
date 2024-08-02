@@ -67,11 +67,11 @@ from app.ws.metabolight_statistics import MetabolightsStatistics
 from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.mtbls_maf import (CombineMetaboliteAnnotationFiles,
                               MetaboliteAnnotationFile, MtblsMAFSearch)
-from app.ws.mtblsCompound import (MtblsCompoundFile, MtblsCompoundIndex, MtblsCompoundIndexAll,
+from app.ws.mtblsCompound import (EbEyeCompounds, EbEyeCompoundsAll, MtblsCompoundFile, MtblsCompoundIndex, MtblsCompoundIndexAll,
                                   MtblsCompoundIndexSync, MtblsCompoundSpectraFile, MtblsCompounds,
                                   MtblsCompoundsDetails)
 from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
-                               CreateUploadFolder, DeleteStudy,
+                               CreateUploadFolder, DeleteStudy, EbEyeStudies,
                                IsaTabAssayFile, IsaTabInvestigationFile,
                                IsaTabSampleFile, MtblsPrivateStudies,
                                MtblsPublicStudiesIndexAll, MtblsStudies,
@@ -212,6 +212,7 @@ def initialize_app(flask_app):
     # api.add_resource(V1StudyDetail, res_path + "/v1/security/studies/obfuscationcode/<string:obfuscationcode>/view")
     
     api.add_resource(MtblsStudies, res_path + "/studies")
+    api.add_resource(EbEyeStudies, res_path + "/studies/eb-eye/<string:consumer>")
     api.add_resource(MtblsPrivateStudies, res_path + "/studies/private")
     api.add_resource(MtblsStudiesWithMethods, res_path + "/studies/technology")
     api.add_resource(MyMtblsStudiesDetailed, res_path + "/studies/user")
@@ -279,6 +280,8 @@ def initialize_app(flask_app):
     
     
     api.add_resource(MtblsCompoundsDetails, res_path + "/compounds/<string:accession>")
+    api.add_resource(EbEyeCompounds, res_path + "/compounds/eb-eye/<string:accession>")
+    api.add_resource(EbEyeCompoundsAll, res_path + "/compounds/eb-eye/all")
     
     api.add_resource(MtblsCompoundFile, res_path + "/compounds/<string:accession>/file")
     api.add_resource(MtblsCompoundSpectraFile, res_path + "/compounds/<string:accession>/<string:spectra_id>/file")

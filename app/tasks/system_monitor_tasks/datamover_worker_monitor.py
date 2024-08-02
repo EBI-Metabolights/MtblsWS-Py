@@ -3,7 +3,7 @@ import os
 from typing import Any, Dict, List, Set
 from app.config import get_settings
 
-from app.tasks.lsf_client import HpcJob, LsfClient
+from app.services.cluster.slurm_client import HpcJob, SlurmClient
 from app.tasks.system_monitor_tasks.utils import (
     check_and_get_monitor_session,
     generate_random_name,
@@ -25,7 +25,7 @@ def maintain_datamover_workers(
     worker_settings = settings.workers.datamover_workers
     number_of_workers = worker_settings.minimum_datamover_workers
     job_project_name = cluster_settings.configuration.job_project_name
-    queue_name = cluster_settings.datamover.queue_name
+    job_name_prefix = "datamover"
     monitor_task_status_key = worker_settings.monitor_task_status_key
     monitor_task_timeout = worker_settings.monitor_task_timeout
     locked = check_and_get_monitor_session(
@@ -39,10 +39,8 @@ def maintain_datamover_workers(
         if number_of_workers < 0:
             number_of_workers = max(number_of_workers, 1)
 
-        client = LsfClient()
-        worker_name_prefix = f"{job_project_name}_{queue_name}_worker"
-
-        current_worker_identifiers = set()
+        client = SlurmClient()
+        job_name = f"{job_project_name}-{job_name_prefix}"
         try:
             jobs = client.get_job_status()
         except Exception as exc:
@@ -52,11 +50,12 @@ def maintain_datamover_workers(
 
         current_workers: List[HpcJob] = []
         current_workers_map: Dict[str, Dict[str, Any]] = {}
+        current_worker_identifiers = set()
         for job in jobs:
-            if job.name.startswith(worker_name_prefix):
+            if job.name.startswith(job_name):
                 results[job.name] = []
                 current_workers.append(job)
-                identifier = job.name.replace(f"{worker_name_prefix}_", "")
+                identifier = job.name.replace(f"{job_name}_", "")
                 current_worker_identifiers.add(identifier)
                 if job.name not in current_workers_map:
                     current_workers_map[job.name] = {}
@@ -67,7 +66,7 @@ def maintain_datamover_workers(
 
         if not current_workers:
             create_datamover_worker(
-                results, worker_name_prefix, current_worker_identifiers
+                results=results, job_name=job_name, worker_identifiers=current_worker_identifiers
             )
             return results
 
@@ -76,14 +75,14 @@ def maintain_datamover_workers(
         runnig_jobs: List[HpcJob] = []
         for worker in current_workers:
             status: str = worker.status
-            if status.upper() == "PEND":
+            if status.upper() == "PENDING":
                 pending_jobs.append(worker)
                 results[worker.name].append("It is in pending state.")
-            elif status.upper() == "RUN":
+            elif status.upper() == "RUNNING":
                 results[worker.name].append("It is up and running.")
                 runnig_jobs.append(worker)
             else:
-                unexpected_state_jobs[worker]
+                unexpected_state_jobs.append(worker)
                 results[worker.name].append(
                     f"It is not running. Its state is {worker.status}."
                 )
@@ -91,7 +90,7 @@ def maintain_datamover_workers(
         active_job_count = len(runnig_jobs) + len(pending_jobs)
         if active_job_count < number_of_workers:
             create_datamover_worker(
-                results, worker_name_prefix, current_worker_identifiers
+                results=results, job_name=job_name, worker_identifiers=current_worker_identifiers
             )
             return results
         else:
@@ -114,19 +113,22 @@ def maintain_datamover_workers(
 
 
 def create_datamover_worker(
-    results: Dict[str, List[str]], worker_name_prefix: str, worker_identifiers: Set[str]
+    results: Dict[str, List[str]], job_name: str, worker_identifiers: Set[str]
 ):
+    logger.info("Create_datamover_worker request received")
     random_name = generate_random_name(current_names=worker_identifiers)
-    name = f"{worker_name_prefix}_{random_name}"
-    client: LsfClient = LsfClient()
+    name = f"{job_name}_{random_name}"
+    client: SlurmClient = SlurmClient()
     settings = get_settings()
+    job_track_email = settings.hpc_cluster.configuration.job_track_email
+    hpc_queue_name =  settings.hpc_cluster.datamover.queue_name
     worker_config = settings.workers.datamover_workers
     command = os.path.join(
         worker_config.singularity_image_configuration.docker_deployment_path,
         worker_config.start_datamover_worker_script,
     )
     args = worker_config.broker_queue_names
-    client.run_singularity(name, command, args, unique_task_name=False)
+    client.run_singularity(job_name=name, command=command, command_arguments= args,hpc_queue_name=hpc_queue_name ,account=job_track_email)
     message = f"New worker is triggered."
     results[name] = [message]
     logger.info(message)
@@ -137,9 +139,9 @@ def kill_duplicate_jobs(results: Dict[str, List[str]], current_workers_map):
         # kill all duplicate name tasks. Kepp the oldest one
         if len(current_workers_map[job_name]["job"]) > 1:
             duplicate_jobs: List[HpcJob] = current_workers_map[job_name]["job"]
-            duplicate_jobs.sort(key=lambda x: x.submit_time, reverse=False)
+            duplicate_jobs.sort(key=lambda x: x.elapsed, reverse=False)
             job_ids = [x.job_id for x in duplicate_jobs if x != duplicate_jobs[0]]
-            client = LsfClient()
+            client = SlurmClient()
             client.kill_jobs(job_id_list=job_ids, failing_gracefully=True)
             name = current_workers_map[job_name]["job"][0].name
             message = f"Duplicate jobs are killed. {name}"
@@ -158,7 +160,7 @@ def maintain_extra_workers(
     shutdown_signal_wait_time = worker_settings.shutdown_signal_wait_time
     unexpected_worker_jobs = []
     if len(runnig_jobs) > number_of_workers:
-        runnig_jobs.sort(key=lambda x: x.submit_time, reverse=False)
+        runnig_jobs.sort(key=lambda x: x.elapsed, reverse=False)
         unexpected_worker_jobs = runnig_jobs[: (len(runnig_jobs) - number_of_workers)]
 
     if unexpected_worker_jobs:
@@ -196,7 +198,7 @@ def maintain_expired_workers(
         expired_workers: List[HpcJob] = [
             x for x in current_workers if x.name in expired_worker_names
         ]
-        expired_workers.sort(key=lambda x: x.submit_time, reverse=False)
+        expired_workers.sort(key=lambda x: x.elapsed, reverse=False)
         map = current_workers_map
         expired_active_worker_keys = [
             map[x.name]["key"]
@@ -222,7 +224,7 @@ def maintain_expired_workers(
             and ("key" not in map[x.name] or not map[x.name]["key"])
         ]
         if inactive_worker_job_ids:
-            client = LsfClient()
+            client = SlurmClient()
             client.kill_jobs(inactive_worker_job_ids, failing_gracefully=True)
 
     if expired_active_worker_keys:
