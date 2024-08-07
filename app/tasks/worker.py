@@ -16,32 +16,10 @@ from app.ws.study.user_service import UserService
 
 settings: CelerySettings = get_settings().celery
 
-rs: redis_cache.RedisConnection = settings.broker
-# broker_url = f'redis+sentinel://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}'
-broker_url = None
-broker_transport_options = None
-result_backend_transport_options = None
-if rs.connection_type == "redis":
-    rc = rs.redis_connection
-    broker_url = (
-        f"redis://:{rs.redis_password}@{rc.redis_host}:{rc.redis_port}/{rs.redis_db}"
-    )
-    result_backend = broker_url
-else:
-    sc = rs.sentinel_connection
-    broker_url = ";".join(
-        [
-            f"sentinel://:{rs.redis_password}@{host.name}:{host.port}/{rs.redis_db}"
-            for host in sc.hosts
-        ]
-    )
-    broker_transport_options = {
-        "master_name": sc.master_name,
-        "sentinel_kwargs": {"password": rs.redis_password},
-    }
-    result_backend_transport_options = broker_transport_options
-    result_backend = broker_url
+rs: RedisConnection = settings.broker
 
+broker_url = f"redis://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}"
+result_backend = broker_url
 
 common_tasks = [
     "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",

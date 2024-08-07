@@ -47,7 +47,7 @@ from app.ws.utils import read_tsv, write_tsv, safe_str
 from chembl_structure_pipeline.standardizer import parse_molblock, update_mol_valences
 from rdkit import Chem
 
-logger = logging.getLogger('wslog_chebi')
+logger = logging.getLogger('wslog')
 
 # MetaboLights (Java-Based) WebService client
 wsc = WsClient()

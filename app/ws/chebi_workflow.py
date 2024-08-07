@@ -16,50 +16,26 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import glob
 import logging
 import os
-import re
 import shlex
-from typing import List
-from pathlib import Path
-
-import numpy as np
-import pandas as pd
-import pubchempy as pcp
 import subprocess
 from flask import request
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
-from pubchempy import get_compounds
-from zeep import Client
-from unidecode import unidecode
 from app.config import get_settings
 
-from app.services.storage_service.acl import Acl
-from app.services.storage_service.storage import Storage
-from app.services.storage_service.storage_service import StorageService
-from app.tasks.bash_client import BashClient
 from app.tasks.common_tasks.curation_tasks.chebi_pipeline import run_chebi_pipeline_task
-from app.tasks.lsf_client import LsfClient
-from app.ws.chebi_pipeline_utils import check_maf_for_pipes, print_log, run_chebi_pipeline
-from app.ws.cluster_jobs import submit_job
-from app.ws.db_connection import get_user_email
-from app.ws.isaApiClient import IsaApiClient
-from app.ws.mtblsWSclient import WsClient
+from app.ws.chebi_pipeline_utils import check_maf_for_pipes, print_log
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import write_audit_files, get_all_files_from_filesystem
-from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
-from app.ws.utils import read_tsv, write_tsv, get_assay_file_list, safe_str
-from app.ws.redis.redis import RedisStorage, get_redis_server
+from app.ws.utils import get_assay_file_list
+from app.ws.redis.redis import get_redis_server
 from celery.result import AsyncResult
 from app.tasks.worker import celery
 
-logger = logging.getLogger('wslog_chebi')
-
-# MetaboLights (Java-Based) WebService client
-wsc = WsClient()
+logger = logging.getLogger('wslog')
 
 NOT_COMPLETED_STATES = {"PENDING", "STARTED", "INITIATED", "RECEIVED", "STARTED", "RETRY", "PROGRESS"}
 
@@ -92,26 +68,6 @@ class ChEBIPipeLine(Resource):
             {
                 "name": "classyfire_search",
                 "description": "Search ClassyFire?",
-                "paramType": "query",
-                "type": "Boolean",
-                "defaultValue": True,
-                "format": "application/json",
-                "required": False,
-                "allowMultiple": False
-            },
-            {
-                "name": "run_silently",
-                "description": "Do not generate console or log info when skipping rows",
-                "paramType": "query",
-                "type": "Boolean",
-                "defaultValue": True,
-                "format": "application/json",
-                "required": False,
-                "allowMultiple": False
-            },
-            {
-                "name": "run_on_cluster",
-                "description": "Run in the background on the EBI LSF cluster",
                 "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": True,
@@ -172,45 +128,16 @@ class ChEBIPipeLine(Resource):
         user = UserService.get_instance().validate_user_has_curator_role(user_token)
         email = user['username']
         
-        cluster_job = None
-        try:
-            cluster_job = request.args['source']
-        except:
-            pass
-
-        run_silently = None
-        run_on_cluster = None
-        if cluster_job:
-            if bool(request.data):
-                x = re.split('=|&|,|\;', str(request.data)[2:-1])
-                data = {x[i]: x[i + 1] for i in range(0, len(x), 2)}
-                annotation_file_name = data['annotation_file_name']
-                classyfire_search = data['classyfire_search']
-                update_study_maf = data['update_study_maf']
-        else:
-            annotation_file_name = request.args['annotation_file_name']
-            classyfire_search = request.args['classyfire_search']
-            update_study_maf = request.args.get('update_study_maf')
-            run_silently = request.args['run_silently']
-            run_on_cluster = request.args['run_on_cluster']
+        annotation_file_name = request.args['annotation_file_name']
+        classyfire_search = request.args['classyfire_search']
+        update_study_maf = request.args.get('update_study_maf')
 
         classyfire_search = True if classyfire_search == 'true' else False
-        run_silently = True if run_silently == 'true' else False
-        run_on_cluster = True if run_on_cluster == 'true' else False
         update_study_maf = True if update_study_maf == 'true' else False
         study_metadata_location = os.path.join(settings.study.mounted_paths.study_metadata_files_root_path, study_id)
         print_log("Creating a new study audit folder for study %s", study_id)
-        audit_status, dest_path = write_audit_files(study_metadata_location)
-        # file_path = settings.chebi.pipeline.run_standalone_chebi_pipeline_python_file
-        # root_path = settings.hpc_cluster.singularity.docker_deployment_path
-        # actual_path = os.path.join(root_path, file_path)
-        # if run_on_cluster:
-        # command = f"python3 {actual_path}"
-        # command_arguments = f'{study_id} {user_token} "{annotation_file_name}", "{run_silently}" "{classyfire_search}" "{update_study_maf}"'
-        # client: LsfClient = LsfClient()
-        # task_name=f"chebi_pipeline_{study_id}"
-        
-        # job_id, messages = client.run_singularity(task_name, command=command, command_arguments=command_arguments, unique_task_name=True, hpc_queue_name=None)
+        write_audit_files(study_metadata_location)
+
         redis = get_redis_server()
         key = f"chebi_pipeline:{study_id}"
         task_id = None
@@ -230,11 +157,8 @@ class ChEBIPipeLine(Resource):
                   "update_study_maf": update_study_maf,
                   "email": email
                   }
-        # run_chebi_pipeline_task(study_id: str, user_token: str, annotation_file_name: str, classyfire_search: bool = True, update_study_maf: bool = False):
         task = run_chebi_pipeline_task.apply_async(kwargs=inputs, expires=60)
         return {"message": f"CHEBI Pipeline task is started for {study_id} {annotation_file_name}. Task id: {task.id}. Results will be send by email."}
-        # return run_chebi_pipeline(study_id, user_token, annotation_file_name, run_silently=run_silently, classyfire_search=classyfire_search, update_study_maf=update_study_maf, run_on_cluster=run_on_cluster)
-        # return {"job_id": job_id, "messages": messages}
 
 
 class CheckCompounds(Resource):
@@ -287,11 +211,7 @@ class CheckCompounds(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions('MTBLS1', user_token)
-        if not read_access:
-            abort(403)
+        UserService.get_instance().validate_user_has_read_access(user_token)
 
         # query validation
         parser = reqparse.RequestParser()
@@ -435,10 +355,8 @@ class SplitMaf(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
-        if not is_curator:
-            abort(403)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+
         settings = get_settings()
         study_metdata_location = os.path.join(settings.study.mounted_paths.study_metadata_files_root_path, study_id)
         # query validation

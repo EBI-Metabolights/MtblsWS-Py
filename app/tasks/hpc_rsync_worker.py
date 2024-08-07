@@ -12,7 +12,6 @@ from app.services.storage_service.models import (
     SyncTaskStatus,
 )
 from app.tasks.bash_client import BashExecutionResult, CapturedBashExecutionResult, LoggedBashExecutionResult
-from app.tasks.datamover_tasks.basic_tasks.execute_commands import execute_bash_command
 from app.tasks.datamover_tasks.basic_tasks.file_management import create_folders
 from app.tasks.hpc_worker_bash_runner import BashExecutionTaskStatus, HpcWorkerBashRunner, TaskDescription
 from app.tasks.utils import get_current_utc_time_string, get_utc_time_string_from_timestamp
