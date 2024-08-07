@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import subprocess
@@ -10,6 +11,8 @@ from app.config import get_settings
 from app.utils import MetabolightsException
 
 from jinja2 import Environment, PackageLoader, select_autoescape
+
+from app.tasks.worker import send_email
 
 logger = logging.getLogger("wslog")
 env = Environment(loader=PackageLoader("resources.templates", "scripts"), autoescape=select_autoescape(["html", "xml"]))
@@ -30,7 +33,14 @@ class CapturedBashExecutionResult(BashExecutionResult):
     
 class BashClient(object):
     @staticmethod
-    def execute_command(command: str, stdout_log_file_path: str=None, stderr_log_file_path: str=None, timeout: Union[None, float] = None) -> Union[LoggedBashExecutionResult, CapturedBashExecutionResult]:
+    def execute_command(
+        command: str,
+        stdout_log_file_path: Union[None, str] = None,
+        stderr_log_file_path: Union[None, str] = None,
+        timeout: Union[None, float] = None,
+        email: Union[None, str] = None,
+        task_name: Union[None, str] = None,
+    ) -> Union[LoggedBashExecutionResult, CapturedBashExecutionResult]:
         logger.info(f" A command is being executed : '{command}'")
         print(f" A command is being executed  : '{command}'")
         stdout_log_file = None
@@ -67,7 +77,12 @@ class BashClient(object):
                 try:
                     stdout_log_file.close()
                 except Exception:
-                    pass                
+                    pass
+            if email and task_name:
+                result_str = json.dumps(execution_result.model_dump(), indent=4)
+                result_str = result_str.replace("\n", "<p>")
+                send_email(f"Result of the task: {task_name}", result_str, None, email, None)
+                
         return execution_result
 
     @staticmethod
