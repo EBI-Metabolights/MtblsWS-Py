@@ -133,15 +133,15 @@ class EbEyeStudies(Resource):
         UserService.get_instance().validate_user_has_curator_role(user_token)
         if consumer == "ebi":
             inputs = {"user_token": user_token, "thomson_reuters": False }
-            task = eb_eye_build_public_studies.apply_async(kwargs=inputs, expires=60*5)
+            task = eb_eye_build_public_studies.apply_async(kwargs=inputs, expires=60*60)
             response = {'Task started':f'Task id {task.id}'}
         elif consumer == "thomson":
             inputs = {"user_token": user_token, "thomson_reuters": True }
-            task = eb_eye_build_public_studies.apply_async(kwargs=inputs, expires=60*5)
+            task = eb_eye_build_public_studies.apply_async(kwargs=inputs, expires=60*60)
             response = {'Task started':f'Task id {task.id}'}
         elif consumer == "europe_pmc":
             inputs = {"user_token": user_token }
-            task = build_studies_for_europe_pmc.apply_async(kwargs=inputs, expires=60*5)
+            task = build_studies_for_europe_pmc.apply_async(kwargs=inputs, expires=60*60)
             response = {'Task started':f'Task id {task.id}'}
         else:
             doc = EbEyeSearchService.get_study(study_id=consumer, thomson_reuters=False)
