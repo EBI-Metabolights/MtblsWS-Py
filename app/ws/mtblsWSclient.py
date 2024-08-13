@@ -44,13 +44,13 @@ logger = logging.getLogger('wslog')
 
 
 class WsClient:
-    default_search_manager: Union[None, ChebiSearchManager] = None
+    search_manager: Union[None, ChebiSearchManager] = None
     email_service: Union[None, EmailService] = None
     elasticsearch_service: Union[None, ElasticsearchService] = None
 
     def __init__(self, search_manager: Union[None, ChebiSearchManager] = None, email_service: Union[None, EmailService] = None,
                  elasticsearch_service: Union[None, ElasticsearchService] = None):
-        WsClient.default_search_manager = search_manager
+        WsClient.search_manager = search_manager
         WsClient.email_service = email_service
         WsClient.elasticsearch_service = elasticsearch_service
             

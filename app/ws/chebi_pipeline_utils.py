@@ -82,7 +82,7 @@ def run_chebi_pipeline(study_id, user_token, annotation_file_name, run_silently:
     chemspider_search_status = None
     unichem_search_status = None
     classyfire_search_status = None
-    classy_sdf_downoaded = None
+    classy_file_downoaded = None
     
     if annotation_file_name is None:
         old_file_name = ""
@@ -97,7 +97,8 @@ def run_chebi_pipeline(study_id, user_token, annotation_file_name, run_silently:
             if file_name.startswith('m_') and file_name.endswith('.tsv'):
                 maf_count += 1
                 maf_len, new_maf_len, pubchem_file, dime_db_api_active,cactus_search_status, \
-                opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised = \
+                opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status, \
+                chebi_master_list_initialised,chebi_search_manager_initiated = \
                     search_and_update_maf(study_id, study_metadata_location, file_name, classyfire_search, user_token,
                                             run_silently=run_silently, update_study_maf=update_study_maf,
                                             obfuscation_code=obfuscation_code, email=email, task_name=task_name)
@@ -118,7 +119,8 @@ def run_chebi_pipeline(study_id, user_token, annotation_file_name, run_silently:
                 return {"error": message, "message": job_out, "errors": job_err}
         else:
             maf_len, new_maf_len, pubchem_file, dime_db_api_active, cactus_search_status, opsin_search_status, \
-            chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised  = \
+            chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status, \
+            chebi_master_list_initialised,chebi_search_manager_initiated  = \
             search_and_update_maf(study_id, study_metadata_location, annotation_file_name, classyfire_search, user_token,
                                         run_silently=run_silently, update_study_maf=update_study_maf,
                                         obfuscation_code=obfuscation_code, email=email, task_name=task_name)
@@ -129,7 +131,8 @@ def run_chebi_pipeline(study_id, user_token, annotation_file_name, run_silently:
         return {"in_rows": maf_len, "out_rows": new_maf_len, "pubchem_file": pubchem_file, "DimeDB API hit":dime_db_api_active,
                 "OPSIN API hit":opsin_search_status, "Cactus API hit":cactus_search_status, 
                 "ChemSpider API hit" :chemspider_search_status, "Unichem API hit" : unichem_search_status,"CHEBI API hit":chebi_search_status,
-                "Classyfire API hit":classyfire_search_status, "Classyfire SDF downloaded":classy_file_downoaded, "CHEBI Master List initialised":chebi_master_list_initialised}
+                "Classyfire API hit":classyfire_search_status, "Classyfire SDF downloaded":classy_file_downoaded, 
+                "CHEBI Master List initialised":chebi_master_list_initialised, "CHEBI search manager initiated": chebi_search_manager_initiated}
 
     return {"success": str(maf_count) + " MAF files found, " + str(maf_changed) + " files needed updating."}
 
@@ -579,12 +582,16 @@ def search_and_update_maf(study_id: str, study_metadata_location: str, annotatio
     chebi_search_status = check_chebi_api()
     classyfire_search_status = check_classyfire_api()
     chebi_master_list_initialised = 'No'
+    chebi_search_manager_initiated = 'No'
     curated_metabolite_table: CuratedMetaboliteTable = CuratedMetaboliteTable.get_instance()
     curated_metabolite_table.initialize_df()
     if curated_metabolite_table.initialized:
         chebi_master_list_initialised = 'Yes'
     else:
         chebi_master_list_initialised = 'No'
+    
+    if WsClient.search_manager:
+        chebi_search_manager_initiated = 'Yes'
     
     first_start_time = time.time()
     # Please note that the original MAF must exist without the _pubchem.tsv extension!!
@@ -1166,7 +1173,7 @@ def search_and_update_maf(study_id: str, study_metadata_location: str, annotatio
         # except Exception as ex:
         #         print_log(f"ChEBI pipeline FTP rsync is not completed. {str(ex)}")
         
-    return maf_len, pubchem_df_len, pubchem_file,dimedb_search_status,cactus_search_status,opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised
+    return maf_len, pubchem_df_len, pubchem_file,dimedb_search_status,cactus_search_status,opsin_search_status,chemspider_search_status,unichem_search_status,classyfire_search_status,classy_file_downoaded,chebi_search_status,chebi_master_list_initialised, chebi_search_manager_initiated
 
 
 def update_original_maf(maf_df=None, pubchem_df=None, original_maf_name=None, study_location=None,

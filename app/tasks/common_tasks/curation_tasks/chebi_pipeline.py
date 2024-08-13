@@ -29,12 +29,12 @@ logger = logging.getLogger('wslog')
 def init_chebi_search_manager():
     settings = get_settings()
     # These code completes WsClient initialization using flask app context
-    if not WsClient.default_search_manager:
+    if not WsClient.search_manager:
         chebi_proxy = get_chebi_ws_proxy()
         curation_table_file_path = settings.chebi.pipeline.curated_metabolite_list_file_location
         curation_table = CuratedMetaboliteTable.get_instance(curation_table_file_path)
         chebi_search_manager = ChebiSearchManager(ws_proxy=chebi_proxy, curated_metabolite_table=curation_table)
-        WsClient.default_search_manager = chebi_search_manager
+        WsClient.search_manager = chebi_search_manager
 
         
 

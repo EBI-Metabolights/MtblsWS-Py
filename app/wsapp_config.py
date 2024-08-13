@@ -118,12 +118,12 @@ def configure_app(flask_app):
     settings = get_settings()
     flask_app.config.from_object(settings.flask)
     # These code completes WsClient initialization using flask app context
-    if not WsClient.default_search_manager:
+    if not WsClient.search_manager:
         chebi_proxy = get_chebi_ws_proxy()
         curation_table_file_path = get_settings().chebi.pipeline.curated_metabolite_list_file_location
         curation_table = CuratedMetaboliteTable.get_instance(curation_table_file_path)
         chebi_search_manager = ChebiSearchManager(ws_proxy=chebi_proxy, curated_metabolite_table=curation_table)
-        WsClient.default_search_manager = chebi_search_manager
+        WsClient.search_manager = chebi_search_manager
 
     if not WsClient.email_service:
         email_settings = settings.email
