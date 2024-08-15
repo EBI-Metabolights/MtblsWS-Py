@@ -258,9 +258,6 @@ class SlurmClient(object):
                     "DOCKER_BOOTSTRAP_COMMAND_ARGUMENTS": command_arguments,
                     "REMOTE_SERVER_BASE_PATH": worker_config.worker_deployment_root_path,
                     "SINGULARITY_IMAGE_DESCRIPTOR": worker_config.current_singularity_file_descriptor,
-                    "CONFIG_FILE_PATH": worker_config.config_file_path,
-                    "SECRETS_PATH": worker_config.secrets_path,
-                    "LOGS_PATH": worker_config.logs_path,
                     "HOME_DIR": worker_config.user_home_binding_source_path,
                     "HOME_DIR_MOUNT_PATH": worker_config.user_home_binding_target_path,
                     "SHARED_PATHS": []
