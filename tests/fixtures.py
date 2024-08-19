@@ -3,7 +3,7 @@ import os
 import pytest
 from flask import Flask
 from flask_mail import Mail
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 from app.ws.email.email_service import EmailService
 from app.ws.mtblsWSclient import WsClient

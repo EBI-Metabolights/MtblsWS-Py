@@ -11,7 +11,7 @@ class HpcClusterConfiguration(BaseModel):
     job_running_command: str = "sacct"
     job_kill_command: str = "scancel"
     job_default_memory: str = "2G"
-    job_default_walltime_limit: str = "60:00"
+    job_default_walltime_limit: int = 40
     job_track_email: str
     job_track_log_location: str
     job_status_read_timeout: int = 10
