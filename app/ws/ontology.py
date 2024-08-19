@@ -16,7 +16,6 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import datetime
 import json
 import logging
 import re
@@ -36,11 +35,11 @@ from oauth2client.service_account import ServiceAccountCredentials
 from owlready2 import get_ontology
 from app.config import get_settings
 from app.config.utils import get_host_internal_url
+from app.utils import current_time
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.ontology_info import getWormsTerm, removeDuplicated, getBioportalTerm, getZoomaTerm, getOLSTerm, \
-    getMetaboZoomaTerm, getMetaboTerm, getOnto_Name, getOnto_info, setPriority, reorder
+from app.ws.ontology_info import MetaboLightsOntology, get_ontology_name, get_ontology_search_result, getOnto_info, load_ontology_file
 from app.ws.utils import log_request
 
 logger = logging.getLogger('wslog')
@@ -48,6 +47,68 @@ iac = IsaApiClient()
 wsc = WsClient()
 
 
+
+def parse_set_str(input_data: str, lowercase: bool=False):
+    result = None
+    if input_data:
+        input_list = input_data.strip().strip("{").strip("}").split(",")
+        if lowercase:
+            result = [x.strip().lower() for x in input_list if x.strip()]
+        else:
+            result = [x.strip() for x in input_list if x.strip()]
+    
+    return result if result else None
+
+
+class MtblsControlLists(Resource):
+
+    @swagger.operation(
+        summary="Get Metabolights default control lists for ISA metadata files.",
+        notes="Get Metabolights default control lists for ISA metadata files.",
+        parameters=[
+            {
+                "name": "name",
+                "description": "Ontology query term",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            }
+
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self):
+        log_request(request)
+        parser = reqparse.RequestParser()
+
+        parser.add_argument('name', help="Control list name")
+
+        args = parser.parse_args(req=request)
+        name = args['name'].strip() if args['name'] else None
+        filepath = get_settings().file_resources.mtbls_ontology_file
+        mtbl_ontology: MetaboLightsOntology = load_ontology_file(filepath)
+        return jsonify(mtbl_ontology.get_default_control_lists(name))
+        
+        
 class Ontology(Resource):
 
     @swagger.operation(
@@ -133,235 +194,31 @@ class Ontology(Resource):
         parser = reqparse.RequestParser()
 
         parser.add_argument('term', help="Ontology term")
-        term = None
-        if request.args:
-            args = parser.parse_args(req=request)
-            term = args['term']
-            if term:
-                term = term.strip()
-
         parser.add_argument('branch', help='Starting branch of ontology')
-        branch = None
-        if request.args:
-            args = parser.parse_args(req=request)
-            branch = args['branch']
-            if branch:
-                branch = branch.strip()
-
         parser.add_argument('mapping', help='Mapping approaches')
-        mapping = None
-        if request.args:
-            args = parser.parse_args(req=request)
-            mapping = args['mapping']
-
         parser.add_argument('queryFields', help='query Fields')
-        queryFields = None  # ['MTBLS', 'MTBLS_Zooma', 'Zooma','OLS', 'Bioportal']
-        if request.args:
-            args = parser.parse_args(req=request)
-            queryFields = args['queryFields']
-            if queryFields:
-                try:
-                    reg = '\{([^}]+)\}'
-                    queryFields = re.findall(reg, queryFields)[0].split(',')
-                except:
-                    try:
-                        queryFields = queryFields.split(',')
-                    except Exception as e:
-                        # print(e.args)
-                        pass
-
         parser.add_argument('ontology', help='ontology')
-        ontology = None
-        if request.args:
-            args = parser.parse_args(req=request)
-            ontology = args['ontology']
-            if ontology:
-                try:
-                    reg = '\{([^}]+)\}'
-                    ontology = re.findall(reg, ontology)[0].split(',')
-                except:
-                    try:
-                        ontology = ontology.split(',')
-                    except Exception as e:
-                        print(e.args)
 
-        if ontology:
-            ontology = [x.lower() for x in ontology]
-
-        result = []
-
-        if term in [None, ''] and branch is None:
-            return []
-
-        if ontology not in [None, '']:  # if has ontology searching restriction
-            logger.info('Search %s in' % ','.join(ontology))
-            print('Search %s in' % ','.join(ontology))
-            try:
-                result = getOLSTerm(term, mapping, ontology=ontology)
-                result += getBioportalTerm(term, ontology=ontology)
-
-            except Exception as e:
-                print(e.args)
-                logger.info(e.args)
-
-        else:
-            if queryFields in [None, '']:  # if found the term, STOP
-
-                # is_url = term.startswith('http')
-                regex = re.compile(
-                    r'[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)',
-                    re.IGNORECASE)
-
-                is_url = term is not None and regex.search(term) is not None
-
-                if is_url and not term.startswith('//') and not term.startswith('http'):
-                    term = '//' + term
-
-                if is_url and not term.startswith('http:'):
-                    term = 'http:' + term
-
-                logger.info('Search %s from resources one by one' % term)
-                # print('Search %s from resources one by one' % term)
-                result = getMetaboTerm(term, branch, mapping)
-
-                if not result and not is_url:
-                    # print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
-                    logger.info("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
-                    try:
-                        result = getMetaboZoomaTerm(term, mapping)
-                    except Exception as e:
-                        print(e.args)
-                        logger.info(e.args)
-
-                if not result:
-                    # print("Can't query it in Zooma.tsv, requesting OLS")
-                    logger.info("Can't query it in Zooma.tsv, requesting OLS")
-                    try:
-                        result = getOLSTerm(term, mapping, ontology=ontology)
-                    except Exception as e:
-                        print(e.args)
-                        logger.info(e.args)
-
-                if not result and not is_url:
-                    # print("Can't find query in OLS, requesting Zooma")
-                    logger.info("Can't find query in OLS, requesting Zooma")
-                    try:
-                        result = getZoomaTerm(term)
-                    except Exception as e:
-                        print(e.args)
-                        logger.info(e.args)
-
-                if not result:
-                    # print("Can't query it in Zooma, request Bioportal")
-                    logger.info("Can't query it in Zooma, request Bioportal")
-                    try:
-                        result = getBioportalTerm(term)
-                    except Exception as e:
-                        # print(e.args)
-                        logger.info(e.args)
-
+        args = parser.parse_args(req=request)
+        term = args['term'].strip() if args['term'] else ""
+        branch = args['branch'].strip() if args['branch'] else ""
+        mapping = args['mapping'].strip() if args['mapping'] else ""
+        queryFields = parse_set_str(args['queryFields'])
+        ontologies = parse_set_str(args['ontology'], lowercase=False)
+        if ":" in term:
+            splitted_term = term.split(":")
+            listed_ontologies = parse_set_str(splitted_term[0], lowercase=False)
+            if not ontologies:
+                ontologies = listed_ontologies
             else:
-                if 'MTBLS' in queryFields:
-                    result += getMetaboTerm(term, branch, mapping)
-
-                if 'MTBLS_Zooma' in queryFields:
-                    result += getMetaboZoomaTerm(term, mapping)
-
-                if 'OLS' in queryFields:
-                    result += getOLSTerm(term, mapping)
-
-                if 'Zooma' in queryFields:
-                    result += getZoomaTerm(term, mapping)
-
-                if 'Bioportal' in queryFields:
-                    result += getBioportalTerm(term)
-
-        response = []
-
-        result = removeDuplicated(result)
-
-        # add WoRMs terms as a entity
-        if branch == 'taxonomy':
-            r = getWormsTerm(term)
-            result += r
-        else:
-            pass
-
-        if term not in [None, '']:
-            exact = [x for x in result if x.name.lower() == term.lower()]
-            rest = [x for x in result if x not in exact]
-
-            # "factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
-            #                          "column type", "instruments", "confidence", "sample type"
-
-            if branch == 'taxonomy':
-                priority = {'MTBLS': 0, 'NCBITAXON': 1, 'WoRMs': 2, 'EFO': 3, 'BTO': 4, 'NCIT': 5, 'CHEBI': 6,
-                            'CHMO': 7, 'PO': 8}
-
-            elif branch == 'unit':
-                priority = {'UO': 0, 'MTBLS': 1}
-
-            elif branch == 'factor':
-                priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
-
-            elif branch == 'design descriptor':
-                priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
-
-            if branch == 'organism part':
-                priority = {'MTBLS': 0, 'BTO': 1, 'EFO': 2, 'PO': 3, 'CHEBI': 4, 'BAO': 5}
-
-            else:
-                priority = {'MTBLS': 0, 'EFO': 1, 'NCBITAXON': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
-
-            exact = setPriority(exact, priority)
-            rest = reorder(rest, term)
-            result = exact + rest
-
-        # result = removeDuplicated(result)
-
-        for cls in result:
-            temp = '''    {
-                            "comments": [],
-                            "annotationValue": "",
-                            "annotationDefinition": "", 
-                            "termAccession": "",
-                            "wormsID": "", 
-                            
-                            "termSource": {
-                                "comments": [],
-                                "name": "",
-                                "file": "",
-                                "provenanceName": "",
-                                "version": "",
-                                "description": ""
-                            }                            
-                        }'''
-
-            d = json.loads(str(temp))
-            try:
-                d['annotationValue'] = cls.name
-                d["annotationDefinition"] = cls.definition
-                if branch == 'taxonomy':
-                    d['wormsID'] = cls.iri.rsplit('id=', 1)[-1]
-                d["termAccession"] = cls.iri
-                d['termSource']['name'] = cls.ontoName
-                d['termSource']['provenanceName'] = cls.provenance_name
-
-                if cls.ontoName == 'MTBLS':
-                    d['termSource']['file'] = 'https://www.ebi.ac.uk/metabolights/'
-                    d['termSource']['provenanceName'] = 'Metabolights'
-                    d['termSource']['version'] = '1.0'
-                    d['termSource']['description'] = 'Metabolights Ontology'
-            except Exception as e:
-                pass
-
-            if cls.provenance_name == 'metabolights-zooma':
-                d['termSource']['version'] = str(datetime.datetime.now().date())
-            response.append(d)
-
-        # response = [{'SubClass': x} for x in res]
-        # print('--' * 30)
-        return jsonify({"OntologyTerm": response})
+                ontologies.extend(listed_ontologies)
+            
+            term = splitted_term[1]
+        if ontologies:
+            ontologies = ",".join(set(ontologies))
+        result = get_ontology_search_result(term, branch, ontologies, mapping, queryFields)
+        return jsonify(result)
+        
 
     # =========================== put =============================================
 
@@ -644,12 +501,12 @@ class Placeholder(Resource):
                 operation, studyID, old_term, term, annotationValue, termAccession, superclass, definition = \
                     row['operation(Update/Add/Delete/Zooma/MTBLS)'], row['studyID'], row['old_name'], row['name'], row[
                         'annotationValue'], row['termAccession'], row['superclass'], row['definition']
-
-                source = '/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+                context_path = get_settings().server.service.resources_path
+                source = '{context_path}/studies/{study_id}/factors'.format(context_path=context_path, study_id=studyID)
                 ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 if operation.lower() in ['update', 'u', 'add', 'A']:
-                    # ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+                    # ws_url = 'https://www.ebi.ac.uk/{context_path}/studies/{study_id}/factors'.format(context_path=context_path, study_id=studyID)
                     protocol = '''
                                     {
                                         "factorName": "",
@@ -666,7 +523,7 @@ class Placeholder(Resource):
                                     }
                                 '''
                     try:
-                        onto_name = getOnto_Name(termAccession)[0]
+                        onto_name = get_ontology_name(termAccession)[0]
                         onto_iri, onto_version, onto_description = getOnto_info(onto_name)
 
                         temp = json.loads(protocol)
@@ -728,7 +585,8 @@ class Placeholder(Resource):
                 # add factor term to MTBLS ontology
                 elif operation.lower() == 'mtbls':
                     try:
-                        source = '/metabolights/ws/ebi-internal/ontology'
+                        context_path = get_settings().server.service.resources_path
+                        source = f'{context_path}/ebi-internal/ontology'
                         protocol = '''{
                                         "termName": " ",
                                         "definition": " ",
@@ -783,7 +641,8 @@ class Placeholder(Resource):
                 definition = row['operation(Update/Add/Delete/Zooma/MTBLS)'], row['studyID'], row['old_name'], row[
                     'name'], row['matched_iri'], row['superclass'], row['definition']
 
-                source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+                context_path = get_settings().server.service.resources_path
+                source = '{context_path}/studies/{study_id}/descriptors'.format(context_path=context_path, study_id=studyID)
                 ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 # add / update descriptor
@@ -801,7 +660,7 @@ class Placeholder(Resource):
                                     }
                               '''
                     try:
-                        onto_name = getOnto_Name(matched_iri)[0]
+                        onto_name = get_ontology_name(matched_iri)[0]
                         onto_iri, onto_version, onto_description = getOnto_info(onto_name)
 
                         temp = json.loads(protocol)
@@ -862,7 +721,8 @@ class Placeholder(Resource):
                 # add descriptor to MTBLS ontology
                 elif operation.lower() == 'mtbls':
                     try:
-                        source = '/metabolights/ws/ebi-internal/ontology'
+                        context_path = get_settings().server.service.resources_path
+                        source = f'{context_path}/ebi-internal/ontology'
                         protocol = '''{
                                         "termName": " ",
                                         "definition": " ",
@@ -919,7 +779,8 @@ class Placeholder(Resource):
                     = row['old_organismPart'], row['organismPart'], row['organismPart_ref'], row['organismPart_url']
                 superclass, definition = row['superclass'], row['definition']
 
-                source = '/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
+                context_path = get_settings().server.service.resources_path
+                source = '{context_path}/studies/{study_id}/organisms'.format(context_path=context_path, study_id=studyID)
                 ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
                 list_changes = []
@@ -956,7 +817,7 @@ class Placeholder(Resource):
                                 '''
                         try:
                             if change['onto_name'] in ['', None]:
-                                onto_name = getOnto_Name(change['term_url'])[0]
+                                onto_name = get_ontology_name(change['term_url'])[0]
                             else:
                                 onto_name = change['onto_name']
 
@@ -1005,7 +866,8 @@ class Placeholder(Resource):
                 elif operation.lower() == 'mtbls':
                     for change in list_changes:
                         try:
-                            source = '/metabolights/ws/ebi-internal/ontology'
+                            context_path = get_settings().server.service.resources_path
+                            source = f'{context_path}/ebi-internal/ontology'
                             protocol = '''{
                                             "termName": " ",
                                             "definition": " ",
@@ -1353,7 +1215,7 @@ def addZoomaTerm(studyID, Property_type, Property_value, url):
     zooma_df = pd.read_csv(zooma_path, sep='\t')
     lastID = int(zooma_df.iloc[-1]['BIOENTITY'].split('_')[1])
     bioentity = 'metabo_' + str(lastID + 1)
-    t = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+    t = current_time().strftime("%d/%m/%Y %H:%M")
     temp = {'STUDY': studyID, 'BIOENTITY': bioentity, 'PROPERTY_TYPE': Property_type, 'PROPERTY_VALUE': Property_value,
             'SEMANTIC_TAG': url, 'ANNOTATOR': 'Jiakang Chang', 'ANNOTATION_DATE': t}
     zooma_df = zooma_df.append(temp, ignore_index=True)
