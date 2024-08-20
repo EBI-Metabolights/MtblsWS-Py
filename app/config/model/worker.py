@@ -18,13 +18,13 @@ class SingularityImageConfiguration(BaseModel):
 
 class DatamoverWorkerSettings(BaseModel):
     monitor_task_status_key: str
-    monitor_task_timeout: str
+    monitor_task_timeout: int = 300
     shutdown_signal_wait_key_prefix: str
     shutdown_signal_wait_time: int
     minimum_datamover_workers: int
     maximum_datamover_workers: int
     worker_memory: str
-    worker_job_walltime: str
+    worker_job_walltime: int = 300
     start_datamover_worker_script: str
     maximum_uptime_in_seconds: int
     broker_queue_names: str

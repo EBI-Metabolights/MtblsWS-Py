@@ -3,11 +3,12 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Tuple, Type
 
 import toml
 import yaml
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
+from pydantic.fields import FieldInfo
 
 
 class MetabolightsConfigurationException(Exception):
@@ -40,18 +41,17 @@ SECRETS_PATH = get_path_from_environment("SECRETS_PATH", os.path.join(PROJECT_PA
 
 
 class ApplicationBaseSettings(BaseSettings):
-    class Config:
-        secrets_path = SECRETS_PATH
-        yaml_file_path = CONFIG_FILE_PATH
 
-        @classmethod
-        def customise_sources(
-            cls,
-            init_settings,
-            env_settings,
-            file_secret_settings,
-        ):
-            return (yaml_settings_source,)
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: Type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ):
+        return (YamlConfigSettingsSource(settings_cls, CONFIG_FILE_PATH, SECRETS_PATH),)
 
 
 secret_file_pattern = re.compile(r"\"\<secret_file\:([^>]*)\>\"")
@@ -111,9 +111,7 @@ def update_secrets(secrets_path: str, data: str) -> str:
     return data
 
 
-def yaml_settings_source(settings: ApplicationBaseSettings) -> Dict[str, Any]:
-    yaml_file = settings.__config__.yaml_file_path
-    secrets_path = settings.__config__.secrets_path
+def get_yaml_settings_source(yaml_file, secrets_path) -> Dict[str, Any]:
     yaml_file_path = Path(yaml_file)
 
     if not yaml_file_path.exists():
@@ -125,3 +123,43 @@ def yaml_settings_source(settings: ApplicationBaseSettings) -> Dict[str, Any]:
     json_data = json.dumps(yaml_data)
     updated_settings_data = update_secrets(secrets_path, json_data)
     return yaml.safe_load(updated_settings_data)
+
+
+class YamlConfigSettingsSource(PydanticBaseSettingsSource):
+    """
+    A simple settings source class that loads variables from a Yaml file
+    at the project's root.
+    """
+    
+    def __init__(self, settings_cls: Type[BaseSettings], config_yaml_path, secrets_path):
+        super().__init__(settings_cls)
+        self.config_yaml_path = config_yaml_path
+        self.secrets_path = secrets_path
+        self.yaml_setting = get_yaml_settings_source(self.config_yaml_path, self.secrets_path)
+        
+    def get_field_value(
+        self, field: FieldInfo, field_name: str
+    ) -> Tuple[Any, str, bool]:
+        field_value = self.yaml_setting[field_name]
+        is_complex = isinstance(field_value, dict)
+        return field_value, field_name, is_complex
+
+    def prepare_field_value(
+        self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool
+    ) -> Any:
+        return value
+
+    def __call__(self) -> Dict[str, Any]:
+        d: Dict[str, Any] = {}
+
+        for field_name, field in self.settings_cls.model_fields.items():
+            field_value, field_key, value_is_complex = self.get_field_value(
+                field, field_name
+            )
+            field_value = self.prepare_field_value(
+                field_name, field, field_value, value_is_complex
+            )
+            if field_value is not None:
+                d[field_key] = field_value
+
+        return d

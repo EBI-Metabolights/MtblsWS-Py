@@ -82,8 +82,9 @@ from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
                                ReindexStudy, RetryReindexStudies, StudyFolderSynchronization,
                                UnindexedStudy)
 from app.ws.mtblsWSclient import WsClient
+from app.ws.mtbls_ontology import MtblsOntologyTerm, MtblsOntologyTerms
 from app.ws.mzML2ISA import Convert2ISAtab, ValidateMzML
-from app.ws.ontology import Cellosaurus, Ontology, Placeholder
+from app.ws.ontology import Cellosaurus, MtblsControlLists, Ontology, Placeholder
 from app.ws.organism import Organism
 from app.ws.partner_utils import Metabolon
 from app.ws.pathway import fellaPathway, keggid
@@ -369,6 +370,9 @@ def initialize_app(flask_app):
     api.add_resource(fellaPathway, res_path + "/ebi-internal/fella-pathway")
     api.add_resource(PublicStudyTweet, res_path + "/ebi-internal/public-study-tweet")
 
+    api.add_resource(MtblsOntologyTerms, res_path + "/mtbls-ontology/terms")
+    api.add_resource(MtblsOntologyTerm, res_path + "/mtbls-ontology/terms/<string:term_id>")  
+    api.add_resource(MtblsControlLists, res_path + "/ebi-internal/control-lists")
 
     # https://www.ebi.ac.uk:443/metabolights/ws/v2
     api.add_resource(reports, res_path + "/v2/reports")
