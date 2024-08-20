@@ -48,7 +48,7 @@ def create_study_model_from_db_study(db_study: Study):
     if db_study.validations:
         try:
             db_study.validations = json.loads(db_study.validations)
-            validation_entries_model = models.ValidationEntriesModel.parse_obj(db_study.validations)
+            validation_entries_model = models.ValidationEntriesModel.model_validate(db_study.validations)
             m_study.validations = validation_entries_model
         except Exception as e:
             logger.warning(f'{e.args}')

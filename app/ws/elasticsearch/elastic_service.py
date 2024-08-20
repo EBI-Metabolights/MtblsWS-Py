@@ -97,9 +97,9 @@ class ElasticsearchService(object):
                     result_item = None
                     if item["_type"] and "_source" in item and item["_source"]:
                         if item["_type"].lower() == "study":
-                            result_item = models.StudyModel.parse_obj(item["_source"])
+                            result_item = models.StudyModel.model_validate(item["_source"])
                         elif item["_type"].lower() == "compound":
-                            result_item = models.ESMetaboLightsCompound.parse_obj(item["_source"])
+                            result_item = models.ESMetaboLightsCompound.model_validate(item["_source"])
                     if result_item:
                         search_result.results.append(result_item)
 

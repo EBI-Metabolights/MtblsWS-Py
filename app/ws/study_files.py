@@ -1045,7 +1045,7 @@ class StudyFilesReuse(Resource):
         #     try:
         #         with open(files_list_json_file, "r") as fp:
         #             cached_data = json.load(fp)
-        #             indexed_files = StudyFolderIndex.parse_obj(cached_data)
+        #             indexed_files = StudyFolderIndex.model_validate(cached_data)
         #     except Exception as exc:
         #         logger.warning(f"Error reading {files_list_json} for study {study_id}")
         
@@ -1070,7 +1070,7 @@ class StudyFilesReuse(Resource):
                 inputs = {"path": ftp_folder_path}
                 task = list_directory.apply_async(kwargs=inputs, expires=60*5)
                 output = task.get(timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds * 2)
-                ftp_files = LiteFileSearchResult.parse_obj(output).study
+                ftp_files = LiteFileSearchResult.model_validate(output).study
                 
                 search_result.latest = ftp_files  
                 sortFileMetadataList(ftp_files)
@@ -1872,7 +1872,7 @@ class StudyFilesTree(Resource):
                 inputs = {"path": ftp_folder_path, "recursive": include_sub_dir}
                 task = list_directory.apply_async(kwargs=inputs, expires=60*5)
                 output = task.get(timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds * 2)
-                search_result = LiteFileSearchResult.parse_obj(output)
+                search_result = LiteFileSearchResult.model_validate(output)
                 # search_result.latest = search_result.study
                 # search_result.study = []
                 sortFileMetadataList(search_result.study)

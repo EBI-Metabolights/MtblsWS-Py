@@ -173,7 +173,7 @@ class UserAccounts(Resource):
         user: UserModel = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            user = UserModel.parse_obj(data_dict)
+            user = UserModel.model_validate(data_dict)
             if hasattr(user, 'status') and isinstance(user.status, str):
                 user.status = UserStatus.from_name(user.status).value
             
@@ -285,7 +285,7 @@ class UserAccounts(Resource):
         user: NewUserModel = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            user = NewUserModel.parse_obj(data_dict)
+            user = NewUserModel.model_validate(data_dict)
             if hasattr(user, 'status') and isinstance(user.status, str):
                 user.status = UserStatus.from_name(user.status).value
             
