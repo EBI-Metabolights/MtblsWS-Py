@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional, List, Dict, Union
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 from app.ws.db.utils import datetime_to_int
 
@@ -25,9 +25,7 @@ class IndexedUserModel(BaseModel):
     orcid: str = Field(None)
     userName: str = Field(None)  # assigned as not_analyzed in es
     address: str = Field(None)
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class StudyTaskModel(BaseModel):
@@ -39,12 +37,11 @@ class StudyTaskModel(BaseModel):
     last_execution_time: datetime.datetime = Field(None)
     last_execution_status: str = Field(None)
     last_execution_message: str = Field(None)
-
-    class Config:
-        orm_mode = True
-        json_encoders = {
-            datetime.datetime: lambda v: v.timestamp(),
-        }
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(from_attributes=True, json_encoders={
+        datetime.datetime: lambda v: v.timestamp(),
+    })
 
 class UserModel(BaseModel):
     address: str = Field(None, alias="address")  # excluded from es
@@ -66,12 +63,9 @@ class UserModel(BaseModel):
     mobilePhoneNumber: str = None  # not in es index mapping
     officePhoneNumber: str = None  # not in es index mapping
     apiToken: str = Field(None, alias="apitoken")
-
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
-        
-    @validator('joinDate', check_fields=False)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+    @field_validator('joinDate', check_fields=False)
+    @classmethod
     def datetime_validation(cls, value):
         if not value:
             return None 
@@ -106,17 +100,12 @@ class NewUserModel(BaseModel):
     curator: bool = False  # excluded from es
     mobilePhoneNumber: str = None  # not in es index mapping
     officePhoneNumber: str = None  # not in es index mapping
-
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class MetabolightsParameterModel(BaseModel):
     name:   Optional[str] = Field(..., alias="name")
     value:  Optional[str] = Field(..., alias="value")
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class MetabolightsStatisticsModel(BaseModel):
     id:   Optional[int] = Field(..., alias="id")
@@ -124,9 +113,7 @@ class MetabolightsStatisticsModel(BaseModel):
     str_name:   Optional[str] = Field(..., alias="str_name")
     str_value:   Optional[str] = Field(..., alias="str_value")
     sort_order:   Optional[int] = Field(..., alias="sort_order")
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class SimplifiedUserModel(BaseModel):
     address: str = Field(None, alias="address")  # excluded from es
@@ -142,8 +129,7 @@ class SimplifiedUserModel(BaseModel):
     status: Union[int, str] = Field(..., alias="status")  # excluded from es
     userName: str = Field(..., alias="username")  # assigned as not_analyzed in es
     apiToken: str = Field(..., alias="apitoken")  # excluded from es
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class OrganismModel(BaseModel):
@@ -173,9 +159,7 @@ class ValidationEntriesModel(BaseModel):
     status: str = 'GREEN'
     passedMinimumRequirement: bool = False
     overriden: bool = False
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class StudyFactorModel(BaseModel):
@@ -262,9 +246,7 @@ class IndexedAssayModel(BaseModel):
     measurement: str = None  # assigned as not_analyzed
     technology: str = None  # assigned as not_analyzed
     platform: str = None
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class AssayModel(BaseModel):
@@ -325,9 +307,7 @@ class LiteStudyModel(EntityModel):
     users: Union[List[UserModel], List[IndexedUserModel]] = []
     publicStudy: bool = False
     derivedData: StudyDerivedData = None
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class StudyModel(LiteStudyModel):
@@ -341,8 +321,8 @@ class StudyModel(LiteStudyModel):
     contacts: Optional[List[ContactModel]] = []  # excluded from es
     backups: Optional[List[BackupModel]] = []
     sampleTable: TableModel = None  # excluded from es
-
-    @validator('updateDate', 'studySubmissionDate', 'studyPublicReleaseDate')
+    @field_validator('updateDate', 'studySubmissionDate', 'studyPublicReleaseDate')
+    @classmethod
     def datetime_validation(cls, value):
         if not value:
             return None
@@ -350,21 +330,17 @@ class StudyModel(LiteStudyModel):
             timestamp_value = datetime_to_int(value)
             return timestamp_value
         return value
-
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
-
-        json_encoders = {
-            datetime.datetime: lambda v: v.timestamp()
-        }
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True, json_encoders={
+        datetime.datetime: lambda v: v.timestamp()
+    })
         
 class SpeciesGroupModel(BaseModel):
     ObjectType: str = "SpeciesGroup"
     id: int = None
     name: str = None
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SpeciesMembersModel(BaseModel):
     ObjectType: str = "SpeciesMembers"
@@ -373,9 +349,7 @@ class SpeciesMembersModel(BaseModel):
     taxonDesc: Optional[str] = Field("", alias="taxon_desc")
     parentMemberId: int = Field(None, alias="parent_id")
     speciesGroup: SpeciesGroupModel = Field(None, alias="group")
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 class MetSpeciesModel(BaseModel):
     ObjectType: str = "Species"
     id: int = None
@@ -383,15 +357,13 @@ class MetSpeciesModel(BaseModel):
     species: str = None
     taxon: str = None
     speciesMember: SpeciesMembersModel = Field(None, alias="ref_species_member")
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class MetDbModel(BaseModel):
     ObjectType: str = "Database"
     id: int = None
     name: str = Field(None, alias="db_name")
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MetCrossReferenceModel(BaseModel):
@@ -399,16 +371,14 @@ class MetCrossReferenceModel(BaseModel):
     id: int = None
     accession: str = Field(None, alias="acc")
     db: MetDbModel = None
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MetSpeciesIndexModel(EntityModel):
     ObjectType: str = "MetSpecies"
     species: Optional[MetSpeciesModel] = Field(None, alias="species")
     crossReference: Optional[MetCrossReferenceModel] = Field(None, alias="cross_reference")
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class MetaboLightsCompoundModel(EntityModel):
     ObjectType: str = "compound"
@@ -431,30 +401,27 @@ class MetaboLightsCompoundModel(EntityModel):
     metSpecies: List[MetSpeciesModel] = Field([], alias="met_species")
     crossReference: List[MetCrossReferenceModel] = Field([], alias="ref_xref")
 
-    @validator('updatedDate')
+    @field_validator('updatedDate')
+    @classmethod
     def datetime_validation(cls, value):
         if not value:
             return None
         if isinstance(value, datetime.datetime):
             return value.strftime("%d-%b-%Y %H:%M:%S")
         return value
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
         
 class MetAttributeDefinitionModel(EntityModel):
     ObjectType: str = "AttributeDefinition"
     value: str = None
     description: str = None
-    
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
         
 class MetAttributeModel(EntityModel):
     ObjectType: str = "Attribute"
     value: str = None
     attributeDefinition: Union[None, MetAttributeDefinitionModel] = Field(None, alias="attribute_definition")
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
         
 class MetSpectraModel(EntityModel):
     ObjectType: str = "Spectra"
@@ -462,14 +429,12 @@ class MetSpectraModel(EntityModel):
     pathToJsonSpectra: str = Field(None, alias="path_to_json")
     spectraType: str = Field(None, alias="spectra_type")
     attributes: List[MetAttributeModel] = Field([], alias="attributes")
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class MetDb(EntityModel):
     ObjectType: str = "Database"
     db_name: str 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
         
 class MetPathwayModel(EntityModel):
     ObjectType: str = "Pathway"
@@ -478,8 +443,7 @@ class MetPathwayModel(EntityModel):
     attributes: List[MetAttributeModel] = Field([], alias="attributes")
     database: MetDb = Field([], alias="database")
     speciesAssociated: MetSpeciesModel = Field([], alias="species")
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
   
     
@@ -507,27 +471,22 @@ class MetaboLightsCompoundIndexModel(EntityModel):
     metSpectras: List[MetSpectraModel] = Field([], alias="met_spectras")
     metPathways: List[MetPathwayModel] = Field([], alias="met_pathways")
     
-    @validator('updatedDate', check_fields=False)
+    @field_validator('updatedDate', check_fields=False)
+    @classmethod
     def datetime_validation(cls, value):
         if not value:
             return None 
         if isinstance(value, datetime.datetime):
             return value.strftime("%Y-%m-%d")
         return value
-    
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
         
 
 class ESMetaboLightsCompound(MetaboLightsCompoundIndexModel):
-    
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class EntryModel(BaseModel):
     id: int = None
     name: str = Field(None, alias="name")
-    description: str = Field(None, alias="description")
-    class Config:
-        orm_mode = True
+    description: str = Field(None, alias="description") 
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
