@@ -98,9 +98,9 @@ class HpcWorkerBashRunner:
                         task_status.wait_in_seconds = self.get_wait_time(result.date_done.timestamp())
                         if result.successful() and isinstance(result.result, dict):
                             if "stdout" in result.result:
-                                task_status.result = CapturedBashExecutionResult.parse_obj(result.result)
+                                task_status.result = CapturedBashExecutionResult.model_validate(result.result)
                             elif "stdout_log_file_path" in result.result:
-                                task_status.result = LoggedBashExecutionResult.parse_obj(result.result)
+                                task_status.result = LoggedBashExecutionResult.model_validate(result.result)
                             else:
                                 raise MetabolightsException(message="unexpected bash result")
 

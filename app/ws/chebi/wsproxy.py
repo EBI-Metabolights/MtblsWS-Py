@@ -67,7 +67,7 @@ class ChebiWsProxy(object):
         serialized_result = helpers.serialize_object(result, dict)
 
         if serialized_result:
-            data = Entity.parse_obj(serialized_result)
+            data = Entity.model_validate(serialized_result)
             return data
         return None
 
@@ -77,7 +77,7 @@ class ChebiWsProxy(object):
         result = self.service.getLiteEntity(search_text, search_category.value, maximum_results, stars.value)
         serialized_result = helpers.serialize_object(result, dict)
         if serialized_result:
-            result = [LiteEntity.parse_obj(data) for data in serialized_result if data]
+            result = [LiteEntity.model_validate(data) for data in serialized_result if data]
             return result
         return None
 
@@ -86,7 +86,7 @@ class ChebiWsProxy(object):
         service_result = self.service.getCompleteEntityByList(chebi_id_list)
         serialized_result = helpers.serialize_object(service_result, dict)
         if serialized_result:
-            result = [Entity.parse_obj(data) for data in serialized_result if data]
+            result = [Entity.model_validate(data) for data in serialized_result if data]
             return result
         return None
 
@@ -95,7 +95,7 @@ class ChebiWsProxy(object):
         service_result = self.service.getOntologyParents(chebi_id)
         serialized_result = helpers.serialize_object(service_result, dict)
         if serialized_result:
-            result = [OntologyDataItem.parse_obj(data) for data in serialized_result if data]
+            result = [OntologyDataItem.model_validate(data) for data in serialized_result if data]
             return result
         return None
 
@@ -104,7 +104,7 @@ class ChebiWsProxy(object):
         service_result = self.service.getOntologyChildren(chebi_id)
         serialized_result = helpers.serialize_object(service_result, dict)
         if serialized_result:
-            result = [OntologyDataItem.parse_obj(data) for data in serialized_result if data]
+            result = [OntologyDataItem.model_validate(data) for data in serialized_result if data]
             return result
         return None
 
@@ -114,7 +114,7 @@ class ChebiWsProxy(object):
         service_result = self.service.getAllOntologyChildrenInPath(chebi_id, relationship_type.value, structure_only)
         serialized_result = helpers.serialize_object(service_result, dict)
         if serialized_result:
-            result = [LiteEntity.parse_obj(data) for data in serialized_result if data]
+            result = [LiteEntity.model_validate(data) for data in serialized_result if data]
             return result
         return None
 
@@ -129,7 +129,7 @@ class ChebiWsProxy(object):
 
         serialized_result = helpers.serialize_object(service_result, dict)
         if serialized_result:
-            result = [LiteEntity.parse_obj(data) for data in serialized_result if data]
+            result = [LiteEntity.model_validate(data) for data in serialized_result if data]
             return result
         return None
 

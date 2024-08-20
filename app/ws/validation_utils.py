@@ -34,7 +34,7 @@ def get_validation_report(study_id: str, level: str="all") -> ValidationReportFi
     report = None
     try:
         validation_schema = json.loads(validation_file.read_text(encoding="utf-8"))
-        report = ValidationReportFile.parse_obj(validation_schema)
+        report = ValidationReportFile.model_validate(validation_schema)
         if report and report.validation:
             if not report.validation.last_update_time:
                 report.validation.last_update_timestamp = validation_file.stat().st_mtime

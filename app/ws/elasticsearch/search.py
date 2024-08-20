@@ -72,7 +72,7 @@ class ElasticSearchQuery(Resource):
             user_name = "metabolights-anonymous"
         
         if content:
-            query: SearchQuery = SearchQuery.parse_obj(content)
+            query: SearchQuery = SearchQuery.model_validate(content)
         else:
             query = SearchQuery()
             

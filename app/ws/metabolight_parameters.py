@@ -153,7 +153,7 @@ class MetabolightsParameters(Resource):
         user: UserModel = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            param = MetabolightsParameterModel.parse_obj(data_dict)
+            param = MetabolightsParameterModel.model_validate(data_dict)
         except (Exception) as ex:
             raise MetabolightsException(http_code=404, message="Invalid parameter data input", exception=ex)
         db_session = DBManager.get_instance().session_maker()
@@ -238,7 +238,7 @@ class MetabolightsParameters(Resource):
         param: MetabolightsParameterModel = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            param = MetabolightsParameterModel.parse_obj(data_dict)
+            param = MetabolightsParameterModel.model_validate(data_dict)
                 
         except (Exception) as ex:
             raise MetabolightsException(http_code=400, message="Invalid parameter data input", exception=ex)

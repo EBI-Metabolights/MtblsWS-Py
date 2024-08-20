@@ -47,7 +47,7 @@ class ValidationReportContent(BaseModel):
     status: str = "not ready"
     timing: float = 0.0
     last_update_time: str = ""
-    last_update_timestamp: int = 0
+    last_update_timestamp: Union[int, float] = 0
     validations: List[ValidationSection] = []
     
 class ValidationReportFile(BaseModel):
