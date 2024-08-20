@@ -7,7 +7,7 @@ from typing import Dict, List, Set
 from isatools import isatab
 from isatools.model import Investigation, Study, Assay
 import pandas as pd
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.config import get_settings
 from app.study_folder_utils import FileDescriptor, get_study_folder_files
 
@@ -21,6 +21,7 @@ class LiteFileMetadata(BaseModel):
     status: str = "unreferenced"
     timestamp: str = ""
     type: str = "unknown"
+    model_config = ConfigDict(from_attributes=True)
 
 
 def sortFileMetadataList(items: List[LiteFileMetadata]):
@@ -40,6 +41,7 @@ class FileMetadata(LiteFileMetadata):
     extension: str = ""
     is_stop_folder: bool = False
     is_empty: bool = False
+    model_config = ConfigDict(from_attributes=True)
     
 
 
@@ -49,6 +51,7 @@ class FileSearchResult(BaseModel):
     uploadPath: str = ""
     obfuscationCode: str = ""
     latest: List[FileMetadata] = []
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LiteFileSearchResult(BaseModel):
@@ -57,10 +60,12 @@ class LiteFileSearchResult(BaseModel):
     uploadPath: str = ""
     obfuscationCode: str = ""
     latest: List[LiteFileMetadata] = []
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StudyFolderIndex(BaseModel):
     study: List[FileMetadata] = []
+    model_config = ConfigDict(from_attributes=True)
 
 
 def get_directory_files(
@@ -98,7 +103,7 @@ def evaluate_files(
     source_file_descriptors: Dict[str, FileDescriptor], referenced_file_set: Set[str]
 ) -> LiteFileSearchResult:
     file_search_result = evaluate_files_in_detail(source_file_descriptors, referenced_file_set)
-    return LiteFileSearchResult.parse_obj(file_search_result)
+    return LiteFileSearchResult.model_validate(file_search_result)
 
 def evaluate_files_in_detail(
     source_file_descriptors: Dict[str, FileDescriptor], referenced_file_set: Set[str]
