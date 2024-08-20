@@ -16,7 +16,6 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import glob
 import logging
 import os
 
@@ -27,13 +26,10 @@ from flask_restful_swagger import swagger
 from app.tasks.common_tasks.curation_tasks.metabolon import metabolon_confirm
 from app.utils import MetabolightsException
 
-from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.user_service import UserService
-from app.ws.utils import validate_mzml_files, convert_to_isa, copy_file, read_tsv, write_tsv, \
-    update_correct_sample_file_name, get_year_plus_one
 
 wsc = WsClient()
 iac = IsaApiClient()
@@ -110,7 +106,7 @@ class Metabolon(Resource):
         study_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
         
         try:
-            inputs = {"study_id": study_id, "study_location": study_location, "user_token": user_token, "email": email}
+            inputs = {"study_id": study_id, "study_location": study_location, "email": email}
             
             result = metabolon_confirm.apply_async(kwargs=inputs, expires=60*5)
 
