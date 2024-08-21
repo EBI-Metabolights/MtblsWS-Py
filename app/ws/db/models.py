@@ -312,8 +312,8 @@ class LiteStudyModel(EntityModel):
 
 class StudyModel(LiteStudyModel):
     indexTimestamp: int = 0
-    description: Optional[str]
-    studyLocation: Optional[str]  # excluded from es
+    description: Optional[str] = None
+    studyLocation: Optional[str] = None # excluded from es
     descriptors: List[StudyDesignDescriptor] = []
     publications: List[PublicationModel] = []
     protocols: List[ProtocolModel] = []
