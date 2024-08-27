@@ -353,10 +353,10 @@ class SpeciesMembersModel(BaseModel):
 class MetSpeciesModel(BaseModel):
     ObjectType: str = "Species"
     id: int = None
-    description: str = None
+    description: Optional[str] = None
     species: str = None
     taxon: str = None
-    speciesMember: SpeciesMembersModel = Field(None, alias="ref_species_member")
+    speciesMember: Optional[SpeciesMembersModel] = Field(None, alias="ref_species_member")
     model_config = ConfigDict(from_attributes=True)
 
 class MetDbModel(BaseModel):
@@ -385,11 +385,11 @@ class MetaboLightsCompoundModel(EntityModel):
     accession: str = Field(None, alias="acc")
     name: str = None
     description: str = None
-    inchi: str = None
-    inchikey: str = None
+    inchi: Optional[str] = None
+    inchikey: Optional[str] = None
     chebiId: str = Field(None, alias="temp_id")
     formula: str = None
-    iupacNames: str = Field(None, alias="iupac_names")
+    iupacNames: Optional[str] = Field(None, alias="iupac_names")
     studyStatus: str = 'PUBLIC'
     hasLiterature: bool = Field(None, alias="has_literature")
     hasReactions: bool = Field(None, alias="has_reactions")
