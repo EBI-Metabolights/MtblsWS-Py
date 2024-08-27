@@ -345,7 +345,7 @@ class SpeciesGroupModel(BaseModel):
 class SpeciesMembersModel(BaseModel):
     ObjectType: str = "SpeciesMembers"
     id: int = None
-    taxon: str = None
+    taxon: Optional[str] = None
     taxonDesc: Optional[str] = Field("", alias="taxon_desc")
     parentMemberId: int = Field(None, alias="parent_id")
     speciesGroup: SpeciesGroupModel = Field(None, alias="group")
@@ -355,7 +355,7 @@ class MetSpeciesModel(BaseModel):
     id: int = None
     description: Optional[str] = None
     species: str = None
-    taxon: str = None
+    taxon: Optional[str] = None
     speciesMember: Optional[SpeciesMembersModel] = Field(None, alias="ref_species_member")
     model_config = ConfigDict(from_attributes=True)
 
@@ -384,7 +384,7 @@ class MetaboLightsCompoundModel(EntityModel):
     ObjectType: str = "compound"
     accession: str = Field(None, alias="acc")
     name: str = None
-    description: str = None
+    description: Optional[str] = None
     inchi: Optional[str] = None
     inchikey: Optional[str] = None
     chebiId: str = Field(None, alias="temp_id")
@@ -414,7 +414,7 @@ class MetaboLightsCompoundModel(EntityModel):
 class MetAttributeDefinitionModel(EntityModel):
     ObjectType: str = "AttributeDefinition"
     value: str = None
-    description: str = None
+    description: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
         
 class MetAttributeModel(EntityModel):
@@ -451,7 +451,7 @@ class MetaboLightsCompoundIndexModel(EntityModel):
     ObjectType: str = "compound"
     accession: str = Field(None, alias="acc")
     name: str = None
-    description: str = None
+    description: Optional[str] = None
     inchi: str = None
     inchikey: str = None
     chebiId: str = Field(None, alias="temp_id")
