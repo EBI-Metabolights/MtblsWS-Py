@@ -54,7 +54,7 @@ class UserModel(BaseModel):
     fullName: str = Field(None)  # assigned as not_analyzed in es
     joinDate: Union[str, datetime.datetime] = Field(None, alias="joindate")  # excluded from es
     lastName: str = Field(None, alias="lastname")
-    orcid: str = Field(None, alias="orcid")
+    orcid: Optional[str] = Field(None, alias="orcid")
     role: Union[int, str] = Field(..., alias="role")  # excluded from es
     status: Union[int, str] = Field(..., alias="status")  # excluded from es
     userId: int = Field(..., alias="id")  # excluded from es
@@ -95,7 +95,7 @@ class NewUserModel(BaseModel):
     status: Union[int, str] = Field(..., alias="status")  # excluded from es
     role: Union[int, str] = Field(..., alias="role")  # excluded from es
     apiToken: str = Field(..., alias="apitoken")
-    orcid: str = Field(None, alias="orcid")
+    orcid: Optional[str] = Field(None, alias="orcid")
     userVerifyDbPassword: str = None  # not in es index mapping
     curator: bool = False  # excluded from es
     mobilePhoneNumber: str = None  # not in es index mapping
