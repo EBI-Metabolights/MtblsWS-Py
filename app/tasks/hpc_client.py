@@ -168,8 +168,8 @@ class HpcClient(ABC):
                 BashClient.execute_command(copy_singularity_run_script)
             else:
                 deleted_files = self.settings.hpc_cluster.datamover.mounted_paths.cluster_rw_storage_recycle_bin_root_path
-                os.makedirs(os.path.join(deleted_files, tmp_folder), exist_ok=True)
-                temp_path = os.path.join(deleted_files, tmp_folder)
+                os.makedirs(os.path.join(deleted_files, "run_singularity", tmp_folder), exist_ok=True)
+                temp_path = os.path.join(deleted_files, "run_singularity", tmp_folder)
                 shutil.copytree(local_tmp_folder_path, temp_path, dirs_exist_ok=True)
                 
                 commands = [BashClient.build_ssh_command(hostname, username=host_username, identity_file=identity_file)]

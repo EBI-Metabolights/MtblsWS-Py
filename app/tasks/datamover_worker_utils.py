@@ -1,6 +1,7 @@
 import os
 import socket
 import time
+import traceback
 from typing import List
 
 import kombu
@@ -157,6 +158,7 @@ def ping_datamover_worker(worker_name: str, retry=1, timeout=5, wait_period=1):
             else:
                 time.sleep(wait_period)
         except Exception as ex:
+            traceback.format_exception(ex)
             print(f"No response from datamover worker {name}: {str(ex)}")
 
     return None

@@ -1,6 +1,6 @@
 variables:
-     APP_VERSION: "2.1.0"
-     API_VERSION: "2.1.0"
+     APP_VERSION: "2.2.0"
+     API_VERSION: "2.2.0"
      K8S_DEPLOYMENT: "1"
      CICD_SCRIPTS_ROOT_PATH: "/home/gitlab-runner/ci_cd"
      BUILD_SCRIPTS_ROOT_PATH: "$CICD_SCRIPTS_ROOT_PATH/standalone"

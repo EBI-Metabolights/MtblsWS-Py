@@ -1,15 +1,15 @@
-FROM python:3.8-slim-buster as builder
+FROM python:3.8-slim-buster AS builder
 LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
 
 RUN apt-get clean && apt-get -y update && apt-get -y install build-essential python3-dev python3-pip libpq-dev libglib2.0-0 libsm6 libxrender1 libxext6
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV  PYTHONUNBUFFERED 1
-ENV POETRY_NO_INTERACTION 1
-ENV POETRY_VIRTUALENVS_IN_PROJECT 1 
-ENV POETRY_VIRTUALENVS_CREATE 1
-ENV POETRY_CACHE_DIR /tmp/poetry_cache
-ENV POETRY_HOME /opt/poetry
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV POETRY_NO_INTERACTION=1
+ENV POETRY_VIRTUALENVS_IN_PROJECT=1 
+ENV POETRY_VIRTUALENVS_CREATE=1
+ENV POETRY_CACHE_DIR=/tmp/poetry_cache
+ENV POETRY_HOME=/opt/poetry
 WORKDIR /app-root
 
 RUN pip3 install --upgrade pip 
@@ -22,7 +22,7 @@ RUN touch README.md
 
 RUN poetry install --without dev --no-root && rm -rf $POETRY_CACHE_DIR
 
-FROM python:3.8-slim-buster as runner
+FROM python:3.8-slim-buster AS runner
 LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
 
 RUN apt-get -y update \
@@ -31,11 +31,11 @@ RUN apt-get -y update \
     && apt-get -y autoremove --purge
 
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-ENV VIRTUAL_ENV=/app-root/.venv \
-    PATH="/opt/rar:/app-root/.venv/bin:$PATH"
+ENV VIRTUAL_ENV=/app-root/.venv
+ENV PATH=/opt/rar:/app-root/.venv/bin:$PATH
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
