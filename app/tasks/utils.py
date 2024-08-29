@@ -16,4 +16,3 @@ def get_utc_time_string_from_timestamp(input: int):
         input_time = datetime.datetime.fromtimestamp(input)
         return input_time.strftime(UTC_SIMPLE_DATE_FORMAT)
     return ""
-

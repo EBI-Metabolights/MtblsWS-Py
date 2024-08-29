@@ -37,7 +37,7 @@
         },   
         {
             "name": "Poetry Celery Beat",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "/opt/poetry/bin/poetry",
             "args": [
@@ -114,7 +114,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets", "SINGULARITY_IMAGE_FILE_URL":"https://gitlab.ebi.ac.uk/api/v4/projects/3199/packages/generic/MtblsWS-Py_sif/2.1.0/MtblsWS-Py_2.1.0_staging.sif"}
         },
         {
             "name": "Python: Refactor",

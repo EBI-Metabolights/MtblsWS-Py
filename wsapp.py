@@ -20,13 +20,14 @@ import logging.config
 import os
 import re
 from typing import List
+
 from flask import Flask, request
-from flask_restful_swagger import swagger
 from flask_restful import abort
-from jinja2 import Environment, select_autoescape, FileSystemLoader
+from flask_restful_swagger import swagger
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
 from app.config import get_settings
 from app.config.model.server import EndpointDescription, EndpointMethodOption
-
 from app.wsapp_config import initialize_app
 
 """
@@ -160,8 +161,3 @@ def check_response(result):
 #         service_port = host_port[1]
 
 #     return scheme, app_host, service_port
-
-
-setup_logging()
-print("Initialising application")
-initialize_app(application)

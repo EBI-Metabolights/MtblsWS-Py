@@ -153,7 +153,7 @@ def configure_app(flask_app):
     print(f"STUDY_INTERNAL_FILES_ROOT_PATH:\t{study_settings.mounted_paths.study_internal_files_root_path}")
     print(f"STUDY_READONLY_FILES_ROOT_PATH:\t{study_settings.mounted_paths.study_readonly_files_root_path}")
     print(f"ELASTICSEARCH_HOST:\t\t{settings.elasticsearch.connection.host}")
-    print(f"LSF_HOST:\t\t\t{settings.hpc_cluster.datamover.connection.host}")
+    print(f"HPC_DATAMOVER_HOST:\t\t\t{settings.hpc_cluster.datamover.connection.host}")
     print(f"REPORTS_ROOT_PATH:\t\t{settings.study.mounted_paths.reports_root_path}")
     print(f"COMPOUND_FILES_ROOT_PATH:\t{study_settings.mounted_paths.compounds_root_path}")
     print(f"MAIL_SERVER:\t\t\t{settings.email.email_service.connection.host}:{settings.email.email_service.connection.port}")

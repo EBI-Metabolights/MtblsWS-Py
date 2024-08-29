@@ -8,7 +8,7 @@ if [ -z "$WORKER_NAME" ]; then
     WORKER_NAME="datamover_worker_1"
 fi
 
-APPDIR="/app-root"
+APPDIR=$(pwd)
 
 if [ -z "$LOGS_PATH" ]; then
     LOGS_PATH=$APPDIR/logs

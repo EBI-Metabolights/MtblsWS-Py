@@ -1,4 +1,5 @@
 from typing import List
+
 from pydantic import BaseModel, Field
 
 
@@ -11,6 +12,8 @@ class SingularityImageConfiguration(BaseModel):
     user_home_binding_target_path: str
     logs_path: str
     shared_paths: List[str]
+    config_file_path: str = "datamover-config.yaml"
+    secrets_path: str = ".datamover-secrets"
 
 
 class DatamoverWorkerSettings(BaseModel):

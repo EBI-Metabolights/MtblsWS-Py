@@ -6,13 +6,14 @@ from typing import List
 import kombu
 
 from app.config import get_settings
-from app.tasks.lsf_client import HpcJob, LsfClient
+from app.tasks.hpc_client import HpcClient, HpcJob
+from app.tasks.hpc_utils import get_new_hpc_client
 from app.tasks.system_monitor_tasks import heartbeat
 from app.tasks.worker import celery as app
 
 
 def get_status(worker_name: str):
-    client: LsfClient = LsfClient()
+    client: HpcClient = get_new_hpc_client()
     project_name = get_settings().hpc_cluster.configuration.job_project_name
     name = f"{project_name}_{worker_name}"
     jobs: List[HpcJob] = client.get_job_status([name])
@@ -21,7 +22,7 @@ def get_status(worker_name: str):
 def create_datamover_worker(worker_name: str):
     project_name = get_settings().hpc_cluster.configuration.job_project_name
     name = f"{project_name}_{worker_name}"
-    client: LsfClient = LsfClient()
+    client: HpcClient = get_new_hpc_client()
     settings = get_settings()
     worker_config = settings.workers.datamover_workers
     command = os.path.join(
@@ -29,13 +30,16 @@ def create_datamover_worker(worker_name: str):
         worker_config.start_datamover_worker_script,
     )
     args = worker_config.broker_queue_names.split(",")
-    args.append(name)
+    # args.append(name)
+    sif_image_file_url = os.environ.get("SINGULARITY_IMAGE_FILE_URL")
+
     job_id, _ = client.run_singularity(
-        name, command, ",".join(args), unique_task_name=False
+        name, command, ",".join(args) + f" {name}", 
+        unique_task_name=False,
+        sif_image_file_url=sif_image_file_url
     )
 
     return job_id
-
 
 def create_queue(name: str):
     if not app.conf.task_queues:
@@ -71,7 +75,7 @@ def delete_current_workers(worker_name: str):
         jobs: List[HpcJob] = get_status(worker_name)
         if jobs:
             job_ids = [job.job_id for job in jobs]
-            client: LsfClient = LsfClient()
+            client: HpcClient = get_new_hpc_client()
             killed_ids, stdout, stderr = client.kill_jobs(
                 job_ids, failing_gracefully=True
             )
@@ -98,7 +102,7 @@ def start_worker(worker_name: str):
         started = False
         for _ in range(3):
             jobs = get_status(worker_name)
-            if jobs and jobs[0].status.upper() == "RUN":
+            if jobs and "RUN" in jobs[0].status.upper():
                 started = True
                 break
             time.sleep(10)
@@ -136,22 +140,22 @@ def restart_datamover_worker(worker_name: str):
         return True
 
 
-def ping_datamover_worker(worker_name: str):
+def ping_datamover_worker(worker_name: str, retry=1, timeout=5, wait_period=1):
     project_name = get_settings().hpc_cluster.configuration.job_project_name
     name = f"{project_name}_{worker_name}"
 
     input_value = socket.gethostname()
-    for _ in range(5):
+    for _ in range(retry):
         task = heartbeat.ping.apply_async(queue=name, args=[input_value])
         try:
-            result = task.get(timeout=10)
+            result = task.get(timeout=timeout)
             if result and "reply_for" in result and result["reply_for"] == input_value:
                 if result and "worker_version" in result:
                     return result["worker_version"]
                 else:
                     return None
             else:
-                time.sleep(2)
+                time.sleep(wait_period)
         except Exception as ex:
             print(f"No response from datamover worker {name}: {str(ex)}")
 
