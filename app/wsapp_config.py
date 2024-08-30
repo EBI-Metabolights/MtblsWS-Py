@@ -17,19 +17,23 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import socket
+
 from flask_cors import CORS
 from flask_mail import Mail
 from flask_restful import Api
 from flask_restful_swagger import swagger
+
 from app.config import get_settings
 from app.utils import ValueMaskUtility
-
 from app.ws.about import About, AboutServer
 from app.ws.app_status import MaintenanceStatus
 from app.ws.assay_protocol import GetProtocolForAssays
 from app.ws.auth.accounts import UserAccounts
 from app.ws.auth.authentication import (AuthLogin, AuthLoginWithToken,
-                                        AuthUser, AuthUserStudyPermissions, AuthUserStudyPermissions2, AuthValidation, OneTimeTokenCreation, OneTimeTokenValidation)
+                                        AuthUser, AuthUserStudyPermissions,
+                                        AuthUserStudyPermissions2,
+                                        AuthValidation, OneTimeTokenCreation,
+                                        OneTimeTokenValidation)
 from app.ws.biostudies import BioStudies, BioStudiesFromMTBLS
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
@@ -67,9 +71,12 @@ from app.ws.metabolight_statistics import MetabolightsStatistics
 from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.mtbls_maf import (CombineMetaboliteAnnotationFiles,
                               MetaboliteAnnotationFile, MtblsMAFSearch)
-from app.ws.mtblsCompound import (MtblsCompoundFile, MtblsCompoundIndex, MtblsCompoundIndexAll,
-                                  MtblsCompoundIndexSync, MtblsCompoundSpectraFile, MtblsCompounds,
-                                  MtblsCompoundsDetails)
+from app.ws.mtbls_ontology import MtblsOntologyTerm, MtblsOntologyTerms
+from app.ws.mtblsCompound import (MtblsCompoundFile, MtblsCompoundIndex,
+                                  MtblsCompoundIndexAll,
+                                  MtblsCompoundIndexSync, MtblsCompounds,
+                                  MtblsCompoundsDetails,
+                                  MtblsCompoundSpectraFile)
 from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
                                CreateUploadFolder, DeleteStudy,
                                IsaTabAssayFile, IsaTabInvestigationFile,
@@ -79,12 +86,12 @@ from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
                                MtblsStudiesWithMethods, MtblsStudyFolders,
                                MtblsStudyValidationStatus, MyMtblsStudies,
                                MyMtblsStudiesDetailed, PublicStudyDetail,
-                               ReindexStudy, RetryReindexStudies, StudyFolderSynchronization,
-                               UnindexedStudy)
+                               ReindexStudy, RetryReindexStudies,
+                               StudyFolderSynchronization, UnindexedStudy)
 from app.ws.mtblsWSclient import WsClient
-from app.ws.mtbls_ontology import MtblsOntologyTerms, MtblsOntologyTerm
 from app.ws.mzML2ISA import Convert2ISAtab, ValidateMzML
-from app.ws.ontology import Cellosaurus, MtblsControlLists, Ontology, Placeholder
+from app.ws.ontology import (Cellosaurus, MtblsControlLists, Ontology,
+                             Placeholder)
 from app.ws.organism import Organism
 from app.ws.partner_utils import Metabolon
 from app.ws.pathway import fellaPathway, keggid
@@ -95,23 +102,26 @@ from app.ws.settings.utils import get_study_settings
 from app.ws.species import SpeciesTree
 from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
 from app.ws.stats import StudyStats
-from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet, StudyModificationTime
+from app.ws.study_actions import (StudyModificationTime, StudyStatus,
+                                  ToggleAccess, ToggleAccessGet)
 from app.ws.study_files import (CopyFilesFolders, DeleteAsperaFiles, FileList,
                                 SampleStudyFiles, StudyFiles, StudyFilesReuse,
-                                StudyFilesTree, StudyRawAndDerivedDataFiles, SyncFolder,
-                                UnzipFiles)
+                                StudyFilesTree, StudyRawAndDerivedDataFiles,
+                                SyncFolder, UnzipFiles)
 from app.ws.system import SystemTestEmail
 from app.ws.table_editor import (AddRows, ColumnsRows, ComplexColumns,
-                                 GetAssayMaf, GetTsvFile, SimpleColumns, TsvFileRows)
+                                 GetAssayMaf, GetTsvFile, SimpleColumns,
+                                 TsvFileRows)
 # from app.ws.tasks.study_file_encoding import FileEncodingChecker
 from app.ws.tasks.create_json_files import (PublicStudyJsonExporter,
                                             StudyJsonExporter)
 from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
 from app.ws.v1.studies import V1StudyDetail
-from app.ws.validation import (NewValidation, OverrideValidation, StudyValidationTask,
+from app.ws.validation import (NewValidation, OverrideValidation,
+                               StudyValidationTask, ValidationComment,
                                ValidationFile, ValidationProcess,
-                               ValidationComment, ValidationReport)
+                               ValidationReport)
 
 
 def configure_app(flask_app):
@@ -153,7 +163,7 @@ def configure_app(flask_app):
     print(f"STUDY_INTERNAL_FILES_ROOT_PATH:\t{study_settings.mounted_paths.study_internal_files_root_path}")
     print(f"STUDY_READONLY_FILES_ROOT_PATH:\t{study_settings.mounted_paths.study_readonly_files_root_path}")
     print(f"ELASTICSEARCH_HOST:\t\t{settings.elasticsearch.connection.host}")
-    print(f"HPC_DATAMOVER_HOST:\t\t\t{settings.hpc_cluster.datamover.connection.host}")
+    print(f"HPC_DATAMOVER_HOST:\t\t{settings.hpc_cluster.datamover.connection.host}")
     print(f"REPORTS_ROOT_PATH:\t\t{settings.study.mounted_paths.reports_root_path}")
     print(f"COMPOUND_FILES_ROOT_PATH:\t{study_settings.mounted_paths.compounds_root_path}")
     print(f"MAIL_SERVER:\t\t\t{settings.email.email_service.connection.host}:{settings.email.email_service.connection.port}")

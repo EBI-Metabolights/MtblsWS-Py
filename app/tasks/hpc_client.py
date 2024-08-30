@@ -39,6 +39,10 @@ class HpcClient(ABC):
         self.datetime_format = datetime_format
         if not datetime_format:
             self.datetime_format = "%Y-%m-%dT%H:%M:%S"
+
+    @abstractmethod
+    def get_job_name_env_variable(self):
+        pass
     
     @abstractmethod
     def convert_to_runtime_limit(self, time_in_seconds: int):
@@ -78,7 +82,10 @@ class HpcClient(ABC):
                         unique_task_name: bool = True, 
                         hpc_queue_name: Union[None, str] = None, 
                         additional_mounted_paths:  Union[None, List[str]] = None, 
-                        sif_image_file_url: Union[None, str]=None):
+                        sif_image_file_url: Union[None, str]=None,
+                        source_config_file_path: Union[None, str]=None,
+                        source_secrets_folder_path: Union[None, List[str]] = None,
+                        ):
         messages: List[str] = []
         additional_mounted_paths = additional_mounted_paths if additional_mounted_paths else []
         if unique_task_name:
@@ -102,11 +109,18 @@ class HpcClient(ABC):
         script_template = worker_config.run_singularity_script_template_name
         if not sif_image_file_url:
             raise MetabolightsException("SINGULARITY_IMAGE_FILE_URL is not defined.")
+        if not source_config_file_path:
+            raise MetabolightsException("singularity image config file is not defined.")
+        if not source_secrets_folder_path:
+            raise MetabolightsException("singularity image secrets folder is not defined.")
+        
         temp_value = str(int(current_time().timestamp()*1000))
         worker_name = f"worker_{task_name}"
         sif_file_name = os.path.basename(sif_image_file_url)
+        
         inputs = {
                     "DOCKER_BOOTSTRAP_COMMAND": command,
+                    "JOB_NAME_ENV_VAR_NAME": self.get_job_name_env_variable(),
                     "DOCKER_APP_ROOT": worker_config.docker_deployment_path,
                     "DOCKER_BOOTSTRAP_COMMAND_ARGUMENTS": command_arguments,
                     "REMOTE_SERVER_BASE_PATH": worker_config.worker_deployment_root_path,
@@ -137,18 +151,10 @@ class HpcClient(ABC):
             local_tmp_folder_path = os.path.join(self.settings.server.temp_directory_path, tmp_folder)
             os.makedirs(local_tmp_folder_path, exist_ok=True)
             
-            config_file_path = os.environ.get("DATAMOVER_CONFIG_FILE_PATH", default="")
-            if not config_file_path:
-                config_file_path = os.path.realpath(worker_config.config_file_path)
-                if not config_file_path:
-                    config_file_path = os.path.realpath("datamover-config.yaml")
+            config_file_path = source_config_file_path
             target_config_file_path = os.path.join(local_tmp_folder_path, "config.yaml")
             
-            secrets_folder_path = os.environ.get("DATAMOVER_SECRETS_PATH", default="")
-            if not secrets_folder_path:
-                secrets_folder_path = os.path.realpath(worker_config.secrets_path)
-                if not secrets_folder_path:
-                    secrets_folder_path = os.path.realpath(".datamover-secrets")
+            secrets_folder_path = source_secrets_folder_path
             target_secrets_folder_path = os.path.join(local_tmp_folder_path, ".secrets")
             target_script_path = os.path.join(local_tmp_folder_path, script_file_name)
             
@@ -184,8 +190,15 @@ class HpcClient(ABC):
                                                                    identity_file=datamover_identity_file, include_list=include_list, 
                                                                    exclude_list=exclude_list))
                 copy_singularity_run_script = " ".join(commands)
+                if logger.level >= logging.INFO:
+                    logger.info(copy_singularity_run_script)
+                    
                 result: CapturedBashExecutionResult = BashClient.execute_command(copy_singularity_run_script)
                 if result.returncode != 0:
+                    if logger.level >= logging.INFO:
+                        logger.info(". ".join(result.stderr if result.stderr else []))
+                        logger.info(". ".join(result.stdout if result.stdout else []))
+                
                     return None, str(result.stderr)
                 shutil.rmtree(temp_path, ignore_errors=True)
             max_uptime = self.settings.workers.datamover_workers.maximum_uptime_in_seconds

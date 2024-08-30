@@ -146,18 +146,7 @@ def check_request(current_request, endpoints: List[EndpointDescription]):
 def check_response(result):
     return result
 
-# def parse_app_host_url(url: str):
-#     app_host_parts = url.split("://")
-#     scheme = None
-#     app_host = None
-#     service_port = None
-#     if len(app_host_parts) > 1:
-#         scheme = app_host_parts[0]
-#         host_port = app_host_parts[1].split(":")
-#     else:
-#         host_port = app_host_parts[0].split(":")
-#     app_host = host_port[0]
-#     if len(host_port) > 1:
-#         service_port = host_port[1]
+setup_logging()
+print("Initialising application")
+initialize_app(application)
 
-#     return scheme, app_host, service_port

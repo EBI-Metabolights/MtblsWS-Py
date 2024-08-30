@@ -40,7 +40,11 @@ class SlurmClient(HpcClient):
         minutes = (time_in_seconds % 3600) // 60
         secs = time_in_seconds % 60
         return f"{int(hours):02}:{int(minutes):02}:{int(secs):02}"
-        
+
+    def get_job_name_env_variable(self):
+        return "SLURM_JOB_NAME"
+    
+    
     def submit_hpc_job(self, script_path: str, job_name: str, output_file=None, error_file=None, account=None, queue: Union[None, str] = None, timeout: Union[None, float]=30.0, runtime_limit: Union[None, str] = None) -> int:
         if not queue:
             queue = get_settings().hpc_cluster.datamover.queue_name
@@ -171,7 +175,7 @@ class SlurmClient(HpcClient):
         content.append("")
         content.extend(inputs)
         basename = os.path.basename(script_path).replace(".", "_")
-        
+        logger.debug(f"Script content:\n{content}")
         content = [f"{x}\n" for x in content]
         temp_file_name =  f"{basename}_slurm_script_{str(uuid.uuid4())}.sh"
         file_input_path = os.path.join(get_settings().server.temp_directory_path, temp_file_name)

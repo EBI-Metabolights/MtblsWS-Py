@@ -39,6 +39,9 @@ class LsfClient(HpcClient):
         minutes = (time_in_seconds % 3600) // 60
         return f"{int(hours):02}:{int(minutes):02}"
     
+    def get_job_name_env_variable(self):
+        return "LSB_JOBNAME"
+    
     def submit_hpc_job(self, script_path: str, job_name: str, output_file=None, error_file=None, account=None, queue: Union[None, str] = None, timeout: Union[None, float]=30.0, runtime_limit: Union[None, str] = None) -> int:
         if not queue:
             queue = get_settings().hpc_cluster.datamover.queue_name

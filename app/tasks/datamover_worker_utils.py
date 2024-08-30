@@ -1,7 +1,6 @@
 import os
 import socket
 import time
-import traceback
 from typing import List
 
 import kombu
@@ -33,11 +32,24 @@ def create_datamover_worker(worker_name: str):
     args = worker_config.broker_queue_names.split(",")
     # args.append(name)
     sif_image_file_url = os.environ.get("SINGULARITY_IMAGE_FILE_URL")
-
+    config_file_path = os.environ.get("DATAMOVER_CONFIG_FILE_PATH", default="")
+    if not config_file_path:
+        config_file_path = os.path.realpath(worker_config.singularity_image_configuration.config_file_path)
+        if not config_file_path:
+            config_file_path = os.path.realpath("datamover-config.yaml")
+    
+    secrets_folder_path = os.environ.get("DATAMOVER_SECRETS_PATH", default="")
+    if not secrets_folder_path:
+        secrets_folder_path = os.path.realpath(worker_config.singularity_image_configuration.secrets_path)
+        if not secrets_folder_path:
+            secrets_folder_path = os.path.realpath(".datamover-secrets")
+                    
     job_id, _ = client.run_singularity(
         name, command, ",".join(args) + f" {name}", 
         unique_task_name=False,
-        sif_image_file_url=sif_image_file_url
+        sif_image_file_url=sif_image_file_url, 
+        source_config_file_path=config_file_path, 
+        source_secrets_folder_path=secrets_folder_path
     )
 
     return job_id
@@ -131,14 +143,14 @@ def restart_datamover_worker(worker_name: str):
         return False
 
     create_queue(name)
-
-    worker_version = ping_datamover_worker(worker_name)
-    if not worker_version:
-        print("Datamover worker is not active.")
-        return False
-    else:
-        print(f"Datamover worker '{name}' is active now.")
-        return True
+    return True
+    # worker_version = ping_datamover_worker(worker_name)
+    # if not worker_version:
+    #     print("Datamover worker is not active.")
+    #     return False
+    # else:
+    #     print(f"Datamover worker '{name}' is active now.")
+    #     return True
 
 
 def ping_datamover_worker(worker_name: str, retry=1, timeout=5, wait_period=1):
@@ -158,7 +170,6 @@ def ping_datamover_worker(worker_name: str, retry=1, timeout=5, wait_period=1):
             else:
                 time.sleep(wait_period)
         except Exception as ex:
-            traceback.format_exception(ex)
             print(f"No response from datamover worker {name}: {str(ex)}")
 
     return None

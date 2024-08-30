@@ -1,14 +1,12 @@
 import logging
 import os
 from typing import Any, Dict, List, Set
-from app.config import get_settings
 
+from app.config import get_settings
 from app.tasks.hpc_client import HpcClient, HpcJob
 from app.tasks.hpc_utils import get_new_hpc_client
 from app.tasks.system_monitor_tasks.utils import (
-    check_and_get_monitor_session,
-    generate_random_name,
-)
+    check_and_get_monitor_session, generate_random_name)
 from app.tasks.worker import celery
 from app.ws.redis.redis import get_redis_server
 
@@ -128,8 +126,21 @@ def create_datamover_worker(
     )
     args = worker_config.broker_queue_names
     sif_image_file_url = os.environ.get("SINGULARITY_IMAGE_FILE_URL")
-
-    client.run_singularity(name, command, args, unique_task_name=False, sif_image_file_url=sif_image_file_url)
+    config_file_path = os.environ.get("DATAMOVER_CONFIG_FILE_PATH", default="")
+    if not config_file_path:
+        config_file_path = os.path.realpath(worker_config.singularity_image_configuration.config_file_path)
+        if not config_file_path:
+            config_file_path = os.path.realpath("datamover-config.yaml")
+    
+    secrets_folder_path = os.environ.get("DATAMOVER_SECRETS_PATH", default="")
+    if not secrets_folder_path:
+        secrets_folder_path = os.path.realpath(worker_config.singularity_image_configuration.secrets_path)
+        if not secrets_folder_path:
+            secrets_folder_path = os.path.realpath(".datamover-secrets")
+    client.run_singularity(name, command, args, unique_task_name=False, 
+                            sif_image_file_url=sif_image_file_url, 
+                            source_config_file_path=config_file_path, 
+                            source_secrets_folder_path=secrets_folder_path)
     message = "New worker is triggered."
     results[name] = [message]
     logger.info(message)
