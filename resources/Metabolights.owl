@@ -3425,12 +3425,12 @@
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000069 -->
 
-    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000069">
+    <owl:DeprecatedClass rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000069">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006" />
         <rdfs:isDefinedBy>A study of the complete set of lipids produced in a given cell or organism
             under specific conditions.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">Lipidomics</rdfs:label>
-    </owl:Class>
+    </owl:DeprecatedClass>
 
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000070 -->
