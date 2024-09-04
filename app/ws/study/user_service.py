@@ -20,13 +20,12 @@ class UserService(object):
     def get_instance(cls):
         if not cls.instance:
             cls.instance = UserService()
-            cls.db_manager = DBManager.get_instance()
             cls.study_settings = get_study_settings()
         return cls.instance
     
     def get_user_studies(self, user_token):
         try:
-            with self.db_manager.session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 base_query = db_session.query(Study)
                 query = base_query.join(User, Study.users)
                 studies = query.filter(User.apitoken == user_token).all()
@@ -37,7 +36,7 @@ class UserService(object):
     def validate_user_has_write_access(self, user_token, study_id):
 
         try:
-            with self.db_manager.session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 base_query = db_session.query(User.id, User.username, User.role, User.status, User.apitoken)
                 query = base_query.join(Study, User.studies)
                 user = query.filter(Study.acc == study_id, User.apitoken == user_token,
@@ -47,7 +46,7 @@ class UserService(object):
 
         if user:
             return user
-        with self.db_manager.session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             study = db_session.query(Study.acc).filter(Study.acc == study_id).first()
             if study:
                 return self.validate_user_has_curator_role(user_token)
@@ -57,7 +56,7 @@ class UserService(object):
         if not study_id:
             raise MetabolightsAuthorizationException(message=f"Not a valid study id")
         try:
-            with self.db_manager.session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 base_query = db_session.query(Study.acc, Study.status, Study.obfuscationcode)
                 study = base_query.filter(Study.acc == study_id).first()
                 if not study:
@@ -116,7 +115,7 @@ class UserService(object):
             allowed_status_list = [UserStatus.ACTIVE.value]
 
         try:
-            with self.db_manager.session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(User.id, User.username, User.role, User.status, User.apitoken, User.password)
                 db_user = filter_clause(query).first()
         except Exception as e:
@@ -132,7 +131,7 @@ class UserService(object):
         else:
             raise MetabolightsAuthorizationException(message=f"Invalid user or credential")
 
-    def get_simplified_user_by_username(self, user_name) -> Optional[SimplifiedUserModel]:
+    def get_simplified_user_by_username(self, user_name) -> Union[None, SimplifiedUserModel]:
         if not user_name:
             raise MetabolightsException(message=f"User token is not valid")
 
@@ -140,7 +139,7 @@ class UserService(object):
 
         return self.get_simplified_user_by_user_field(filter_clause)
 
-    def get_simplified_user_by_token(self, user_token) -> Optional[SimplifiedUserModel]:
+    def get_simplified_user_by_token(self, user_token) -> Union[None, SimplifiedUserModel]:
         if not user_token:
             raise MetabolightsException(message=f"User token is not valid")
 
@@ -148,16 +147,16 @@ class UserService(object):
 
         return self.get_simplified_user_by_user_field(filter_clause)
 
-    def get_simplified_user_by_user_field(self, filter_clause) -> Optional[SimplifiedUserModel]:
+    def get_simplified_user_by_user_field(self, filter_clause) -> Union[None, SimplifiedUserModel]:
         try:
-            with self.db_manager.session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(User)
                 db_user: User = filter_clause(query).first()
         except Exception as e:
             raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
 
         if db_user:
-            m_user = SimplifiedUserModel.from_orm(db_user)
+            m_user = SimplifiedUserModel.model_validate(db_user)
             m_user.email = m_user.email.lower()
             m_user.userName = m_user.userName.lower()
             m_user.fullName = m_user.firstName + " " + m_user.lastName
@@ -173,7 +172,7 @@ class UserService(object):
         return  self.get_db_user_by_filter_clause(filter_clause=filter_clause)
 
 
-    def get_db_user_by_user_name(self, user_name: str) -> Optional[UserModel]:
+    def get_db_user_by_user_name(self, user_name: str) -> Union[None, UserModel]:
         filter_clause = lambda query: query.filter(User.username == user_name)
         m_user =  self.get_db_user_by_filter_clause(filter_clause=filter_clause)
         m_user.email = m_user.email.lower()
@@ -183,16 +182,16 @@ class UserService(object):
         m_user.joinDate = datetime_to_int(m_user.joinDate)
         return m_user
 
-    def get_db_user_by_filter_clause(self, filter_clause) -> Optional[UserModel]:
+    def get_db_user_by_filter_clause(self, filter_clause) -> Union[None, UserModel]:
         try:
-            with self.db_manager.session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(User)
                 db_user: User = filter_clause(query).first()
         except Exception as e:
             raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
 
         if db_user:
-            m_user = UserModel.from_orm(db_user)
+            m_user = UserModel.model_validate(db_user)
             return m_user
         else:
             raise MetabolightsAuthorizationException(message=f"User not in database")
@@ -200,7 +199,7 @@ class UserService(object):
 
     def get_db_users_by_filter_clause(self, filter_clause=None) -> List[UserModel]:
         try:
-            with self.db_manager.session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(User)
                 if filter_clause:
                     db_users = filter_clause(query).all()
@@ -211,7 +210,7 @@ class UserService(object):
         users: List[UserModel] = []
         if db_users:
             for db_user in db_users:
-                m_user = UserModel.from_orm(db_user)
+                m_user = UserModel.model_validate(db_user)
                 users.append(m_user)
             
         return users

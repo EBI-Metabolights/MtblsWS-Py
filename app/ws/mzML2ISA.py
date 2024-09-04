@@ -174,7 +174,7 @@ class ValidateMzML(Resource):
         if not write_access:
             abort(403)
 
-        return validate_mzml_files(study_id)
+        return self.validate_mzml_files(study_id)
 
     @swagger.operation(
         summary="Validate mzML files and report results",

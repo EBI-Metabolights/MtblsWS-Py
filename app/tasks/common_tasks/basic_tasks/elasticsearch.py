@@ -1,7 +1,6 @@
-import datetime
 import json
 import os
-from app.utils import MetabolightsDBException
+from app.utils import MetabolightsDBException, current_time
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefMetabolite, Study, User
 from app.ws.db.types import StudyStatus
@@ -37,7 +36,7 @@ def reindex_all_public_studies(user_token, send_email_to_submitter=False):
             )
 
             if not result:
-                raise MetabolightsDBException(f"No compound found on db.")
+                raise MetabolightsDBException("No studies found on db.")
             for study in result:
                 studies.append(study)
 
@@ -67,7 +66,7 @@ def reindex_all_studies(user_token, send_email_to_submitter=False):
             result = db_session.query(Study.acc, Study.updatedate).all()
 
             if not result:
-                raise MetabolightsDBException(f"No compound found on db.")
+                raise MetabolightsDBException("No studies found on db.")
             for study in result:
                 studies.append(study)
 
@@ -98,7 +97,7 @@ def reindex_studies_in_list(user_token, studies):
     except Exception as exc:
         raise exc
     return {
-        "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "time": current_time().strftime("%Y-%m-%d %H:%M:%S"),
         "executed_on": os.uname().nodename,
         "total_studies": len(studies),
         "indexed_studies": len(indexed_studies),
@@ -132,7 +131,7 @@ def reindex_all_compounds(user_token, send_email_to_submitter=False):
             metabolites = db_session.query(RefMetabolite.acc, RefMetabolite.updated_date).all()
 
             if not metabolites:
-                raise MetabolightsDBException(f"No compound found on db.")
+                raise MetabolightsDBException("No compound found on db.")
             for metabolite in metabolites:
                 compounds.append(metabolite)
 
@@ -152,7 +151,7 @@ def reindex_all_compounds(user_token, send_email_to_submitter=False):
             raise exc
 
         result = {
-            "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "time": current_time().strftime("%Y-%m-%d %H:%M:%S"),
             "executed_on": os.uname().nodename,
             "total_compounds": len(compounds),
             "indexed_compounds": len(indexed_compounds),

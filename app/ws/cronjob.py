@@ -215,7 +215,7 @@ class cronjob(Resource):
 def curation_log_database_query():
     try:
         settings = get_settings()
-        params = settings.database.connection.dict()
+        params = settings.database.connection.model_dump()
         with psycopg2.connect(**params) as conn:
             sql = open('./resources/updateDB.sql', 'r').read()
             data = pd.read_sql_query(sql, conn)
@@ -244,7 +244,7 @@ def curation_log_database_update(starting_index, ending_index):
         def execute_query(query):
             try:
                 settings = get_settings()
-                params = settings.database.connection.dict()
+                params = settings.database.connection.model_dump()
                 conn = psycopg2.connect(**params)
                 cursor = conn.cursor()
                 cursor.execute(query)
@@ -270,7 +270,7 @@ def curation_log_database_update(starting_index, ending_index):
         # Find the maximum number of Metlite ID
         try:
             settings = get_settings()
-            params = settings.database.connection.dict()
+            params = settings.database.connection.model_dump()
             connection = psycopg2.connect(**params)
             cursor = connection.cursor()
             select_Query = "select max(lpad(replace(acc, 'MTBLS', ''), 4, '0')) as acc_short from studies order by acc_short"
@@ -496,7 +496,7 @@ def MTBLS_statistics_update():
     untarget_NMR = extractUntargetStudy(['NMR'])
     res = untarget_NMR[['studyID']]
     replaceGoogleSheet(df=res, url=get_settings().google.sheets.mtbls_statistics, worksheetName='untarget NMR',
-                       token_path=get_settings().google.connection.google_sheet_api)
+                       googlesheet_key_dict=get_settings().google.connection.google_sheet_api)
 
     ## update untarget LC-MS
     print('-' * 20 + 'UPDATE untarget LC-MS' + '-' * 20)
@@ -504,7 +504,7 @@ def MTBLS_statistics_update():
     untarget_LCMS = extractUntargetStudy(['LC'])
     res = untarget_LCMS[['studyID']]
     replaceGoogleSheet(df=res, url=get_settings().google.sheets.mtbls_statistics, worksheetName='untarget LC-MS',
-                       token_path=get_settings().google.connection.google_sheet_api)
+                       googlesheet_key_dict=get_settings().google.connection.google_sheet_api)
 
     ## update NMR and LC-MS
     print('-' * 20 + 'UPDATE NMR and LC-MS' + '-' * 20)
@@ -513,14 +513,14 @@ def MTBLS_statistics_update():
     df = pd.DataFrame(columns=['studyID', 'dataType'])
     df.studyID, df.dataType = studyID, studyType
     replaceGoogleSheet(df=df, url=get_settings().google.sheets.mtbls_statistics, worksheetName='both NMR and LCMS',
-                       token_path=get_settings().google.connection.google_sheet_api)
+                       googlesheet_key_dict=get_settings().google.connection.google_sheet_api)
 
     ## update NMR sample / assay sheet
     print('-' * 20 + 'UPDATE NMR info' + '-' * 20)
     logger.info('UPDATE NMR info')
     df = getNMRinfo()
     replaceGoogleSheet(df=df, url=get_settings().google.sheets.mtbls_statistics, worksheetName='NMR',
-                       token_path=get_settings().google.connection.google_sheet_api)
+                       googlesheet_key_dict=get_settings().google.connection.google_sheet_api)
 
     ## update MS sample / assay sheet
 
@@ -529,7 +529,7 @@ def MTBLS_statistics_update():
     logger.info('UPDATE LC-MS info')
     df = getLCMSinfo()
     replaceGoogleSheet(df=df, url=get_settings().google.sheets.lc_ms_statistics, worksheetName='LCMS samples and assays',
-                       token_path=get_settings().google.connection.google_sheet_api)
+                       googlesheet_key_dict=get_settings().google.connection.google_sheet_api)
 
 
 def extractUntargetStudy(studyType=None, publicStudy=True):
@@ -548,7 +548,8 @@ def extractUntargetStudy(studyType=None, publicStudy=True):
 
         for studyID in studyIDs:
             print(studyID)
-            source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+            context_path = get_settings().server.service.resources_path
+            source = '{context_path}/studies/{study_id}/descriptors'.format(context_path=context_path, study_id=studyID)
             ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
             try:
                 resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token})
@@ -712,7 +713,8 @@ def getLCMSinfo():
 
 
 def getFileList2(studyID):
-    source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
+    context_path = get_settings().server.service.resources_path
+    source = '{context_path}/studies/{study_id}/files?include_raw_data=false'.format(context_path=context_path, study_id=studyID)
     ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
     try:
         request = urllib.request.Request(ws_url)
@@ -751,10 +753,10 @@ def getFileList2(studyID):
 def getFileList(studyID):
     try:
         source = '/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
-        url = get_host_internal_url() + source
-        request = urllib.request.Request(url)
-        request.add_header('user_token', get_settings().auth.service_account.api_token)
-        response = urllib.request.urlopen(request)
+        internal_url = get_host_internal_url() + source
+        current_request = urllib.request.Request(internal_url)
+        current_request.add_header('user_token', get_settings().auth.service_account.api_token)
+        response = urllib.request.urlopen(current_request)
         content = response.read().decode('utf-8')
         j_content = json.loads(content)
 
@@ -794,7 +796,8 @@ def get_sample_file(studyID, sample_file_name):
     '''
     import io
     try:
-        source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
+        context_path = get_settings().server.service.resources_path
+        source = '{context_path}/studies/{study_id}/sample'.format(context_path=context_path, study_id=studyID)
         ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
         resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
@@ -818,7 +821,8 @@ def get_assay_file(studyID, assay_file_name):
     '''
     import io
     try:
-        source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
+        context_path = get_settings().server.service.resources_path
+        source = '{context_path}/studies/{study_id}/assay'.format(context_path=context_path, study_id=studyID)
         ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
         resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
@@ -841,7 +845,8 @@ def assay_sample_list(studyID):
     import io
 
     try:
-        source = '/metabolights/ws/studies/{study_id}/investigation'.format(study_id=studyID)
+        context_path = get_settings().server.service.resources_path
+        source = '{context_path}/studies/{study_id}/investigation'.format(context_path=context_path, study_id=studyID)
         ws_url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
         resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token})
@@ -862,7 +867,7 @@ def assay_sample_list(studyID):
     except Exception as e:
         logger.info(e)
         print(e)
-        logger.info('Fail to load investigation file from', studyID)
+        logger.info('Fail to load investigation file from ' + studyID)
 
 
 def atoi(text):
@@ -878,15 +883,17 @@ def empty_study_filter(studyID):
     return num > 1700
 
 
-def uniqueOrganism(studyID):
+def get_unique_organisms(studyID):
     '''
     get list of unique organism from study
     :param studyID: studyID
     :return: list of organisms
     '''
     try:
-        host = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port)
-        url = f'{host}{get_settings().server.service.resources_path}/studies/{studyID}/organisms'
+        context_path = get_settings().server.service.resources_path
+        source = '{context_path}/studies/{study_id}/organisms'.format(context_path=context_path, study_id=studyID)
+        url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
+
         resp = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
         data = resp.json()
         org = []
@@ -897,13 +904,13 @@ def uniqueOrganism(studyID):
     except Exception as e:
         logger.error(f'Exception while fetching organism {str(e)}')
         logger.error(f'Fail to load organism for study -  {studyID}')
-        return ''
+        return []
 
 
 def update_species(command_string):
     import re
     studyID = re.search("acc = '(.*?)'", command_string)[1]
-    org_list = uniqueOrganism(studyID)
+    org_list = get_unique_organisms(studyID)
     if len(org_list) > 0:
         org = ';'.join(org_list)
         new_s = re.sub("species ='(.*?)'", "species ='{organism}'".format(organism=org), command_string)

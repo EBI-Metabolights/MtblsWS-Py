@@ -1,4 +1,5 @@
 from typing import List
+
 from pydantic import BaseModel
 
 
@@ -6,14 +7,13 @@ class SingularityImageConfiguration(BaseModel):
     docker_deployment_path: str
     run_singularity_script_template_name: str
     worker_deployment_root_path: str
-    singularity_docker_image_source: str
-    current_singularity_file_descriptor: str
+    gitlab_api_token: str
     user_home_binding_source_path: str
     user_home_binding_target_path: str
     logs_path: str
-    config_file_path: str
-    secrets_path: str
-    shared_paths: List[str]
+    config_file_path: str = "datamover-config.yaml"
+    secrets_path: str = ".datamover-secrets"
+    shared_paths: List[str] = []
 
 
 class DatamoverWorkerSettings(BaseModel):
@@ -23,8 +23,9 @@ class DatamoverWorkerSettings(BaseModel):
     shutdown_signal_wait_time: int
     minimum_datamover_workers: int
     maximum_datamover_workers: int
-    worker_memory: str
-    worker_job_walltime: int = 300
+    worker_memory_in_mb: int = 2 * 1024
+    worker_cpu: int = 2
+    worker_job_walltime_in_secs: int = 7 * 24 * 60 * 60
     start_datamover_worker_script: str
     maximum_uptime_in_seconds: int
     broker_queue_names: str

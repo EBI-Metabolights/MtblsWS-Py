@@ -1,18 +1,16 @@
-
-from datetime import datetime
-from flask import current_app as app
+from typing import Union
 from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 from app.config import get_settings
 
-from app.utils import (MetabolightsException,
+from app.utils import (MetabolightsException, current_time,
                        metabolights_exception_handler)
 from app.ws.redis.redis import get_redis_server
 from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
 
-_banner: str = None
+_banner: Union[None, str] = None
 _last_banner_check_timestamp: int=0
 
 def get_banner():
@@ -23,7 +21,7 @@ def get_banner():
     settings = get_settings()
     if settings:
         update_check_time_delta = settings.server.service.banner_check_period_in_seconds    
-    now = int(datetime.now().timestamp())
+    now = int(current_time().timestamp())
     current_banner = _banner
     if now - _last_banner_check_timestamp > update_check_time_delta:
         _banner = None
@@ -38,7 +36,7 @@ def get_banner():
                 new_banner = new_banner.decode("utf-8")
                 if new_banner != current_banner:
                     _banner = new_banner
-                    print(f"Banner is updated. New banner message: {_banner}")
+                    # print(f"Banner is updated. New banner message: {_banner}")
         except Exception as ex:
             print("Failed to load banner")
             _banner = current_banner

@@ -78,7 +78,7 @@ class MetaSpaceIsaApiClient(Resource):
                 copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
                 # status, message = convert_to_isa(to_path, study_id)
             except Exception as e:
-                logger.error('Could not copy files from %s to %s, Error ', from_path, to_path, str(e))
+                logger.error('Could not copy files from %s to %s, Error %s', from_path, to_path, str(e))
                 abort(409, message="Something went wrong with copying the ISA-Tab templates to study " + str(study_id))
 
             isa_study, isa_inv, std_path = isa_api.get_isa_study(study_id, user_token, skip_load_tables=True,

@@ -5,6 +5,7 @@ api_version
 .secrets*
 .test_data
 .old/
+*.old.py
 x_*/
 configs
 celerybeat-*
@@ -89,8 +90,8 @@ logs.txt
 ssl/
 
 # files for keeping PID
-config.yaml
-.secrets
+*config.yaml
+.*secrets
 /app*.pid.old
 /app*.pid
 /tests/.pytest_cache/

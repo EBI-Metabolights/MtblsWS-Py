@@ -3,7 +3,7 @@ import os
 import pathlib
 import shutil
 import sys
-from typing import Dict, List
+from typing import Dict, List, Union
 import uuid
 import zipfile
 
@@ -111,9 +111,9 @@ def create_test_file(study_id, study_test_path: str, item: FileDescriptor):
 def create_study_test_data_files(
     study_id_list: List[str],
     source_path=None,
-    target_path: str = None,
+    target_path: Union[None, str] = None,
     flask_app=None,
-    settings: StudySettings = None,
+    settings: Union[None, StudySettings] = None,
 ):
     if not study_id_list:
         raise MaintenanceException(message="At least one study should be selected")

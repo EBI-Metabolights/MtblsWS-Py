@@ -24,7 +24,7 @@ def metabolon_confirm(self, study_id: str, study_location: str, email: str, targ
 
     message = {}
     success = False
-    start = datetime.datetime.now()
+    start = current_time()
     try:
         # pipeline_folder = os.path.join(get_settings().study.mounted_paths.study_internal_files_root_path, study_id, "metabolon_pipeline")
         # Validate all mzML files, in both study and upload folders
@@ -90,7 +90,7 @@ def metabolon_confirm(self, study_id: str, study_location: str, email: str, targ
         message.update({"Failure reason": f"{str(ex)}"})
         raise ex
     finally:
-        end = datetime.datetime.now()
+        end = current_time()
         time_difference = end - start
         hours, remainder = divmod(time_difference.total_seconds(), 3600)
         minutes, seconds = divmod(remainder, 60)

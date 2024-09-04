@@ -9,13 +9,11 @@ logger = logging.getLogger('wslog')
 
 class CompoundService(object):
     instance = None
-    db_manager = None
     
     @classmethod
     def get_instance(cls):
         if not cls.instance:
             cls.instance = CompoundService()
-            cls.db_manager = DBManager.get_instance()
         return cls.instance
     
     def get_all_compounds(self):
@@ -33,5 +31,5 @@ class CompoundService(object):
             if not compound:
                 raise MetabolightsDBException(f"{compound_acc} does not exist")
 
-            compound_model = models.MetaboLightsCompoundModel.from_orm(compound)
+            compound_model = models.MetaboLightsCompoundModel.model_validate(compound)
             return compound_model

@@ -30,6 +30,7 @@ from app.ws.db_connection import get_all_studies
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.user_service import UserService
 from app.ws.utils import safe_str
+from app.tasks.common_tasks.admin_tasks.create_jira_tickets import update_or_create_jira_issue_task
 
 # https://jira.readthedocs.io
 options = {
@@ -86,16 +87,11 @@ class Jira(Resource):
         # param validation
 
         UserService.get_instance().validate_user_has_curator_role(user_token)
+        inputs = {"user_token": user_token}
+        task = update_or_create_jira_issue_task.apply_async(kwargs=inputs)
+        return {"message": f"Creating JIRA ticket task is stated with id : {task.id}"}
 
-
-        status, message, updated_studies_list = update_or_create_jira_issue(user_token, True)
-
-        if status:
-            return {'Success': message}
-        else:
-            return {'Error': message}
-
-
+# deprecated funtion - moved to celery worker
 def update_or_create_jira_issue(user_token, is_curator):
     try:
         params = get_settings().jira.connection

@@ -1,10 +1,12 @@
 import datetime
 from enum import Enum
+import logging
 import pathlib
-from typing import List
+from typing import List, Union
 
 from pydantic import BaseModel
 from app.config import get_settings
+from app.services.storage_service.acl import Acl
 from app.services.storage_service.models import (
     SyncCalculationStatus,
     SyncCalculationTaskResult,
@@ -15,7 +17,9 @@ from app.tasks.bash_client import BashExecutionResult, CapturedBashExecutionResu
 from app.tasks.datamover_tasks.basic_tasks.file_management import create_folders
 from app.tasks.hpc_worker_bash_runner import BashExecutionTaskStatus, HpcWorkerBashRunner, TaskDescription
 from app.tasks.utils import get_current_utc_time_string, get_utc_time_string_from_timestamp
+from app.utils import current_time
 
+logger = logging.getLogger("wslog_datamover")
 
 class RsyncResult(BaseModel):
     valid_result: bool = False
@@ -28,13 +32,13 @@ class RsyncResult(BaseModel):
     error_message: str = ""
     success_message: str = ""
 
-def create_remote_path(target_path: str):
-    inputs = {"folder_paths": target_path, "exist_ok": True}
+def create_remote_path(target_path: Union[str, List[str]], acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE):
+    inputs = {"folder_paths": target_path, "exist_ok": True, "acl": acl}
     task = create_folders.apply_async(kwargs=inputs, expires=10)
     try:
         task.get(timeout=get_settings().hpc_cluster.configuration.task_get_timeout_in_seconds)
     except Exception as ex:
-        pass
+        logger.error(f"Failed to get result of the task: create folder: {target_path}. {str(ex)}")
     
 
 class HpcRsyncWorker:
@@ -47,12 +51,13 @@ class HpcRsyncWorker:
         include_list=None,
         exclude_list=None,
         rsync_arguments="-auv",
-        stdout_log_file_path: str = None,
-        stderr_log_file_path: str = None,
+        stdout_log_file_path: Union[None, str] = None,
+        stderr_log_file_path: Union[None, str] = None,
+        identity_file: Union[None, str] = None,
     ) -> SyncTaskResult:
         create_remote_path([source_path, target_path])
         command = HpcRsyncWorker.build_rsync_command(
-            source_path, target_path, include_list, exclude_list, rsync_arguments=rsync_arguments
+            source_path, target_path, include_list, exclude_list, rsync_arguments=rsync_arguments, identity_file=identity_file
         )
         runner = HpcWorkerBashRunner(
             task_name=task_name,
@@ -65,6 +70,7 @@ class HpcRsyncWorker:
 
         return HpcRsyncWorker.get_sync_task_result(task_status)
 
+    @staticmethod
     def get_rsync_status(task_name, study_id) -> SyncTaskResult:
         runner = HpcWorkerBashRunner(task_name=task_name, study_id=study_id)
         task_status: BashExecutionTaskStatus = runner.get_bash_execution_status(result_only=True)
@@ -79,8 +85,9 @@ class HpcRsyncWorker:
         include_list=None,
         exclude_list=None,
         rsync_arguments="-aunv",
-        stdout_log_file_path: str = None,
-        stderr_log_file_path: str = None,
+        stdout_log_file_path: Union[None, str] = None,
+        stderr_log_file_path: Union[None, str] = None,
+        identity_file: Union[None, str] = None
     ) -> SyncCalculationTaskResult:
         
         create_remote_path([source_path, target_path])
@@ -90,6 +97,7 @@ class HpcRsyncWorker:
             include_list,
             exclude_list,
             rsync_arguments=rsync_arguments,
+            identity_file=identity_file
         )
         runner = HpcWorkerBashRunner(
             task_name=task_name,
@@ -115,7 +123,7 @@ class HpcRsyncWorker:
         task_description = task_status.description
         sync_required = False
         
-        last_upate_time_val = datetime.datetime.now(datetime.timezone.utc)
+        last_upate_time_val = current_time()
         last_update_time = last_upate_time_val.strftime(UTC_SIMPLE_DATE_FORMAT)
         last_update_timestamp = last_upate_time_val.timestamp()
         calc_result = SyncCalculationTaskResult()
@@ -208,9 +216,9 @@ class HpcRsyncWorker:
 
                     messages.append(f"Total size: {rsync_result.total_size_str}.")
                     if rsync_result.number_of_files == 0 and rsync_result.total_bytes > 0:
-                        messages.append(f"Files are empty.")
-                except Exception as exc:
-                    pass
+                        messages.append("Files are empty.")
+                except Exception as ex:
+                    logger.warn(f"There is no 'total size is' line. {str(ex)}")
 
             if trimmed_files_count >= 0 and len(rsync_result.files) > trimmed_files_count:
                 trimmed_files = stdout_lines[:trimmed_files_count]
@@ -279,21 +287,29 @@ class HpcRsyncWorker:
 
     @staticmethod
     def build_rsync_command(
-        source_path: str, target_path: str, include_list=None, exclude_list=None, rsync_arguments: str = "-aunv"
+        source_path: str, target_path: str, include_list=None, exclude_list=None, rsync_arguments: str = "-aunv", 
+        identity_file: Union[None, str] = None, created_remote_path: Union[None, str] = None
     ):
         source_path = source_path.rstrip("/")
         target_path = target_path.rstrip(".").rstrip("/")
 
         command_terms = ["rsync"]
         command_terms.append(rsync_arguments)
+        
+        if identity_file and (":" in source_path or ":" in target_path):
+            command_terms.append("-e")
+            ssh_command = f"ssh -i {identity_file}"
+            command_terms.append(f'\"{ssh_command}\"')
+        if created_remote_path:
+            command_terms.append(f'-–rsync-path="mkdir -p {created_remote_path}/ && rsync"')
         if include_list:
             for item in include_list:
                 command_terms.append(f"--include='{item}'")
         if exclude_list:
             for item in exclude_list:
                 command_terms.append(f"--exclude='{item}'")
-        command_terms.append(f"'{source_path}/.'")
-        command_terms.append(f"'{target_path}/'")
+        command_terms.append(f'"{source_path}/."')
+        command_terms.append(f'"{target_path}/"')
 
         command = " ".join(command_terms)
         return command

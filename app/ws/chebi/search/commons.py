@@ -1,3 +1,4 @@
+from typing import Union
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.search.models import CompoundSearchResultModel, SearchResource, CompoundSearchResponseModel
 from app.ws.chebi.search.utils import get_term_in_source, find_term_index_in_source
@@ -62,8 +63,8 @@ def search_hits_with_search_category(search_name: str,
                                      curation_table_index: int,
                                      response: CompoundSearchResponseModel,
                                      stars: StarsCategory = StarsCategory.ALL,
-                                     ws_proxy: ChebiWsProxy = None,
-                                     curated_metabolite_table: CuratedMetaboliteTable = None
+                                     ws_proxy: Union[None, ChebiWsProxy] = None,
+                                     curated_metabolite_table: Union[None, CuratedMetaboliteTable] = None
                                      ):
     if not curated_metabolite_table:
         curated_metabolite_table = CuratedMetaboliteTable.get_instance()

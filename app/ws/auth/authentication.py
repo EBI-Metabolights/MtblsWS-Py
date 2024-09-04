@@ -12,9 +12,8 @@ from app.config import get_settings
 from app.utils import (MetabolightsAuthorizationException,
                        MetabolightsException, metabolights_exception_handler)
 from app.ws.auth.auth_manager import AuthenticationManager
-from app.ws.db.dbmanager import DBManager
+from app.ws.auth.utils import get_permission_by_obfuscation_code, get_permission_by_study_id
 from app.ws.db.models import StudyAccessPermission, UserModel
-from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus, UserRole, UserStatus
 from app.ws.redis.redis import RedisStorage, get_redis_server
 from app.ws.study.user_service import UserService
@@ -187,7 +186,7 @@ class AuthLogin(Resource):
 
         user: UserModel = UserService.get_instance().get_db_user_by_user_name(username)
         
-        resp = make_response(jsonify({"content": user.dict(), "message": "Authentication successful", "err": None}), 200)
+        resp = make_response(jsonify({"content": user.model_dump(), "message": "Authentication successful", "err": None}), 200)
         resp.headers["Access-Control-Expose-Headers"] = "Jwt, User"
         resp.headers["jwt"] = token
         resp.headers["user"] = username
@@ -338,7 +337,7 @@ class AuthUser(Resource):
             try:
                 UserService.get_instance().validate_username_with_submitter_or_super_user_role(username)
                 m_user = UserService.get_instance().get_simplified_user_by_username(username)
-                response_data = {"content": json.dumps({"owner": m_user.dict()}), "message": None, "err": None}
+                response_data = {"content": json.dumps({"owner": m_user.model_dump()}), "message": None, "err": None}
                 response = make_response(response_data, 200)
                 response.headers["Access-Control-Allow-Origin"] = "*"
             except Exception as e:
@@ -410,10 +409,10 @@ class AuthUserStudyPermissions(Resource):
             user_token = request.headers["user_token"]
         permission = StudyAccessPermission()
         if not study_id:
-            return jsonify(permission.dict()) 
+            return jsonify(permission.model_dump()) 
                   
-        filter_clause = lambda query: query.filter(Study.acc == study_id)
-        return update_study_permission(permission, user_token, filter_clause)
+        permission = get_permission_by_study_id(study_id, user_token)
+        return jsonify(permission.model_dump()) 
 
 class AuthUserStudyPermissions2(Resource):
     @swagger.operation(
@@ -464,78 +463,7 @@ class AuthUserStudyPermissions2(Resource):
             user_token = request.headers["user_token"]
         permission = StudyAccessPermission()
         if not obfuscation_code:
-            return jsonify(permission.dict()) 
-                  
-        filter_clause = lambda query: query.filter(Study.obfuscationcode == obfuscation_code)
-        return update_study_permission(permission, user_token, filter_clause, view_in_review_studies=True)
-                      
-
-def update_study_permission(permission: StudyAccessPermission, user_token, filter, view_in_review_studies=False):
-    with DBManager.get_instance().session_maker() as db_session:
-        query = db_session.query(Study.acc, Study.status, Study.obfuscationcode)
-        study = filter(query).first()
-        if not study:
-            return jsonify(permission.dict())
-        study_id = study['acc']
-        permission.studyId = study_id
+            return jsonify(permission.model_dump()) 
         
-        if view_in_review_studies and StudyStatus(study['status']) == StudyStatus.INREVIEW:
-            permission.studyStatus = StudyStatus(study['status']).name
-            permission.obfuscationCode = study['obfuscationcode']
-            permission.view = True
-            permission.edit = False
-            permission.delete = False
-            return jsonify(permission.dict())
-        
-        anonymous_user = True
-        try:
-            user = None
-            if user_token: 
-                user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
-            if user:
-                anonymous_user = False
-        except Exception:
-            pass
-        
-        if anonymous_user:
-            if StudyStatus(study['status']) == StudyStatus.PUBLIC:
-                permission.studyStatus = StudyStatus(study['status']).name
-                permission.view = True
-                permission.edit = False
-                permission.delete = False
-                return jsonify(permission.dict())
-            else:
-                return jsonify(permission.dict())
-                        
-        permission.userName = user['username']
-        base_query = db_session.query(User.id, User.username, User.role, User.status)
-        query = base_query.join(Study, User.studies)
-        owner = query.filter(Study.acc == study_id, User.apitoken == user['apitoken'],
-                            User.status == UserStatus.ACTIVE.value).first()
-
-        if owner:
-            permission.submitterOfStudy = True
-            
-        permission.studyStatus = StudyStatus(study['status']).name
-        permission.userRole = UserRole(user['role']).name
-        if UserRole(user['role']) == UserRole.ROLE_SUPER_USER:
-            permission.obfuscationCode = study['obfuscationcode']
-            permission.view = True
-            permission.edit = True
-            permission.delete = True
-            return jsonify(permission.dict())
-            
-        if owner:
-            permission.obfuscationCode = study['obfuscationcode']
-            permission.view = True
-            permission.edit = True
-            permission.delete = True
-            return jsonify(permission.dict())             
-        else:
-            if StudyStatus(study['status']) == StudyStatus.PUBLIC:
-                permission.view = True
-                permission.edit = False
-                permission.delete = False
-                return jsonify(permission.dict())
-            else:
-                return jsonify(permission.dict())
+        permission = get_permission_by_obfuscation_code(obfuscation_code, user_token)
+        return jsonify(permission.model_dump())

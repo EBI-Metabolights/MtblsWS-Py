@@ -107,7 +107,7 @@ def unzip_folders(self, study_metadata_path: str, files: Dict[str, Any], remove_
 @celery.task(
     bind=True, base=MetabolightsTask, name="app.tasks.datamover_tasks.curation_tasks.data_file_operations.move_data_files"
 )
-def move_data_files(self, study_id: str=None, files: Dict[str, Any]=None,  target_location:str = "RECYCLE_BIN", override: bool = False, task_name=None):
+def move_data_files(self, study_id: Union[None, str] = None, files: Dict[str, Any]=None,  target_location:str = "RECYCLE_BIN", override: bool = False, task_name=None):
     if not study_id or not files:
         raise MaintenanceException(message="Invalid input")
     

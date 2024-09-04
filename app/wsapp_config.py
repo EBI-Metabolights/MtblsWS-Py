@@ -55,7 +55,7 @@ from app.ws.ftp.ftp_operations import (FtpFolderPermission,
 from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.internal import BannerMessage
-from app.ws.isaAssay import StudyAssay, StudyAssayDelete
+from app.ws.isaAssay import StudyAssay, StudyAssayDelete, StudySampleTemplate
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaStudy import (StudyContacts, StudyDescription, StudyDescriptors,
                              StudyFactors, StudyMetaInfo, StudyProtocols,
@@ -102,7 +102,7 @@ from app.ws.study_files import (CopyFilesFolders, DeleteAsperaFiles, FileList,
                                 UnzipFiles)
 from app.ws.system import SystemTestEmail
 from app.ws.table_editor import (AddRows, ColumnsRows, ComplexColumns,
-                                 GetAssayMaf, GetTsvFile, SimpleColumns)
+                                 GetAssayMaf, GetTsvFile, SimpleColumns, TsvFileRows)
 # from app.ws.tasks.study_file_encoding import FileEncodingChecker
 from app.ws.tasks.create_json_files import (PublicStudyJsonExporter,
                                             StudyJsonExporter)
@@ -119,12 +119,12 @@ def configure_app(flask_app):
     settings = get_settings()
     flask_app.config.from_object(settings.flask)
     # These code completes WsClient initialization using flask app context
-    if not WsClient.search_manager:
+    if not WsClient.default_search_manager:
         chebi_proxy = get_chebi_ws_proxy()
         curation_table_file_path = get_settings().chebi.pipeline.curated_metabolite_list_file_location
         curation_table = CuratedMetaboliteTable.get_instance(curation_table_file_path)
         chebi_search_manager = ChebiSearchManager(ws_proxy=chebi_proxy, curated_metabolite_table=curation_table)
-        WsClient.search_manager = chebi_search_manager
+        WsClient.default_search_manager = chebi_search_manager
 
     if not WsClient.email_service:
         email_settings = settings.email
@@ -153,7 +153,7 @@ def configure_app(flask_app):
     print(f"STUDY_INTERNAL_FILES_ROOT_PATH:\t{study_settings.mounted_paths.study_internal_files_root_path}")
     print(f"STUDY_READONLY_FILES_ROOT_PATH:\t{study_settings.mounted_paths.study_readonly_files_root_path}")
     print(f"ELASTICSEARCH_HOST:\t\t{settings.elasticsearch.connection.host}")
-    print(f"LSF_HOST:\t\t\t{settings.hpc_cluster.datamover.connection.host}")
+    print(f"HPC_DATAMOVER_HOST:\t\t{settings.hpc_cluster.datamover.connection.host}")
     print(f"REPORTS_ROOT_PATH:\t\t{settings.study.mounted_paths.reports_root_path}")
     print(f"COMPOUND_FILES_ROOT_PATH:\t{study_settings.mounted_paths.compounds_root_path}")
     print(f"MAIL_SERVER:\t\t\t{settings.email.email_service.connection.host}:{settings.email.email_service.connection.port}")
@@ -164,7 +164,7 @@ def configure_app(flask_app):
     import yaml
     if settings.flask.DEBUG:
         import copy
-        masked_copy = copy.deepcopy(settings.dict())
+        masked_copy = copy.deepcopy(settings.model_dump())
         mask_settings(masked_copy)
         masked_settings_text = yaml.dump(masked_copy)
         print(masked_settings_text)
@@ -180,19 +180,22 @@ def mask_settings(data: dict):
 def initialize_app(flask_app):
     configure_app(flask_app)
 
-    CORS(flask_app, resources={get_settings().server.service.cors_resources_path: 
+    cors_path = get_settings().server.service.cors_resources_path
+    context_path = get_settings().server.service.resources_path
+    cors_resources_path = f"{context_path}{cors_path}"
+    CORS(flask_app, resources={cors_resources_path: 
                                {"origins": get_settings().server.service.cors_hosts, 
                                 "methods": {"GET, HEAD, POST, OPTIONS, PUT, DELETE"}}})
 
-    res_path = get_settings().server.service.resources_path 
+    api_doc = f"{context_path}{get_settings().server.service.api_doc}"
     api = swagger.docs(Api(flask_app),
                        description='MetaboLights RESTful WebService',
                        apiVersion=get_settings().server.description.metabolights_api_version,
                        basePath=get_settings().server.service.app_host_url,
-                       api_spec_url=get_settings().server.service.api_doc,
-                       resourcePath=res_path
+                       api_spec_url=api_doc,
+                       resourcePath=context_path
                        )
-
+    res_path = context_path
     api.add_resource(About, res_path)
     api.add_resource(AboutServer, res_path + "/ebi-internal/server-info")
     api.add_resource(AuthLogin, res_path + "/auth/login")
@@ -235,6 +238,7 @@ def initialize_app(flask_app):
     api.add_resource(UnzipFiles, res_path + "/studies/<string:study_id>/files/unzip")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")
     api.add_resource(IsaTabSampleFile, res_path + "/studies/<string:study_id>/sample")
+    api.add_resource(StudySampleTemplate, res_path + "/studies/<string:study_id>/sample-template")
     api.add_resource(IsaTabAssayFile, res_path + "/studies/<string:study_id>/assay")
     api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays")
     api.add_resource(StudyAssayDelete, res_path + "/studies/<string:study_id>/assays/<string:assay_file_name>")
@@ -317,6 +321,7 @@ def initialize_app(flask_app):
     api.add_resource(AddRows, res_path + "/studies/<string:study_id>/rows/<string:file_name>")
     api.add_resource(GetTsvFile, res_path + "/studies/<string:study_id>/<string:file_name>")
     api.add_resource(CompareTsvFiles, res_path + "/studies/<string:study_id>/compare-files")
+    api.add_resource(TsvFileRows, res_path + "/studies/<string:study_id>/isa-table-rows")
 
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")

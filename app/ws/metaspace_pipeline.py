@@ -178,7 +178,7 @@ class MetaspacePipeLine(Resource):
             except AttributeError as e:
                 abort(417, message="Missing attribute/element in JSON string" + str(e))
             except Exception as e:
-                abort(417, str(e))
+                abort(417, message=str(e))
 
         if investigation:
             return {"Success": "METASPACE data imported successfully"}

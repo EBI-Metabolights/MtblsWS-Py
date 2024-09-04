@@ -18,8 +18,29 @@ settings: CelerySettings = get_settings().celery
 
 rs: RedisConnection = settings.broker
 
-broker_url = f"redis://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}"
-result_backend = broker_url
+broker_url = None
+broker_transport_options = None
+result_backend_transport_options = None
+if rs.connection_type == "redis":
+    rc = rs.redis_connection
+    broker_url = (
+        f"redis://:{rs.redis_password}@{rc.redis_host}:{rc.redis_port}/{rs.redis_db}"
+    )
+    result_backend = broker_url
+else:
+    sc = rs.sentinel_connection
+    broker_url = ";".join(
+        [
+            f"sentinel://:{rs.redis_password}@{host.name}:{host.port}/{rs.redis_db}"
+            for host in sc.hosts
+        ]
+    )
+    broker_transport_options = {
+        "master_name": sc.master_name,
+        "sentinel_kwargs": {"password": rs.redis_password},
+    }
+    result_backend_transport_options = broker_transport_options
+    result_backend = broker_url
 
 common_tasks = [
     "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
@@ -41,6 +62,7 @@ datamover_tasks = [
 admin_tasks = [
     "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
     "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
+    "app.tasks.common_tasks.admin_tasks.create_jira_tickets",
     "app.tasks.system_monitor_tasks.heartbeat",
     "app.tasks.system_monitor_tasks.worker_maintenance",
     "app.tasks.system_monitor_tasks.integration_check",
@@ -54,6 +76,7 @@ celery = Celery(
     include=[
         "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
         "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
+        "app.tasks.common_tasks.admin_tasks.create_jira_tickets",
         "app.tasks.common_tasks.report_tasks.eb_eye_search",
         "app.tasks.common_tasks.curation_tasks.metabolon",
         "app.tasks.common_tasks.curation_tasks.validation",
@@ -65,13 +88,12 @@ celery = Celery(
         "app.tasks.datamover_tasks.basic_tasks.file_management",
         "app.tasks.datamover_tasks.curation_tasks.data_file_operations",
         "app.tasks.datamover_tasks.basic_tasks.execute_commands",
+        "app.tasks.system_monitor_tasks.heartbeat",
         "app.tasks.system_monitor_tasks.worker_maintenance",
         "app.tasks.system_monitor_tasks.integration_check",
     ],
 )
 
-#celery.conf.broker_transport_options = { 'master_name': "master-redis-ws", 'sentinel_kwargs': { 'password': rs.redis_password } }
-#celery.conf.result_backend_transport_options = {'master_name': "master-redis-ws", 'sentinel_kwargs': { 'password': rs.redis_password }}
 
 @lru_cache(1)
 def get_flask_app():
@@ -101,6 +123,10 @@ celery.conf.update(
     task_routes={
         "app.tasks.common_tasks.*": {"queue": "common-tasks"},
         "app.tasks.compute_tasks.*": {"queue": "compute-tasks"},
+        "app.tasks.system_monitor_tasks.heartbeat.*": {
+            "queue": "datamover-tasks",
+            "router_key": "heartbeat",
+        },
         "app.tasks.datamover_tasks.*": {"queue": "datamover-tasks"},
         "app.tasks.system_monitor_tasks.*": {"queue": "monitor-tasks"},
     },
@@ -114,6 +140,12 @@ celery.conf.update(
     task_track_started=True,
     result_expires=settings.configuration.celery_result_expires,
 )
+if broker_transport_options:
+    celery.conf.update(broker_transport_options=broker_transport_options)
+if result_backend_transport_options:
+    celery.conf.update(
+        result_backend_transport_options=result_backend_transport_options
+    )
 
 
 @after_task_publish.connect
@@ -144,18 +176,15 @@ periodic_task_configuration = get_settings().celery.periodic_task_configuration
 #     }
 # }
 celery.conf.beat_schedule = {
-
-    "check_workers": {
-        "task": "app.tasks.system_monitor_tasks.worker_maintenance.check_all_workers",
-        "schedule": periodic_task_configuration.worker_heath_check_period_in_seconds,
-        "options": {"expires": periodic_task_configuration.worker_heath_check_period_in_seconds - 3}
-    }
+    "check_integration": {
+        "task": "app.tasks.common_tasks.admin_tasks.integration_check.check_integrations",
+        "schedule": periodic_task_configuration.integration_test_period_in_seconds*3,
+        "options": {"expires": 55},
+    },
 }
-celery.conf.timezone = "UTC"
 
 
 def send_email(subject_name, body, from_address, to_addresses, cc_addresses):
-
     flask_app = get_flask_app()
     with flask_app.app_context():
         email_service = get_email_service(flask_app)

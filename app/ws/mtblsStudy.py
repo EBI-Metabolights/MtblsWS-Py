@@ -21,9 +21,9 @@ import glob
 import logging
 import os
 from datetime import datetime
+from typing import Union
 
 from flask import jsonify, request, send_file, make_response
-from xml.dom.minidom import Document
 from app.services.external.eb_eye_search import EbEyeSearchService
 from flask_restful import Resource, abort, reqparse
 from flask_restful_swagger import swagger
@@ -48,13 +48,13 @@ from app.tasks.common_tasks.report_tasks.eb_eye_search import eb_eye_build_publi
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import delete_study_folders, maintain_storage_study_folders
 from app.tasks.hpc_study_rsync_client import VALID_FOLDERS, StudyFolder, StudyFolderLocation, StudyFolderType, StudyRsyncClient
 
-from app.utils import MetabolightsDBException, MetabolightsException, metabolights_exception_handler
+from app.utils import MetabolightsDBException, MetabolightsException, current_time, current_utc_time_without_timezone, metabolights_exception_handler
 from app.ws import db_connection as db_proxy
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.models import StudyTaskModel, UserModel
+from app.ws.db.models import StudyTaskModel
 from app.ws.db.schemes import Study, StudyTask, User
 from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus, UserRole
-from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory, get_user_model
+from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
 from app.ws.db_connection import (
     add_placeholder_flag,
     create_empty_study,
@@ -1087,7 +1087,7 @@ class PublicStudyDetail(Resource):
             m_study = create_study_model_from_db_study(study)
 
         update_study_model_from_directory(m_study, study_folders)
-        dict_data = m_study.dict()
+        dict_data = m_study.model_dump()
         result = {"content": dict_data, "message": None, "err": None}
         return result
 
@@ -1143,9 +1143,8 @@ class CreateAccession(Resource):
             if study.submissiondate.timestamp() > last_study_datetime.timestamp():
                 last_study_datetime = study.submissiondate
         study_settings = get_study_settings()
-        if (
-            datetime.now() - last_study_datetime
-        ).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
+        now = current_utc_time_without_timezone()
+        if (now - last_study_datetime).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
             logger.warning(
                 f"New study creation request from user {user.username} in {study_settings.min_study_creation_interval_in_mins} mins"
             )
@@ -1166,7 +1165,7 @@ class CreateAccession(Resource):
 
         logger.info(f"Step 1: New study creation request is received from user {user.username}")
         new_accession_number = True
-        study_acc: str = None
+        study_acc: Union[None, str] = None
         if "study_id" in request.headers:
             requested_study_id = request.headers["study_id"]
             study_acc = self.validate_requested_study_id(requested_study_id, user_token)
@@ -1264,7 +1263,7 @@ class CreateAccession(Resource):
         create_study_data_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
         logger.info(f"Step 4.2: 'Create study data files and folders' task has been started for study {study_acc} with task id: {create_study_data_folders_task.id}")
         
-        inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": False, "maintain_private_ftp_storage": True,  "task_name": "INITIAL_DATA"})
+        inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": False, "maintain_private_ftp_storage": True,  "task_name": "INITIAL_FTP_FOLDERS"})
         create_ftp_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
         logger.info(f"Step 4.3: 'Create study FTP folders' task has been started for study {study_acc} with task id: {create_ftp_folders_task.id}")
 
@@ -1379,20 +1378,12 @@ class DeleteStudy(Resource):
 
         study_id = study_id.upper()
 
-        # Need to check that the user is actually an active user, ie the user_token exists
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location_deprecated,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not is_curator:
-            abort(401)
-
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        study: Study = StudyService.get_instance().get_study_by_acc(study_id)
+        status = StudyStatus(study.status)
+        if status == StudyStatus.PUBLIC:
+            abort(401, message="It is not allowed to delete a public study")
+            
         logger.info("Deleting study " + study_id)
 
         # Remove the submitter from the study
@@ -1676,8 +1667,8 @@ class UnindexedStudy(Resource):
                 result = filtered.all()
                 result_list = []
                 for task in result:
-                    model: StudyTaskModel = StudyTaskModel.from_orm(task)
-                    result_list.append(model.dict())
+                    model: StudyTaskModel = StudyTaskModel.model_validate(task)
+                    result_list.append(model.model_dump())
 
                 if result_list:
                     return jsonify({"result": "Found", "tasks": result_list})
@@ -1833,7 +1824,7 @@ class MtblsStudiesIndexAll(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        logger.info("Indexing a compound")
+        logger.info(f"Indexing studies.")
         inputs = {"user_token": user_token, "send_email_to_submitter": True}
         try:
             result = reindex_all_studies.apply_async(kwargs=inputs, expires=60 * 5)
@@ -1878,7 +1869,7 @@ class MtblsStudiesIndexSync(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        logger.info("Indexing a compound")
+        logger.info("Indexing missing/out-of-date studies.")
         inputs = {"user_token": user_token, "send_email_to_submitter": True}
         try:
             result = sync_studies_on_es_and_db.apply_async(kwargs=inputs, expires=60 * 5)
@@ -2267,7 +2258,7 @@ class StudyFolderSynchronization(Resource):
             status: SyncTaskResult = client.rsync(source, target, status_check_only=status_check_only)
 
         status.description = f"{status.description[:100]} ..." if status.description and len(status.description) > 100 else status.description
-        return status.dict()
+        return status.model_dump()
     
 
     

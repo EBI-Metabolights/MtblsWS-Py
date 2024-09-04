@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult
 from app.services.storage_service.storage import Storage
@@ -48,7 +48,7 @@ class UnmountedStorage(Storage):
 
 
     def calculate_sync_status(self, study_id: str, obfuscation_code: str,
-                              target_local_path: str, force: bool = False, ignore_list: List = None) -> SyncCalculationTaskResult:
+                              target_local_path: str, force: bool = False, ignore_list: Union[None, List] = None) -> SyncCalculationTaskResult:
         if not study_id:
             raise MetabolightsException("Invalid study id")
         remote_job_manager = DataMoverAvailableStorage("unmounted_storage", study_id, self.app)

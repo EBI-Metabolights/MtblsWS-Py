@@ -16,9 +16,7 @@ class StudyMountedPaths(BaseModel):
 
     readonly_storage_recycle_bin_root_path: str
     rw_storage_recycle_bin_root_path: str
-    
-    legacy_study_files_root_path: str
-    
+        
     private_ftp_root_path: str = ""
     private_ftp_recycle_bin_root_path: str = ""
     public_ftp_root_path: str = ""
@@ -30,9 +28,7 @@ class StudyMountedPaths(BaseModel):
     
 class StudySettings(BaseModel):
     mounted_paths: StudyMountedPaths
-    
-    check_and_use_legacy_study_files_storage_if_it_exists: bool = True
-    
+        
     private_ftp_user_home_path: str = ""
     max_study_in_submitted_status: int = 2
     min_study_creation_interval_in_mins: int = 5

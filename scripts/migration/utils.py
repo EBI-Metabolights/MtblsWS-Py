@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple
+from typing import List, Tuple, Union
 import psycopg2
 
 from app.config import get_settings
@@ -12,14 +12,15 @@ def sort_by_study_id(value: Tuple[str, str, int]):
                 return int(val)
         return -1
     
-def get_studies(status_code: StudyStatus = None):
+def get_studies(status_code: Union[None, StudyStatus] = None, reverse: bool = True):
     settings = get_settings().database.connection
+    connection = None
     try:
         connection = psycopg2.connect(
             host=settings.host,
             database=settings.database,
             user=settings.user,
-            password=settings.password
+            password=settings.password,
         )
 
         # Create a cursor object
@@ -37,7 +38,7 @@ def get_studies(status_code: StudyStatus = None):
         results = cursor.fetchall()
         studies: List = [row for row in results]
         # Print the results or process them as needed
-        studies.sort(key=sort_by_study_id, reverse=True)
+        studies.sort(key=sort_by_study_id, reverse=reverse)
         return studies
     except (Exception, psycopg2.Error) as error:
         print("Error connecting to PostgreSQL:", error)

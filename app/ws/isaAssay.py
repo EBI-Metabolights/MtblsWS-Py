@@ -16,14 +16,15 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-
+import glob
 import csv
 import json
 import logging
 import os
 import os.path
 from typing import Dict, List, Set, Tuple
-
+import numpy as np
+import pandas as pd
 from flask import request
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
@@ -35,9 +36,10 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import AssaySchema, ProcessSchema, OtherMaterialSchema, DataFileSchema, SampleSchema
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
-from app.ws.utils import get_assay_type_from_file_name, get_assay_headers_and_protcols, write_tsv, remove_file, \
+from app.ws.utils import get_assay_type_from_file_name, get_assay_headers_and_protcols, get_sample_headers_and_data, write_tsv, remove_file, \
     get_maf_name_from_assay_name, add_new_protocols_from_assay, create_maf, add_ontology_to_investigation, read_tsv, \
-    log_request
+    log_request,copy_file, new_timestamped_folder, totuples
+from app.ws.db_connection import update_study_sample_type
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -1244,7 +1246,7 @@ class AssaySamples(Resource):
                 logger.warning("No valid data provided.")
                 abort(400)
         except (ValidationError, Exception) as err:
-            logger.warning("Bad format JSON request.", err)
+            logger.warning("Bad format JSON request." + str(err))
             abort(400, message=str(err))
 
         # check for access rights
@@ -1622,3 +1624,168 @@ class AssayDataFiles(Resource):
         if list_only:
             sch = DataFileSchema(only=('filename',), many=True)
         return extended_response(data={'dataFiles': sch.dump(found).data}, warns=warns)
+
+class StudySampleTemplate(Resource):
+    @swagger.operation(
+        summary="Init Sample sheet",
+        notes="""Initiate or Override sample sheet for given type from the template""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "sample_type",
+                "description": "Type of Sample",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["minimum", "clinical", "in-vitro", "only-in-vitro", 
+                         "non-clinical-tox", "plant", "isotopologue", 
+                         "metaspace-imaging", "nmr-imaging", "ms-imaging", "minimum-bsd"],
+                "defaultValue": "minimum",
+                "default": "minimum"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "force",
+                "description": "Force overriding of sample sheet regardless of sample data if set True. Do nothing if data present and value set false",
+                "required": False,
+                "allowMultiple": False,
+                "allowEmptyValue": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["True", "False"],
+                "defaultValue": "False",
+                "default": "False"
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def post(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('sample_type', help='Sample type name')
+        parser.add_argument('force', help='Force overriding of sample')
+        sampleType = None
+        force_override = False
+        if request.args:
+            args = parser.parse_args(req=request)
+            sampleType = args['sample_type'].lower() if args['sample_type'] else 'minimum'
+
+            if args and "force" in args and args["force"]:
+                force_override = True if args["force"].lower() == "true" else False
+        
+        logger.info('Init Sample for %s; Type %s', study_id, sampleType)
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
+        if not is_curator:
+            abort(403)
+        
+        filename, protocols, update_status = create_sample_sheet(sample_type=sampleType, study_id=study_id, force_override=force_override)
+        if update_status:
+            return {"The sample sheet creation status" : "Successful","filename": filename}
+        else:
+            return {"The sample sheet creation status":"Unsuccessful"}
+            
+def create_sample_sheet(sample_type, study_id, force_override):
+    settings = get_study_settings()
+    studies_path = settings.mounted_paths.study_metadata_files_root_path  # Root folder for all studies
+    study_path = os.path.join(studies_path, study_id)  # This particular study
+
+    tidy_header_row, tidy_data_row, protocols, sample_desc, sample_data_types, sample_file_type, \
+        sample_data_mandatory = get_sample_headers_and_data(sample_type)
+
+    sample_file_name = 's_' + study_id.upper() + '.txt'                
+    sample_file_fullpath = os.path.join(study_path, sample_file_name)
+    update_status = False
+    try:
+        if force_override:
+            create_audit_copy_and_write_table(sample_file_name=sample_file_name, study_id=study_id, tidy_header_row=tidy_header_row, 
+                                                tidy_data_row=tidy_data_row)
+            update_status = update_study_sample_type(study_id=study_id, sample_type=sample_type)
+        else:
+            if os.path.exists(sample_file_fullpath):
+                sample_df = pd.read_csv(sample_file_fullpath, sep="\t", header=0, encoding='utf-8')
+                sample_df = sample_df.replace(np.nan, '', regex=True)  # Remove NaN
+                df_data_dict = totuples(sample_df.reset_index(), 'rows')
+                row_count = len(df_data_dict["rows"])
+                if row_count == 1:
+                    create_audit_copy_and_write_table(sample_file_name=sample_file_name, study_id=study_id, tidy_header_row=tidy_header_row, 
+                                                    tidy_data_row=tidy_data_row)
+                    update_status = update_study_sample_type(study_id=study_id, sample_type=sample_type)
+            else:
+                create_audit_copy_and_write_table(sample_file_name=sample_file_name, study_id=study_id, tidy_header_row=tidy_header_row, 
+                                                    tidy_data_row=tidy_data_row)
+                update_status = update_study_sample_type(study_id=study_id, sample_type=sample_type)
+                           
+    except Exception as ex:
+        logger.error("Exception while overriding sample sheet - %s", ex)
+        abort(500, message='Could not write the Sample file')
+
+    return sample_file_name, protocols, update_status
+
+def create_audit_copy_and_write_table(sample_file_name, study_id, tidy_header_row, tidy_data_row):
+    #Create audit copy
+    settings = get_study_settings()
+    studies_path = settings.mounted_paths.study_metadata_files_root_path  # Root folder for all studies
+    study_path = os.path.join(studies_path, study_id)
+    sample_file_fullpath = os.path.join(study_path, sample_file_name)
+    if os.path.exists(sample_file_fullpath):
+        update_path = os.path.join(settings.mounted_paths.study_audit_files_root_path, study_id, settings.audit_folder_name)
+        dest_path = new_timestamped_folder(update_path)
+        src_file = sample_file_fullpath
+        dest_file = os.path.join(dest_path, sample_file_name)
+        logger.info("Copying %s to %s", src_file, dest_file)
+        copy_file(src_file, dest_file)
+    #Write Table data
+    file = open(sample_file_fullpath, 'w', encoding="utf-8")
+    writer = csv.writer(file, delimiter="\t", quotechar='\"')
+    writer.writerow(tidy_header_row)
+    writer.writerow(tidy_data_row)
+    file.close()

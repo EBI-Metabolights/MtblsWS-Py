@@ -36,6 +36,7 @@ from mzml2isa.parsing import convert as isa_convert
 from pandas import DataFrame
 
 from app.config import get_settings
+from app.utils import current_time
 from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
@@ -141,7 +142,7 @@ def to_isa_tab(study_id, input_folder, output_folder):
     return True, "ISA-Tab files generated for study " + study_id
 
 def create_temp_dir_in_study_folder(parent_folder: str) -> str:
-    date = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    date = current_time().strftime("%m/%d/%Y, %H:%M:%S")
     rand = random.randint(1000, 9999999)
     folder_name = f"{date}-{str(rand)}"
     random_folder_name = hashlib.sha256(bytes(folder_name, 'utf-8')).hexdigest()

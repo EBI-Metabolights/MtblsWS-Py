@@ -16,14 +16,19 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+from random import random
 import subprocess
 import logging
 import os
+from typing import List
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from flask import request
 from datetime import datetime
 from app.config import get_settings
+from app.services.cluster.hpc_client import HpcJob, SubmittedJobResult
+from app.services.cluster.hpc_utils import get_new_hpc_compute_client, get_new_hpc_datamover_client
+from app.utils import current_time
 from app.ws.db_connection import check_access_rights
 from app.ws.study.user_service import UserService
 from app.ws.settings.utils import get_cluster_settings
@@ -33,148 +38,79 @@ logger = logging.getLogger('wslog')
 
 def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=None, identifier=None, taskname=None , log=False,
                log_path=None):
-    cluster_settings = get_cluster_settings()
     settings = get_settings()
-    msg_out = "No LSF job output"
-    msg_err = "No LSF job error"
-    bsub_cmd = cluster_settings.job_submit_command
-    lsf_host = settings.hpc_cluster.compute.connection.host
-    lsf_host_user = settings.hpc_cluster.compute.connection.username
-    ssh_cmd = settings.hpc_cluster.ssh_command
-    log_file_path = None
-    job_cmd1 = job_cmd
+
+    if job_cmd is None:
+        return False, "JOB command should not be empty!", "No LSF job output", "No LSF job error"
     
+    if queue is None:
+        queue = settings.hpc_cluster.compute.default_queue
+    
+    if queue == settings.hpc_cluster.datamover.default_queue:
+        client = get_new_hpc_datamover_client()
+    else:
+        client = get_new_hpc_compute_client()
     if email:
         if account is None:
             account = settings.email.email_service.configuration.hpc_cluster_job_track_email_address
+    timestamp_str = str(int(current_time().timestamp()*1000))
+    script_name = f"job_script_{timestamp_str}.sh"
 
-        bsub_cmd = bsub_cmd + " -u " + account
-
-    if job_cmd is None:
-        return False, "JOB command should not be empty!", str(msg_out), str(msg_err)
-
-    if queue is None:
-        queue = settings.hpc_cluster.compute.default_queue
-
-    if queue == settings.hpc_cluster.datamover.queue_name:
-        lsf_host = settings.hpc_cluster.datamover.connection.host
-        lsf_host_user = settings.hpc_cluster.datamover.connection.username
-
-    bsub_cmd = bsub_cmd + " -q " + queue
-    ssh_cmd = ssh_cmd + " " + lsf_host_user + "@" + lsf_host
-
-    if job_params:
-        job_cmd1 = job_cmd1 + " " + job_params
-
-    if identifier is None:
-        identifier = "None"
-
-    if log:
-        if log_path is None:
-            log_file_location = cluster_settings.job_track_log_location
-            now = datetime.now()
-            date_time = now.strftime("%d-%m-%Y_%H-%M-%S")
-            log_file_path = log_file_location + "/" + identifier + "_" + taskname + "_" + date_time + ".log"
-        else:
-            log_file_path = log_path
-        bsub_cmd = bsub_cmd + " -o " + log_file_path
-
-    if job_cmd == 'rsync':
-        bsub_cmd = bsub_cmd + " -J " + identifier + "_" + taskname
-    cmd = ssh_cmd + " " + bsub_cmd + " " + job_cmd1
-    status = False
-    try:
-        logger.info(" LSF command executing  : " + cmd)
-        job_status = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
-        if job_status.stdout:
-            msg_out = job_status.stdout.decode("utf-8")
-        if job_status.stderr:
-            msg_err = job_status.stderr.decode("utf-8")
-        status = True
-        message = "Successfully submitted LSF job to codon cluster; job command '" + job_cmd1
-    except Exception as e:
-        message = 'Could not execute job ' + cmd + ' on LSF '
-        logger.error(message + '. ' + str(e))
-
-    return status, message, str(msg_out), str(msg_err), log_file_path
+    script_path = os.path.join(settings.server.temp_directory_path, "temp_commands", script_name)
+    with open(script_path, "w") as f:
+        command = f"{job_cmd} {job_params}" if job_params else job_cmd
+        f.write(f"{command}\n")
+    if not taskname:
+        taskname = f"task_{timestamp_str}"
+    job_name = identifier + "_" + taskname if identifier else "None_" + taskname
+    if not log_path:
+        now = current_time()
+        date_time = now.strftime("%d-%m-%Y_%H-%M-%S")
+        log_root_path = client.settings.job_track_log_location
+        log_path = os.path.join(log_root_path, job_name + "_" + date_time + ".log")
+    
+    result: SubmittedJobResult = client.submit_hpc_job(script_path=script_path,
+                                   job_name=job_name, 
+                                   output_file=log_path, 
+                                   account=account,
+                                   queue=queue)
+    if result.job_ids:
+        return True, f"Job submitted successfully. Job id {result.job_ids[0]}", "\n".join(result.stdout), "\n".join(result.stderr), log_path
+    else:
+        return False, "Job submission failed", "\n".join(result.stdout), "\n".join(result.stderr), log_path
+        
 
 
 def list_jobs(queue=None, job_name=None):
-    cluster_settings = get_cluster_settings()
-    msg_out = "No LSF job output"
-    msg_err = "No LSF job error"
-    bjobs_cmd = cluster_settings.job_running_command
-    
     settings = get_settings()
-    lsf_host = settings.hpc_cluster.compute.connection.host
-    lsf_host_user = settings.hpc_cluster.compute.connection.username
-    ssh_cmd = settings.hpc_cluster.ssh_command
 
-    if queue is None:
-        queue = settings.hpc_cluster.compute.default_queue
-
-    if queue == settings.hpc_cluster.datamover.queue_name:
-        lsf_host = settings.hpc_cluster.datamover.connection.host
-        lsf_host_user = settings.hpc_cluster.datamover.connection.username
-
-    bjobs_cmd = f'{bjobs_cmd} -q {queue}'
-    if job_name:
-        bjobs_cmd = f'{bjobs_cmd} -J {job_name}'
-    ssh_cmd = ssh_cmd + " " + lsf_host_user + "@" + lsf_host
-
-    cmd = ssh_cmd + " " + bjobs_cmd
-
-    try:
-        logger.info(" LSF command executing  : " + cmd)
-        job_status = subprocess.run(cmd, capture_output=True, shell=True, check=True)
-        if job_status.stdout:
-            msg_out = job_status.stdout.decode("utf-8")
-        if job_status.stderr:
-            msg_err = job_status.stderr.decode("utf-8")
-        status = True
-        message = "Successfully listed LSF jobs on codon cluster"
-    except Exception as e:
-        message = 'Could not list jobs from codon ; ' + queue
-        status = False
-        logger.error(message + ' ;  reason  :-' + str(e))
-
-    return status, message, str(msg_out), str(msg_err)
+    if queue == settings.hpc_cluster.datamover.default_queue:
+        client = get_new_hpc_datamover_client()
+    else:
+        client = get_new_hpc_compute_client()
+    jobs: List[HpcJob] = client.get_job_status()
+    if not job_name:
+        return jobs
+    
+    return [job for job in jobs if job_name == job.name]
+            
 
 
 def kill_job(queue=None, job_id=None):
-    cluster_settings = get_cluster_settings()
-    msg_out = "No LSF job output"
-    msg_err = "No LSF job error"
-    bkill_cmd = cluster_settings.job_kill_command
     settings = get_settings()
-    lsf_host = settings.hpc_cluster.compute.connection.host
-    lsf_host_user = settings.hpc_cluster.compute.connection.username
-    ssh_cmd = settings.hpc_cluster.ssh_command
-
-    if queue == settings.hpc_cluster.datamover.queue_name:
-        lsf_host_user = settings.hpc_cluster.datamover.connection.username
-        lsf_host = settings.hpc_cluster.datamover.connection.host
-
-    bkill_cmd = bkill_cmd + " " + job_id
-    ssh_cmd = ssh_cmd + " " + lsf_host_user + "@" + lsf_host
-
-    cmd = ssh_cmd + " " + bkill_cmd
-
-    try:
-        logger.info(" LSF command executing  : " + cmd)
-        job_status = subprocess.run(cmd, capture_output=True, shell=True, check=True)
-        if job_status.stdout:
-            msg_out = job_status.stdout.decode("utf-8")
-        if job_status.stderr:
-            msg_err = job_status.stderr.decode("utf-8")
-        status = True
-        message = "Successfully killed LSF jobs on codon cluster"
-    except Exception as e:
-        message = 'Could not kill jobs from codon ; ' + job_id
-        status = False
-        logger.error(message + ' ;  reason  :-' + str(e))
-
-    return status, message, str(msg_out), str(msg_err)
+    if job_id is None:
+        return False, "Job id should not be empty!", "No LSF job output", "No LSF job error"
+    if queue is None:
+        return False, "Queue should not be empty!", "No LSF job output", "No LSF job error"
+    if queue == settings.hpc_cluster.datamover.default_queue:
+        client = get_new_hpc_datamover_client()
+    else:
+        client = get_new_hpc_compute_client()
+    result: SubmittedJobResult = client.kill_jobs(job_id_list=[job_id], failing_gracefully=True)
+    if result.job_ids:
+        return True, f"Job id {result.job_ids[0]} deleted", "\n".join(result.stdout), "\n".join(result.stderr)
+    else:
+        return False, "Job not deleted", "\n".join(result.stdout), "\n".join(result.stderr)
 
 
 def get_permissions(study_id, user_token, obfuscation_code=None):
@@ -465,9 +401,12 @@ class LsfUtils(Resource):
             abort(403)
 
         status, message, job_out, job_err, log_file = submit_job(True, email, queue, command, params, None, True)
-        logger.info(" Output file " + log_file)
-
+        if log_file:
+            logger.info(" Output file " + log_file)
+        else:
+            logger.info(" There is no output file")
+        
         if status:
-            return {"success": message, "message": job_out, "error": job_err}
+            return {"Success": message, "message": job_out, "error": job_err}
         else:
             return {"Failure": message, "message": job_out, "error": job_err}

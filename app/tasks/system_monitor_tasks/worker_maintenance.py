@@ -19,9 +19,9 @@ def check_all_workers(self):
 
     registered_workers = celery.control.inspect().stats()
     datamover_results: Dict[str, List[str]] = check_datamover_workers(registered_workers=registered_workers)
-    vm_results = check_vm_workers(None, registered_workers=registered_workers)
-    all_results = vm_results.update(datamover_results)
-    return all_results
+    vm_results: Dict[str, str] = check_vm_workers(None, registered_workers=registered_workers)
+    vm_results.update(datamover_results)
+    return vm_results
 
 
 @celery.task(

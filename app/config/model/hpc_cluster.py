@@ -1,28 +1,19 @@
 from enum import Enum
-from typing import List
-from pydantic import BaseModel
+from typing import List, Union
+from pydantic import BaseModel, Field
 
 
 
 class HpcClusterConfiguration(BaseModel):
-    job_project_name: str = "metabolights-ws"
-    
-    job_submit_command: str = "srun"
-    job_running_command: str = "sacct"
-    job_kill_command: str = "scancel"
-    job_default_memory: str = "2G"
-    job_default_walltime_limit: int = 40
-    job_track_email: str
-    job_track_log_location: str
-    job_status_read_timeout: int = 10
-    task_get_timeout_in_seconds: int = 10
-    fella_pathway_script_path: str
+    job_status_read_timeout: int = 30
+    task_get_timeout_in_seconds: int = 30
+    fella_pathway_script_path: str = ""
 
 
-class HpcConnection(BaseModel):
+class SshConnection(BaseModel):
     host: str
     username: str
-
+    identity_file: str = "~/.ssh/id_rsa"
 
 class DataMoverPathConfiguration(BaseModel):
     cluster_study_metadata_files_root_path: str
@@ -45,27 +36,39 @@ class DataMoverPathConfiguration(BaseModel):
     cluster_public_ftp_root_path: str
     cluster_public_ftp_recycle_bin_root_path: str
     
-    cluster_legacy_study_files_root_path: str
     cluster_reports_root_path: str
     cluster_compounds_root_path: str
 
-    
-class HpcDataMoverSettings(BaseModel):
-    connection: HpcConnection
-    queue_name: str
+class HpcClusterDefaultSettings(BaseModel):
+    use_ssh_tunnel: bool = False
+    ssh_tunnel: Union[None, SshConnection] = None
+    connection: SshConnection
+    default_queue: str
+    workload_manager: str
+    job_default_cpu: Union[float, int] = 1
+    job_default_memory_in_mb: int = 2 * 1024 
+    job_default_runtime_limit_in_secs: int = 60 * 60
+    job_prefix: str = "mtbls-ws-ns"
+    job_prefix_demimeter: str = "---"
+    job_track_email: str = ""
+    job_track_log_location: str
+    stdout_datetime_format: str = "%Y-%m-%dT%H:%M:%S"
+    shared_path: str = ""
+
+class HpcDataMoverSettings(HpcClusterDefaultSettings):
     cluster_private_ftp_user_home_path: str
     mounted_paths: DataMoverPathConfiguration
+    workload_manager: str = "slurm"
 
-class HpcComputeSettings(BaseModel):
-    connection: HpcConnection
+class HpcComputeSettings(HpcClusterDefaultSettings):
     standard_queue: str ="standard"
     long_process_queue: str ="long"
-    default_queue: str = "standard"
+    workload_manager: str = "slurm"
 
 
 class HpcClusterSettings(BaseModel):
     datamover: HpcDataMoverSettings
     compute: HpcComputeSettings
-    ssh_command: str
+    ssh_command: str = "ssh"
     configuration: HpcClusterConfiguration
 

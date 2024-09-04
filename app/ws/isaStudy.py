@@ -23,6 +23,7 @@ from flask import request, jsonify
 from flask_restful import Resource, marshal_with, reqparse, abort
 from flask_restful_swagger import swagger
 from marshmallow import ValidationError
+from app.tasks.common_tasks.basic_tasks.elasticsearch import reindex_study
 
 from app.ws import utils
 from app.ws.db_connection import study_submitters, update_release_date
@@ -292,7 +293,8 @@ class StudyTitle(Resource):
         isa_study.title = new_title
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
-        status, message = wsc.reindex_study(study_id, user_token)
+        inputs = {"user_token": user_token, "study_id": study_id}
+        reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
         logger.info('Applied %s', new_title)
         return jsonify({"title": new_title})
 
@@ -416,7 +418,8 @@ class StudyReleaseDate(Resource):
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         # update database
         update_release_date(study_id, new_date)
-        status, message = wsc.reindex_study(study_id, user_token)
+        inputs = {"user_token": user_token, "study_id": study_id}
+        reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
         logger.info('Applied %s', new_date)
         return jsonify({"release_date": new_date})
 
@@ -662,8 +665,9 @@ class StudyDescription(Resource):
         isa_study.description = new_description.replace('"', '\'').replace('#', '')  # ISA-API can not deal with these
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
-        status, message = wsc.reindex_study(study_id, user_token)
-        logger.info('Applied %s', new_description)
+        inputs = {"user_token": user_token, "study_id": study_id}
+        reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
+        logger.info('Applied %s and reindex task is triggered for %s', new_description, reindex_task.id)
         return jsonify({"description":  isa_study.description})
 
 
@@ -860,7 +864,8 @@ class StudyContacts(Resource):
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
-        status, message = wsc.reindex_study(study_id, user_token)
+        inputs = {"user_token": user_token, "study_id": study_id}
+        reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
 
         obj_list = isa_study.contacts
         # Using context to avoid envelop tags in contained objects
@@ -1191,7 +1196,8 @@ class StudyContacts(Resource):
                 abort(404)
             logger.info("A copy of the previous files will %s saved", save_msg_str)
             iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
-            status, message = wsc.reindex_study(study_id, user_token)
+            inputs = {"user_token": user_token, "study_id": study_id}
+            reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
             logger.info('Updated %s', updated_contact.email)
 
         return PersonSchema().dump(updated_contact)
@@ -2318,7 +2324,7 @@ class StudyFactors(Resource):
                 logger.error(str(e))
                 return {"Success": "Failed to remove column(s) from sample file"} 
         except (ValidationError, Exception) as err:
-            logger.warning("Bad Study Factor format", err)
+            logger.warning("Bad Study Factor format " + str(err))
         return extended_response(data=resp.data, errs=resp.errors)
 
     def get_factor(self, factor_list, factor_name):
@@ -3815,7 +3821,7 @@ class StudySources(Resource):
             abort(400)
 
         # update Study Source details
-        logger.info('Updating Study Source details for %s', study_id, user_token)
+        logger.info('Updating Study Source details for %s', study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
@@ -4274,7 +4280,7 @@ class StudySamples(Resource):
                 logger.warning("No valid data provided.")
                 abort(400)
         except (ValidationError, Exception) as err:
-            logger.warning("Bad format JSON request.", err)
+            logger.warning("Bad format JSON request. " + str(err))
             abort(400)
 
         # check for access rights
@@ -5173,11 +5179,8 @@ class StudySubmitters(Resource):
             for submitter in data:
                 email = submitter.get('email')
                 study_submitters(study_id, email, 'add')
-                try:
-                    wsc.reindex_study(study_id, user_token)
-                except:
-                    logger.error("Could not index study " + study_id + " whilst adding user " + submitter)
-
+                inputs = {"user_token": user_token, "study_id": study_id}
+                reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
         except:
             logger.error("Could not add user " + email + " to study " + study_id)
 
@@ -5280,11 +5283,8 @@ class StudySubmitters(Resource):
             for submitter in data:
                 email = submitter.get('email')
                 study_submitters(study_id, email, 'delete')
-                try:
-                    wsc.reindex_study(study_id, user_token)
-                except:
-                    logger.error("Could not index study " + study_id + " whilst adding user " + submitter)
-
+                inputs = {"user_token": user_token, "study_id": study_id}
+                reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
         except:
             logger.error("Could not delete user " + email + " from study " + study_id)
 

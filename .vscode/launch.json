@@ -2,8 +2,60 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Poetry Flask Server run",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/run_flask_server.py",
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${workspaceFolder}", "CONFIG_FILE_PATH": "${workspaceFolder}/config.yaml", "SECRETS_PATH": "${workspaceFolder}/.secrets"}
+        }, 
+        {
+            "name": "Poetry Celery Worker",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "~/.poetry/bin/poetry",
+            "args": [
+                "run",
+                "celery",
+                "-A",
+                "app.tasks.worker:celery",
+                "worker",
+                "--loglevel=info",
+                "--concurrency=1",
+                "-Q",
+                "common-tasks,monitor-tasks"
+            ],
+            "jinja": true,
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/.env",
+            "env": {"PYTHONPATH": "${workspaceFolder}", "CONFIG_FILE_PATH": "${workspaceFolder}/config.yaml", "SECRETS_PATH": "${workspaceFolder}/.secrets"}
+
+        },   
+        {
+            "name": "Poetry Celery Beat",
+
+            "type": "debugpy",
+            "request": "launch",
+            "program": "/opt/poetry/bin/poetry",
+            "args": [
+                "run",
+                "celery",
+                "-A",
+                "app.tasks.worker:celery",
+                "beat",
+                "--loglevel",
+                "info"
+            ],
+            "jinja": true,
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
+
+        },   
+
+       {
             "name": "Gunicorn Server run",
-            "type": "python",
+
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/run_gunicorn.py",
             "args": [
@@ -16,20 +68,11 @@
             "justMyCode": false,
             "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"},
             "postDebugTask": "killdebugger"
-        },       
-        {
-            "name": "Flask run",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/wsapp.py",
-            "envFile": "${workspaceFolder}/.env",
-            "justMyCode": false,
-            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"},
-            "postDebugTask": "killdebugger"
-        },
+        }, 
         {
             "name": "Celery Worker",
-            "type": "python",
+
+            "type": "debugpy",
             "request": "launch",
             "module": "celery",
             "args": [
@@ -44,12 +87,13 @@
             "jinja": true,
             "justMyCode": false,
             "envFile": "${workspaceFolder}/.env",
-            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets", "GEVENT_SUPPORT": "True"}
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
 
         }, 
         {
             "name": "Celery Beat",
-            "type": "python",
+
+            "type": "debugpy",
             "request": "launch",
             "module": "celery",
             "args": [
@@ -66,22 +110,30 @@
         },      
         {
             "name": "Python: Current File (Integrated Terminal)",
-            "type": "python",
+
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
+            "env": {"PYTHONPATH": "${cwd}", 
+                    "CONFIG_FILE_PATH": "${cwd}/config.yaml", 
+                    "SECRETS_PATH": "${cwd}/.secrets", 
+                    "DATAMOVER_CONFIG_FILE_PATH": "${cwd}/datamover-config.yaml", 
+                    "DATAMOVER_SECRETS_PATH": "${cwd}/.datamover-secrets", 
+                    "SINGULARITY_IMAGE_FILE_URL": "https://gitlab.ebi.ac.uk/api/v4/projects/3199/packages/generic/MtblsWS-Py_sif/2.2.0/MtblsWS-Py_2.2.0_staging.sif"}
         },
         {
             "name": "Python: Refactor",
-            "type": "python",
+
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/scripts/refactor_study_folder.py",
             "console": "integratedTerminal"
         },
         {
             "name": "Python: Maintain MetaData/Data Files",
-            "type": "python",
+
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/scripts/study_folder_maintenance.py",
             "console": "integratedTerminal",
@@ -91,7 +143,8 @@
         },
         {
             "name": "Python: Create Test Data Files",
-            "type": "python",
+
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/scripts/create_test_data_files.py",
             "console": "integratedTerminal",
@@ -101,14 +154,34 @@
         },
         {
             "name": "Guvicorn profile",
-            "type": "python",
+
+            "type": "debugpy",
             "request": "launch",
             "module": "cProfile",
-            "args": ["-o", "${workspaceFolder}/tmp.prof", "gunicorn", "--worker-class", "gevent", "--preload", "-w", "3", "wsapp:application"],
+            "args": ["-o", "${workspaceFolder}/tmp.prof", "gunicorn", "--preload", "-w", "3", "wsapp:application"],
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
             "postDebugTask": "killdebugger",
             "env": {"PYTHONPATH": "${cwd}"}
-        }
-	]
+        },
+        {
+            "name": "Remote Debug",
+
+            "type": "debugpy",
+            "request": "launch",
+            "module": "debugpy",
+            "args": [
+                "--wait-for-client",
+                "--listen",
+                "0.0.0.0:15678",
+                "-m",
+                "flask",
+                "run"
+            ],
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"},
+        },     
+
+    ]
 }

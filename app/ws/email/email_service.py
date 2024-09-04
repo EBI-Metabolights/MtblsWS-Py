@@ -1,5 +1,6 @@
 import logging
 import os.path
+from typing import Union
 
 from flask_mail import Mail, Message
 from jinja2 import Environment, PackageLoader, select_autoescape
@@ -16,7 +17,7 @@ env = Environment(
 
 
 class EmailService(object):
-    def __init__(self, settings: EmailSettings = None, mail: Mail = None):
+    def __init__(self, settings: Union[None, EmailSettings] = None, mail: Union[None, Mail] = None):
         self.email_settings = settings
         self.mail = mail
 
@@ -26,18 +27,19 @@ class EmailService(object):
     def get_instance(cls, app=None, mail=None):
         if app and not cls.email_service:
             settings = get_settings().email
-            if not mail:
-                app.config.update(
-                    {
-                        "MAIL_SERVER": settings.email_service.connection.host,
-                        "MAIL_PORT": settings.email_service.connection.port,
-                        "MAIL_USERNAME": settings.email_service.connection.username,
-                        "MAIL_PASSWORD": settings.email_service.connection.password,
-                        "MAIL_USE_TLS": settings.email_service.connection.use_tls,
-                        "MAIL_USE_SSL": settings.email_service.connection.use_ssl,
-                    }
-                )
-                mail = Mail(app)
+            configs =  {
+                "MAIL_SERVER": settings.email_service.connection.host,
+                "MAIL_PORT": settings.email_service.connection.port,
+                "MAIL_USERNAME": settings.email_service.connection.username,
+                "MAIL_PASSWORD": settings.email_service.connection.password,
+                "MAIL_USE_TLS": settings.email_service.connection.use_tls,
+                "MAIL_USE_SSL": settings.email_service.connection.use_ssl,
+            }
+            for item in configs:
+                if configs[item]:
+                    app.config[item] = configs[item]
+
+            mail = Mail(app)
             cls.email_service = EmailService(settings, mail)
         return cls.email_service
 
@@ -47,9 +49,11 @@ class EmailService(object):
         if not cc_mail_addresses:
             cc_mail_addresses = []
         if not isinstance(cc_mail_addresses, list):
-            cc_mail_addresses = to_mail_addresses.split(",")
+            cc_mail_addresses = cc_mail_addresses.split(",")
         if not isinstance(to_mail_addresses, list):
             recipients = to_mail_addresses.split(",")
+        else:
+            recipients = to_mail_addresses
         msg = Message(
             subject=subject_name, sender=from_mail_address, recipients=recipients, cc=cc_mail_addresses, html=body
         )

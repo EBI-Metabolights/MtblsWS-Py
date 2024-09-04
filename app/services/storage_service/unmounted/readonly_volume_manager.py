@@ -70,7 +70,7 @@ class ReadOnlyFileVolumeManager(object):
         cluster_study_log_folder = os.path.join(cluster_study_internal_files_folder, self.study_settings.internal_logs_folder_name)
         logger.info("Sending cluster job : " + command + " " + params + " ;For Study :- " + study_id)
         
-        status, message, job_out, job_err, log_file = submit_job(False, None, queue=get_settings().hpc_cluster.datamover.queue_name,
+        status, message, job_out, job_err, log_file = submit_job(False, None, queue=get_settings().hpc_cluster.datamover.default_queue,
                                                                  job_cmd=command, job_params=params,
                                                                  submitter=requestor, log=True,
                                                                  log_path=cluster_study_log_folder)

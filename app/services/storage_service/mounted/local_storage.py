@@ -4,7 +4,7 @@ import random
 import shutil
 from datetime import datetime, timezone
 from distutils.dir_util import copy_tree
-from typing import List
+from typing import List, Union
 
 from dirsync import sync
 from app.config import get_settings
@@ -32,7 +32,7 @@ class LocalStorage(Storage):
 
         super(LocalStorage, self).__init__(name=name, remote_file_manager=self.remote_file_manager)
 
-    def download_file(self, source_file: str, target_local_folder: str, new_name: str = None) -> str:
+    def download_file(self, source_file: str, target_local_folder: str, new_name: Union[None, str] = None) -> str:
         if not source_file or not self.remote_file_manager.is_file(source_file):
             message = 'source file is None or not a file'
             raise StorageServiceException(StorageServiceException.ERR_CODE_NOT_ALLOWED_OPERATION, message)
@@ -111,7 +111,7 @@ class LocalStorage(Storage):
                 else:
                     shutil.rmtree(target_file_backup_path, ignore_errors=True)
 
-    def upload_file(self, source_file: str, target_remote_folder: str, target_file_name: str = None) -> str:
+    def upload_file(self, source_file: str, target_remote_folder: str, target_file_name: Union[None, str] = None) -> str:
         if not source_file or not self.local_file_manager.is_folder(source_file):
             message = 'source is None or not a file'
             raise StorageServiceException(StorageServiceException.ERR_CODE_NOT_ALLOWED_OPERATION, message)
@@ -133,14 +133,14 @@ class LocalStorage(Storage):
             raise StorageServiceException(StorageServiceException.ERR_CODE_NOT_ALLOWED_OPERATION, message)
 
         file_list = []
-        for source_file in source_files:
-            file = self.upload_file(source_file, target_parent_remote_folder)
-            relative_path = file.replace(self.local_file_manager.get_uri(), '', 1)
+        for file in source_files:
+            file = self.upload_file(file, target_parent_remote_folder)
+            relative_path = file.replace(self.local_file_manager.get_base_uri(None), '', 1)
             file_list.append(relative_path)
 
         return file_list
 
-    def upload_folder(self, source_folder: str, target_remote_folder: str = None) -> str:
+    def upload_folder(self, source_folder: str, target_remote_folder: Union[None, str] = None) -> str:
         if not source_folder or not self.local_file_manager.is_folder(source_folder):
             message = 'source is None or not a folder'
             raise StorageServiceException(StorageServiceException.ERR_CODE_NOT_ALLOWED_OPERATION, message)
@@ -189,7 +189,7 @@ class LocalStorage(Storage):
         result = SyncCalculationTaskResult()
         result.description = "There is no update on upload folder"
         if new_file_count + updated_files_count > 0:
-            result.last_update_time = datetime.fromtimestamp(last_updated_time, tz=timezone.utc).strftime('%Y-%m-%d-%H:%M')
+            result.last_update_time = datetime.fromtimestamp(last_updated_time, tz=timezone.utc).strftime("%d/%m/%y %H:%M:%S.%f")
             result.description = f"New File Count: {new_file_count} Updated Files: {updated_files_count}"
 
         result.status = SyncCalculationStatus.SYNC_NEEDED if updated_files else SyncCalculationStatus.SYNC_NOT_NEEDED

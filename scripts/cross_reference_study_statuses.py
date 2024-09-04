@@ -1,10 +1,11 @@
 
 
 import requests
+from app.config import get_settings
 
 def get_all_studies():
 
-    headers = {'Accept': 'application/json', 'User_token': '4ae0c06f-a5de-41a0-bcf9-7e573c63f515'}
+    headers = {'Accept': 'application/json', 'User-token': get_settings().auth.service_account.api_token}
 
     session = requests.Session()
     session.headers.update(headers)

@@ -1,5 +1,5 @@
 #configurations
-.secrets/
+.*secrets/
 .test_data
 
 # Byte-compiled / optimized / DLL files

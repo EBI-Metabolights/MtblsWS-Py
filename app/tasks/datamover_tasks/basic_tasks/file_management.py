@@ -78,7 +78,7 @@ def list_directory(self, path: str, recursive:bool=False, exclude_list: List[str
     applied_exclude_list = exclude_list if exclude_list else []
     directory_files = get_directory_files(path, None, search_pattern="**/*", recursive=recursive, exclude_list=applied_exclude_list)
     search_result = evaluate_files(directory_files, [])
-    return search_result.dict()
+    return search_result.model_dump()
 
 
 @celery.task(

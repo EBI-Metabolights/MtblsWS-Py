@@ -2,13 +2,12 @@ import json
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
 from typing import Any, Dict
 from app.config import get_settings
 from app.config.model.elasticsearch import ElasticsearchSettings
 from app.config.model.study import StudySettings
 
-from app.utils import MetabolightsDBException, MetabolightsException
+from app.utils import MetabolightsDBException, MetabolightsException, current_time
 from app.ws.db import models
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefMetabolite, StudyTask
@@ -30,7 +29,6 @@ class ElasticsearchService(object):
 
     def __init__(self, settings: ElasticsearchSettings, db_manager: DBManager, study_settings: StudySettings):
         self.settings = settings
-        self.db_manager = db_manager
         self.study_settings = study_settings
         self._client = None  # lazy load
         self.thread_pool_executor = ThreadPoolExecutor(max_workers=5)
@@ -119,7 +117,7 @@ class ElasticsearchService(object):
                                 
                     # search_result.reportLines.append(facet_item)
             
-        return {"content": search_result.dict(), "message": "result successfull", "error": None}
+        return {"content": search_result.model_dump(), "message": "result successfull", "error": None}
     
     def build_search_body(self, query: SearchQuery) -> str:
         search_text = query.text.replace("'", "") if query.text else ""
@@ -271,7 +269,7 @@ class ElasticsearchService(object):
                 if not metabolite:
                     raise MetabolightsDBException(f"{compound_id} does not exist")
 
-                compound = models.MetaboLightsCompoundIndexModel.from_orm(metabolite)
+                compound = models.MetaboLightsCompoundIndexModel.model_validate(metabolite)
                 organisms = set()
                 if compound.metSpecies:
                     for item in compound.metSpecies:
@@ -282,7 +280,7 @@ class ElasticsearchService(object):
                     organism_item = models.OrganismModel(organismName=organism)
                     compound.organism.append(organism_item)
                            
-                document = compound.dict()
+                document = compound.model_dump()
                 params = {"request_timeout": 120}
                 self.client.index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_COMPOUND, body=document,
                                     id=compound_id, params=params)
@@ -299,11 +297,11 @@ class ElasticsearchService(object):
         task_name = StudyTaskName.REINDEX
         tasks = StudyService.get_instance().get_study_tasks(study_id=study_id, task_name=task_name)
 
-        with self.db_manager.session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             if tasks:
                 task = tasks[0]
             else:
-                now = datetime.now()
+                now = current_time()
                 task = StudyTask()
                 task.study_acc = study_id
                 task.task_name = task_name
@@ -329,18 +327,18 @@ class ElasticsearchService(object):
                                                                                    revalidate_study=validations,
                                                                                    include_maf_files=False)
                 m_study.indexTimestamp = int(time.time())
-                document = m_study.dict()
+                document = m_study.model_dump()
                 params = {"request_timeout": 120}
                 self.client.index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=document,
                                   id=m_study.studyIdentifier, params=params)
                 message = f'{study_id} is indexed.'
                 tasks = StudyService.get_instance().get_study_tasks(study_id=study_id, task_name=task_name)
                 if tasks:
-                    task = tasks[0]
-                    with self.db_manager.session_maker() as db_session:
-                        task.last_request_time = datetime.now()
+                    task: StudyTask = tasks[0]
+                    with DBManager.get_instance().session_maker() as db_session:
+                        task.last_request_time = current_time()
                         task.last_execution_status = StudyTaskStatus.EXECUTION_SUCCESSFUL
-                        task.last_execution_time = datetime.now()
+                        task.last_execution_time = current_time()
                         task.last_execution_message = message
                         db_session.add(task)
                         db_session.commit()
@@ -351,10 +349,10 @@ class ElasticsearchService(object):
                 message = f'{study_id} reindex is failed: {str(e)}'
                 if tasks:
                     task = tasks[0]
-                    with self.db_manager.session_maker() as db_session:
-                        task.last_request_time = datetime.now()
+                    with DBManager.get_instance().session_maker() as db_session:
+                        task.last_request_time = current_time()
                         task.last_execution_status = StudyTaskStatus.EXECUTION_FAILED
-                        task.last_execution_time = datetime.now()
+                        task.last_execution_time = current_time()
                         task.last_execution_message = message
                         db_session.add(task)
                         db_session.commit()

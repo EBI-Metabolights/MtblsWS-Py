@@ -24,6 +24,7 @@ import io
 import json
 import logging
 import os
+import pathlib
 import random
 import re
 import shutil
@@ -49,6 +50,7 @@ from dirsync import sync
 from app.config import get_settings
 from app.config.utils import get_host_internal_url
 from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files
+from app.utils import current_time
 
 from app.ws.mm_models import OntologyAnnotation
 from app.ws.settings.utils import get_study_settings
@@ -173,13 +175,13 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                                     shutil.copytree(source, destination, symlinks=symlinks, ignore=ignore)
                                 logger.info('Copied file %s to %s', source, destination)
                             except FileExistsError as e:
-                                logger.error('Folder already exists! Can not copy %s to %s', source, destination,
+                                logger.error('Folder already exists! Can not copy %s to %s: %s', source, destination,
                                              str(e))
                             except OSError as e:
-                                logger.error('Does the folder already exists? Can not copy %s to %s', source,
+                                logger.error('Does the folder already exists? Can not copy %s to %s: %s', source,
                                              destination, str(e))
                             except Exception as e:
-                                logger.error('Other error! Can not copy %s to %s', source, destination,
+                                logger.error('Other error! Can not copy %s to %s: %s', source, destination,
                                              str(e))
                         else:  # elif not os.path.exists(destination):
                             logger.info(source + ' is not a directory')
@@ -196,12 +198,11 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                                 else:
                                     shutil.copy2(source, destination)
                             except FileExistsError as e:
-                                logger.error('File already exists! Can not copy %s to %s', source, destination, str(e))
+                                logger.error('File already exists! Can not copy %s to %s %s', source, destination, str(e))
                             except OSError as e:
-                                logger.error('Does the file already exists? Can not copy %s to %s', source, destination,
-                                             str(e))
+                                logger.error('Does the file already exists? Can not copy %s to %s %s', source, destination, str(e))
                             except Exception as e:
-                                logger.error('Other error! Can not copy %s to %s', source, destination, str(e))
+                                logger.error('Other error! Can not copy %s to %s: %s', source, destination, str(e))
     except Exception as e:
         logger.error(str(e))
         raise
@@ -316,6 +317,45 @@ def get_assay_headers_and_protcols(assay_type):
         logger.error('Could not retrieve all required template info for this assay type: ' + assay_type)
 
     return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, assay_mandatory_type
+
+
+def get_sample_headers_and_data(sample_type:None):
+    tidy_header_row = ""
+    tidy_data_row = ""
+    protocols = ""
+    sample_desc = ""
+    sample_data_type = ""
+    sample_file_type = ""
+    sample_mandatory_type = ""
+
+    if sample_type is None:
+        sample_type = 'minimum'
+
+    resource_folder = os.path.join(os.getcwd(), "resources")
+    logger.info(' - get_sample_headers_and_data for sample type ' + sample_type)
+    sample_master_template = os.path.join(resource_folder, 'MetaboLightsSampleMaster.tsv')
+    master_df = read_tsv(sample_master_template)
+
+    header_row = master_df.loc[master_df['name'] == sample_type + '-header']
+    data_row = master_df.loc[master_df['name'] == sample_type + '-data']
+    protocol_row = master_df.loc[master_df['name'] == sample_type + '-protocol']
+    sample_desc_row = master_df.loc[master_df['name'] == sample_type + '-sample']
+    sample_data_type_row = master_df.loc[master_df['name'] == sample_type + '-type']
+    sample_file_type_row = master_df.loc[master_df['name'] == sample_type + '-file']
+    sample_data_mandatory_row = master_df.loc[master_df['name'] == sample_type + '-mandatory']
+
+    try:
+        protocols = get_protocols_for_assay(protocol_row, sample_type)
+        sample_desc = get_desc_for_sample(sample_desc_row, sample_type)
+        sample_data_type = get_data_type_for_assay(sample_data_type_row, sample_type)
+        sample_file_type = get_file_type_for_assay(sample_file_type_row, sample_type)
+        sample_mandatory_type = get_mandatory_data_for_assay(sample_data_mandatory_row, sample_type)
+        tidy_header_row = tidy_template_row(header_row)  # Remove empty cells after end of column definition
+        tidy_data_row = tidy_template_row(data_row)
+    except:
+        logger.error('Could not retrieve all required template info for this sample type: ' + sample_type)
+
+    return tidy_header_row, tidy_data_row, protocols, sample_desc, sample_data_type, sample_file_type, sample_mandatory_type
 
 def delete_column_from_tsv_file(file_df: pd.DataFrame, column_name: str):
     column_index = -1
@@ -453,7 +493,7 @@ def log_request(request_obj):
         else:
             logger.debug('REQUEST JSON    -> EMPTY')
 
-def read_tsv(file_name, col_names=None):
+def read_tsv(file_name, col_names=None, sep="\t", **kwargs):
     table_df = pd.DataFrame()  # Empty file
     try:
         # Enforce str datatype for all columns we read from ISA-Tab table
@@ -461,18 +501,18 @@ def read_tsv(file_name, col_names=None):
         
         try:
             if not filter:
-                col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
+                col_names = pd.read_csv(file_name, sep=sep, nrows=0).columns
             types_dict = {col: str for col in col_names}
             if os.path.getsize(file_name) == 0:  # Empty file
                 logger.error("Could not read file " + file_name)
             else:
                 if filter:
-                    table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8', usecols=col_names, dtype=types_dict)
+                    table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='utf-8', usecols=col_names, dtype=types_dict, **kwargs)
                 else:
-                    table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8', dtype=types_dict)
+                    table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='utf-8', dtype=types_dict, **kwargs)
         except Exception as e:  # Todo, should check if the file format is Excel. ie. not in the exception handler
             if os.path.getsize(file_name) > 0:
-                table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='ISO-8859-1', dtype=types_dict)  # Excel format
+                table_df = pd.read_csv(file_name, sep=sep, header=0, encoding='ISO-8859-1', dtype=types_dict, **kwargs)  # Excel format
                 logger.info("Tried to open as Excel tsv file 'ISO-8859-1' file " + file_name + ". " + str(e))
     except Exception as e:
         logger.error("Could not read file " + file_name + ". " + str(e))
@@ -537,6 +577,13 @@ def get_desc_for_assay(df_row, assay_type):
     for cell in row:
         if cell != '' and cell != assay_type + '-assay':  # return first cell that is not the label
             return cell
+        
+def get_desc_for_sample(df_row, sample_type):
+    row = df_row.iloc[0]
+
+    for cell in row:
+        if cell != '' and cell != sample_type + '-sample':  # return first cell that is not the label
+            return cell
 
 
 def get_data_type_for_assay(df_row, assay_type):
@@ -596,6 +643,7 @@ def get_mandatory_data_for_assay(df_row, assay_type):
 
 
 def write_tsv(dataframe, file_name):
+    basename = os.path.basename(file_name)
     try:
         # Remove all ".n" numbers at the end of duplicated column names
         dataframe.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
@@ -603,9 +651,9 @@ def write_tsv(dataframe, file_name):
         # Write the new row back in the file
         dataframe.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
     except:
-        return 'Error: Could not write/update the file ' + file_name
+        return 'Error: Could not write/update the file ' + basename
 
-    return 'Success. Update file ' + file_name
+    return 'Success. Update file ' + basename
 
 
 def add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, study_id, isa_study):
@@ -700,7 +748,7 @@ def to_isa_tab(study_id, input_folder, output_folder):
     return True, "ISA-Tab files generated for study " + study_id
 
 def create_temp_dir_in_study_folder(parent_folder: str) -> str:
-    date = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    date = current_time().strftime("%m/%d/%Y, %H:%M:%S")
     rand = random.randint(1000, 9999999)
     folder_name = f"{date}-{str(rand)}"
     random_folder_name = hashlib.sha256(bytes(folder_name, 'utf-8')).hexdigest()
@@ -909,6 +957,17 @@ def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, o
         ontologies.append(onto)
 
     return isa_inv, onto
+
+def update_correct_sample_file_name(isa_study, study_location, study_id):
+    sample_file_path = os.path.join(study_location, isa_study.filename)
+    short_sample_file_name = 's_' + study_id.upper() + '.txt'
+    default_sample_file_path = os.path.join(study_location, short_sample_file_name)
+    if os.path.isfile(sample_file_path):
+        if sample_file_path != default_sample_file_path:
+            os.rename(sample_file_path, default_sample_file_path)  # Rename the sample file
+            isa_study.filename = short_sample_file_name  # Add the new filename to the investigation
+
+    return isa_study, short_sample_file_name
 
 def delete_remote_file(root_path: str, file_path: str) -> Tuple[bool, str]:
     inputs = {"root_path": root_path, "file_paths": file_path}
@@ -1406,7 +1465,7 @@ def get_techniques(studyID=None):
         sql = 'select acc,studytype from studies where status= 3'
 
     settings = get_settings()
-    params = settings.database.connection.dict()
+    params = settings.database.connection.model_dump()
     with psycopg2.connect(**params) as conn:
         data = pd.read_sql_query(sql, conn)
 
@@ -1431,7 +1490,9 @@ def get_instrument(studyID, assay_name):
     instrument_name = []
     # res.loc[len(res)] = [sheet_name, key, term]
     try:
-        source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
+        context_path = get_settings().server.service.resources_path
+
+        source = '{context_path}/studies/{study_id}/assay'.format(context_path=context_path, study_id=studyID)
         settings = get_settings()
         service_settings = settings.server.service
         ws_url = f"{service_settings.mtbls_ws_host}:{service_settings.rest_api_port}{source}"
@@ -1453,10 +1514,11 @@ def get_instrument(studyID, assay_name):
         print(e)
 
 
-def get_orgaisms(studyID, sample_file_name):
+def get_organisms(studyID, sample_file_name):
     # print('getting organism')
     try:
-        source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
+        context_path = get_settings().server.service.resources_path
+        source = '{context_path}`/studies/{study_id}/sample'.format(context_path=context_path, study_id=studyID)
         settings = get_settings()
         service_settings = settings.server.service
         ws_url = f"{service_settings.mtbls_ws_host}:{service_settings.rest_api_port}{source}"
@@ -1548,7 +1610,7 @@ def get_instruments_organism(studyID=None):
                 for i in ins['instruments']:
                     instruments_df.loc[len(instruments_df)] = [ins['studyID'], ins['assay_name'], i]
 
-        organism_df = organism_df.append(get_orgaisms(studyID, sample_file))
+        organism_df = organism_df.append(get_organisms(studyID, sample_file))
 
     instruments = {}
     for index, row in instruments_df.iterrows():
@@ -1589,7 +1651,7 @@ def get_connection():
     cursor = None
     try:
         settings = get_settings()
-        params = settings.database.connection.dict()
+        params = settings.database.connection.model_dump()
         conn_pool_min = settings.database.configuration.conn_pool_min
         conn_pool_max = settings.database.configuration.conn_pool_max
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)

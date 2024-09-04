@@ -1,67 +1,67 @@
-from typing import List, Any, Optional
+from typing import List, Any, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class CommentDataItem(BaseModel):
-    text: str = None
-    date: str = None
+    text: Union[None, str] = None
+    date: Union[None, str] = None
 
 
 class DataItem(BaseModel):
-    data: str = None
-    type: str = None
-    source: str = None
+    data: Union[None, str] = None
+    type: Union[None, str] = None
+    source: Union[None, str] = None
     comments: List[CommentDataItem] = []
 
 
 class StructureDataItem(BaseModel):
-    structure: str = None
-    type: str = None
-    dimension: str = None
+    structure: Union[None, str] = None
+    type: Union[None, str] = None
+    dimension: Union[None, str] = None
     defaultStructure: bool = True
     comments: List[CommentDataItem] = []
 
 
 class OntologyDataItem(BaseModel):
-    chebiName: str = None
-    chebiId: str = None
-    type: str = None
-    status: str = None
+    chebiName: Union[None, str] = None
+    chebiId: Union[None, str] = None
+    type: Union[None, str] = None
+    status: Union[None, str] = None
     cyclicRelationship: bool = False
     comments: List[CommentDataItem] = []
     ontologyElement: List[Any] = []
 
 
 class CompoundOriginDataItem(BaseModel):
-    speciesText: str = None
-    speciesAccession: str = None
-    componentText: str = None
-    componentAccession: str = None
-    strainText: str = None
-    strainAccession: str = None
-    sourceType: str = None
-    sourceAccession: str = None
+    speciesText: Union[None, str] = None
+    speciesAccession: Union[None, str] = None
+    componentText: Union[None, str] = None
+    componentAccession: Union[None, str] = None
+    strainText: Union[None, str] = None
+    strainAccession: Union[None, str] = None
+    sourceType: Union[None, str] = None
+    sourceAccession: Union[None, str] = None
 
 
 class LiteEntity(BaseModel):
-    chebiId: str = None
-    chebiAsciiName: str = None
+    chebiId: Union[None, str] = None
+    chebiAsciiName: Union[None, str] = None
     entityStar: int = 0
-    searchScore: Optional[float] = 0
+    searchScore: Union[None, float] = 0.0
 
 
 class Entity(BaseModel):
-    chebiId: str = None
-    chebiAsciiName: str = None
-    definition: str = None
-    status: str = None
-    smiles: str = None
-    inchi: str = None
-    inchiKey: str = None
-    charge: str = None
-    mass: str = None
-    monoisotopicMass: str = None
+    chebiId: Union[None, str] = None
+    chebiAsciiName: Union[None, str] = None
+    definition: Union[None, str] = None
+    status: Union[None, str] = None
+    smiles: Union[None, str] = None
+    inchi: Union[None, str] = None
+    inchiKey: Union[None, str] = None
+    charge: Union[None, str] = None
+    mass: Union[None, str] = None
+    monoisotopicMass: Union[None, str] = None
     entityStar: int = 0
 
     secondaryChEBIIds: List[str] = Field([], alias="SecondaryChEBIIds")
@@ -77,5 +77,4 @@ class Entity(BaseModel):
     generalComments: List[CommentDataItem] = Field([], alias="GeneralComments")
     compoundOrigins: List[CompoundOriginDataItem] = Field([], alias="CompoundOrigins")
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)

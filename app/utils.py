@@ -32,11 +32,15 @@ def _ttl_hash_gen(seconds: int):
     while True:
         yield floor((time.time() - start_time) / seconds)
         
-def current_time():
-    return datetime.datetime.utcnow()
+        
+def current_time(utc_timezone: bool = True) -> datetime.datetime:
+    if utc_timezone:
+        return datetime.datetime.now(datetime.timezone.utc)
+    else:
+        return datetime.datetime.now()
 
 def current_utc_time_without_timezone():
-    return datetime.datetime.utcnow().replace(tzinfo=None)
+    return current_time().replace(tzinfo=None)
 
 def metabolights_exception_handler(func):
     def exception_handler(*args, **kwargs):
@@ -55,7 +59,7 @@ def metabolights_exception_handler(func):
 
 
 class MetabolightsException(Exception):
-    def __init__(self, message: str = "", exception: Exception = None, http_code=400):
+    def __init__(self, message: str = "", exception: Union[None, Exception] = None, http_code=400):
         super(MetabolightsException, self).__init__()
         self.message = message
         self.exception = exception
@@ -69,17 +73,17 @@ class MetabolightsException(Exception):
 
 
 class MetabolightsDBException(MetabolightsException):
-    def __init__(self, message: str, exception: Exception = None, http_code=401):
+    def __init__(self, message: str, exception: Union[None, Exception] = None, http_code=401):
         super(MetabolightsDBException, self).__init__(message, exception, http_code)
 
 
 class MetabolightsFileOperationException(MetabolightsException):
-    def __init__(self, message: str, exception: Exception = None, http_code=400):
+    def __init__(self, message: str, exception: Union[None, Exception] = None, http_code=400):
         super(MetabolightsFileOperationException, self).__init__(message, exception, http_code)
 
 
 class MetabolightsAuthorizationException(MetabolightsException):
-    def __init__(self, message: str = "", exception: Exception = None, http_code=401):
+    def __init__(self, message: str = "", exception: Union[None, Exception] = None, http_code=401):
         super(MetabolightsAuthorizationException, self).__init__(message, exception, http_code)
 
     def __str__(self):

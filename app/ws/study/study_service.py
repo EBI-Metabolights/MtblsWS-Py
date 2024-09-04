@@ -1,6 +1,7 @@
 import glob
 import logging
 import os
+from typing import Union
 from app.config import get_settings
 from app.utils import MetabolightsDBException, MetabolightsFileOperationException, MetabolightsException
 from app.ws.db.dbmanager import DBManager
@@ -12,7 +13,7 @@ from app.ws.utils import read_tsv_with_filter, totuples
 
 logger = logging.getLogger('wslog')
 
-def identify_study_id(study_id: str, obfuscation_code: str = None):
+def identify_study_id(study_id: str, obfuscation_code: Union[None, str] = None):
     if study_id.lower().startswith("reviewer"):
         obfuscation_code = study_id.lower().replace("reviewer", "")
         study: Study = StudyService.get_instance().get_study_by_obfuscation_code(obfuscation_code)
@@ -33,13 +34,12 @@ class StudyService(object):
     def get_instance(cls):
         if not cls.instance:
             cls.instance = StudyService()
-            cls.db_manager = DBManager.get_instance()
             cls.study_settings = get_settings().study
         return cls.instance
 
     def get_study_by_acc(self, study_id) -> Study:
         try:
-            with self.db_manager.session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(Study)
                 result = query.filter(Study.acc == study_id).first()
                 if result:
@@ -50,7 +50,7 @@ class StudyService(object):
 
     def get_study_by_obfuscation_code(self, obfuscationcode) -> Study:
         try:
-            with self.db_manager.session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(Study)
                 result = query.filter(Study.obfuscationcode == obfuscationcode).first()
                 if result:
@@ -61,7 +61,7 @@ class StudyService(object):
 
     def get_next_stable_study_id(self):
         try:
-            with self.db_manager.session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(Stableid.seq)
                 result = query.filter(Stableid.prefix == "MTBLS").first()
                 if result:
@@ -74,7 +74,7 @@ class StudyService(object):
         self, study_id, user_token, optimize_for_es_indexing=False, revalidate_study=True, include_maf_files=False
     ) -> StudyModel:
         try:
-            with self.db_manager.session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 db_study_obj = db_session.query(Study).filter(Study.acc == study_id).first()
                 if not db_study_obj:
                     raise MetabolightsDBException(message=f"Study {study_id} is not in database")
@@ -97,7 +97,7 @@ class StudyService(object):
         return m_study
 
     def get_public_study_from_db(self, study_id) -> StudyModel:
-         with self.db_manager.session_maker() as db_session:
+         with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
             query = query.filter(Study.status == StudyStatus.PUBLIC.value, Study.acc == study_id)
             study = query.first()
@@ -107,7 +107,7 @@ class StudyService(object):
             return m_study
         
     def get_public_study_with_detailed_user(self, study_id) -> StudyModel:
-         with self.db_manager.session_maker() as db_session:
+         with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
             query = query.filter(Study.status == StudyStatus.PUBLIC.value, Study.acc == study_id)
             study = query.first()
@@ -117,7 +117,7 @@ class StudyService(object):
             m_study.users = [get_user_model(x) for x in study.users]
             return m_study
         
-    def get_study_maf_rows(self, study_id, sheet_number):
+    def get_study_maf_rows(self, study_id: Union[None, str], sheet_number: Union[None, int]):
         if study_id is None or sheet_number is None:
             raise MetabolightsDBException("StudyId and sheet number needs to be passed")
         study_id = study_id.upper()
@@ -152,9 +152,9 @@ class StudyService(object):
                 return df_data_dict
         except FileNotFoundError:
             raise MetabolightsDBException(f"{maf_file_path} MAF not found")
-    
+
     def get_all_authorized_study_ids(self, user_token):
-        with self.db_manager.session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             db_user = db_session.query(User).filter(User.apitoken == user_token).first()
 
             if db_user and int(db_user.status) == UserStatus.ACTIVE.value:
@@ -175,18 +175,18 @@ class StudyService(object):
         return []
 
     def get_all_study_ids(self):
-        with self.db_manager.session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             study_id_list = db_session.query(Study.acc).all()
             return study_id_list
 
     def get_study_ids_with_status(self, status: StudyStatus):
-        with self.db_manager.session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             study_id_list = db_session.query(Study.acc).filter(Study.status == status.value).all()
             return study_id_list
         
     def get_study_tasks(self, study_id, task_name=None):
         try:
-            with self.db_manager.session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(StudyTask)
                 if task_name:
                     filtered = query.filter(StudyTask.study_acc == study_id and StudyTask.task_name == task_name)

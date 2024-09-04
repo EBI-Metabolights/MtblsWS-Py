@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import subprocess
-from typing import List, Union
+from typing import List, Literal, Union
 import uuid
 
 from pydantic import BaseModel
@@ -29,8 +29,17 @@ class LoggedBashExecutionResult(BashExecutionResult):
 class CapturedBashExecutionResult(BashExecutionResult):
     stdout: List[str] = []
     stderr: List[str] = []
-        
     
+    def __str__(self, **kwargs):
+        results = [f"Command: {self.command}\n"]
+        results.append(f"Return code: {self.returncode}\n")
+        stderr = '\n'.join(self.stderr)
+        stdout = '\n'.join(self.stdout)
+        results.append(f"Stderr: {stderr}\n")
+        results.append(f"Stdout: {stdout}\n")
+        
+        return "".join(results)
+
 class BashClient(object):
     @staticmethod
     def execute_command(
@@ -43,6 +52,18 @@ class BashClient(object):
     ) -> Union[LoggedBashExecutionResult, CapturedBashExecutionResult]:
         logger.info(f" A command is being executed : '{command}'")
         print(f" A command is being executed  : '{command}'")
+        execution_result = None
+        if stdout_log_file_path:
+            logger.info(f"stdout_log_file_path: {stdout_log_file_path}")
+        if stderr_log_file_path:
+            logger.info(f"stderr_log_file_path: {stderr_log_file_path}")
+        if stdout_log_file_path:   
+            stdout_dir_path = os.path.dirname(stdout_log_file_path)
+            os.makedirs(stdout_dir_path, exist_ok=True)
+            
+        if stderr_log_file_path:
+            stderr_dir_path = os.path.dirname(stderr_log_file_path)
+            os.makedirs(stderr_dir_path, exist_ok=True)
         stdout_log_file = None
         stderr_log_file = None
         try:
@@ -50,8 +71,8 @@ class BashClient(object):
                 stdout_log_file = open(stdout_log_file_path, "w")
             if stderr_log_file_path:
                 stderr_log_file = open(stderr_log_file_path, "w")
-                
             if stderr_log_file or stdout_log_file:
+                execution_result = LoggedBashExecutionResult()
                 result = subprocess.run(command, shell=True, stderr=stderr_log_file, stdout=stdout_log_file, check=False, timeout=timeout)
                 execution_result = LoggedBashExecutionResult(
                     returncode=result.returncode,
@@ -59,14 +80,22 @@ class BashClient(object):
                     stdout_log_file_path=stdout_log_file_path,
                     stderr_log_file_path=stderr_log_file_path
                 )
+                logger.info(str(execution_result.model_dump()))
             else:
+                execution_result = CapturedBashExecutionResult()
                 result = subprocess.run(command, shell=True, capture_output=True, check=False, timeout=timeout)
                 execution_result = CapturedBashExecutionResult(
                     returncode=result.returncode,
                     command=result.args,
                     stderr=result.stderr.decode().split('\n'),
-                    stdout=result.stdout.decode().split('\n'),
+                    stdout=result.stdout.decode().split('\n')
                 )
+                logger.info(str(execution_result.model_dump()))
+        except Exception as ex:
+            if stderr_log_file:
+                stderr_log_file.write(str(ex))
+            else:
+                logger.error(f"Error: {str(ex)}")
         finally:
             if stderr_log_file:
                 try:
@@ -96,19 +125,77 @@ class BashClient(object):
             raise e
 
     @staticmethod
-    def build_ssh_command(hostname: str, username: str = None):
+    def build_ssh_command_base(
+                          command_name: Literal["ssh", "scp"],
+                          identity_file: Union[None, str] = None, 
+                          options: Union[None, List[str]]=None, 
+                          tunnel_username: Union[None, str] = None, 
+                          tunnel_hostname: Union[None, str] = None ) -> str:
         command = []
-        command.append("ssh")
+        command.append(command_name)
+        if identity_file:
+            command.append("-i")
+            command.append(identity_file)
         command.append("-o")
         command.append("StrictHostKeyChecking=no")
         command.append("-o")
         command.append("LogLevel=quiet")
         command.append("-o")
         command.append("UserKnownHostsFile=/dev/null")
+        if options:
+            command.extend(options)
+        if tunnel_username and tunnel_hostname:
+            command.append("-o")
+            subcommand = ["ssh"]
+            subcommand.append("-o")
+            subcommand.append("StrictHostKeyChecking=no")
+            subcommand.append("-o")
+            subcommand.append("LogLevel=quiet")
+            subcommand.append("-o")
+            subcommand.append("UserKnownHostsFile=/dev/null")
+            subcommand.append("-W")
+            subcommand.append("%h:%p")
+            subcommand.append(f"{tunnel_username}@{tunnel_hostname}")
+            command.append(f"ProxyCommand=\'{' '.join(subcommand)}\'")
+            
+        return " ".join(command)
+
+    @staticmethod
+    def build_ssh_command(hostname: str, 
+                          username: Union[None, str] = None, 
+                          identity_file: Union[None, str] = None, 
+                          options: Union[None, List[str]]=None, 
+                          tunnel_username: Union[None, str] = None, 
+                          tunnel_hostname: Union[None, str] = None ) -> str:
+
+        command = [BashClient.build_ssh_command_base("ssh", identity_file, options, tunnel_username, tunnel_hostname)]
         if not username:
             command.append(f"{hostname}")
         else:
             command.append(f"{username}@{hostname}")
+        return " ".join(command)
+
+    @staticmethod
+    def build_scp_command(hostname: str, 
+                          source_path: str, 
+                          target_path: str, 
+                          username: Union[None, str] = None, 
+                          identity_file: Union[None, str] = None, 
+                          create_target_path: bool = False, 
+                          options: Union[None, List[str]]=None,
+                          tunnel_username: Union[None, str] = None, 
+                          tunnel_hostname: Union[None, str] = None) -> str:
+        if create_target_path:
+            if options:
+                options.append("-r")
+            else:
+                options = ["-r"]
+        command = [BashClient.build_ssh_command_base("scp", identity_file, options, tunnel_username, tunnel_hostname)]
+        command.append(source_path)
+        if not username:
+            command.append(f"{hostname}")
+        else:
+            command.append(f"{username}@{hostname}:{target_path}")
         return " ".join(command)
 
     @staticmethod

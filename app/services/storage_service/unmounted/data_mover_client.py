@@ -1,12 +1,12 @@
 import os
 import time
-from datetime import datetime
-from typing import List, Union
+from typing import List, Tuple, Union
 from app.config import get_settings
 
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult, CommandOutput, \
     SyncTaskStatus, SyncCalculationStatus
+from app.utils import current_time
 from app.ws.cluster_jobs import submit_job, list_jobs
 import logging
 from app.ws.settings.utils import get_cluster_settings,get_study_settings
@@ -29,7 +29,7 @@ class DataMoverAvailableStorage(object):
         self.sync_meta_task = 'rsync_meta_study'
         self.sync_rdfiles_task = 'rsync_rdfiles_study'
         mounted_paths = self.settings.hpc_cluster.datamover.mounted_paths
-        self.datamover_queue = self.settings.hpc_cluster.datamover.queue_name
+        self.datamover_queue = self.settings.hpc_cluster.datamover.default_queue
         self.read_timeout = self.cluster_settings.job_status_read_timeout
         self.study_metadata_files_path = self.settings.study.mounted_paths.study_metadata_files_root_path
         self.study_readonly_files_path = self.settings.study.mounted_paths.study_readonly_files_root_path
@@ -43,7 +43,7 @@ class DataMoverAvailableStorage(object):
         self.cluster_study_readonly_audit_files_root_path = mounted_paths.cluster_study_readonly_audit_files_root_path
         self.chebi_annotation_sub_folder = self.settings.chebi.pipeline.chebi_annotation_sub_folder
 
-    def sync_from_studies_folder(self, target_ftp_folder: str, ignore_list: List[str] = None,
+    def sync_from_studies_folder(self, target_ftp_folder: str, ignore_list: Union[None, List[str]] = None,
                                  **kwargs):
         command = 'rsync'
         meta_sync_task = 'rsync_meta_prv_ftp'
@@ -129,7 +129,7 @@ class DataMoverAvailableStorage(object):
             
         return meta_sync_status,files_sync_status,chebi_sync_status
         
-    def sync_public_study_to_ftp(self, source_study_folder:str=None, target_ftp_folder:str=None , ignore_list: List[str] = None,
+    def sync_public_study_to_ftp(self, source_study_folder: Union[None, str] = None, target_ftp_folder: Union[None, str] = None , ignore_list:  Union[None, List[str]] = None,
                                  **kwargs):   
         command = 'rsync'
         meta_sync_task = 'rsync_meta_pub_ftp'
@@ -186,7 +186,7 @@ class DataMoverAvailableStorage(object):
             
         return meta_sync_status,files_sync_status
 
-    def sync_from_ftp_folder(self, source_ftp_folder: str, ignore_list: List[str] = None, **kwargs) -> bool:
+    def sync_from_ftp_folder(self, source_ftp_folder: str, ignore_list:  Union[None, List[str]] = None, **kwargs) -> bool:
         command = 'rsync'
         meta_sync_status = None
         rdfiles_sync_status = None
@@ -252,7 +252,7 @@ class DataMoverAvailableStorage(object):
                 exclude = f"{exclude} --exclude '{ignore_file}'"
         return exclude
     
-    def _sync_analysis_metafiles(self, source_ftp_folder: str, ignore_list: List[str] = None) -> bool:
+    def _sync_analysis_metafiles(self, source_ftp_folder: str, ignore_list:  Union[None, List[str]] = None) -> bool:
         command = 'rsync'
         status = None
         study_id = self.studyId
@@ -273,7 +273,7 @@ class DataMoverAvailableStorage(object):
         self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)          
         return status
     
-    def _sync_analysis_rdfiles(self, source_ftp_folder: str, ignore_list: List[str] = None) -> bool:
+    def _sync_analysis_rdfiles(self, source_ftp_folder: str, ignore_list:  Union[None, List[str]] = None) -> bool:
         command = 'rsync'
         status = None
         study_id = self.studyId
@@ -295,7 +295,7 @@ class DataMoverAvailableStorage(object):
             
         return status
 
-    def sync_anaysis_job_results(self, source_ftp_folder: str, force: bool = True, ignore_list: List = None) -> SyncCalculationTaskResult:
+    def sync_anaysis_job_results(self, source_ftp_folder: str, force: bool = True, ignore_list:  Union[None, List[str]] = None) -> Tuple[SyncCalculationTaskResult, SyncCalculationTaskResult]:
         study_id = self.studyId
         calc_meta_job = f'{study_id}_{self.calc_metedata_task}'
         calc_rdfiles_job = f'{study_id}_{self.calc_rdfiles_task}'
@@ -351,7 +351,7 @@ class DataMoverAvailableStorage(object):
             # raise MetabolightsException(message=message, http_code=500, exception=e)
         return result
 
-    def _init_sync_analysis(self, folder_type:str = 'metadata', source_ftp_folder: str = 'NONE', ignore_list: List = None) -> SyncCalculationTaskResult:
+    def _init_sync_analysis(self, folder_type:str = 'metadata', source_ftp_folder: str = 'NONE', ignore_list: Union[None, List] = None) -> SyncCalculationTaskResult:
         result: SyncCalculationTaskResult = SyncCalculationTaskResult()
         try:
             make_dir_with_chmod(self._get_study_log_folder(study_id=self.studyId), 0o777)
@@ -359,32 +359,32 @@ class DataMoverAvailableStorage(object):
                 status = self._sync_analysis_metafiles(source_ftp_folder, ignore_list)
                 if status:
                     result.status = SyncCalculationStatus.CALCULATING
-                    result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+                    result.last_update_time = current_time().strftime("%d/%m/%y %H:%M:%S.%f")
                 else:
                     result.status = SyncCalculationStatus.UNKNOWN
-                    result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+                    result.last_update_time = current_time().strftime("%d/%m/%y %H:%M:%S.%f")
             else :
                 status = self._sync_analysis_rdfiles(source_ftp_folder, ignore_list)
                 if status:
                     result.status = SyncCalculationStatus.CALCULATING
-                    result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+                    result.last_update_time = current_time().strftime("%d/%m/%y %H:%M:%S.%f")
                 else:
                     result.status = SyncCalculationStatus.UNKNOWN
-                    result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+                    result.last_update_time = current_time().strftime("%d/%m/%y %H:%M:%S.%f")
         except Exception as e:
             result.status = SyncCalculationStatus.UNKNOWN
-            result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+            result.last_update_time = current_time().strftime("%d/%m/%y %H:%M:%S.%f")
             # raise MetabolightsException(message="Error while calculating ftp folder sync status", http_code=500, exception=e)
         return result
 
     def _check_calc_log_file_status(self, calc_log_file: str, sync_log_file: str, folder_type:str = 'metadata',
                                     source_ftp_folder: str ='NONE', job_found: bool = False,
-                                    force: bool = True, ignore_list: List = None) -> SyncCalculationTaskResult:
+                                    force: bool = True, ignore_list: Union[None, List] = None) -> SyncCalculationTaskResult:
         result: SyncCalculationTaskResult = SyncCalculationTaskResult()
         if not job_found:
             # check for one day case
             logfile_time = os.path.getmtime(calc_log_file)
-            seconds_since_epoch = datetime.now().timestamp()
+            seconds_since_epoch = current_time().timestamp()
             difference = seconds_since_epoch - logfile_time
             if difference > 86400:
                 # More than day since log updated
@@ -531,7 +531,7 @@ class DataMoverAvailableStorage(object):
         else:
             return ''
 
-    def get_folder_sync_results(self) -> SyncTaskResult:
+    def get_folder_sync_results(self) -> Tuple[SyncTaskResult, SyncTaskResult]:
         sync_metafiles_result = self._check_folder_sync_result(task_name=self.sync_meta_task)
         sync_rdfiles_result = self._check_folder_sync_result(task_name=self.sync_rdfiles_task)
         return sync_metafiles_result,sync_rdfiles_result
@@ -768,7 +768,7 @@ class DataMoverAvailableStorage(object):
                     if self.str_in_file(file_path=log_file_study_path, word='Exited with exit code'):
                         return False
                     time.sleep(1)
-                logger.error(f'Failed to read the file content in {self.read_time_out} seconds')
+                logger.error(f'Failed to read the file content in {self.read_timeout} seconds')
                 return False
             else:
                 logger.error('Job was not submitted to queue')

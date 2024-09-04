@@ -1,13 +1,13 @@
 import datetime
 from enum import Enum
 import os
-from typing import List
+from typing import List, Union
 from pydantic import BaseModel
 from app.config import get_settings
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
 
-from app.utils import MetabolightsException
+from app.utils import MetabolightsException, current_time
 
 
 class StudyFolderLocation(str, Enum):
@@ -93,7 +93,7 @@ ALLOWED_STAGING_AREA_DIRECTIONS = {
 
 
 class StudyRsyncClient:
-    def __init__(self, study_id: str, obfuscation_code: str = None) -> None:
+    def __init__(self, study_id: str, obfuscation_code: Union[None, str] = None) -> None:
         self.study_id = study_id
         self.obfuscation_code = obfuscation_code
         self.settings = get_settings()
@@ -116,7 +116,7 @@ class StudyRsyncClient:
     ) -> SyncTaskResult:
         self.validate_sync_direction(source, target)
         task_name = self.get_task_name(source, target, dry_run_mode=False)
-        date_timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%y-%m-%d-%m_%H:%M:%S")
+        date_timestamp = current_time().strftime("%y-%m-%d-%m_%H:%M:%S")
         stdout_log_filename = f"{task_name}_{date_timestamp}.stdout.txt"
         stderr_log_filename = f"{task_name}_{date_timestamp}.stderr.txt"
         stdout_log_file_path = os.path.join(self.log_path, stdout_log_filename)
@@ -158,7 +158,7 @@ class StudyRsyncClient:
         if status_check_only:
             result: SyncCalculationTaskResult = HpcRsyncWorker.get_rsync_dry_run_status(task_name, self.study_id)
         else:
-            date_timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%y-%m-%d-%m_%H:%M:%S")
+            date_timestamp = current_time().strftime("%y-%m-%d-%m_%H:%M:%S")
             stdout_log_filename = f"{task_name}_{date_timestamp}.stdout.txt"
             stderr_log_filename = f"{task_name}_{date_timestamp}.stderr.txt"
             stdout_log_file_path = os.path.join(self.log_path, stdout_log_filename)
@@ -232,7 +232,7 @@ class StudyRsyncClient:
                 return path
             if path:
                 return os.path.join(path, f"{self.study_id.lower()}-{self.obfuscation_code}")
-        raise MetabolightsException(message=f"Folder path is not valid for {folder.dict()}")
+        raise MetabolightsException(message=f"Folder path is not valid for {folder.model_dump()}")
 
     def get_include_and_exlude_lists(self, source: StudyFolder, target: StudyFolder):
         include_list = []

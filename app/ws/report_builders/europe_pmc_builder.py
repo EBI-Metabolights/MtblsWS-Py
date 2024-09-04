@@ -10,6 +10,7 @@ from fuzzywuzzy import fuzz
 from flask_restful import abort
 from typing import List, Union
 from app.config import get_settings
+from app.utils import current_time
 
 from app.ws.cronjob import setGoogleSheet
 from app.ws.isaApiClient import IsaApiClient
@@ -37,7 +38,8 @@ class EuropePmcReportBuilder:
         self.wsc = wsc
         self.iac = iac
         self.session = requests.Session()
-        self.europe_pmc_url = 'https://www.ebi.ac.uk/europepmc/webservices/rest/search'
+        europe_pmc_rest_api_url = get_settings().external_dependencies.api.europe_pmc_api_url
+        self.europe_pmc_url = f'{europe_pmc_rest_api_url}/search'
         self.headers_register = {
             'article': {'Accept': 'application/json'},
             'citation_ref': {'Accept': 'application/xml'}
@@ -196,7 +198,7 @@ class EuropePmcReportBuilder:
         if 'printPublicationDate' in europe_pmc_publication:
             journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%m-%d')
             logger.info('ASSESSIF' + str(journal_publication_date))
-            now = datetime.now()
+            now = current_time()
             return status.upper() != 'PUBLIC' and now > journal_publication_date
         else:
             return 'No publication date given.'

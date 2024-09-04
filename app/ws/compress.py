@@ -3,12 +3,13 @@ import os
 import time
 from app.config import get_settings
 from app.tasks.bash_client import BashClient
-from app.tasks.lsf_client import LsfClient
 from typing import Dict, List, Set, Tuple
 
 from flask import request, current_app as app
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
+from app.services.cluster.hpc_client import HpcClient
+from app.services.cluster.hpc_utils import get_new_hpc_datamover_client
 from app.ws.db.models import SimplifiedUserModel
 
 from app.ws.study.user_service import UserService
@@ -16,7 +17,7 @@ logger = logging.getLogger('wslog')
 
 def compress_raw_data_folders(task_name: str, study_id: str, filename_pattern: str, email: str):
     settings = get_settings()
-    client = LsfClient()
+    client: HpcClient = get_new_hpc_datamover_client()
     messages = []
     inputs = {
             "ROOT_PATH": settings.hpc_cluster.datamover.mounted_paths.cluster_study_readonly_files_actual_root_path,
@@ -24,7 +25,7 @@ def compress_raw_data_folders(task_name: str, study_id: str, filename_pattern: s
             "FILE_NAME_PATTERN": filename_pattern,
         }
         
-    hpc_queue_name = settings.hpc_cluster.datamover.queue_name
+    hpc_queue_name = settings.hpc_cluster.datamover.default_queue
     
     script_template = "compress_raw_data_folders.sh.j2"
     script_path = BashClient.prepare_script_from_template(script_template, **inputs)
@@ -35,9 +36,10 @@ def compress_raw_data_folders(task_name: str, study_id: str, filename_pattern: s
     err_log_path = os.path.join(task_log_path, f"{task_name}_err.log")
     
     try:
-        job_id, _, _ = client.submit_hpc_job(
+        submission_result = client.submit_hpc_job(
                     script_path, task_name, output_file=out_log_path, error_file=err_log_path, queue=hpc_queue_name, account=email
                 )
+        job_id = submission_result.job_ids[0] if submission_result and submission_result[0] else  None
         
         messages.append(f"New job was submitted with job id {job_id} for {task_name}")
         return job_id, messages

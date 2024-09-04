@@ -1,13 +1,7 @@
+from typing import  List, Union
 
-
-import datetime
-from typing import Any, Optional, List, Dict, Set, Union
-
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel
 from app.ws.db.models import MetaboLightsCompoundIndexModel, StudyModel
-from app.ws.db.types import UserStatus
-
-from app.ws.db.utils import datetime_to_int
 
 
 class Booster(BaseModel):
@@ -34,7 +28,7 @@ class SearchUser(BaseModel):
     isAdmin: bool = False
 
 class SearchQuery(BaseModel):
-    text: Optional[str] = ""
+    text: Union[None, str] = ""
     facets: List[Facet] = []
     boosters: List[Booster] = []
     pagination: Pagination = Pagination()

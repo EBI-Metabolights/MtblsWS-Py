@@ -25,7 +25,7 @@ import re
 import subprocess
 import time
 import traceback
-from typing import List
+from typing import List, Union
 
 import numpy as np
 import pandas as pd
@@ -511,7 +511,7 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
 
 
 def update_validation_schema_files(validation_file, study_id, user_token, obfuscation_code,
-                            log_category='all', study_settings: StudySettings=None):
+                            log_category='all', study_settings: Union[None, StudySettings] = None):
     settings = get_settings()
     if not study_settings:
         study_settings = settings.study
@@ -538,7 +538,7 @@ def update_validation_schema_files(validation_file, study_id, user_token, obfusc
     search_result = get_files_for_validation(study_id, metadata_files_folder)
     for item in search_result.study:
         item.file = item.relative_path
-    result = search_result.dict(include={"study"})
+    result = search_result.model_dump(include={"study"})
     try:
         with open(validation_files_path, 'w', encoding='utf-8') as f1:
             json.dump(result, f1, ensure_ascii=False)
@@ -579,7 +579,7 @@ def get_last_update_on_folder(study_location):
 
 
 def validate_study(study_id, study_location_old, user_token, obfuscation_code,
-                   validation_section='all', log_category='all', static_validation_file=None, settings: StudySettings = None):
+                   validation_section='all', log_category='all', static_validation_file=None, settings: Union[None, StudySettings] = None):
     """
     Entry point method for validating an entire study. Each section is validated in turn, unless a validation section is
     specified in the request parameters.
@@ -597,8 +597,8 @@ def validate_study(study_id, study_location_old, user_token, obfuscation_code,
 
     """
     start_time = time.time()
-    last_update_time = datetime.datetime.now()
-    last_update_timestamp = last_update_time.timestamp()
+    last_update_time = current_time()
+    last_update_timestamp = int(last_update_time.timestamp())
     last_update_time_str = last_update_time.strftime('%Y-%m-%d-%H:%M')
     all_validations = []
     validation_schema = None

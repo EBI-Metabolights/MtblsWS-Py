@@ -15,6 +15,7 @@ from app.ws.db.utils import date_str_to_int, datetime_to_int
 
 logger = logging.getLogger(__file__)
 
+KB_FACTOR = 1024.0 ** 1
 MB_FACTOR = 1024.0 ** 2
 GB_FACTOR = 1024.0 ** 3
 
@@ -31,10 +32,13 @@ def create_study_model_from_db_study(db_study: Study):
     m_study.studySize = int(db_study.studysize)  # This value is different in DB and www.ebi.ac.uk
     if m_study.studySize > GB_FACTOR:
         size_in_gb = m_study.studySize / GB_FACTOR
-        m_study.studyHumanReadable = "%.2f" % round(size_in_gb, 2) + "GB"
-    else:
+        m_study.studyHumanReadable = "%.2f" % round(size_in_gb, 2) + "GiB"
+    elif m_study.studySize > MB_FACTOR:
         size_in_mb = m_study.studySize / MB_FACTOR
-        m_study.studyHumanReadable = "%.2f" % round(size_in_mb, 2) + "MB"
+        m_study.studyHumanReadable = "%.2f" % round(size_in_mb, 2) + "MiB"
+    else:
+        size_in_mb = m_study.studySize / KB_FACTOR
+        m_study.studyHumanReadable = "%.2f" % round(size_in_mb, 2) + "KiB"
 
     m_study.publicStudy = StudyStatus(db_study.status) == StudyStatus.PUBLIC
 
@@ -59,7 +63,7 @@ def create_study_model_from_db_study(db_study: Study):
 
 
 def get_user_model(db_user: User):
-    m_user = models.UserModel.from_orm(db_user)
+    m_user = models.UserModel.model_validate(db_user)
     m_user.fullName = m_user.firstName + " " + m_user.lastName
     m_user.joinDate = datetime_to_int(m_user.joinDate)
     m_user.dbPassword = None  # This value is set to empty string intentionally
@@ -78,7 +82,7 @@ def get_user_lite_model(db_user: User):
 def update_users_for_indexing(m_study):
     new_indexed_user_list = []
     for user in m_study.users:
-        indexed_user = IndexedUserModel.from_orm(user)
+        indexed_user = IndexedUserModel.model_validate(user)
 
         new_indexed_user_list.append(indexed_user)
 
@@ -89,7 +93,7 @@ def update_users_for_indexing(m_study):
 def update_assays_for_indexing(m_study):
     new_indexed_assay_list = []
     for assay in m_study.assays:
-        indexed_assay = IndexedAssayModel.from_orm(assay)
+        indexed_assay = IndexedAssayModel.model_validate(assay)
         new_indexed_assay_list.append(indexed_assay)
 
     m_study.assays.clear()

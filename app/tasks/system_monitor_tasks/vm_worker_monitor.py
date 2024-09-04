@@ -40,7 +40,7 @@ def maintain_vm_workers(
         if not registered_workers:
             registered_workers = celery.control.inspect().stats()
 
-        worker_name_prefix = f"{cluster_settings.job_project_name}_vm_worker"
+        worker_name_prefix = f"{settings.hpc_cluster.datamover.job_prefix}_vm_worker"
         current_worker_identifiers = set()
         current_worker_names = set()
         current_workers: List[str] = []
@@ -68,10 +68,9 @@ def maintain_vm_workers(
 
 def get_initiated_vm_workers(hostname: str) -> Set[str]:
     settings = get_settings()
-    cluster_settings = get_settings().hpc_cluster.configuration
     initiate_vm_worker_key_prefix = settings.workers.vm_workers.initiate_vm_worker_key_prefix
 
-    worker_name_prefix = f"{cluster_settings.job_project_name}_vm_worker"
+    worker_name_prefix = f"{settings.hpc_cluster.datamover.job_prefix}_vm_worker"
     redis = get_redis_server()
     pattern_prefix = f"{initiate_vm_worker_key_prefix}:{hostname}:"
     results = redis.search_keys(f"{pattern_prefix}{worker_name_prefix}_*")
@@ -91,7 +90,7 @@ def start_vm_worker(host: HostWorkerConfiguration, current_names: Set[str], resu
     initiate_vm_worker_key_prefix = worker_settings.initiate_vm_worker_key_prefix
     initiate_vm_worker_wait_timeout = worker_settings.initiate_vm_worker_wait_timeout
     hostname = host.hostname
-    worker_name_prefix = f"{cluster_settings.job_project_name}_vm_worker"
+    worker_name_prefix = f"{settings.hpc_cluster.datamover.job_prefix}_vm_worker"
 
     random_name = generate_random_name(current_names=current_names)
     name = f"{worker_name_prefix}_{random_name}"
@@ -99,7 +98,7 @@ def start_vm_worker(host: HostWorkerConfiguration, current_names: Set[str], resu
     redis_key = f"{initiate_vm_worker_key_prefix}:{hostname}:{name}"
     status = redis.get_value(redis_key)
     if not status or status.decode() != "1":
-        port = str(get_settings().server.service.rest_api_port)
+        port = str(settings.server.service.rest_api_port)
         paramters = {
             "application_deployment_path": host.deployment_path,
             "worker_name": name,
@@ -115,8 +114,9 @@ def start_vm_worker(host: HostWorkerConfiguration, current_names: Set[str], resu
         if localhost == hostname:
             result = BashClient.execute_command(f"{file_path}")
         else:
-            username = get_settings().hpc_cluster.datamover.connection.username
-            ssh_command = BashClient.build_ssh_command(hostname, username)
+            username = settings.hpc_cluster.datamover.connection.username
+            identity_file = settings.hpc_cluster.datamover.connection.identity_file
+            ssh_command = BashClient.build_ssh_command(hostname, username=username, identity_file=identity_file)
             result = BashClient.execute_command(f"{ssh_command} bash < {file_path}")
         success = True if result and result.returncode == 0 else False
         if success:

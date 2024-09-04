@@ -1,5 +1,5 @@
-from ast import List
 import json
+from typing import Union, List
 
 from flask import current_app as app, jsonify, request
 from flask_restful import Resource, reqparse
@@ -106,7 +106,7 @@ class UserAccounts(Resource):
                     user.fullName = f"{user.firstName} {user.lastName}"
                     user.status = UserStatus(user.status).name
                         
-                return jsonify({"content": user.dict(), "message": None, "error": None})
+                return jsonify({"content": user.model_dump(), "message": None, "error": None})
             else:
                 users: List[UserModel] = UserService.get_instance().get_db_users_by_filter_clause()
                 user_dict = []
@@ -116,7 +116,7 @@ class UserAccounts(Resource):
                             user.curator = True
                         user.fullName = f"{user.firstName} {user.lastName}"
                         user.status = UserStatus(user.status).name        
-                    user_dict.append(user.dict())           
+                    user_dict.append(user.model_dump())           
                 
                 return jsonify({"content": user_dict, "message": None, "error": None})
 
@@ -170,7 +170,7 @@ class UserAccounts(Resource):
             user_token = request.headers["user_token"]
             
         UserService.get_instance().validate_user_has_curator_role(user_token)
-        user: UserModel = None
+        user: Union[None, UserModel] = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             user = UserModel.model_validate(data_dict)
@@ -189,20 +189,20 @@ class UserAccounts(Resource):
                 query_filter = query.filter(User.id == user.userId)
                 db_user = query_filter.first()
                 if db_user:
-                    m_user = UserModel.from_orm(db_user)
+                    m_user = UserModel.model_validate(db_user)
                     
                     
-                    user_updates_data = user.dict(exclude_unset=True, by_alias=True)
-                    updated_user_data = m_user.copy(update=user_updates_data)     
-                    updated_values = updated_user_data.dict(by_alias=True)
+                    user_updates_data = user.model_dump(exclude_unset=True, by_alias=True)
+                    updated_user_data = m_user.model_copy(update=user_updates_data)     
+                    updated_values = updated_user_data.model_dump(by_alias=True)
                     for key, val in updated_values.items():
                         if hasattr(db_user, key):
                             setattr(db_user, key, val) if val else None
                     db_session.add(db_user)
                     db_session.commit()  
                     db_session.refresh(db_user)
-                    m_user = UserModel.from_orm(db_user)
-                    return jsonify({"content": m_user.dict(), "message": None, "error": None})
+                    m_user = UserModel.model_validate(db_user)
+                    return jsonify({"content": m_user.model_dump(), "message": None, "error": None})
                 else:
                     raise MetabolightsException(http_code=400, message="Invalid user id")   
         except (Exception) as ex:
@@ -282,7 +282,7 @@ class UserAccounts(Resource):
             user_token = request.headers["user_token"]
             
         UserService.get_instance().validate_user_has_curator_role(user_token)
-        user: NewUserModel = None
+        user: Union[None, NewUserModel] = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             user = NewUserModel.model_validate(data_dict)
@@ -302,15 +302,15 @@ class UserAccounts(Resource):
             with db_session:
                 db_user = User()
                   
-                user_data = user.dict(by_alias=True)
+                user_data = user.model_dump(by_alias=True)
                 for key, val in user_data.items():
                     if hasattr(db_user, key):
                         setattr(db_user, key, val)
                 db_session.add(db_user)
                 db_session.commit()  
                 db_session.refresh(db_user)
-                m_user = NewUserModel.from_orm(db_user)
-                return jsonify({"content": m_user.dict(), "message": None, "error": None})
+                m_user = NewUserModel.model_validate(db_user)
+                return jsonify({"content": m_user.model_dump(), "message": None, "error": None})
         except (Exception) as ex:
             db_session.rollback()
             raise MetabolightsException(http_code=400, message="DB error", exception=ex)
@@ -404,15 +404,15 @@ class UserAccounts(Resource):
                 try:
                     with db_session:
                         query = db_session.query(User)
-                        db_user: User = filter_clause(query).first()
-                        username = db_user.username
-                        user_id = db_user.id
+                        db_user: Union[None, User] = filter_clause(query).first()
+
                         if db_user:
                             db_session.delete(db_user)
                             db_session.commit()
                         else:
-                            raise MetabolightsDBException(http_code=404, message=f"User is not found.")
-                        
+                            raise MetabolightsDBException(http_code=404, message=f"Not a valid user.")
+                        username = db_user.username
+                        user_id = db_user.id                        
                         return jsonify({"content": f"The selected user is deleted. Deleted user's username: {username}, id: {user_id}", "message": None, "error": None})
                 except Exception as e:
                     raise MetabolightsDBException(message=f"Error while retreiving user from database", exception=e)

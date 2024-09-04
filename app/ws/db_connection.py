@@ -615,14 +615,15 @@ def biostudies_accession(study_id, biostudies_id, method):
 
     # Default query to get the biosd accession
     s_query = "SELECT biostudies_acc from studies where acc = %(study_id)s;"
-
+    query = None
     if method == 'add':
         query = "update studies set biostudies_acc = %(biostudies_id)s where acc = %(study_id)s;"
     elif method == 'query':
         query = s_query
     elif method == 'delete':
         query = "update studies set biostudies_acc = '' where acc = %(study_id)s;"
-
+    if not query:
+        return False, "Not a valid method for adding the biostudies accession"
     try:
         postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query, {'study_id': study_id, 'biostudies_id': biostudies_id})
@@ -1223,7 +1224,7 @@ def get_connection():
     conn = None
     cursor = None
     settings = get_settings()
-    params = settings.database.connection.dict()
+    params = settings.database.connection.model_dump()
 
     conn_pool_min = settings.database.configuration.conn_pool_min
     conn_pool_max = settings.database.configuration.conn_pool_max
@@ -1248,7 +1249,7 @@ def get_connection2():
     cursor = None
     try:
         settings = get_settings()
-        params = settings.database.connection.dict()
+        params = settings.database.connection.model_dump()
         conn_pool_min = settings.database.configuration.conn_pool_min
         conn_pool_max = settings.database.configuration.conn_pool_max
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)

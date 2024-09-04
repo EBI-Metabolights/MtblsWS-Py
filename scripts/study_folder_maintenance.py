@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import sys
 import time
-from typing import Dict, List
+from typing import Dict, List, Union
 from app.config import get_settings
 from app.tasks.bash_client import BashClient
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
@@ -91,9 +91,9 @@ def are_metadata_files_sync(maintenance_task: StudyFolderMaintenanceTask, check_
 
 def maintain_folders(
     study_id_list: List[str],
-    target: str = None,
-    task_name: str = None,
-    settings: StudySettings = None,
+    target: Union[None, str] = None,
+    task_name: Union[None, str] = None,
+    settings: Union[None, StudySettings] = None,
     output_summary_report=None,
     delete_unreferenced_metadata_files=False,
     apply_future_actions=False,
@@ -248,7 +248,7 @@ def maintain_folders(
                         
                 #         # if updated_file_names:
                 #         #     command_actions = [x for x in maintenance_task.future_actions if x.command]
-                #         #     data_files_update_summary = {"updates": updated_file_names, "actions": [x.dict() for x in command_actions]}
+                #         #     data_files_update_summary = {"updates": updated_file_names, "actions": [x.model_dump() for x in command_actions]}
                 #         #     os.makedirs(maintenance_task.task_temp_path, exist_ok=True)
                 #         #     summary_file = os.path.join(maintenance_task.task_temp_path, f"{study_id}_data_files_update_summary.json")
                             

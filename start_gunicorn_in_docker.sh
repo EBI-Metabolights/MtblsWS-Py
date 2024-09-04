@@ -1,7 +1,16 @@
 #!/bin/bash
-SERVER_PORT=7007
-APPDIR="/app-root"
+SERVER_PORT="$1"
+NUMBER_OF_WORKERS="$2"
+if [ -z "$SERVER_PORT" ]; then
+    SERVER_PORT="7007"
+    echo "DEFAULT SERVER PORT will be used $SERVER_PORT"
+fi
+if [ -z "$NUMBER_OF_WORKERS" ]; then
+    NUMBER_OF_WORKERS=3
+fi
 
+APPDIR="/app-root"
+echo "SERVER PORT is $SERVER_PORT"
 if [ -z "$CONFIG_FILE_PATH" ]; then
     CONFIG_FILE_PATH="$APPDIR/config.yaml"
 fi
@@ -17,4 +26,6 @@ LOG_PATH=$APPDIR/logs
 
 cd $APPDIR
 
-gunicorn -b 0.0.0.0:$SERVER_PORT --preload wsapp:application --workers 1 --threads 3 --pid $LOG_PATH/app_${HOST}_${SERVER_PORT}.pid  --log-level info
+echo Command: gunicorn -b 0.0.0.0:$SERVER_PORT --timeout=300 --workers $NUMBER_OF_WORKERS  wsapp:application --forwarded-allow-ips \"*\"  --pid $LOG_PATH/app_${HOST}_${SERVER_PORT}.pid  --log-level info
+
+gunicorn -b 0.0.0.0:$SERVER_PORT --preload --timeout 300 --workers $NUMBER_OF_WORKERS  wsapp:application  --pid $LOG_PATH/app_${HOST}_${SERVER_PORT}.pid  --log-level info

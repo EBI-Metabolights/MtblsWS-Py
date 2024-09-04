@@ -49,4 +49,5 @@ class SystemTestEmail(Resource):
                  
         UserService.get_instance().validate_user_has_curator_role(user_token)
         inputs = {"user_token": user_token}
-        send_test_email.apply_async(kwargs=inputs)
+        task = send_test_email.apply_async(kwargs=inputs)
+        return {"message": f"Sent test email task is stated with id : {task.id}"}

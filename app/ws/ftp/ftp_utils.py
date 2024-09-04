@@ -30,7 +30,7 @@ def get_ftp_folder_access_status(app, study_id):
             return {'Access': access, 'status': 'error', 'message': "There is no folder"}
         return {'Access': access, 'status': 'success'}
     except OSError as e:
-        logger.error('Error in getting the permission for %s ', ftp_private_study_folder, str(e))
+        logger.error('Error in getting the permission for %s : %s', ftp_private_study_folder, str(e))
         return {'Access': access, 'status': 'error', 'message': "Internal error"}
 
 

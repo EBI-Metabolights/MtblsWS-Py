@@ -478,7 +478,7 @@ class EditAssayFile(Resource):
             try:
                 row_index_int = int(row['index'])
             except:
-                row_index_int is None
+                row_index_int = None
 
             if row_index_int is not None:
                 assay_df = assay_df.drop(assay_df.index[row_index_int])  # Remove the old row from the spreadsheet

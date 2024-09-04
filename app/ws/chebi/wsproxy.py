@@ -1,6 +1,6 @@
 import logging
 from functools import lru_cache
-from typing import List, Optional
+from typing import List, Union
 
 from zeep import Client, Settings, helpers
 from zeep.exceptions import Fault
@@ -28,7 +28,7 @@ def ws_fault_exception_handler(func):
 
 class ChebiWsProxy(object):
 
-    def __init__(self, settings: ChebiWsSettings=None):
+    def __init__(self, settings: Union[None, ChebiWsSettings] = None):
         self.settings = settings
         self._service = None
 
@@ -62,7 +62,7 @@ class ChebiWsProxy(object):
             raise ChebiWsException(message=e.args)
 
     @ws_fault_exception_handler
-    def get_complete_entity(self, chebi_id: str) -> Optional[Entity]:
+    def get_complete_entity(self, chebi_id: str) -> Union[None, Entity]:
         result = self.service.getCompleteEntity(chebi_id)
         serialized_result = helpers.serialize_object(result, dict)
 
@@ -73,7 +73,7 @@ class ChebiWsProxy(object):
 
     @ws_fault_exception_handler
     def get_lite_entity_list(self, search_text: str, search_category: SearchCategory,
-                             maximum_results: int, stars: StarsCategory) -> Optional[List[LiteEntity]]:
+                             maximum_results: int, stars: StarsCategory) -> Union[None, List[LiteEntity]]:
         result = self.service.getLiteEntity(search_text, search_category.value, maximum_results, stars.value)
         serialized_result = helpers.serialize_object(result, dict)
         if serialized_result:
@@ -82,7 +82,7 @@ class ChebiWsProxy(object):
         return None
 
     @ws_fault_exception_handler
-    def get_complete_entity_by_list(self, chebi_id_list: List[str]) -> Optional[List[Entity]]:
+    def get_complete_entity_by_list(self, chebi_id_list: List[str]) -> Union[None, List[Entity]]:
         service_result = self.service.getCompleteEntityByList(chebi_id_list)
         serialized_result = helpers.serialize_object(service_result, dict)
         if serialized_result:
@@ -91,7 +91,7 @@ class ChebiWsProxy(object):
         return None
 
     @ws_fault_exception_handler
-    def get_ontology_parents(self, chebi_id: str) -> Optional[List[OntologyDataItem]]:
+    def get_ontology_parents(self, chebi_id: str) -> Union[None, List[OntologyDataItem]]:
         service_result = self.service.getOntologyParents(chebi_id)
         serialized_result = helpers.serialize_object(service_result, dict)
         if serialized_result:
@@ -100,7 +100,7 @@ class ChebiWsProxy(object):
         return None
 
     @ws_fault_exception_handler
-    def get_ontology_children(self, chebi_id: str) -> Optional[List[OntologyDataItem]]:
+    def get_ontology_children(self, chebi_id: str) -> Union[None, List[OntologyDataItem]]:
         service_result = self.service.getOntologyChildren(chebi_id)
         serialized_result = helpers.serialize_object(service_result, dict)
         if serialized_result:
@@ -110,7 +110,7 @@ class ChebiWsProxy(object):
 
     @ws_fault_exception_handler
     def get_all_ontology_children_in_path(self, chebi_id: str, relationship_type: RelationshipType,
-                                          structure_only: bool) -> Optional[List[LiteEntity]]:
+                                          structure_only: bool) -> Union[None, List[LiteEntity]]:
         service_result = self.service.getAllOntologyChildrenInPath(chebi_id, relationship_type.value, structure_only)
         serialized_result = helpers.serialize_object(service_result, dict)
         if serialized_result:
@@ -121,7 +121,7 @@ class ChebiWsProxy(object):
     @ws_fault_exception_handler
     def get_structure_search(self, structure: str, structure_type: StructureType,
                              structure_search_category: StructureSearchCategory,
-                             total_results: int, tanimoto_cutoff: float) -> Optional[List[LiteEntity]]:
+                             total_results: int, tanimoto_cutoff: float) -> Union[None, List[LiteEntity]]:
 
         service_result = self.service.getStructureSearch(structure, structure_type,
                                                          structure_search_category,

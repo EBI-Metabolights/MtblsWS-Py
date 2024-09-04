@@ -19,7 +19,6 @@ class StudyPaths(BaseModel):
     private_ftp_files: Union[Path, None] = None
     public_ftp_files: Union[Path, None] = None
 
-    legacy_study_files_root_path: Union[Path, None] = None
 
 class StudyManagedFiles(BaseModel):
     validation_report: Union[Path, None] = None

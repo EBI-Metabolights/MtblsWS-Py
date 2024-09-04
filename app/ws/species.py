@@ -1,8 +1,9 @@
+from __future__ import annotations
 import json
 import os.path
-from typing import List, Set
+from typing import List, Set, Union
 
-from flask import current_app as app, jsonify
+from flask import jsonify
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 from app.config import get_settings
@@ -23,9 +24,9 @@ class SpeciesTreeLeaf(SpeciesTreeNode):
     size: int = 1
     
 class SpeciesTreeParent(SpeciesTreeNode):
-    children: List[SpeciesTreeNode] = []
+    children: List[Union[SpeciesTreeLeaf, SpeciesTreeParent]] = []
     
-
+SpeciesTreeParent.model_rebuild()
     
 class SpeciesTree(Resource):
     @swagger.operation(
@@ -114,27 +115,27 @@ class SpeciesTree(Resource):
         except Exception as e:
             raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
         
-        result_dict = tree.dict()
+        result_dict = tree.model_dump()
         result_str = json.dumps(result_dict)
         redis.set_value(key, result_str, ex=60*10)
         return jsonify(result_dict)
     
     def update_tree(self, tree: SpeciesTreeParent, level: int = 0):
-            tree.level = level
-            tree.children.sort(key=self.get_sort_key)
-            empty_item_list = []
-            for item in tree.children:
-                if isinstance(item, SpeciesTreeParent):
-                    sub_item: SpeciesTreeParent = item
-                    if len(sub_item.children) == 0:
-                        empty_item_list.append(sub_item)
-                    else:
-                        self.update_tree(item, tree.level + 1)
+        tree.level = level
+        tree.children.sort(key=self.get_sort_key)
+        empty_item_list = []
+        for item in tree.children:
+            if isinstance(item, SpeciesTreeParent):
+                sub_item: SpeciesTreeParent = item
+                if len(sub_item.children) == 0:
+                    empty_item_list.append(sub_item)
                 else:
-                    item.level = item.level + 1
-            if empty_item_list:
-                for empty_item in empty_item_list:
-                    tree.children.remove(empty_item)
+                    self.update_tree(item, tree.level + 1)
+            else:
+                item.level = tree.level + 1
+        if empty_item_list:
+            for empty_item in empty_item_list:
+                tree.children.remove(empty_item)
                     
     def get_sort_key(self, item: SpeciesTreeNode):
         if not item or not item.name:

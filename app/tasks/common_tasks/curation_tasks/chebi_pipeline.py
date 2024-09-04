@@ -7,6 +7,7 @@ import celery
 from app.config import get_settings
 from app.tasks.worker import (MetabolightsTask, celery, send_email)
 from app.tasks.worker import MetabolightsTask
+from app.utils import current_time
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.wsproxy import get_chebi_ws_proxy
@@ -29,19 +30,19 @@ logger = logging.getLogger('wslog')
 def init_chebi_search_manager():
     settings = get_settings()
     # These code completes WsClient initialization using flask app context
-    if not WsClient.search_manager:
+    if not WsClient.default_search_manager:
         chebi_proxy = get_chebi_ws_proxy()
         curation_table_file_path = settings.chebi.pipeline.curated_metabolite_list_file_location
         curation_table = CuratedMetaboliteTable.get_instance(curation_table_file_path)
         chebi_search_manager = ChebiSearchManager(ws_proxy=chebi_proxy, curated_metabolite_table=curation_table)
-        WsClient.search_manager = chebi_search_manager
+        WsClient.default_search_manager = chebi_search_manager
 
         
 
 @celery.task(bind=True, base=MetabolightsTask, max_retries=1, soft_time_limit=60*60*24, name="app.tasks.common_tasks.curation_tasks.validation.run_chebi_pipeline_task")
 def run_chebi_pipeline_task(self, study_id: str, user_token: str, annotation_file_name: str, email: str, classyfire_search: bool = True, update_study_maf: bool = False):
     output: Dict[str, Any] = {}   
-    start = datetime.datetime.now()
+    start = current_time()
     status = "initiated"
     output["study_id"] = study_id
     output["input_maf_file"] = annotation_file_name
@@ -66,7 +67,7 @@ def run_chebi_pipeline_task(self, study_id: str, user_token: str, annotation_fil
         output["Failure reason"] = f"{str(ex)}"
         raise ex
     finally:
-        end = datetime.datetime.now()
+        end = current_time()
         time_difference = end - start
         hours, remainder = divmod(time_difference.total_seconds(), 3600)
         minutes, seconds = divmod(remainder, 60)

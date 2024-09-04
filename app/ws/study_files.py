@@ -1084,7 +1084,7 @@ class StudyFilesReuse(Resource):
         search_result.obfuscationCode = study.obfuscationcode
         sortFileMetadataList(search_result.study)
         
-        return search_result.dict()
+        return search_result.model_dump()
 
         
         # return update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
@@ -1235,7 +1235,7 @@ class CopyFilesFolders(Resource):
         storage = StorageService.get_ftp_private_storage()
 
         result = storage.check_folder_sync_status(study_id, study.obfuscationcode, study_path)
-        return jsonify(result.dict())
+        return jsonify(result.model_dump())
 
     #     log_request(request)
     #     # param validation
@@ -1679,9 +1679,6 @@ class UnzipFiles(Resource):
             return result
         except Exception as ex:
             raise MetabolightsException(http_code=500, message=f"Unzip task submission was failed", exception=ex)
-        
-        
-        return {'Success': ret_msg}
 
 
 def clean_name(name):
@@ -1806,6 +1803,8 @@ class StudyFilesTree(Resource):
         if "obfuscation_code" in request.headers:
             obfuscation_code = request.headers["obfuscation_code"]
         
+        if not obfuscation_code and not user_token:
+            abort(401, message="At least one of them is requred: user token or obfuscation code.")
         # If false, only sync ISA-Tab metadata files
         # query validation
         UserService.get_instance().validate_user_has_read_access(user_token=user_token, study_id=study_id, obfuscationcode=obfuscation_code)
@@ -1878,11 +1877,11 @@ class StudyFilesTree(Resource):
                 sortFileMetadataList(search_result.study)
             except Exception as exc:
                 logger.error(f"Error for study {study.acc}: {str(exc)}")          
-                return LiteFileSearchResult().dict()
+                return LiteFileSearchResult().model_dump()
         
         search_result.uploadPath = upload_path
         search_result.obfuscationCode = study.obfuscationcode
-        return search_result.dict()
+        return search_result.model_dump()
         
 class FileList(Resource):
     @swagger.operation(
@@ -1936,6 +1935,9 @@ class FileList(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
+
+        if not obfuscation_code and not user_token:
+            abort(401, message="At least one of them is requred: user token or obfuscation code.")
 
         # query validation
         parser = reqparse.RequestParser()

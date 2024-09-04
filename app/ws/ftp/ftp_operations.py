@@ -99,14 +99,14 @@ class SyncCalculation(Resource):
         source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
         target = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
         status = client.rsync_dry_run(source, target, status_check_only=status_check_only)
-        return status.dict()        
+        return status.model_dump()        
         
         # study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
         # storage = StorageService.get_ftp_private_storage()
         
         # meta_calc_result = storage.calculate_sync_status(study_id, study.obfuscationcode, study_path, force=force_recalculate)
-        # # return jsonify({'result':{'meta_calc_result':meta_calc_result.dict(),'rdfiles_calc_result': rdfiles_calc_result.dict()}})
-        # return jsonify(meta_calc_result.dict())
+        # # return jsonify({'result':{'meta_calc_result':meta_calc_result.model_dump(),'rdfiles_calc_result': rdfiles_calc_result.model_dump()}})
+        # return jsonify(meta_calc_result.model_dump())
 
 
 class SyncFromFtpFolder(Resource):
@@ -203,7 +203,7 @@ class SyncFromFtpFolder(Resource):
         
         
         status = client.rsync(source, target, status_check_only=False)
-        return status.dict()
+        return status.model_dump()
 
         # study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
         # storage = StorageService.get_ftp_private_storage()
@@ -211,7 +211,7 @@ class SyncFromFtpFolder(Resource):
         # ftp_folder_name = f"{study_id.lower()}-{study.obfuscationcode}"
         # ignore_list = get_settings().file_filters.internal_mapping_list
         # meta_sync_status = storage.sync_from_storage(ftp_folder_name, study_path, ignore_list=ignore_list, logger=logger)
-        # return jsonify({'meta_sync_status': meta_sync_status.dict()})
+        # return jsonify({'meta_sync_status': meta_sync_status.model_dump()})
         # meta_sync_status,rdfiles_sync_status = storage.sync_from_storage(ftp_folder_name, study_path, ignore_list=ignore_list, logger=logger)
 
         # return jsonify({'meta_sync_status': meta_sync_status, 'files_sync_status': rdfiles_sync_status})
@@ -277,7 +277,7 @@ class FtpFolderSyncStatus(Resource):
         source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
         target = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
         status = client.rsync(source, target, status_check_only=True)
-        return status.dict()
+        return status.model_dump()
 
 class FtpFolderPermission(Resource):
     @swagger.operation(
@@ -631,7 +631,7 @@ class SyncFromStudyFolder(Resource):
         
         
         status = client.rsync(source, target, status_check_only=False)
-        return status.dict()
+        return status.model_dump()
     
         # log_request(request)
         # # param validation

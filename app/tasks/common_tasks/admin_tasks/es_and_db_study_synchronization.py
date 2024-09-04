@@ -4,7 +4,7 @@ import logging
 import os
 
 from app.tasks.worker import (MetabolightsTask, celery, send_email)
-from app.utils import MetabolightsDBException
+from app.utils import MetabolightsDBException, current_time
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
@@ -41,9 +41,9 @@ def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
         es = ElasticsearchService.get_instance()
         result = es.get_all_study_ids()
         if "hits" in result and result["hits"] and "hits" in result["hits"]:
-            studies= result["hits"]["hits"]
+            studies_list = result["hits"]["hits"]
             try:
-                for studies in studies:
+                for studies in studies_list:
                     studies_id = None
                     updated_date = None
                     if "_id" in studies:
@@ -102,7 +102,7 @@ def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
         updated = True
         if not out_of_date_studies and not unindexed_studies and not studies_not_in_db:
             updated = False
-        result = {"time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+        result = {"time": current_time().strftime("%Y-%m-%d %H:%M:%S"), 
                   "executed_on":  os.uname().nodename,
                 "status": f'{"UPDATED" if updated else "NO CHANGE"}',
                 "reindexed_studies": str(out_of_date_studies),

@@ -2,11 +2,12 @@ import datetime
 import json
 import logging
 import os
+from typing import Union
 
 import pandas as pd
 
 from app.tasks.worker import MetabolightsTask, report_internal_technical_issue, send_email, celery
-from app.utils import MetabolightsDBException
+from app.utils import MetabolightsDBException, current_time
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus
@@ -81,7 +82,7 @@ def create_study_folders(
 )
 def delete_study_folders(
     user_token: str,
-    study_id: str = None,
+    study_id: Union[None, str] = None,
     force_to_maintain=False,
     delete_metadata_storage_folders=True,
     delete_data_storage_folders=True,
@@ -145,7 +146,7 @@ def delete_study_folders(
 def maintain_storage_study_folders(
     user_token: str,
     send_email_to_submitter=False,
-    study_id: str = None,
+    study_id: Union[None, str] = None,
     force_to_maintain=False,
     maintain_metadata_storage=True,
     maintain_data_storage=True,
@@ -244,7 +245,7 @@ def maintain_storage_study_folders(
         df = pd.DataFrame(all_results, columns=headers)
 
         result = {
-            "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "time": current_time().strftime("%Y-%m-%d %H:%M:%S"),
             "executed_on": os.uname().nodename,
             "result": "Listed Below",
         }

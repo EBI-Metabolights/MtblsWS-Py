@@ -44,15 +44,30 @@ logger = logging.getLogger('wslog')
 
 
 class WsClient:
-    search_manager: Union[None, ChebiSearchManager] = None
+    default_search_manager: Union[None, ChebiSearchManager] = None
     email_service: Union[None, EmailService] = None
     elasticsearch_service: Union[None, ElasticsearchService] = None
 
     def __init__(self, search_manager: Union[None, ChebiSearchManager] = None, email_service: Union[None, EmailService] = None,
                  elasticsearch_service: Union[None, ElasticsearchService] = None):
-        WsClient.search_manager = search_manager
-        WsClient.email_service = email_service
-        WsClient.elasticsearch_service = elasticsearch_service
+        self.search_manager = search_manager if search_manager else WsClient.default_search_manager
+        if not self.search_manager:
+            chebi_proxy = get_chebi_ws_proxy()
+            curation_table_file_path = get_settings().chebi.pipeline.curated_metabolite_list_file_location
+            curation_table = CuratedMetaboliteTable.get_instance(curation_table_file_path)
+            chebi_search_manager = ChebiSearchManager(ws_proxy=chebi_proxy, curated_metabolite_table=curation_table)
+            WsClient.default_search_manager = chebi_search_manager
+            self.search_manager = chebi_search_manager
+        
+        self.email_service = email_service if email_service else WsClient.email_service
+        self.elasticsearch_service = elasticsearch_service if elasticsearch_service else WsClient.elasticsearch_service
+        if not self.elasticsearch_service:
+            db_manager = DBManager.get_instance()
+            study_settings = get_settings().study
+            elasticsearch_settings = get_settings().elasticsearch
+            self.elasticsearch_service = ElasticsearchService(settings=elasticsearch_settings,
+                                                        db_manager=db_manager, study_settings=study_settings)
+            WsClient.elasticsearch_service = self.elasticsearch_service
             
     def get_study_location(self, study_id, user_token):
         return commons.get_study_location(study_id, user_token)
@@ -73,7 +88,7 @@ class WsClient:
                 logger.warning(f"Result is not valid {str(result.err)}")
             return None
 
-        json_result = result.dict()
+        json_result = result.model_dump()
         return json_result
 
     @staticmethod

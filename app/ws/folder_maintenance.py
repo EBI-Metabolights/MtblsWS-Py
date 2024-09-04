@@ -11,7 +11,7 @@ import chardet
 import time
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Union
 
 import numpy as np
 import pandas as pd
@@ -19,6 +19,7 @@ from bs4 import BeautifulSoup
 from isatools import isatab
 from isatools import model as isatools_model
 from pydantic import BaseModel
+from unidecode import unidecode
 from app.config import get_settings
 
 from app.config.model.hpc_cluster import HpcClusterConfiguration
@@ -80,7 +81,6 @@ class StudyFolders(BaseModel):
     study_readonly_metadata_files_root_path: str = ""
     study_readonly_public_metadata_versions_root_path: str = ""
     study_readonly_integrity_check_files_root_path: str = ""
-    study_legacy_study_files_root_path: str = ""
 
     readonly_storage_recycle_bin_root_path: str = ""
     rw_storage_recycle_bin_root_path: str = ""
@@ -127,7 +127,6 @@ class FolderRootPaths(object):
         self.folders.study_readonly_integrity_check_files_root_path = self.study_settings.mounted_paths.study_readonly_integrity_check_files_root_path
         self.folders.readonly_storage_recycle_bin_root_path = self.study_settings.mounted_paths.readonly_storage_recycle_bin_root_path
         self.folders.rw_storage_recycle_bin_root_path = self.study_settings.mounted_paths.rw_storage_recycle_bin_root_path
-        self.folders.study_legacy_study_files_root_path = self.study_settings.mounted_paths.legacy_study_files_root_path
 
         
  
@@ -145,13 +144,12 @@ class FolderRootPaths(object):
         self.folders.study_readonly_metadata_files_root_path = mounted_paths.cluster_study_readonly_metadata_files_root_path
         self.folders.study_readonly_public_metadata_versions_root_path = mounted_paths.cluster_study_readonly_public_metadata_versions_root_path
         self.folders.study_readonly_integrity_check_files_root_path = mounted_paths.cluster_study_readonly_integrity_check_files_root_path
-        self.folders.study_legacy_study_files_root_path = mounted_paths.cluster_legacy_study_files_root_path
         self.folders.readonly_storage_recycle_bin_root_path = mounted_paths.cluster_readonly_storage_recycle_bin_root_path
         self.folders.rw_storage_recycle_bin_root_path = mounted_paths.cluster_rw_storage_recycle_bin_root_path
                
 
 class MaintenanceActionLog(BaseModel):
-    item: str = None
+    item: Union[None, str] = None
     action: MaintenanceAction = MaintenanceAction.INFO_MESSAGE
     parameters: Dict[str, str] = {}
     message: str = ""
@@ -166,8 +164,8 @@ class StudyFolderMaintenanceTask(object):
         study_status: StudyStatus,
         public_release_date: datetime,
         submission_date: datetime,
-        obfuscationcode: str = None,
-        settings: StudySettings = None,
+        obfuscationcode: Union[None, str] = None,
+        settings: Union[None, StudySettings] = None,
         task_name=None,
         delete_unreferenced_metadata_files=False,
         fix_tsv_file_headers=True,
@@ -182,7 +180,9 @@ class StudyFolderMaintenanceTask(object):
         future_actions_recompress_unexpected_archive_files=False,
         backup_study_private_ftp_metadata_files=True,
         apply_future_actions=False,
-        max_referenced_files_in_folder=200,
+        max_file_count_on_folder=200,
+        min_file_count_to_split_extensions=50,
+        max_file_count_on_splitted_folder=100,
         create_data_files_maintenance_file=True,
         cluster_execution_mode=False
     ) -> None:
@@ -249,7 +249,9 @@ class StudyFolderMaintenanceTask(object):
         self.future_actions_create_subfolders = future_actions_create_subfolders
         self.future_actions_compress_folders = future_actions_compress_folders
         self.future_actions_recompress_unexpected_archive_files = future_actions_recompress_unexpected_archive_files
-        self.max_referenced_files_in_folder = max_referenced_files_in_folder
+        self.max_file_count_on_folder = max_file_count_on_folder
+        self.min_file_count_to_split_extensions = min_file_count_to_split_extensions
+        self.max_file_count_on_splitted_folder = max_file_count_on_splitted_folder
         self.create_data_files_maintenance_file = create_data_files_maintenance_file
         self.apply_future_actions = apply_future_actions
         
@@ -343,7 +345,7 @@ class StudyFolderMaintenanceTask(object):
 
             
         # self.file_manager = MountedVolumeFileManager(f"{self.study_id}_local_file_manager")
-    def backup_private_ftp_metadata_files(self, folder_name: str = None, stage: str = "BACKUP"):
+    def backup_private_ftp_metadata_files(self, folder_name: Union[None, str] = None, stage: str = "BACKUP"):
         metadata_files_list = self.get_all_private_ftp_metadata_files(recursive=False)
         metadata_files_list.sort()
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
@@ -376,7 +378,7 @@ class StudyFolderMaintenanceTask(object):
             # for file_path in metadata_files_list:
             #     self.backup_file(file_path, reason="synced with metadata folder", backup_path=backup_folder_path, keep_file_on_folder=False, force_delete=True)
                 
-    def create_audit_folder(self, metadata_files_path: str=None, audit_folder_root_path : str=None, folder_name: str = None, metadata_files_signature_root_path: str=None , stage: str = "BACKUP"):
+    def create_audit_folder(self, metadata_files_path: Union[None, str] = None, audit_folder_root_path : Union[None, str] = None, folder_name: Union[None, str] = None, metadata_files_signature_root_path: Union[None, str] = None , stage: str = "BACKUP"):
         # if os.path.exists(self.study_metadata_files_path):
         metadata_files_list = self.get_all_metadata_files(search_path=metadata_files_path, recursive=False)
         metadata_files_list.sort()
@@ -522,7 +524,7 @@ class StudyFolderMaintenanceTask(object):
         return updated_file_names
 
     def _create_recompress_folder_actions(self, updated_file_names: Dict[str, str]) -> Dict[str, str]:
-        non_standard_compressed_file_extensions = {".rar", ".7z", ".z", ".g7z", ".arj", "tar", ".bz2", ".war"}
+        non_standard_compressed_file_extensions = {".rar", ".7z", ".z", ".g7z", ".arj", "tar", ".bz2", ".war", ".tar.gz", ".gz"}
         for key in updated_file_names:
             file = updated_file_names[key]
             if file:
@@ -553,7 +555,7 @@ class StudyFolderMaintenanceTask(object):
                     referenced_directories[dirname] = set()
                 referenced_directories[dirname].add(key)
         subfolders_map = {}
-        maximum = self.max_referenced_files_in_folder
+        maximum = self.max_file_count_on_folder
         for referenced_folder in referenced_directories:
             if len(referenced_directories[referenced_folder]) > maximum:
                 files = list(referenced_directories[referenced_folder])
@@ -566,16 +568,19 @@ class StudyFolderMaintenanceTask(object):
                         extensions_map[ext] = []
                     extensions_map[ext].append(key)
                 for extension in extensions_map:
-                    if len(extensions_map[extension]) > int(maximum / 2):
-                        extension_file_count = len(extensions_map[extension])
-                        folder_count = int(len(extensions_map[extension]) / maximum)
-                        if extension_file_count % maximum > 0:
+                    extension_file_count = len(extensions_map[extension])
+                    if extension_file_count > self.min_file_count_to_split_extensions:
+                        folder_count = int(len(extensions_map[extension]) / self.max_file_count_on_splitted_folder)
+                        if extension_file_count % self.max_file_count_on_splitted_folder > 0:
                             folder_count += 1
                         cleared_extension = extension.replace(".", "").upper()
                         prefix = f"{cleared_extension}_" if cleared_extension else ""
 
                         for i in range(folder_count):
-                            subfolder_name = f"{prefix}{(i + 1):03}"
+                            if folder_count == 1:
+                                subfolder_name = cleared_extension
+                            else:
+                                subfolder_name = f"{prefix}{(i + 1):03}"
                             new_folder = os.path.join(referenced_folder, subfolder_name)
                             if os.path.exists(new_folder):
                                 renamed_path = f"{new_folder}_{self.task_name}"
@@ -730,6 +735,18 @@ class StudyFolderMaintenanceTask(object):
                 sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
             )
             self.update_permission(private_ftp_root_path, permission)
+            
+            sub_folder = os.path.join(private_ftp_root_path, get_settings().study.internal_files_symbolic_link_name)
+            self._create_folder_future_actions(
+                sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
+            )
+            self.update_permission(sub_folder, Acl.AUTHORIZED_READ_WRITE.value)
+            
+            sub_folder = os.path.join(private_ftp_root_path, get_settings().study.internal_files_symbolic_link_name, get_settings().chebi.pipeline.chebi_annotation_sub_folder)
+            self._create_folder_future_actions(
+                sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
+            )
+            self.update_permission(sub_folder, Acl.AUTHORIZED_READ_WRITE.value)
         else:
             if self.study_status == StudyStatus.SUBMITTED:
                 self.update_permission(private_ftp_root_path, 0o770)
@@ -741,7 +758,19 @@ class StudyFolderMaintenanceTask(object):
                 sub_folder = os.path.join(private_ftp_root_path, "DERIVED_FILES")
                 self._create_folder_future_actions(
                     sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
-                )                
+                )
+            
+            sub_folder = os.path.join(private_ftp_root_path, get_settings().study.internal_files_symbolic_link_name)
+            self._create_folder_future_actions(
+                sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
+            )
+            self.update_permission(private_ftp_root_path, Acl.AUTHORIZED_READ.value)
+            
+            sub_folder = os.path.join(private_ftp_root_path, get_settings().study.internal_files_symbolic_link_name, get_settings().chebi.pipeline.chebi_annotation_sub_folder)
+            self._create_folder_future_actions(
+                sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
+            )
+            self.update_permission(private_ftp_root_path, Acl.AUTHORIZED_READ.value)
                          
             self.update_permission(private_ftp_root_path, permission)
         
@@ -1092,7 +1121,7 @@ class StudyFolderMaintenanceTask(object):
 
         return False
 
-    def read_hash_file(self, metadata_files_signature_root_path: str=None, hash_file_name: str=None) -> str:
+    def read_hash_file(self, metadata_files_signature_root_path: Union[None, str] = None, hash_file_name: Union[None, str] = None) -> str:
         if not hash_file_name:
             hash_file_name = self.study_settings.metadata_files_signature_file_name
         if not metadata_files_signature_root_path:
@@ -1108,7 +1137,7 @@ class StudyFolderMaintenanceTask(object):
                 return current_signature
         return None
     
-    def create_metadata_files_signature(self, metadata_files_path: str=None,  metadata_files_signature_root_path: str=None):
+    def create_metadata_files_signature(self, metadata_files_path: Union[None, str] = None,  metadata_files_signature_root_path: Union[None, str] = None):
         if not metadata_files_signature_root_path:
             metadata_files_signature_root_path = self.study_internal_files_path
         os.makedirs(metadata_files_signature_root_path, exist_ok=True)
@@ -1237,7 +1266,7 @@ class StudyFolderMaintenanceTask(object):
         with open(metadata_summary_file_path, "w") as f:
             f.writelines(rows)
 
-    def calculate_metadata_files_hash(self, search_path: str=None):
+    def calculate_metadata_files_hash(self, search_path: Union[None, str] = None):
         metadata_files_list = self.get_all_metadata_files(recursive=False, search_path=search_path)
         file_hashes = {}
         metadata_files_list.sort()
@@ -1269,7 +1298,7 @@ class StudyFolderMaintenanceTask(object):
         
         return self.get_all_metadata_files(recursive=recursive, search_path=private_ftp_root_path)
     
-    def get_all_metadata_files(self, recursive=False, search_path: str=None):
+    def get_all_metadata_files(self, recursive=False, search_path: Union[None, str] = None):
         metadata_files = []
         patterns = ["[asi]_*.txt", "m_*.tsv"]
         search_path = search_path if search_path else self.study_metadata_files_path
@@ -1552,7 +1581,6 @@ class StudyFolderMaintenanceTask(object):
             settings.study_metadata_files_root_path, study_id, study_settings.readonly_files_symbolic_link_name
         )        
         read_only_files_actual_path = os.path.join(settings.study_readonly_files_actual_root_path, study_id)
-        legacy_study_files_path = os.path.join(settings.study_legacy_study_files_root_path, study_id)
         read_only_audit_files_path = os.path.join(settings.study_readonly_audit_files_root_path, study_id)
         self._create_rw_storage_folder(settings.study_readonly_audit_files_root_path, 0o755, task_temp_path)
 
@@ -1567,28 +1595,9 @@ class StudyFolderMaintenanceTask(object):
         archived_audit_file_link_path = os.path.join(study_audit_folder_path, study_settings.readonly_audit_folder_symbolic_name)
         
         read_only_audit_files_actual_path = os.path.join(settings.study_readonly_audit_files_actual_root_path, study_id)
-        legacy_study_audit_path = os.path.join(legacy_study_files_path, self.study_settings.audit_folder_name)
-        # if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists:
-        #     logger.info(f"Legacy storage study data files folder is {legacy_study_files_path}")
-        #     logger.info(f"Legacy storage study audit folder is {legacy_study_audit_path}")
-            
-        # if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists and os.path.exists(legacy_study_files_path):
-        #     if self.study_status in [StudyStatus.DORMANT, StudyStatus.INREVIEW, StudyStatus.PUBLIC]:
-        #         logger.info(f"{read_only_files_actual_path} folder will be used for study data files")
-        #         self.maintain_study_symlinks(read_only_files_actual_path, read_only_files_path)
-        #     else:
-        #         logger.info(f"Legacy storage study files folder exists. {legacy_study_files_path} is used for study data files")
-        #         self.maintain_study_symlinks(legacy_study_files_path, read_only_files_path)
-        # else:
         logger.info(f"{read_only_files_actual_path} folder will be used for study data files")
         read_only_files_path = os.path.join(settings.study_readonly_files_root_path, study_id)
         self.maintain_study_symlinks(read_only_files_actual_path, read_only_files_path)
-                
-        # if self.study_settings.check_and_use_legacy_study_files_storage_if_it_exists and os.path.exists(legacy_study_audit_path):
-        #     logger.info(f"Legacy storage study files folder exists. {legacy_study_audit_path} is used for readonly study audit files")
-        #     self.maintain_study_symlinks(legacy_study_audit_path, read_only_audit_files_path)
-        # else:
-        #     logger.info(f"{read_only_audit_files_actual_path} is used for readonly study audit files")
         self.maintain_study_symlinks(read_only_audit_files_actual_path, read_only_audit_files_path)
         archived_folder_ref_path = os.path.join(read_only_audit_files_path, self.study_settings.audit_folder_name)
         self.maintain_study_symlinks(archived_folder_ref_path, archived_audit_file_link_path)
@@ -2083,8 +2092,10 @@ class StudyFolderMaintenanceTask(object):
     def sanitise_filename(self, filename: str):
         if not filename or not filename.strip():
             return ""
-        result = re.sub("[^/a-zA-Z0-9_.-]", "_", filename.strip())
-        return result
+        filename = unidecode(filename.strip())
+        filename = filename.replace("+", "_PLUS_")
+        filename = re.sub("[^/a-zA-Z0-9_.-]", "_", filename) 
+        return filename
 
     def write_tsv_file(self, dataframe: pd.DataFrame, file_name):
         try:
@@ -2112,13 +2123,17 @@ class StudyFolderMaintenanceTask(object):
         if not new_name.startswith(f"{prefix}{study_id}"):
             new_name = new_name[len(prefix) :]
             parse = new_name.split("_")
-            will_be_deleted = []
+            will_be_updated = {}
             for i in range(len(parse)):
-                if parse[i].lower().startswith("mtbl"):
-                    will_be_deleted.append(parse[i])
-            for item in will_be_deleted:
-                parse.remove(item)
-            new_name = f"{prefix}{study_id}_{'_'.join(parse)}"
+                if parse[i].lower().startswith("mtbls"):
+                    if len(parse[i]) > 5:
+                        will_be_updated[i] = parse[i][5:]
+                    else:
+                        will_be_updated[i] = ""
+            for i in will_be_updated:
+                parse[i] = ""
+            suffix = '_'.join(parse).replace("__", "_")
+            new_name = f"{prefix}{study_id}_{suffix}"
         return new_name
 
     def maintain_assay_files(self, investigation: isatools_model.Investigation):

@@ -17,11 +17,13 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import json
+import os
 from flask import request
 from flask_restful import Resource, abort, reqparse
 from isatools.model import Investigation
 from marshmallow import ValidationError
 from flask_restful_swagger import swagger
+from app.study_folder_utils import get_all_metadata_files
 from app.utils import metabolights_exception_handler
 from app.ws.db.types import CurationRequest
 from app.ws.isaApiClient import IsaApiClient
@@ -144,7 +146,11 @@ class IsaInvestigation(Resource):
         if not read_access:
             abort(403)
         study = StudyService.get_instance().get_study_by_acc(study_id)
-
+        metadata_files = get_all_metadata_files(study_location)
+        investigation_file = [x for x in metadata_files if os.path.basename(x).lower() == "i_investigation.txt"]
+        if not investigation_file:
+            abort(404, message=f"There is no i_Investigation.txt file on {study_id} folder.")
+            
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id,
                                                          user_token,
                                                          skip_load_tables=skip_load_tables,
@@ -161,7 +167,6 @@ class IsaInvestigation(Resource):
             response['mtblsStudy']['curationRequest'] = CurationRequest(study.curation_request).name
         response['mtblsStudy']['modifiedTime'] = study.updatedate.isoformat()
         response['mtblsStudy']['statusUpdateTime'] = study.status_date.isoformat() if study.status_date else ""
-
         response['mtblsStudy']['read_access'] = read_access
         response['mtblsStudy']['write_access'] = write_access
         response['mtblsStudy']['is_curator'] = is_curator

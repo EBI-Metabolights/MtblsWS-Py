@@ -30,7 +30,7 @@ from app.ws.db import types
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
-from app.utils import metabolights_exception_handler, MetabolightsException
+from app.utils import current_time, metabolights_exception_handler, MetabolightsException
 from app.ws.db.types import CurationRequest, UserRole
 from app.ws.db_connection import update_curation_request, update_modification_time, update_study_status, update_study_status_change_date
 from app.ws.ftp.ftp_utils import get_ftp_folder_access_status, toogle_ftp_folder_permission
@@ -101,7 +101,7 @@ class StudyModificationTime(Resource):
             user_token = request.headers["user_token"]
         UserService.get_instance().validate_user_has_curator_role(user_token)
         try:
-            current_time_value = datetime.datetime.now(datetime.timezone.utc)
+            current_time_value = current_time()
             update_modification_time(study_id, current_time_value)
             update_study_status_change_date(study_id, current_time_value)
             return {"Success": f"Modification time of study {study_id} is now {current_time_value.isoformat()}"}
@@ -205,13 +205,13 @@ class StudyStatus(Resource):
         study_location = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
         
         status_updated = False if study_status.replace(" ", "").upper() == db_study_status.upper() else True
-        current_time = datetime.datetime.now(datetime.timezone.utc)
+        now =  current_time()
         #     raise MetabolightsException(message=f"Status is already {str(study_status)} so there is nothing to change")
         ftp_private_storage = StorageService.get_ftp_private_storage()
         ftp_private_study_folder = study_id.lower() + '-' + obfuscation_code
         if status_updated:
         # Update the last status change date field
-            status_date_logged = update_study_status_change_date(study_id, current_time)
+            status_date_logged = update_study_status_change_date(study_id, now)
             if not status_date_logged:
                 logger.error("Could not update the status_date column for " + study_id)
         inv_file_path = os.path.join(study_location, get_settings().study.investigation_file_name)
@@ -223,9 +223,9 @@ class StudyStatus(Resource):
                                                          study_location=study_location)
         isa_study: Study = isa_study_item
         if is_curator:  # Curators can change the date to current date, submitters can not!
-            new_date = current_time
+            new_date = now
         else:
-            new_date = current_time + datetime.timedelta(+28)
+            new_date = now + datetime.timedelta(+28)
         new_date = new_date.strftime('%Y-%m-%d')
 
         if is_curator:  # User is a curator, so just update status without any further checks

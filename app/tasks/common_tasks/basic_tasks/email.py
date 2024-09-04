@@ -2,6 +2,7 @@ import datetime
 import os
 from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
+from app.utils import current_time
 
 from app.ws.db_connection import (
     get_email,
@@ -49,7 +50,7 @@ def send_test_email(user_token):
         user = UserService.get_instance().validate_user_has_curator_role(user_token)
         email_service = get_email_service(flask_app)
         user_email = user.username
-        time = datetime.datetime.now().isoformat()
+        time = current_time().isoformat()
         email_service.send_generic_email("Test Email", f"This email was sent at {time} from metabolights ws", "no-reply@ebi.ac.uk", user_email)
         return {
             "user_email": user_email,
