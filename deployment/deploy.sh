@@ -61,12 +61,13 @@ cd $DEPLOYMENTS_CHART_PATH
 ls -al
 echo "Template content"
 echo "---------------------------------------------------------------------"
-bash template.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG,sifImageFileUrl=$SIF_FILE_URL""
+echo "bash template.sh image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG,sifImageFileUrl=$SIF_FILE_URL"
+bash template.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG,sifImageFileUrl=$SIF_FILE_URL"
 echo "---------------------------------------------------------------------"
-
 
 echo "Deploy"
 echo "---------------------------------------------------------------------"
+echo bash install.sh image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG,sifImageFileUrl=$SIF_FILE_URL
 bash install.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG,sifImageFileUrl=$SIF_FILE_URL"
 if [ $? -eq 0 ]; then
     echo "Deployment completed."
