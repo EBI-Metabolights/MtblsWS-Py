@@ -205,6 +205,9 @@ class Ontology(Resource):
         mapping = args['mapping'].strip() if args['mapping'] else ""
         queryFields = parse_set_str(args['queryFields'])
         ontologies = parse_set_str(args['ontology'], lowercase=False)
+        obo_library_term = "http://purl.obolibrary.org/"
+        if term.startswith(obo_library_term):
+            term = term[term.rfind('/')+1:len(term)]
         if ":" in term:
             splitted_term = term.split(":")
             listed_ontologies = parse_set_str(splitted_term[0], lowercase=False)
