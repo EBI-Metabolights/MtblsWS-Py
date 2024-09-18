@@ -16,7 +16,9 @@ if __name__ == "__main__":
 
     try:
         worker_version = ping_datamover_worker(worker_name)
-
+        if not worker_version:
+            print(f"Liveness test failed. No response.")
+            exit(1)
         if worker_version == current_app.__api_version__:
             print(f"Liveness test successful.")
         else:
