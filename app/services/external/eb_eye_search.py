@@ -71,9 +71,14 @@ class EbEyeSearchService():
         else:
             add_metabolights_data(content_name=EbEyeSearchService.eb_eye_public_studies_ebi, data_format=EbEyeSearchService.content_type_xml, content=xml_str)
         logger.info("Data stored to DB!")
+        if thomson_reuters:
+            sub = "Thomson Reuters studies export completed"
+        else:
+            sub = "EB EYE public studies export completed"
         processed_time = (time.time() - start_time)/60
-        result = f"Processed study count - {i}; Process completed in {processed_time} minutes"
-        send_email("EB EYE public studies export completed", result, None, email, None)
+        server = os.uname()[1]
+        result = f"Processed study count - {i}; Process completed in {processed_time} minutes; Processed by {server}"
+        send_email(sub, result, None, email, None)
         return {"processed_studies": i, "completed_in": processed_time}
     
     @staticmethod
@@ -98,7 +103,8 @@ class EbEyeSearchService():
         add_metabolights_data(content_name=EbEyeSearchService.europe_pmc_study, data_format=EbEyeSearchService.content_type_xml, content=xml_str)
         logger.info(f"Data stored to DB")
         processed_time = (time.time() - start_time)/60
-        result = f"Processed study count - {i}; Process completed in {processed_time} minutes. \n  {EbEyeSearchService.linked_studies} Studies linked with EuropePMC. Those studies got {EbEyeSearchService.articles_linked} publications"
+        server = os.uname()[1]
+        result = f"Processed study count - {i}; Process completed in {processed_time} minutes. \n  {EbEyeSearchService.linked_studies} Studies linked with EuropePMC. Those studies got {EbEyeSearchService.articles_linked} publications; Processed by {server}"
         logger.info(f"Processed study count - {i}; Process completed in {processed_time} minutes. \n  {EbEyeSearchService.linked_studies} Metabolights Studies linked with EuropePMC. Those studies got {EbEyeSearchService.articles_linked} publications")
         send_email("EuropePMC export processing completed", result, None, email, None)
         return {"processed_studies": i, "completed_in": processed_time}
@@ -655,7 +661,8 @@ class EbEyeSearchService():
         add_metabolights_data(content_name=EbEyeSearchService.eb_eye_public_compounds_ebi, data_format=EbEyeSearchService.content_type_xml, content=xml_str)
         logger.info("Data stored to DB!")
         processed_time = (time.time() - start_time)/60
-        result = f"Processed compounds count - {i}; Process completed in {processed_time} minutes"
+        server = os.uname()[1]
+        result = f"Processed compounds count - {i}; Process completed in {processed_time} minutes; Processed by {server}"
         send_email("EB EYE Compounds export completed", result, None, email, None)
         return {"processed_compounds": i, "completed_in": processed_time}
     
