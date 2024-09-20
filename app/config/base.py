@@ -121,8 +121,9 @@ def get_yaml_settings_source(yaml_file, secrets_path) -> Dict[str, Any]:
         yaml_data = yaml.safe_load(file)
 
     json_data = json.dumps(yaml_data)
-    updated_settings_data = update_secrets(secrets_path, json_data)
-    return yaml.safe_load(updated_settings_data)
+    # Secret loading from .secret folder removed
+    #updated_settings_data = update_secrets(secrets_path, json_data)
+    return yaml.safe_load(json_data)
 
 
 class YamlConfigSettingsSource(PydanticBaseSettingsSource):
