@@ -37,7 +37,7 @@ def get_path_from_environment(name, dafault):
 
 PROJECT_PATH = Path(__file__).parent.parent.parent
 CONFIG_FILE_PATH = get_path_from_environment("CONFIG_FILE_PATH", os.path.join(PROJECT_PATH, "config.yaml"))
-SECRETS_PATH = get_path_from_environment("SECRETS_PATH", os.path.join(PROJECT_PATH, ".secrets"))
+SECRETS_PATH = None
 
 
 class ApplicationBaseSettings(BaseSettings):
@@ -121,8 +121,9 @@ def get_yaml_settings_source(yaml_file, secrets_path) -> Dict[str, Any]:
         yaml_data = yaml.safe_load(file)
 
     json_data = json.dumps(yaml_data)
-    updated_settings_data = update_secrets(secrets_path, json_data)
-    return yaml.safe_load(updated_settings_data)
+    # Secret loading from .secret folder removed
+    #updated_settings_data = update_secrets(secrets_path, json_data)
+    return yaml.safe_load(json_data)
 
 
 class YamlConfigSettingsSource(PydanticBaseSettingsSource):
