@@ -5,11 +5,11 @@ from typing import Union
 from app.config import ApplicationSettings, get_settings
 from app.services.study.model import StudyManagedFiles, StudyManagedFolders, StudyPaths
 from app.utils import MetabolightsException
+from app.ws.study import identifier_service
 
 
 
 class LiteStudyConfiguration(object):
-    STUDY_ID_PATTERN = re.compile("MTBLS[1-9][0-9]{0,10}")
 
     def __init__(
         self,
@@ -26,8 +26,10 @@ class LiteStudyConfiguration(object):
         self.obfuscation_code = obfuscation_code
         self.study_id = study_id
         self.cluster_mode = cluster_mode
-        if not study_id or not LiteStudyConfiguration.STUDY_ID_PATTERN.match(study_id):
-            raise MetabolightsException(message=f"Invalid study id '{self.study_id}'")
+        valid = identifier_service.default_mtbls_identifier.validate_format(self.study_id)
+        if not valid:
+            if not identifier_service.default_submission_identifier.validate_format(self.study_id):
+                raise MetabolightsException(message=f"Invalid study id '{self.study_id}'")
 
         self._paths: StudyPaths = StudyPaths()
         self._managed_folders = StudyManagedFolders()

@@ -8,6 +8,7 @@ from app.config import get_settings
 from app.config.model.elasticsearch import ElasticsearchSettings
 from app.config.model.study import StudySettings
 
+from app.study_folder_utils import convert_relative_to_real_path
 from app.utils import MetabolightsDBException, MetabolightsException, current_time
 from app.ws.db import models
 from app.ws.db.dbmanager import DBManager
@@ -241,8 +242,12 @@ class ElasticsearchService(object):
         UserService.get_instance().validate_user_has_curator_role(user_token)
         self.client.delete(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, id=study_id)
 
-    def _delete_study_index(self, study_id):
-        self.client.delete(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, id=study_id)
+    def _delete_study_index(self, study_id, ignore_errors: bool = False):
+        try:
+            self.client.delete(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, id=study_id)
+        except Exception as e:
+            if not ignore_errors:
+                raise e
                 
     @property
     def client(self) -> Elasticsearch:

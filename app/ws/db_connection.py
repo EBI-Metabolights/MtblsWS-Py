@@ -30,7 +30,7 @@ from app.config import get_settings
 from app.utils import MetabolightsDBException, current_time, current_utc_time_without_timezone
 from app.ws.db.types import CurationRequest
 from app.ws.settings.utils import get_study_settings
-
+from app.ws.study import identifier_service
 from app.ws.utils import get_single_file_information, check_user_token, val_email, fixUserDictKeys
 
 logger = logging.getLogger('wslog')
@@ -103,7 +103,8 @@ query_studies_user = """
       case when s.curation_request = 0 then 'MANUAL_CURATION' 
            when s.curation_request = 1 then 'NO_CURATION'
            when s.curation_request = 2 then 'SEMI_AUTOMATED_CURATION' 
-           else 'MANUAL_CURATION' end 
+           else 'MANUAL_CURATION' end,
+    s.id
     from studies s, users u, study_user su 
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
@@ -114,28 +115,28 @@ query_submitted_study_ids_for_user = """
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(user_token)s and s.status=0;
     """
 
-insert_study_with_study_id = """   
-    insert into studies (id, acc, obfuscationcode, releasedate, status, studysize, submissiondate, 
-    updatedate, validations, validation_status) 
+insert_study_with_submission_id = """   
+    insert into studies (id, obfuscationcode, releasedate, status, studysize, submissiondate, 
+    updatedate, validations, validation_status, reserved_submission_id, acc) 
     values ( 
         %(new_unique_id)s,
-        %(acc)s, 
         %(obfuscationcode)s,
         %(releasedate)s,
         0, 0, %(current_time)s, 
-        %(current_time)s, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
+        %(current_time)s, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error',
+        %(req_id)s,
+        %(req_id)s
+        );
     insert into study_user(userid, studyid) values (%(userid)s, %(new_unique_id)s);
 """
 
-update_study_id_sql = """  
+reserve_mtbls_accession_sql = """  
     LOCK TABLE stableid IN ACCESS EXCLUSIVE MODE;
     update stableid set seq = (select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s)  
     where prefix = %(stable_id_prefix)s; 
-    update studies set acc = 'MTBLS' || (select seq as current_acc from stableid where prefix = %(stable_id_prefix)s) 
-    where id = %(new_unique_id)s;
+    update studies set reserved_accession = 'MTBLS' || (select seq as current_acc from stableid where prefix = %(stable_id_prefix)s) 
+    where id = %(table_id)s;
 """
-insert_empty_study = f"{insert_study_with_study_id}\n{update_study_id_sql}"
-
 get_study_id_sql = """
 select acc from studies where id = %(unique_id)s;
 """
@@ -379,7 +380,11 @@ def get_all_studies_for_user(user_token):
         submission_date = row[2]
         status = row[3]
         curation_request = row[4]
+        table_id = row[5]
         
+        if not study_id:
+            logger.error(f"Study ID is empty for id {table_id}")
+            continue
         complete_study_location = os.path.join(study_location, study_id)
         complete_file_name = os.path.join(complete_study_location, file_name)
 
@@ -534,6 +539,87 @@ def get_obfuscation_code(study_id):
     release_connection(postgresql_pool, conn)
     return data
 
+def get_id_list_by_req_id(req_id: Union[None, str]):
+    identifier = identifier_service.default_submission_identifier
+    parts = identifier.get_id_parts(req_id)
+    if not parts or len(parts) < 2:
+        raise ValueError("Invalid request ID")
+
+    query = "select id from studies where reserved_submission_id = %(val)s or id = %(unique_id)s;"
+    postgresql_pool, conn, cursor = get_connection()
+    cursor.execute(query, {'val': req_id, 'unique_id': parts[1]})
+    data = cursor.fetchall()
+    release_connection(postgresql_pool, conn)
+    data = [x for x in data if x[0] == int(parts[1])]
+    
+    return data
+
+def reserve_mtbls_accession(study_id):
+    val_acc(study_id)
+    query = "select id from studies where acc = %(study_id)s;"
+    postgresql_pool, conn, cursor = get_connection()
+    try:
+        cursor.execute(query, {'study_id': study_id})
+        data = cursor.fetchall()
+        if data:
+            cursor.execute(reserve_mtbls_accession_sql, {'stable_id_prefix': "MTBLS", "table_id": data[0][0]})
+            conn.commit()
+            get_reserved_acc_query = "select id, reserved_accession from studies where id = %(table_id)s;"
+            cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
+            data = cursor.fetchall()
+            if data:
+                return data[0][1]
+    finally:    
+        release_connection(postgresql_pool, conn)
+    return None
+
+def update_study_id_from_mtbls_accession(study_id):
+    val_acc(study_id)
+    query = "select id, reserved_accession from studies where acc = %(study_id)s;"
+    postgresql_pool, conn, cursor = get_connection()
+    try:
+        cursor.execute(query, {'study_id': study_id})
+        data = cursor.fetchall()
+        if data:
+            set_reserved_acc_query = "update studies set acc = %(reserved_accession)s where id = %(table_id)s;"
+            cursor.execute(set_reserved_acc_query, {"table_id": data[0][0], "reserved_accession": data[0][1]})
+            conn.commit()
+            get_reserved_acc_query = "select id, acc from studies where id = %(table_id)s;"
+            cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
+            data = cursor.fetchall()
+            if data:
+                return data[0][1]
+    except Exception as e:
+        conn.rollback()
+        logger.error(str(e))
+    finally:    
+        release_connection(postgresql_pool, conn)
+    return None
+
+
+def update_study_id_from_submission_id(study_id):
+    val_acc(study_id)
+    query = "select id, reserved_submission_id from studies where acc = %(study_id)s;"
+    postgresql_pool, conn, cursor = get_connection()
+    try:
+        cursor.execute(query, {'study_id': study_id})
+        data = cursor.fetchall()
+        if data:
+            set_reserved_acc_query = "update studies set acc = %(reserved_submission_id)s where id = %(table_id)s;"
+            cursor.execute(set_reserved_acc_query, {"table_id": data[0][0], "reserved_submission_id": data[0][1]})
+            conn.commit()
+            get_reserved_acc_query = "select id, acc from studies where id = %(table_id)s;"
+            cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
+            data = cursor.fetchall()
+            if data:
+                return data[0][1]
+            
+    except Exception as e:
+        conn.rollback()
+        logger.error(str(e))
+    finally:    
+        release_connection(postgresql_pool, conn)
+    return None
 
 def get_study(study_id):
     val_acc(study_id)
@@ -805,15 +891,15 @@ def get_submitted_study_ids_for_user(user_token):
         complete_list.append(study_id)
     return complete_list
 
-
 def create_empty_study(user_token, study_id=None, obfuscationcode=None):
     email = get_email(user_token)
     # val_email(email)
     email = email.lower()
     conn = None
     postgresql_pool = None
-    acc = study_id
-    releasedate = (current_utc_time_without_timezone() + datetime.timedelta(days=365))
+    req_id = study_id
+    current_time = current_utc_time_without_timezone()
+    releasedate = (current_time + datetime.timedelta(days=365))
     if not obfuscationcode:
         obfuscationcode = str(uuid.uuid4())
     try:
@@ -835,20 +921,18 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
         cursor.execute(f"SELECT nextval('hibernate_sequence')")
         new_unique_id = cursor.fetchone()[0]
         conn.commit()
+        if not req_id:
+            req_id = identifier_service.default_submission_identifier.get_id(new_unique_id, current_time)
         
-        content = {"acc": acc,
-                   "obfuscationcode": obfuscationcode,
+        content = {"req_id": req_id,
+                    "obfuscationcode": obfuscationcode,
                    "releasedate": releasedate,
                    "email": email,
                    "new_unique_id": new_unique_id,
                    "userid": user_id,
-                   "stable_id_prefix": "MTBLS",
-                   "current_time": current_utc_time_without_timezone()
+                   "current_time": current_time
                    }
-        if not study_id:
-            cursor.execute(insert_empty_study, content)
-        else:
-            cursor.execute(insert_study_with_study_id, content)
+        cursor.execute(insert_study_with_submission_id, content)
         conn.commit()
         cursor.execute(get_study_id_sql, {"unique_id": new_unique_id})
         fetched_study = cursor.fetchone()
@@ -1341,7 +1425,8 @@ def add_metabolights_data(content_name, data_format, content):
 
 def val_acc(study_id=None):
     if study_id:
-        if not study_id.startswith("MTBLS") or study_id.lower() in stop_words:
+
+        if not (study_id.startswith("MTBLS") or study_id.startswith("REQ")) or study_id.lower() in stop_words:
             logger.error("Incorrect accession number string pattern")
             raise MetabolightsDBException(message=f"{study_id} is incorrect accession number string pattern", http_code=406)
 

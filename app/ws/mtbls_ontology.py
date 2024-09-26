@@ -20,6 +20,7 @@ from flask import request, jsonify
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from app.config import get_settings
+from app.study_folder_utils import convert_relative_to_real_path
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import MetaboLightsOntology, filter_term_definition, filter_term_label, load_ontology_file
@@ -81,7 +82,7 @@ class MtblsOntologyTerms(Resource):
         query = args['keyword'] if args['keyword'] else None
         case_insensitive = True if args['case_insensitive'] and args['case_insensitive'].lower() == "true" else False
         
-        filepath = get_settings().file_resources.mtbls_ontology_file
+        filepath = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
         mtbl_ontology: MetaboLightsOntology = load_ontology_file(filepath)
         prefix = "http://www.ebi.ac.uk/metabolights/ontology"
         limit = 20
@@ -136,7 +137,7 @@ class MtblsOntologyTerm(Resource):
         
         args = parser.parse_args(req=request)
         # query = args['q'] if args['q'] else None
-        filepath = get_settings().file_resources.mtbls_ontology_file
+        filepath = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
         mtbl_ontology: MetaboLightsOntology = load_ontology_file(filepath)
         prefix = "http://www.ebi.ac.uk/metabolights/ontology"
 

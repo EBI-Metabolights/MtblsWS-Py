@@ -52,7 +52,7 @@ class UserModel(BaseModel):
     email: str = Field(..., alias="email")  # excluded from es
     firstName: Union[None, str] = Field(None, alias="firstname")
     fullName: Union[None, str] = Field(None)  # assigned as not_analyzed in es
-    joinDate: Union[str, datetime.datetime] = Field(None, alias="joindate")  # excluded from es
+    joinDate: Union[None, str, int, datetime.datetime] = Field(None, alias="joindate")  # excluded from es
     lastName: Union[None, str] = Field(None, alias="lastname")
     orcid: Union[None, str] = Field(None, alias="orcid")
     role: Union[int, str] = Field(..., alias="role")  # excluded from es
@@ -101,6 +101,16 @@ class NewUserModel(BaseModel):
     mobilePhoneNumber: Union[None, str] = None  # not in es index mapping
     officePhoneNumber: Union[None, str] = None  # not in es index mapping
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+    
+    @field_validator('joinDate', check_fields=False)
+    @classmethod
+    def datetime_validation(cls, value):
+        if not value:
+            return None 
+        if isinstance(value, int):
+            return datetime.datetime.fromtimestamp(value)
+        return value
+
 
 class MetabolightsParameterModel(BaseModel):
     name:   Union[None, str] = Field(..., alias="name")
@@ -131,6 +141,15 @@ class SimplifiedUserModel(BaseModel):
     apiToken: str = Field(..., alias="apitoken")  # excluded from es
     model_config = ConfigDict(from_attributes=True)
 
+    
+    @field_validator('joinDate', check_fields=False)
+    @classmethod
+    def datetime_validation(cls, value):
+        if not value:
+            return None 
+        if isinstance(value, int):
+            return datetime.datetime.fromtimestamp(value)
+        return value
 
 class OrganismModel(BaseModel):
     organismName: Union[None, str] = None  # assigned as not_analyzed in es

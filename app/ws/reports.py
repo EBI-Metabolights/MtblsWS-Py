@@ -25,6 +25,7 @@ from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from app.config import get_settings
 
+from app.study_folder_utils import convert_relative_to_real_path
 from app.ws.db_connection import get_connection, get_study
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.misc_utilities.request_parsers import RequestParsers
@@ -477,7 +478,7 @@ class reports(Resource):
 
         if query == 'daily_stats':
             try:
-                sql = open('./resources/study_report.sql', 'r').read()
+                sql = open(convert_relative_to_real_path('resources/study_report.sql'), 'r').read()
                 postgresql_pool, conn, cursor = get_connection()
                 cursor.execute(sql)
                 dates = cursor.fetchall()
@@ -502,7 +503,7 @@ class reports(Resource):
             # try:
             file_name = 'study_report.json'
             study_data = readDatafromFile(os.path.join(reporting_path,  file_name))
-            sql = open('./resources/user_report.sql', 'r').read()
+            sql = open(convert_relative_to_real_path('resources/user_report.sql'), 'r').read()
             postgresql_pool, conn, cursor = get_connection()
             cursor.execute(sql)
             result = cursor.fetchall()

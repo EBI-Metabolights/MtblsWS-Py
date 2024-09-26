@@ -41,6 +41,7 @@ from app.config.utils import get_host_internal_url
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
+from app.study_folder_utils import convert_relative_to_real_path
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study
 from app.ws.db.types import StudyStatus
@@ -217,7 +218,7 @@ def curation_log_database_query():
         settings = get_settings()
         params = settings.database.connection.model_dump()
         with psycopg2.connect(**params) as conn:
-            sql = open('./resources/updateDB.sql', 'r').read()
+            sql = open(convert_relative_to_real_path('resources/updateDB.sql'), 'r').read()
             data = pd.read_sql_query(sql, conn)
 
         percentage_known = round(

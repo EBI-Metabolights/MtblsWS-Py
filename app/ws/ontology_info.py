@@ -38,6 +38,7 @@ from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
 from app.config import get_settings
+from app.study_folder_utils import convert_relative_to_real_path
 from app.utils import current_time, ttl_cache
 
 logger = logging.getLogger('wslog')
@@ -441,7 +442,7 @@ def get_ontology_search_result(term: str, branch, ontologies, mapping, queryFiel
     mtbls_term_prefix = "//www.ebi.ac.uk/metabolights/ontology/"
     if term.startswith(mtbls_term_prefix):
         term = "http:" + term
-        file = get_settings().file_resources.mtbls_ontology_file
+        file = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
         mtbls_ontology: MetaboLightsOntology = load_ontology_file(file)
         if mtbls_ontology:
             exact_search = mtbls_ontology.get_entity_by_iri(term)
@@ -654,14 +655,14 @@ def load_ontology_file(filepath)-> MetaboLightsOntology:
     return None
 
 def initiate_mtbls_model(): 
-    file = get_settings().file_resources.mtbls_ontology_file
+    file = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
     load_ontology_file(file)
 
 initiate_mtbls_model()
 
 @ttl_cache(2048)
 def getMetaboTerm(keyword, branch, mapping='', limit=100):
-    file = get_settings().file_resources.mtbls_ontology_file
+    file = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
     mtbls_ontology: MetaboLightsOntology = load_ontology_file(file)
     if not mtbls_ontology:
         return []
@@ -1246,6 +1247,6 @@ def getDescriptionURL(onto_name, iri):
 
 
 if __name__ == "__main__":
-    filepath = get_settings().file_resources.mtbls_ontology_file
+    filepath = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
     ontology_input = load_ontology_file(filepath)
     ontology_model = ontology_input

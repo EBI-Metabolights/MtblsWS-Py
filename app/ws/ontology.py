@@ -35,6 +35,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from owlready2 import get_ontology
 from app.config import get_settings
 from app.config.utils import get_host_internal_url
+from app.study_folder_utils import convert_relative_to_real_path
 from app.utils import current_time
 
 from app.ws.isaApiClient import IsaApiClient
@@ -108,7 +109,7 @@ class MtblsControlLists(Resource):
 
         args = parser.parse_args(req=request)
         name = args['name'].strip() if args['name'] else None
-        filepath = get_settings().file_resources.mtbls_ontology_file
+        filepath = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
         mtbl_ontology: MetaboLightsOntology = load_ontology_file(filepath)
         return jsonify(mtbl_ontology.get_default_control_lists(name))
         
@@ -1251,7 +1252,7 @@ def addEntity(new_term, supclass, definition=None):
         temp = str(int(last[-6:]) + 1).zfill(6)
         id = 'MTBLS_' + temp
         return id
-    file = get_settings().file_resources.mtbls_ontology_file
+    file = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
     try:
         onto = get_ontology(file).load()
 
@@ -1305,6 +1306,6 @@ def addEntity(new_term, supclass, definition=None):
             logger.info(e.args)
             abort(400)
             return []
-        file = get_settings().file_resources.mtbls_ontology_file
+        file = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
 
         onto.save(file=file, format='rdfxml')

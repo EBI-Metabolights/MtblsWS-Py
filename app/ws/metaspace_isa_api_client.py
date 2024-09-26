@@ -25,7 +25,7 @@ from flask_restful import Resource, abort
 from isatools.isatab import dump
 from isatools.model import *
 from app.config import get_settings
-
+from app import application_path
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.isaAssay import create_assay
 from app.ws.mtblsWSclient import WsClient
@@ -54,6 +54,14 @@ class MetaSpaceIsaApiClient(Resource):
 
         return inv
 
+    def get_study_file_template_path(self):
+        template_path = get_settings().file_resources.study_default_template_path
+
+        template_path = template_path if f".{os.sep}" not in template_path else template_path.replace(f".{os.sep}", "", 1)
+        if not template_path.startswith(os.sep) and f":{os.sep}" not in template_path:
+            template_path = os.path.join(application_path, template_path)
+        return template_path
+
     def new_study(self, std_title, std_description, mtspc_obj, output_dir,
                   study_id=None, user_token=None, obfuscation_code=None, persist=False):
         print("Creating ISA-Tab investigation file.")
@@ -73,7 +81,7 @@ class MetaSpaceIsaApiClient(Resource):
 
         if not isa_inv:
             try:
-                from_path = get_settings().file_resources.study_default_template_path
+                from_path = self.get_study_file_template_path()
                 to_path = output_dir
                 copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
                 # status, message = convert_to_isa(to_path, study_id)

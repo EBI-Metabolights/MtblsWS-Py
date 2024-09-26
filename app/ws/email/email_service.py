@@ -98,7 +98,7 @@ class EmailService(object):
         host = get_settings().server.service.ws_app_base_link
         public_study_url = os.path.join(host, study_id)
         private_study_url = os.path.join(host, "editor", "study", study_id)
-        subject_name = f"Congratulations! Your study {study_id} has been successfully processed!"
+        subject_name = f"{study_id}: Your MetaboLights study request has been successfully processed!"
 
         content = {
             "study_id": study_id,
@@ -126,7 +126,7 @@ class EmailService(object):
         }
 
         body = self.get_rendered_body("requested_ftp_folder_created.html", content)
-        subject_name = f"Requested Study upload folder for {study_id}"
+        subject_name = f"{study_id}:  MetaboLights private FTP upload folder for your submission"
 
         self.send_email(subject_name, body, submitters_mail_addresses, user_email)
 
