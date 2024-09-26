@@ -27,6 +27,7 @@ from flask_restful_swagger import swagger
 from app.config import get_settings
 from app.config.utils import get_host_internal_url
 
+from app.study_folder_utils import convert_relative_to_real_path
 from app.ws.cluster_jobs import submit_job
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -287,7 +288,7 @@ class fellaPathway(Resource):
 
 
 def match_chebi_kegg(chebiID, KeggID):
-    df = pd.read_csv('./resources/chebi_kegg.tsv', sep='\t')
+    df = pd.read_csv(convert_relative_to_real_path('resources/chebi_kegg.tsv'), sep='\t')
     df['CHEBIID_c'] = df['CHEBIID'].map(lambda x: x.lstrip('chebi:'))
     df['KEGGID_c'] = df['KEGGID'].map(lambda x: x.lstrip('cpd:'))
 
@@ -299,7 +300,7 @@ def match_chebi_kegg(chebiID, KeggID):
 
 
 def match_hmdb_kegg(hmdbID, KeggID):
-    df = pd.read_csv('./resources/hmdb_kegg.tsv', sep='\t')
+    df = pd.read_csv(convert_relative_to_real_path('resources/hmdb_kegg.tsv'), sep='\t')
     df['HMDBID_c'] = df['HMDBID'].map(lambda x: x.lstrip('hmdb:'))
     df['KEGGID_c'] = df['KEGGID'].map(lambda x: x.lstrip('cpd:'))
 
@@ -429,7 +430,7 @@ def uniqueOrganism(studyID):
 
 
 def get_kegg_organism_abbr(organism):
-    df = pd.read_csv('./resources/KEGG organism list.tsv', sep='\t')
+    df = pd.read_csv(convert_relative_to_real_path('resources/KEGG organism list.tsv'), sep='\t')
     try:
         res = df[df['Organisms.1'].str.lower().str.contains(organism.lower())]['Organisms'].iloc[0]
         return res

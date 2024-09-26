@@ -21,7 +21,7 @@ from isatools import model as isatools_model
 from pydantic import BaseModel
 from unidecode import unidecode
 from app.config import get_settings
-
+from app import application_path
 from app.config.model.hpc_cluster import HpcClusterConfiguration
 from app.config.model.study import StudySettings
 from app.file_utils import make_dir_with_chmod
@@ -1679,9 +1679,8 @@ class StudyFolderMaintenanceTask(object):
         
         
         investigation_file_path = os.path.join(self.study_metadata_files_path, study_settings.investigation_file_name)
-        temaplate_investigation_file_path = os.path.join(
-            get_settings().file_resources.study_default_template_path, study_settings.investigation_file_name
-        )
+        template_path = self.get_study_file_template_path()
+        temaplate_investigation_file_path = os.path.join(template_path, study_settings.investigation_file_name)
         investigation_file_candidates = glob.glob(os.path.join(self.study_metadata_files_path, "i_*.txt"))
 
         selected_investigation_file = None
@@ -1746,6 +1745,15 @@ class StudyFolderMaintenanceTask(object):
             )
             self.actions.append(action_log)
             raise ex
+
+
+    def get_study_file_template_path(self):
+        template_path = get_settings().file_resources.study_default_template_path
+
+        template_path = template_path if f".{os.sep}" not in template_path else template_path.replace(f".{os.sep}", "", 1)
+        if not template_path.startswith(os.sep) and f":{os.sep}" not in template_path:
+            template_path = os.path.join(application_path, template_path)
+        return template_path
 
     def maintain_investigation_file_content(self, investigation: isatools_model.Investigation):
         investigation_file_path = os.path.join(self.study_metadata_files_path, self.investigation_file_name)
@@ -1963,11 +1971,11 @@ class StudyFolderMaintenanceTask(object):
 
     def maintain_sample_file(self, investigation: isatools_model.Investigation):
         study_id = self.study_id
-        study_template_path = get_settings().file_resources.study_default_template_path
         short_sample_file_name = "s_" + study_id.upper() + ".txt"
         default_sample_file_path = os.path.join(self.study_metadata_files_path, short_sample_file_name)
         investigation_file_path = os.path.join(self.study_metadata_files_path, self.investigation_file_name)
-        temaplate_sample_file_path = os.path.join(study_template_path, self.study_settings.template_sample_file_name)
+        template_path = self.get_study_file_template_path()
+        temaplate_sample_file_path = os.path.join(template_path, self.study_settings.template_sample_file_name)
         if investigation and investigation.studies and investigation.studies[0]:
             study: isatools_model.Study = investigation.studies[0]
             sample_file_path = os.path.join(self.study_metadata_files_path, study.filename)

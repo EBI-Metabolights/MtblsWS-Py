@@ -918,7 +918,7 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
             aqc_file_value = None
             nmr_data_row = False
             derived_data_value = None
-            for header, value in row.iteritems():  # Check cells
+            for header, value in row.items():  # Check cells
                 if header == raw_file:
                     raw_tested = True
                     if value:

@@ -40,7 +40,15 @@ class CurationRequest(int, Enum):
             return CurationRequest.SEMI_AUTOMATED_CURATION
         return None
 
-
+    def to_camel_case_str(self):
+        if self.value == 0:
+            return "Manual Curation"
+        if self.value == 1:
+            return "No Curation"
+        elif self.value == 2:
+            return "Semi-automated Curation"
+        return "Manual Curation"
+    
 class UserStatus(Enum):
     NEW = 0
     VERIFIED = 1
@@ -73,13 +81,13 @@ class StudyStatus(Enum):
         if not name:
             return StudyStatus.SUBMITTED
         if name.replace(" ", "").upper() == "SUBMITTED":
-            return StudyStatus.INCURATION
+            return StudyStatus.SUBMITTED
         elif name.replace(" ", "").upper() == "INCURATION":
-            return StudyStatus.INREVIEW
+            return StudyStatus.INCURATION
         elif name.replace(" ", "").upper() == "INREVIEW":
-            return StudyStatus.PUBLIC
+            return StudyStatus.INCURATION
         elif name.replace(" ", "").upper() == "PUBLIC":
-            return StudyStatus.DORMANT
+            return StudyStatus.PUBLIC
         return StudyStatus.DORMANT
 
     @staticmethod
@@ -95,6 +103,19 @@ class StudyStatus(Enum):
         elif value == 4:
             return StudyStatus.DORMANT
         return StudyStatus.DORMANT
+
+    def to_camel_case_str(self):
+        if self.value == 0:
+            return "Submitted"
+        if self.value == 1:
+            return "In Curation"
+        elif self.value == 2:
+            return "In Review"
+        elif self.value == 3:
+            return "Public"
+        elif self.value == 4:
+            return "Dormant"
+        return "Dormant"
 
 class StudyTaskStatus(str, Enum):
     NOT_EXECUTED = 'NOT_EXECUTED'

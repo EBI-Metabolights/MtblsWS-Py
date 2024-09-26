@@ -17,27 +17,34 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import datetime
+import glob
 import json
 import logging
 import os
+import shutil
 
 from flask import current_app as app
 from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
+from pandas import DataFrame
 from app.config import get_settings
+from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import create_links_on_data_storage, create_links_on_private_storage, maintain_storage_study_folders
 from app.ws.db import types
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
 from app.utils import current_time, metabolights_exception_handler, MetabolightsException
 from app.ws.db.types import CurationRequest, UserRole
-from app.ws.db_connection import update_curation_request, update_modification_time, update_study_status, update_study_status_change_date
+from app.ws.db_connection import reserve_mtbls_accession, update_curation_request, update_modification_time, update_study_id_from_mtbls_accession, update_study_id_from_submission_id, update_study_status, update_study_status_change_date
+from app.ws.elasticsearch.elastic_service import ElasticsearchService
+from app.ws.folder_maintenance import StudyFolderMaintenanceTask
 from app.ws.ftp.ftp_utils import get_ftp_folder_access_status, toogle_ftp_folder_permission
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
+from app.ws.utils import read_tsv, write_tsv
 from app.ws.validation_utils import ValidationReportFile, get_validation_report
 from isatools.model import Study
 logger = logging.getLogger('wslog')
@@ -164,7 +171,7 @@ class StudyStatus(Resource):
         ]
     )
     @metabolights_exception_handler
-    def put(self, study_id):
+    def put(self, study_id: str):
 
         # param validation
         if study_id is None:
@@ -259,25 +266,131 @@ class StudyStatus(Resource):
 
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True)
 
-        status, message = wsc.reindex_study(study_id, user_token)
+        current_study_status = types.StudyStatus.from_int(study.status)
+        requested_study_status = types.StudyStatus.from_name(study_status.upper())
+        
+        updated_study_id = self.update_db_study_id(study_id, current_study_status, requested_study_status, study.reserved_accession, study.reserved_submission_id)
+        if study_id != updated_study_id:
+            self.refactor_study_folder(study, study_location, user_token, study_id, updated_study_id)
+            ElasticsearchService.get_instance()._delete_study_index(study_id, ignore_errors=True)
+            ftp_private_study_folder = updated_study_id.lower() + '-' + obfuscation_code
+        ElasticsearchService.get_instance()._reindex_study(updated_study_id, user_token)
+        study = StudyService.get_instance().get_study_by_acc(updated_study_id)
+        current_curation_request = CurationRequest(study.curation_request)
+        current_status = types.StudyStatus(study.status)
+        response = {"release-date": release_date, 
+                    "curation_request":  current_curation_request.to_camel_case_str(), 
+                    "assigned_study_id": updated_study_id, 
+                    "assigned_status": current_status.to_camel_case_str(),
+                    "assigned_status_code": current_status.value,
+                    "curation_request_code": current_curation_request, 
+                    "study_table_id": study.id}
         # Explictly changing the FTP folder permission for In Curation and Submitted state
         if db_study_status.lower() != study_status.lower():
             if study_status.lower() == 'in curation':
-                ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ)
+                if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
+                    ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ)
 
             if study_status.lower() == 'submitted':
-                ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ_WRITE)
-            if curation_request is not None:
-                return {"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'",
-                    "release-date": release_date, "curation_request": curation_request_str}
-            return {"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'",
-                    "release-date": release_date}
-        else:
-            if curation_request is not None:
-                return {"Success": f"Status updated to {study_status}",
-                        "release-date": release_date, "curation_request": curation_request_str}
-            return {"Success": f"Status updated to {study_status}", "release-date": release_date}
+                if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
+                    ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ_WRITE)
 
+            response.update({"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'"})
+            return response
+        else:
+            response.update({"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'"})
+            return response
+
+
+    def refactor_study_folder(self, study, study_location: str, user_token, study_id: str, updated_study_id: str):
+        if study_id == updated_study_id:
+            return
+        maintenance_task = StudyFolderMaintenanceTask(
+            updated_study_id,
+            types.StudyStatus(study.status),
+            study.releasedate,
+            study.submissiondate,
+            task_name="STATUS_UPDATE",
+            obfuscationcode=study.obfuscationcode,
+            delete_unreferenced_metadata_files=False,
+            settings=get_settings().study,
+            apply_future_actions=True,
+        )
+        maintenance_task.create_audit_folder()
+        
+        isa_study_item, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
+        # update investigation file
+        isa_inv.identifier = updated_study_id
+        if isa_study_item:
+            isa_study_item.identifier = updated_study_id
+            study_filename: str = isa_study_item.filename
+            isa_study_item.filename = study_filename.replace(study_id, updated_study_id, 1)
+            for assay in isa_study_item.assays:
+                assay.filename = assay.filename.replace(study_id, updated_study_id, 1)
+            iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True)
+    
+        # update assay file (maf file references) and rename all metadata files
+        metadata_files_result = glob.iglob(os.path.join(study_location, '?_*.t??'))
+        metadata_files = [x for x in metadata_files_result]
+        for metadata_file in metadata_files:
+            base_name = os.path.basename(metadata_file)
+            if base_name.startswith('a_'):
+                assay_df = maintenance_task.read_tsv_file(metadata_file)
+                for column in assay_df.columns:
+                    if "Metabolite Assignment File" in column:
+                        assay_df[column] = assay_df[column].apply(lambda x: x.replace(study_id, updated_study_id, 1) if x else "")
+                        maintenance_task.write_tsv_file(assay_df, metadata_file)
+            new_name = os.path.basename(metadata_file).replace(study_id, updated_study_id, 1)
+            target_metadata_path = os.path.join(os.path.dirname(metadata_file), new_name)
+            if metadata_file != target_metadata_path:
+                shutil.move(metadata_file, target_metadata_path)
+        
+        # create symbolic links on rw storage
+        mounted_paths = get_settings().study.mounted_paths
+        managed_paths = [mounted_paths.study_metadata_files_root_path, 
+                         mounted_paths.study_audit_files_root_path, 
+                         mounted_paths.study_internal_files_root_path]
+
+        for root_path in managed_paths:
+            new_path = os.path.join(root_path, updated_study_id)
+            current_path = os.path.join(root_path, study_id)
+            if not os.path.exists(new_path):
+                maintenance_task.maintain_study_symlinks(current_path, new_path)
+            
+        # create symbolic links on services storage
+        inputs = {"updated_study_id": updated_study_id, 
+                  "study_id": study_id}
+        create_links_on_data_storage.apply_async(kwargs=inputs)
+        
+        # create symbolic links on private ftp storage
+        inputs = {"updated_study_id": updated_study_id, 
+                  "study_id": study_id,
+                  "obfuscation_code": study.obfuscationcode}
+        create_links_on_private_storage.apply_async(kwargs=inputs)
+
+
+    def update_db_study_id(self, current_study_id: str, current_study_status: types.StudyStatus, requested_study_status: types.StudyStatus, reserved_accession: str, reserved_submission_id: str):
+        mtbls_accession_states = (types.StudyStatus.INCURATION, types.StudyStatus.INREVIEW, types.StudyStatus.PUBLIC)
+        submission_id_states = (types.StudyStatus.SUBMITTED, types.StudyStatus.DORMANT)
+        mtbls_prefix = get_settings().study.accession_number_prefix
+        submission_id_prefix = get_settings().study.submission_id_prefix
+        target_study_id = current_study_id
+        if requested_study_status in mtbls_accession_states and current_study_status in submission_id_states and not current_study_id.startswith(mtbls_prefix):
+            if not reserved_accession:
+                reserve_mtbls_accession(current_study_id)
+            target_study_id = update_study_id_from_mtbls_accession(current_study_id)
+            if not target_study_id:
+                raise MetabolightsException(http_code=403, message=f"Error while assigning MetaboLights accession number for {current_study_id}")
+
+        elif requested_study_status in submission_id_states and current_study_status in mtbls_accession_states and not current_study_id.startswith(submission_id_prefix):
+            target_study_id = update_study_id_from_submission_id(current_study_id)
+            if not target_study_id:
+                raise MetabolightsException(http_code=403, message=f"Error while assigning MetaboLights submission id for {current_study_id}")
+        if not target_study_id:
+            raise MetabolightsException(message="Could not update the study id")
+        return target_study_id
 
     @staticmethod
     def update_status(study_id, study_status, is_curator=False, obfuscation_code=None, user_token=None):

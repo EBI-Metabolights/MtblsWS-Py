@@ -8,11 +8,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.ws.email.email_service import EmailService
 from app.ws.mtblsWSclient import WsClient
 from app.wsapp_config import initialize_app
+from app import application_path
 
 
 @pytest.fixture(scope="session")
 def flask_app():
-    instance_dir = os.path.join(os.getcwd(), "instance")
+    instance_dir = os.path.join(application_path, "instance")
 
     if "INSTANCE_DIR" in os.environ and os.environ["INSTANCE_DIR"]:
         instance_dir = os.environ["INSTANCE_DIR"]

@@ -6,7 +6,7 @@ from typing import Dict, List, Union
 
 from pydantic import BaseModel
 
-from app.config.model.study import StudySettings
+from app import application_path
 
 STOP_FOLDER_EXTENSIONS = {".raw", ".d", ".fid"}
 
@@ -21,6 +21,16 @@ SKIP_FILE_EXTENSIONS =  {".__MACOSX"}
 METADATA_FILE_PREFIXES = {"a_", "i_", "s_", "m_"}
 MANAGED_FOLDERS = {"FILES", "FILES/RAW_FILES", "FILES/DERIVED_FILES"}
 
+
+
+def convert_relative_to_real_path(relative_path: str) -> str:
+    if not relative_path or relative_path.startswith(os.sep):
+        return relative_path
+    if relative_path == ".":
+        return application_path
+    removed_prefix = relative_path.replace(f".{os.sep}", "", 1) if relative_path.startswith(f".{os.sep}") else relative_path
+    return os.path.join(application_path, removed_prefix)
+    
 
 
 class FileDescriptor(BaseModel):

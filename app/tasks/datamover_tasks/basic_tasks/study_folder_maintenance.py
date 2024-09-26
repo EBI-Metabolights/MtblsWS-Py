@@ -2,10 +2,12 @@ import datetime
 import json
 import logging
 import os
+import shutil
 from typing import Union
 
 import pandas as pd
 
+from app.config import get_settings
 from app.tasks.worker import MetabolightsTask, report_internal_technical_issue, send_email, celery
 from app.utils import MetabolightsDBException, current_time
 from app.ws.db.dbmanager import DBManager
@@ -138,6 +140,57 @@ def delete_study_folders(
         return True
     except Exception as ex:
         raise ex
+
+
+
+@celery.task(
+    base=MetabolightsTask,
+    name="app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance.create_links_on_data_storage",
+)
+def create_links_on_data_storage(study_id: str, updated_study_id: str):
+    mounted_paths = get_settings().study.mounted_paths
+    managed_paths = [mounted_paths.study_readonly_audit_files_actual_root_path, 
+                        mounted_paths.study_readonly_files_actual_root_path, 
+                        mounted_paths.study_readonly_integrity_check_files_root_path,
+                        mounted_paths.study_readonly_public_metadata_versions_root_path,
+                        mounted_paths.study_readonly_metadata_files_root_path]
+
+    for root_path in managed_paths:
+        new_path = os.path.join(root_path, updated_study_id)
+        current_path = os.path.join(root_path, study_id)
+        if not os.path.exists(new_path):
+            if os.path.islink(new_path):
+                current_target = os.readlink(new_path)
+                if current_target == new_path:
+                    continue
+                else:
+                    os.unlink(new_path)
+
+            if os.path.exists(new_path):
+                continue
+            os.symlink(current_path, new_path, target_is_directory=True)
+
+
+
+@celery.task(
+    base=MetabolightsTask,
+    name="app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance.create_links_on_private_storage",
+)
+def create_links_on_private_storage(study_id: str, updated_study_id: str, obfuscation_code: str):
+    folder_name = f"{study_id.lower()}-{obfuscation_code}"
+    new_folder_name = f"{updated_study_id.lower()}-{obfuscation_code}"
+       
+    mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+    new_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, new_folder_name)
+    current_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, folder_name)
+    if not os.path.exists(new_path):
+        if os.path.islink(new_path):
+            current_target = os.readlink(new_path)
+            if current_target != new_path:
+                os.unlink(new_path)
+        if not os.path.exists(new_path):
+            os.symlink(current_path, new_path, target_is_directory=True)
+            
 
 @celery.task(
     base=MetabolightsTask,

@@ -269,6 +269,11 @@ def get_input_permission_value(acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE)
 
 
 def update_permission(path_item, permission):
+    if not os.path.exists(path_item):
+        result = {
+                "status": False,
+                "message": f"Path '{path_item}' does not exist.",
+            }
     current_permission = os.stat(path_item).st_mode & 0o777
     current_permission_str = oct(current_permission).replace("0o", "")
     permission_str = oct(permission & 0o777).replace("0o", "")
