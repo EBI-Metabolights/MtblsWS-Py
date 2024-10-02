@@ -3,62 +3,59 @@ variables:
   API_VERSION: "2.2.0"
 workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "migration"
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "migration"
 stages:
-  - build
-  - deploy
+- build
+- deploy
 
 build_docker:
   stage: build
   script:
-    - bash "deployment/steps/build_container.sh"
+  - bash "deployment/steps/build_container.sh"
 
 build_sif:
   stage: build
   script:
-    - bash "deployment/steps/build_sif.sh"
+  - bash "deployment/steps/build_sif.sh"
 
 deploy_ws:
   stage: deploy
   rules:
-    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development"
-      when: on_success
-    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "migration"
-      when: manual
-      allow_failure: true
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development"
+    when: on_success
+  - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "migration"
+    when: manual
+    allow_failure: true
   script:
-    - bash "deployment/steps/deploy_ws.sh"
+  - bash "deployment/steps/deploy_ws.sh"
 
 deploy_common_worker:
   stage: deploy
   rules:
-    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development"
-      when: on_success
-    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "migration"
-      when: manual
-      allow_failure: true
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development"
+    when: on_success
+  - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "migration"
+    when: manual
+    allow_failure: true
   script:
-    - bash "deployment/steps/deploy_common_worker.sh"
+  - bash "deployment/steps/deploy_common_worker.sh"
 
 deploy_datamover_worker:
   stage: deploy
   rules:
-    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development"
-      when: on_success
-    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "migration"
-      when: manual
-      allow_failure: true
+  - if: $CI_COMMIT_BRANCH == "development"
+    when: on_success
   script:
-    - bash "deployment/steps/deploy_datamover_worker.sh"
+  - bash "deployment/steps/deploy_datamover_worker.sh"
 
 
 deploy_datamover_proxy:
   stage: deploy
   rules:
-    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development"
-      when: on_success
-    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "migration"
-      when: manual
-      allow_failure: true
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "staging"
+    when: on_success
+  - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "migration"
+    when: manual
+    allow_failure: true
   script:
-    - bash "deployment/steps/deploy_datamover_proxy.sh"
+  - bash "deployment/steps/deploy_datamover_proxy.sh"
