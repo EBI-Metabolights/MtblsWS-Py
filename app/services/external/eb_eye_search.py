@@ -12,7 +12,7 @@ from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import ContactModel, MetaboLightsCompoundModel, PublicationModel, StudyModel
 from app.ws.db.schemes import User
 from app.ws.db.wrappers import update_study_model_from_directory
-from app.ws.db_connection import get_public_studies, add_metabolights_data
+from app.ws.db_connection import get_public_studies, get_all_studies, add_metabolights_data
 from app.ws.dom_utils import create_generic_element, create_generic_element_attribute
 from app.ws.study.study_service import StudyService
 from app.services.compound.compound_service import CompoundService
@@ -80,6 +80,76 @@ class EbEyeSearchService():
         result = f"Processed study count - {i}; Process completed in {processed_time} minutes; Processed by {server}"
         send_email(sub, result, None, email, None)
         return {"processed_studies": i, "completed_in": processed_time}
+    
+    @staticmethod
+    def europe_publication_report(user_token: str):
+        start_time = time.time()
+        study_list = get_all_studies(user_token=user_token)
+        #study_list = ['MTBLS7519', 'MTBLS10757', 'MTBLS3923', 'MTBLS9845', 'MTBLS8577']
+        email = EbEyeSearchService.get_email_by_token(user_token=user_token)
+        study_str = "StudyId,CreatedDate,StudyStatus,HasPublication,DoiHit,TitleHit,PublicationStatus"
+        i=0
+        for study in study_list:
+            if i == 5:
+                break
+            study_id = study[0]
+            study_status = study[4]
+            logger.info(f"Exporting  the study {study_id} for EuropePMC")
+            has_publication, doi_hit, title_hit, publication_status = EbEyeSearchService.query_europe_pmc(study_id=study_id)
+            study_str = f"{study_str}\n{study_id},{study_status},{has_publication},{doi_hit},{title_hit},{publication_status}"
+            i = i+1
+        logger.info(f"processing completed for all the studies; Processed count  - {i}")
+        #xml_str = doc.toprettyxml(indent="")        
+        #add_metabolights_data(content_name=EbEyeSearchService.europe_pmc_study, data_format=EbEyeSearchService.content_type_xml, content=xml_str)
+        #logger.info(f"Data stored to DB")
+        processed_time = (time.time() - start_time)/60
+        server = os.uname()[1]
+        result = f"Processed study count - {i}; Process completed in {processed_time} minutes. \n Processed by {server}"
+        send_email("EuropePMC report processing completed", result, None, email, None)
+        text_file = open("/net/isilonP/public/rw/homes/tc_cm01/test/study-publication.txt", "w")
+        text_file.write(study_str)
+        text_file.close()
+        return {"processed_studies": i, "completed_in": processed_time}
+    
+    @staticmethod
+    def query_europe_pmc(study_id: str):
+        has_publication = 'No'
+        doi_hit = ''
+        title_hit = ''
+        publication_status = 'None'
+        try:
+            study: StudyModel = StudyService.get_instance().get_study_with_detailed_user(study_id=study_id)
+            update_study_model_from_directory(study, EbEyeSearchService.study_root)
+            publications = study.publications
+            if  publications is not None and len(publications) > 0:
+                has_publication = 'Yes'
+                for publication in study.publications:
+                    if EbEyeSearchService.check_for_empty(publication.doi):
+                        query = f'doi:{publication.doi}'
+                        output = EbEyeSearchService.europe_pmc_query(query=query)
+                        hitcount = output['hitCount']
+                        if hitcount > 0:
+                            doi_hit = 'Success'
+                            result_list = output['resultList']['result']
+                            for result in result_list:
+                                if result['source'] == 'MED':
+                                    publication_status = 'Published'             
+                        else:
+                            doi_hit = 'Failed'
+                            query = f'title:{publication.title}'
+                            query = urllib.parse.quote(query)
+                            output = EbEyeSearchService.europe_pmc_query(query=query)
+                            hitcount = output['hitCount']
+                            if hitcount == 1:
+                                title_hit = 'Success'
+                                result_list = output['resultList']['result']
+                                for result in result_list:
+                                    if result['source'] == 'MED':
+                                        publication_status = 'Published'
+                                
+        except Exception as ex:
+            logger.error(f"Exception while processing study - {study_id}; reason: {str(ex)}")
+        return has_publication, doi_hit, title_hit, publication_status
     
     @staticmethod
     def export_europe_pmc(user_token: str):

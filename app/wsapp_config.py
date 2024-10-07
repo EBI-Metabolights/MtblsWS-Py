@@ -88,7 +88,7 @@ from app.ws.ontology import Cellosaurus, MtblsControlLists, Ontology, Placeholde
 from app.ws.organism import Organism
 from app.ws.partner_utils import Metabolon
 from app.ws.pathway import fellaPathway, keggid
-from app.ws.reports import (CrossReferencePublicationInformation,
+from app.ws.reports import (CrossReferencePublicationInformation, EuropePMCReport,
                             StudyAssayTypeReports, reports)
 from app.ws.send_files import SendFiles, SendFilesPrivate
 from app.ws.settings.utils import get_study_settings
@@ -376,7 +376,7 @@ def initialize_app(flask_app):
 
     # https://www.ebi.ac.uk:443/metabolights/ws/v2
     api.add_resource(reports, res_path + "/v2/reports")
-    api.add_resource(CrossReferencePublicationInformation, res_path + "/v2/europe-pmc-report")
+    api.add_resource(EuropePMCReport, res_path + "/v2/europe-pmc-report")
     api.add_resource(StudyAssayTypeReports, res_path + "/v2/study-assay-type-reports")
     api.add_resource(ZipSpectraFiles, res_path + "/v2/zip-spectra-files")
     api.add_resource(curation_log, res_path + "/v2/curation_log")

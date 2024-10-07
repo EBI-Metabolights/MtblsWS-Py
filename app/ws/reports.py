@@ -32,6 +32,8 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.report_builders.analytical_method_builder import AnalyticalMethodBuilder
 from app.ws.report_builders.europe_pmc_builder import EuropePmcReportBuilder
 from app.ws.study.folder_utils import get_all_files
+from app.ws.study.user_service import UserService
+from app.tasks.common_tasks.report_tasks.europe_pmc import europe_pmc_publication_report
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
     get_instruments_organism
 
@@ -670,6 +672,41 @@ class reports(Resource):
 
         return jsonify({"POST " + file_name: True})
 
+
+class EuropePMCReport(Resource):
+    @swagger.operation(
+        summary="Process studies for EuropePMC Search",
+        notes="Process studies for EuropePMC Search.",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            }
+            
+        ],
+        responseMessages=[
+            {"code": 200, "message": "OK."},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."}
+        ],
+    )
+    def get(self):
+        log_request(request)
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        
+        inputs = {"user_token": user_token}
+        task = europe_pmc_publication_report.apply_async(kwargs=inputs, expires=60*60)
+        response = {'Task started':f'Task id {task.id}'}       
+        return response
 
 class CrossReferencePublicationInformation(Resource):
 

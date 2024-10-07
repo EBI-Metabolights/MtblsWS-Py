@@ -117,6 +117,17 @@ class StudyService(object):
             m_study.users = [get_user_model(x) for x in study.users]
             return m_study
         
+    def get_study_with_detailed_user(self, study_id) -> StudyModel:
+         with self.db_manager.session_maker() as db_session:
+            query = db_session.query(Study)
+            query = query.filter(Study.acc == study_id)
+            study = query.first()
+            if not study:
+                raise MetabolightsDBException(f"{study_id} does not exist")
+            m_study = create_study_model_from_db_study(study)
+            m_study.users = [get_user_model(x) for x in study.users]
+            return m_study
+        
     def get_study_maf_rows(self, study_id, sheet_number):
         if study_id is None or sheet_number is None:
             raise MetabolightsDBException("StudyId and sheet number needs to be passed")

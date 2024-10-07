@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 
 import pandas
+import json
 import requests
 import xmltodict
 from cascadict import CascaDict
@@ -62,7 +63,7 @@ class EuropePmcReportBuilder:
         """
         list_of_result_dicts = [row for study in self.study_list for row in self.process(study)]
         root_path = get_settings().study.mounted_paths.reports_root_path
-        path = os.path.join(root_path, get_settings().report.report_base_folder_name, get_settings().report.report_global_folder_name, 'europepmc.csv')
+        path = os.path.join(root_path, 'europepmc.csv')
         try:
 
             report_dataframe = pandas.DataFrame(list_of_result_dicts,
