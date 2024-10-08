@@ -270,8 +270,12 @@ class StudyTitle(Resource):
         if request.data is None or request.json is None:
             abort(400)
         # data_dict = request.get_json(force=True)
-        data_dict = json.loads(request.data.decode('utf-8'))
-        new_title = data_dict['title']
+        new_title = None
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            new_title = data_dict['title']
+        except Exception:
+            abort(400, message="invalid input")
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -642,8 +646,13 @@ class StudyDescription(Resource):
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
-        data_dict = json.loads(request.data.decode('utf-8'))
-        new_description = data_dict['description']
+        new_description = None
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            new_description = data_dict['description']
+        except Exception:
+            abort(400, message="invalid input")
+            
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -3182,23 +3191,52 @@ class StudyPublications(Resource):
                                                          study_location=study_location)
 
         # Check that the ontology is referenced in the investigation
-        new_status = new_publication.status
-        term_source = new_status.term_source
-        if term_source:
-            add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
-                                          term_source.file, term_source.description)
+        # new_status = new_publication.status
+        # term_source = new_status.term_source
+        # if term_source:
+        #     add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+        #                                   term_source.file, term_source.description)
 
         exists = False
+        current_publication = None
         # check for Publication added already
         for index, publication in enumerate(isa_study.publications):
-            if publication.title.strip().rstrip('\n') == new_publication.title.strip().rstrip('\n'):
+            if publication.title.strip().strip(
+                "."
+            ) == new_publication.title.strip().strip("."):
                 exists = True
+                current_publication = publication
+                break
         # add Study Publication
+        updated = False
+
         if not exists:
             isa_study.publications.append(new_publication)
-            logger.info("A copy of the previous files will %s saved", save_msg_str)
-            iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
-            logger.info('Added %s', new_publication.title)
+            updated = True
+            logger.info("Added %s", new_publication.title)
+        else:
+            for field in ["title", "author_list", "doi", "pubmed_id"]:
+                current_val = getattr(current_publication, field)
+                new_val = getattr(new_publication, field)
+                if current_val != new_val:
+                    setattr(current_publication, field, new_val if new_val is not None else "")
+                    updated = True
+            for field in ["term", "term_source", "term_accession"]:
+                current_val = getattr(current_publication.status, field)
+                new_val = getattr(new_publication.status, field)
+                if current_val != new_val:
+                    setattr(
+                        current_publication.status, field, new_val if new_val is not None else ""
+                    )
+                    updated = True
+
+            if updated:
+                logger.info("Updated %s", new_publication.title)
+        if updated:
+            iac.write_isa_study(
+                isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            )
+            # logger.info("A copy of the previous files will %s saved", save_msg_str)
 
         return PublicationSchema().dump(new_publication)
 
@@ -3564,20 +3602,20 @@ class StudyPublications(Resource):
 
         # Check that the ontology is referenced in the investigation
         new_status = updated_publication.status
-        term_source = new_status.term_source
+        # term_source = new_status.term_source
 
         found = False
         for index, publication in enumerate(isa_study.publications):
-            if publication.title.strip().rstrip('\n') == publication_title.strip().rstrip('\n'):
+            if publication.title.strip().strip('.') == publication_title.strip().rstrip('.'):
                 found = True
                 # update protocol details
                 isa_study.publications[index] = updated_publication
                 break
         if not found:
             abort(404)
-        if term_source:
-            add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
-                                          term_source.file, term_source.description)
+        # if term_source:
+        #     add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+        #                                   term_source.file, term_source.description)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_publication.title)
