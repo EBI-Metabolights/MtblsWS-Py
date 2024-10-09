@@ -25,7 +25,7 @@ import re
 import subprocess
 import time
 import traceback
-from typing import List, Union
+from typing import List, OrderedDict, Union
 
 import numpy as np
 import pandas as pd
@@ -47,7 +47,7 @@ from app.ws.utils import (find_text_in_isatab_file,
                           get_assay_headers_and_protcols,
                           get_assay_type_from_file_name, get_table_header,
                           map_file_type, read_tsv)
-
+from isatools.model import Study
 iac = IsaApiClient()
 
 logger = logging.getLogger('wslog')
@@ -359,7 +359,7 @@ def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, vali
 
 
 def validate_maf(validations, file_name, all_assay_names, study_location, study_id,
-                 sample_name_list, is_ms=False, log_category=error):
+                 sample_name_list, is_ms=False, log_category=error, assay_type=None):
     val_section = "maf"
 
     if not file_name.startswith('m_') or not file_name.endswith('_v2_maf.tsv'):
@@ -432,20 +432,20 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
         try:
             if is_ms and ("mass_to_charge" in maf_header):
                 check_maf_rows(validations, val_section, maf_df, 'mass_to_charge', is_ms=is_ms,
-                               log_category=log_category)
+                               log_category=log_category, file_name=file_name)
         except:
             logger.info("No mass_to_charge column found in the MS MAF")
         try:
-            if is_ms and "retention_time" in maf_header:
+            if assay_type in {"LC-MS", "GC-MS"} and "retention_time" in maf_header:
                 check_maf_rows(validations, val_section, maf_df, 'retention_time', is_ms=is_ms,
-                               log_category=log_category)
+                               log_category=log_category, file_name=file_name)
         except:
             logger.info("No retention_time column found in the MS MAF")
             
         try:
             if not is_ms and "chemical_shift" in maf_header:
                 check_maf_rows(validations, val_section, maf_df, 'chemical_shift', is_ms=is_ms,
-                               log_category=log_category)
+                               log_category=log_category, file_name=file_name)
         except:
             logger.info("No chemical_shift column found in the NMR MAF")
 
@@ -484,7 +484,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                 error, val_sequence=9, log_category=log_category)
 
 
-def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, log_category=error):
+def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, log_category=error, file_name=""):
     all_rows = maf_df.shape[0]
     col_rows = 0
     # Are all relevant rows filled in?
@@ -499,11 +499,11 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
     if col_rows != all_rows:
         # For MS we should have m/z values, for NMR the chemical shift is equally important.
         if (is_ms and column_name in ('mass_to_charge', 'retention_time')) or (not is_ms and column_name == 'chemical_shift'):
-            add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF. " +
+            add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF file " + file_name + ". " + 
                     str(col_rows) + " row(s) found, but there should be " + str(all_rows),
                     error, val_sequence=10, log_category=log_category)
         else:
-            add_msg(validations, val_section, "Missing values for sample '" + column_name + "' in the MAF. " +
+            add_msg(validations, val_section, "Missing values for sample '" + column_name + "' in the MAF file " + file_name + ". " + 
                     str(col_rows) + " row(s) found, but there should be " + str(all_rows),
                     info, val_sequence=11, log_category=log_category)
 
@@ -1196,7 +1196,7 @@ def validate_assays(isa_study, readonly_files_folder, metadata_files_folder, int
                             if maf_file_name:
                                 validate_maf(validations, maf_file_name, all_assay_names, metadata_files_folder,
                                              isa_study.identifier,
-                                             sample_name_list, is_ms=is_ms, log_category=log_category)
+                                             sample_name_list, is_ms=is_ms, log_category=log_category, assay_type=assay_type)
                             else:
                                 add_msg(validations, val_section,
                                         "No MAF/feature file referenced for assay sheet " + assay.filename + ". Please add the appropriate file reference (m_xxx.tsv) to the last column of the assay table. If the metabolite file is missing or your study does not include metabolite/feature identification information, please contact metabolights-help@ebi.ac.uk",
@@ -1430,9 +1430,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
         study_val = validation_schema['study']
         val = study_val['samples']
         all_val = val['default_order']
-
-    # check isa_sample frame size - if size is 1 return  below error -
-
+    # check isa_sample frame size - if size is 1 return  below error -    
     if len(isa_samples) <= 1:
         add_msg(validations, val_section,
                 "Only 1 sample has been added to your study, please ensure you have included all samples and any control, QC, standards etc. If no further samples were used in the study please contact MetaboLights-help",
@@ -1441,10 +1439,26 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
     # Get an indexed header row
     s_file_name = isa_study.filename
     sample_header = get_table_header(isa_samples, isa_study.identifier, s_file_name)
+
+    study: Study = isa_study
+    study_factors: List[str] = {x.name for x in study.factors}
+    factor_column_pattern = r"^Factor Value\[(.+)\].*$"
+    factor_columns = OrderedDict()
     for h_sample in sample_header:
         if 'Term ' not in h_sample:
             samples.append(h_sample)
-
+            factor_match = re.match(factor_column_pattern, h_sample)
+            if factor_match:
+                factor_columns[factor_match.group(1)] = h_sample
+    sample_factor_columns = set(factor_columns.keys())
+    missing_columns = study_factors - sample_factor_columns
+    if missing_columns:
+        if len(missing_columns) == 1:
+            add_msg(validations, val_section, "Some factors are defined in study, but " + ", ".join([f"'Factor Value[{x}]'" for x in missing_columns]) +" factor column is missing in sample sheet respectively.",
+                    error, file_name, val_sequence=30.1, log_category=log_category)
+        else:
+            add_msg(validations, val_section, "Some factors are defined in study, but " + ", ".join([f"'Factor Value[{x}]'" for x in missing_columns]) +" factor columns are missing in sample sheet respectively.",
+                    error, file_name, val_sequence=30.1, log_category=log_category)            
     for idx, sample in enumerate(all_val):
         sample_val_name = sample['header']
         if sample_val_name in samples:

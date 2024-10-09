@@ -51,7 +51,7 @@ from app.config import get_settings
 from app.config.utils import get_host_internal_url
 from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files
 from app.utils import current_time
-
+from app import application_path
 from app.ws.mm_models import OntologyAnnotation
 from app.ws.settings.utils import get_study_settings
 
@@ -292,7 +292,7 @@ def get_assay_headers_and_protcols(assay_type):
         return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, \
                assay_file_type, assay_mandatory_type
 
-    resource_folder = os.path.join(os.getcwd(), "resources")
+    resource_folder = os.path.join(application_path, "resources")
     logger.info(' - get_assay_headers_and_protcols for assay type ' + assay_type)
     assay_master_template = os.path.join(resource_folder, 'MetaboLightsAssayMaster.tsv')
     master_df = read_tsv(assay_master_template)
@@ -331,7 +331,7 @@ def get_sample_headers_and_data(sample_type:None):
     if sample_type is None:
         sample_type = 'minimum'
 
-    resource_folder = os.path.join(os.getcwd(), "resources")
+    resource_folder = os.path.join(application_path, "resources")
     logger.info(' - get_sample_headers_and_data for sample type ' + sample_type)
     sample_master_template = os.path.join(resource_folder, 'MetaboLightsSampleMaster.tsv')
     master_df = read_tsv(sample_master_template)
