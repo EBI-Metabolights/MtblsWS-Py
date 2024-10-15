@@ -21,7 +21,7 @@ import logging
 import re
 import types
 from urllib.request import urlopen
-
+import urllib.parse
 import gspread
 import numpy as np
 import pandas as pd
@@ -39,7 +39,7 @@ from app.utils import current_time
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.ontology_info import MetaboLightsOntology, get_ontology_name, get_ontology_search_result, getOnto_info, load_ontology_file
+from app.ws.ontology_info import MetaboLightsOntology, get_ontology_name, get_ontology_search_result, getOLSTerm, getOnto_info, load_ontology_file
 from app.ws.utils import log_request
 
 logger = logging.getLogger('wslog')
@@ -47,7 +47,11 @@ iac = IsaApiClient()
 wsc = WsClient()
 
 
-
+def parse_input(value):
+    if not value:
+        return ""
+    return urllib.parse.unquote (value.strip())
+    
 def parse_set_str(input_data: str, lowercase: bool=False):
     result = None
     if input_data:
@@ -200,12 +204,12 @@ class Ontology(Resource):
         parser.add_argument('ontology', help='ontology')
 
         args = parser.parse_args(req=request)
-        term = args['term'].strip() if args['term'] else ""
-        branch = args['branch'].strip() if args['branch'] else ""
-        mapping = args['mapping'].strip() if args['mapping'] else ""
-        queryFields = parse_set_str(args['queryFields'])
-        ontologies = parse_set_str(args['ontology'], lowercase=False)
-        if ":" in term:
+        term = parse_input(args['term'])
+        branch =  parse_input(args['branch'])
+        mapping = parse_input(args['mapping'])
+        queryFields = parse_set_str(parse_input(args['queryFields']))
+        ontologies = parse_set_str(parse_input(args['ontology']), lowercase=False)
+        if not term.startswith("http://") and not term.startswith("https://") and ":" in term:
             splitted_term = term.split(":")
             listed_ontologies = parse_set_str(splitted_term[0], lowercase=False)
             if not ontologies:
