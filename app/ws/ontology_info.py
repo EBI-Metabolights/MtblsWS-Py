@@ -433,7 +433,7 @@ TERM_PRIORITY_MAP = {
     ]
 }
 
-def get_ontology_search_result(term, branch, ontologies, mapping, queryFields):
+def get_ontology_search_result(term: str, branch, ontologies, mapping, queryFields):
     result = []
     if not term and not branch:
         return result
@@ -447,8 +447,10 @@ def get_ontology_search_result(term, branch, ontologies, mapping, queryFields):
             exact_search = mtbls_ontology.get_entity_by_iri(term)
     if exact_search:
         result = exact_search
+    if term.startswith('http://') or term.startswith('http://'):
+        result = getOLSTerm(term, mapping, ontologies=ontologies)
     elif ontologies:  # if has ontology searching restriction
-        logger.info('Search ontology %s in' % ontologies)
+        logger.info('Search ontology %s in', ontologies)
         # print('Searching ontology  %s' % ontologies)
         try:
             result = getOLSTerm(term, mapping, ontologies=ontologies)
@@ -813,7 +815,7 @@ def getOLSTerm(keyword, map, ontologies='', limit=50):
     try:
         # https://www.ebi.ac.uk/ols4/api/search?q=lung&queryFields=label,synonym&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix
         uri = 'search?q=' + keyword.replace(' ', "+") + \
-              '&queryFields=label,synonym' \
+              '&queryFields=label,synonym,obo_id,short_form' \
               '&type=class' \
               '&fieldList=iri,label,short_form,ontology_name,description,ontology_prefix' \
               '&rows=30'  # &exact=true
