@@ -9,7 +9,7 @@ def check_result(category: str):
             try:
                 result = func()
                 if result:
-                    return {"result": "OK", "message": ""}
+                    return {"result": "OK", "message": result}
                 else:
                     return {"result": "FAILED", "message": "Result is empty"}
             except Exception as exc:

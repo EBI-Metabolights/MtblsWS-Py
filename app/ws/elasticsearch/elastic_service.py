@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict
@@ -15,7 +16,7 @@ from app.ws.db.types import StudyTaskName, StudyTaskStatus
 from app.ws.elasticsearch.schemes import Booster, Facet, FacetLine, SearchQuery, SearchResult
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
-
+from app import application_path
 from elasticsearch import Elasticsearch
 
 logger = logging.getLogger('wslog')
@@ -42,18 +43,23 @@ class ElasticsearchService(object):
         else:
             url = f"http://{settings.connection.host}:{settings.connection.port}"
             self._client = Elasticsearch(url)
-        with open(settings.configuration.elasticsearch_all_mappings_json) as f:
+        app_path = str(application_path)
+        relative_path = settings.configuration.elasticsearch_all_mappings_json.lstrip("./").lstrip("/")
+        mappings_file_path = os.path.join(app_path, relative_path)
+        with open(mappings_file_path) as f:
             mappings = json.load(f)
         body = json.dumps(mappings)
         if not self._client.indices.exists(self.INDEX_NAME):
             self._client.indices.create(index=self.INDEX_NAME, ignore=400, body=body)
-        
-        with open(settings.configuration.elasticsearch_compound_mappings_json) as f:
+        relative_path = settings.configuration.elasticsearch_compound_mappings_json.lstrip("./").lstrip("/")
+        mappings_file_path = os.path.join(app_path, relative_path)
+        with open(mappings_file_path) as f:
             mappings = json.load(f)
         body = json.dumps(mappings)
         self._client.indices.put_mapping(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_COMPOUND, body=body, ignore=[404,400])
-
-        with open(settings.configuration.elasticsearch_study_mappings_json) as f:
+        relative_path = settings.configuration.elasticsearch_study_mappings_json.lstrip("./").lstrip("/")
+        mappings_file_path = os.path.join(app_path, relative_path)
+        with open(mappings_file_path) as f:
             mappings = json.load(f)
         body = json.dumps(mappings)
         self._client.indices.put_mapping(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=body, ignore=[404,400])
@@ -288,8 +294,8 @@ class ElasticsearchService(object):
         except Exception as e:
             raise MetabolightsException(f"Error while reindexing.", exception=e, http_code=500)
         
-    def get_study(self, study_id):
-        params = {"request_timeout": 10}
+    def get_study(self, study_id, request_timeout=10):
+        params = {"request_timeout": request_timeout}
         result = self.client.get(index=self.INDEX_NAME, id=study_id, doc_type=self.DOC_TYPE_STUDY, params=params)
         return result
         

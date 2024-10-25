@@ -19,8 +19,11 @@
 import logging
 from flask_restful import Resource
 from flask_restful_swagger import swagger
+from flask import request
 from app.config import get_settings
-from app.utils import metabolights_exception_handler
+from app.tasks.system_monitor_tasks.integration_check import check_integrations
+from app.utils import current_time, metabolights_exception_handler
+from app.ws.study.user_service import UserService
 
 
 """
@@ -56,3 +59,44 @@ class MaintenanceStatus(Resource):
         except Exception as ex:
             # no cache or invalid cache
             return {"message": None, "content": maintenance, "error": None }
+
+class IntegrationCheck(Resource):
+    """Status of the Web Service and dependencies"""
+    @swagger.operation(
+        summary="Checks internal and external integrations (curator only)",
+        nickname="integration check",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self):
+        user_token = None
+
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        integration_check_result = None
+        try: 
+            integration_check_result = check_integrations()
+            if integration_check_result:
+                return integration_check_result
+            
+        except Exception as ex:
+            return {"message": None, "content": "", "error": str(ex) }
+
+        return {"status": "ERROR", "executed_on":  "", "time": int(current_time().timestamp()) , "test_results": ""}
