@@ -338,7 +338,7 @@ def get_all_private_studies_for_user(user_token):
             try:
                 with open(complete_file_name, encoding='utf-8') as f:
                     for line in f:
-                        line = re.sub('\s+', ' ', line)
+                        line = re.sub(r'\s+', ' ', line)
                         if line.startswith(isa_title):
                             title = line.replace(isa_title, '').replace(' "', '').replace('" ', '')
                         if line.startswith(isa_descr):
@@ -388,7 +388,7 @@ def get_all_studies_for_user(user_token):
         try:
             with open(complete_file_name, encoding='utf-8') as f:
                 for line in f:
-                    line = re.sub('\s+', ' ', line)
+                    line = re.sub(r'\s+', ' ', line)
                     if line.startswith(isa_title):
                         title = line.replace(isa_title, '').replace(' "', '').replace('" ', '')
                     if line.startswith(isa_descr):
@@ -400,7 +400,7 @@ def get_all_studies_for_user(user_token):
             logger.info("Retrying with another encoding ")
             with open(complete_file_name, encoding='latin-1') as f:
                 for line in f:
-                    line = re.sub('\s+', ' ', line)
+                    line = re.sub(r'\s+', ' ', line)
                     if line.startswith(isa_title):
                         title = line.replace(isa_title, '').replace(' "', '').replace('" ', '')
                     if line.startswith(isa_descr):

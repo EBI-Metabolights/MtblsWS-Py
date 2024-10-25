@@ -1,7 +1,23 @@
+import os
+from app.config import get_settings
 from app.services.storage_service.storage_service import StorageService
 from app.tasks.system_monitor_tasks.integrity_tests.utils import check_result
 
 @check_result(category="paths")
-def check_private_ftp():
-    private_ftp_sm = StorageService.get_ftp_private_storage()
-    return private_ftp_sm.remote.create_folder("mtbls-test-9999999999-folder")
+def check_study_paths():
+    mounted_paths = get_settings().study.mounted_paths
+    paths = {}
+    not_exist_folders_count = 0
+    for field in mounted_paths.model_fields.keys():
+        if field.endswith("_root_path") and "ftp" not in field:
+            path_ = getattr(mounted_paths, field)
+            if path_:
+                if not os.path.exists(path_):
+                    paths[field] = {"path": path_, "exists": False}
+                    not_exist_folders_count += 1
+                else:
+                    paths[field] = {"path": path_, "exists": True}
+    if not_exist_folders_count > 0:
+        raise Exception(paths)
+
+    return paths
