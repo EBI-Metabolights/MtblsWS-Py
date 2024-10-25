@@ -3,12 +3,14 @@ from functools import lru_cache
 
 from celery import Celery
 from celery.signals import after_task_publish
+from celery.utils.log import get_logger
 from flask import Flask
 from flask_mail import Mail
 from app.config import get_settings
 from app.config.model.celery import CelerySettings
 from app.config.model.redis_cache import RedisConnection
 
+from app.tasks.logging_filter import CeleryWorkerLogFilter
 from app.utils import MetabolightsException, ValueMaskUtility
 from app.ws.email.email_service import EmailService
 
@@ -93,7 +95,17 @@ celery = Celery(
         "app.tasks.system_monitor_tasks.integration_check",
     ],
 )
+logger_filter = CeleryWorkerLogFilter()
 
+filtered_logger_names = [
+    "celery.worker.strategy",
+    "celery.app.trace",
+    "celery.worker.request",
+]
+
+for logger_name in filtered_logger_names:
+    filtered_logger = get_logger(logger_name)
+    filtered_logger.addFilter(logger_filter)
 
 @lru_cache(1)
 def get_flask_app():
