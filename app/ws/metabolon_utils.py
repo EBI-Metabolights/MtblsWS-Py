@@ -249,14 +249,14 @@ def check_input_files(study_id: str, study_location: str):
         return False, f"There are no *SSID Data*.csv file."
     else:
         search_pattern = '*Peak Area*.xlsx'
-        if len(sample_ids) > 1:
+        for sample_id in sample_ids:
             search_pattern = f'*{sample_id}*Peak Area*.xlsx'
-        peak_table_paths = list(glob.iglob(os.path.join(study_location, "FILES", search_pattern)))
-        
-        if len(peak_table_paths) > 1:
-            return False, f"There are multiple Peak Area Table xlsx for {sample_id}."
-        elif len(peak_table_paths) == 0:
-            return False, f"There is no Peak Area Table xlsx table for {sample_id}."
+            peak_table_paths = list(glob.iglob(os.path.join(study_location, "FILES", search_pattern)))
+            
+            if len(peak_table_paths) > 1:
+                return False, f"There are multiple Peak Area Table xlsx for {sample_id}."
+            elif len(peak_table_paths) == 0:
+                return False, f"There is no Peak Area Table xlsx table for {sample_id}."
         
     for sample_id in sample_ids:
         if len(sample_ids) > 1:
