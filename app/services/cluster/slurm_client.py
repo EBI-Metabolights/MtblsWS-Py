@@ -187,8 +187,8 @@ class SlurmClient(HpcClient):
         if queue:
             hpc_comments.append(f"-p {queue}")
         if account:
-            hpc_comments.append(f"-A {account}")
-            hpc_comments.append("--mail-type=END")
+            hpc_comments.append(f"--mail-user={account}")
+            hpc_comments.append("--mail-type=START,END,FAIL")
         if output_file:
             hpc_comments.append(f"-o {output_file}")
         if error_file:

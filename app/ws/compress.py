@@ -10,6 +10,7 @@ from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from app.services.cluster.hpc_client import HpcClient
 from app.services.cluster.hpc_utils import get_new_hpc_datamover_client
+from app.utils import metabolights_exception_handler
 from app.ws.db.models import SimplifiedUserModel
 
 from app.ws.study.user_service import UserService
@@ -103,6 +104,7 @@ class CompressRawDataFolders(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         # param validation
         if study_id is None:
@@ -116,9 +118,10 @@ class CompressRawDataFolders(Resource):
             user_token = request.headers["user_token"]
         if not user_token:
             abort(404, message="invalid user token")
-        
-        UserService.get_instance().validate_user_has_curator_role(user_token)
-        
+        try:
+            UserService.get_instance().validate_user_has_curator_role(user_token)
+        except Exception as ex:
+            raise Exception(f"User has no curator role or database connection failure: {str(ex)}") from ex
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('filename_pattern', help='Filename pattern')
