@@ -45,7 +45,7 @@ def reindex_all_public_studies(user_token, send_email_to_submitter=False):
                 raise MetabolightsDBException("No studies found on db.")
             for study in result:
                 studies.append(study)
-            studies.sort(key=sort_by_study_id, reverse=True)
+            studies.sort(key=lambda x: sort_by_study_id(x["acc"]), reverse=True)
             
         result = reindex_studies_in_list(user_token, studies)
         result_str = json.dumps(result, indent=4)
@@ -76,7 +76,7 @@ def reindex_all_studies(user_token, send_email_to_submitter=False):
                 raise MetabolightsDBException("No studies found on db.")
             for study in result:
                 studies.append(study)
-            studies.sort(key=sort_by_study_id, reverse=True)
+            studies.sort(key=lambda x: sort_by_study_id(x["acc"]), reverse=True)
         result = reindex_studies_in_list(user_token, studies)
         result_str = json.dumps(result, indent=4)
         result_str = result_str.replace("\n", "<p>")
