@@ -19,8 +19,14 @@ def delete_study_index(user_token, study_id):
     ElasticsearchService.get_instance().delete_study_index(user_token, study_id)
     return {"study_id": study_id}
 
+def sort_by_study_id(key: str):
+    if key:
+        val = key.replace("MTBLS", "").replace("REQ", "")
+        if val.isnumeric():
+            return int(val)
+    return -1
 
-@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.elasticsearch.reindex_all_studies")
+@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.elasticsearch.reindex_all_public_studies")
 def reindex_all_public_studies(user_token, send_email_to_submitter=False):
     try:
         studies = []
@@ -39,7 +45,8 @@ def reindex_all_public_studies(user_token, send_email_to_submitter=False):
                 raise MetabolightsDBException("No studies found on db.")
             for study in result:
                 studies.append(study)
-
+            studies.sort(key=sort_by_study_id, reverse=True)
+            
         result = reindex_studies_in_list(user_token, studies)
         result_str = json.dumps(result, indent=4)
         result_str = result_str.replace("\n", "<p>")
@@ -69,7 +76,7 @@ def reindex_all_studies(user_token, send_email_to_submitter=False):
                 raise MetabolightsDBException("No studies found on db.")
             for study in result:
                 studies.append(study)
-
+            studies.sort(key=sort_by_study_id, reverse=True)
         result = reindex_studies_in_list(user_token, studies)
         result_str = json.dumps(result, indent=4)
         result_str = result_str.replace("\n", "<p>")
@@ -86,7 +93,7 @@ def reindex_studies_in_list(user_token, studies):
     es = ElasticsearchService.get_instance()
     failed_indexed_studies = {}
     indexed_studies = []
-
+    start = current_time().strftime("%Y-%m-%d %H:%M:%S"),
     try:
         for item in studies:
             try:
@@ -97,7 +104,8 @@ def reindex_studies_in_list(user_token, studies):
     except Exception as exc:
         raise exc
     return {
-        "time": current_time().strftime("%Y-%m-%d %H:%M:%S"),
+        "started_at": start,
+        "completed_at": current_time().strftime("%Y-%m-%d %H:%M:%S"),
         "executed_on": os.uname().nodename,
         "total_studies": len(studies),
         "indexed_studies": len(indexed_studies),
