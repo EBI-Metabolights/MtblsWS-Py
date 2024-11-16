@@ -81,7 +81,3 @@ pylint = "^3.0.2"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.pylint.'MESSAGES CONTROL']
-# disable = "W0612,C0301,C0115,C0116,C0303,C0114,W0311,W0718"
-disable = "W,C,R,F"
