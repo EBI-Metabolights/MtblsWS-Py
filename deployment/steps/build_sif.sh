@@ -17,6 +17,9 @@ fi
 
 echo "$SIF_FILE_URL" 
 curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $SIF_FILE_NAME "$SIF_FILE_URL"
+echo "$SIF_LATEST_FILE_URL" 
+curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $SIF_FILE_NAME "$SIF_LATEST_FILE_URL"
+
 if [ $? -eq 0 ]; then
     echo " Singularity file upload completed "
 else
