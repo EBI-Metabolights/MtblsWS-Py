@@ -50,7 +50,7 @@ from app.ws.folders.data_folders import DataFolders
 from app.ws.ftp.ftp_operations import (FtpFolderPermission,
                                        FtpFolderPermissionModification,
                                        FtpFolderSyncStatus, PrivateFtpFolder,
-                                       PrivateFtpFolderPath, SyncCalculation,
+                                       PrivateFtpFolderPath, PrivateFtpUploadInfo, SyncCalculation,
                                        SyncFromFtpFolder, SyncFromStudyFolder, SyncPublicStudyToFTP)
 from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
 from app.ws.google_calendar import GoogleCalendar
@@ -262,6 +262,7 @@ def initialize_app(flask_app):
     api.add_resource(SyncFromFtpFolder, res_path + "/studies/<string:study_id>/ftp/sync")
     api.add_resource(FtpFolderSyncStatus, res_path + "/studies/<string:study_id>/ftp/sync-status")
     api.add_resource(SyncFromStudyFolder, res_path + "/studies/<string:study_id>/ftp/sync-from-study-folder")
+    api.add_resource(PrivateFtpUploadInfo, res_path + "/studies/<string:study_id>/upload-info")
 
 
     api.add_resource(AuditFiles, res_path + "/studies/<string:study_id>/audit")

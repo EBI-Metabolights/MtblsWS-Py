@@ -534,6 +534,71 @@ class PrivateFtpFolderPath(Resource):
         return relative_ftp_study_path
 
 
+class PrivateFtpUploadInfo(Resource):
+    @swagger.operation(
+        summary="Get FTP study folder path used to upload and its credentials",
+        nickname="Get FTP study folder path used to upload and its credentials",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. FTP folder permission toggled "
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self, study_id: str):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404, message='Please provide valid parameter for study identifier')
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+        study = StudyService.get_instance().get_study_by_acc(study_id)
+        relative_studies_root_path = get_private_ftp_relative_root_path()
+        folder_name = f'{study_id.lower()}-{study.obfuscationcode}'
+        relative_ftp_study_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
+        ftp_connection = get_settings().ftp_server.private.connection
+        return {"study_id": study_id, 
+                "ftp_folder": relative_ftp_study_path, 
+                "ftp_host": ftp_connection.host, 
+                "ftp_user": ftp_connection.username, 
+                "ftp_password": ftp_connection.password }
+    
 class SyncFromStudyFolder(Resource):
     @swagger.operation(
         summary="Copy files from study folder to private FTP  folder",
