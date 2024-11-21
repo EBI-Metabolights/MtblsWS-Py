@@ -187,8 +187,18 @@ class HpcRsyncWorker:
         stderr_lines = []
         if isinstance(result, LoggedBashExecutionResult):
             logged_result: LoggedBashExecutionResult = result
-            stdout_lines = pathlib.Path(logged_result.stdout_log_file_path).read_text().split("\n")
-            stderr_lines = pathlib.Path(logged_result.stderr_log_file_path).read_text().split("\n")
+            if logged_result.stdout_log_file_path:
+                std_log_file = pathlib.Path(logged_result.stdout_log_file_path)
+                if std_log_file.exists():
+                    stdout_lines_content = std_log_file.read_text()
+                    if stdout_lines_content:
+                        stdout_lines = stdout_lines_content.split("\n")
+            if logged_result.stderr_log_file_path:
+                err_log_file = pathlib.Path(logged_result.stderr_log_file_path)
+                if err_log_file.exists():
+                    stderr_lines_content = err_log_file.read_text()
+                    if stderr_lines_content:
+                        stderr_lines = stderr_lines_content.split("\n")
         elif isinstance(result, CapturedBashExecutionResult):
             captured_result: CapturedBashExecutionResult = result
             stdout_lines = captured_result.stdout
@@ -208,7 +218,7 @@ class HpcRsyncWorker:
                 rsync_result.number_of_files = len(rsync_result.files)
                 messages.append(f"Number of new/updated files: {len(rsync_result.files)}.")
 
-            size_line = stdout_lines[-2]
+            size_line = stdout_lines[-2] if len(stdout_lines) > 2 else ""
             if size_line.startswith("total size is"):
                 try:
                     rsync_result.total_bytes = int(size_line.split()[3].replace(",", ""))
@@ -218,7 +228,7 @@ class HpcRsyncWorker:
                     if rsync_result.number_of_files == 0 and rsync_result.total_bytes > 0:
                         messages.append("Files are empty.")
                 except Exception as ex:
-                    logger.warn(f"There is no 'total size is' line. {str(ex)}")
+                    logger.warning(f"There is no 'total size is' line. {str(ex)}")
 
             if trimmed_files_count >= 0 and len(rsync_result.files) > trimmed_files_count:
                 trimmed_files = stdout_lines[:trimmed_files_count]
