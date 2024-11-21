@@ -76,11 +76,12 @@ class EmailService(object):
             from_mail_address = self.email_settings.email_service.configuration.no_reply_email_address
         if not curation_mail_address:
             curation_mail_address = self.email_settings.email_service.configuration.curation_email_address
+        dev_email = get_settings().email.email_service.configuration.technical_issue_recipient_email_address
         recipients = set()
         recipients.add(user_email)
         recipients = list(recipients.union(submitters_mail_addresses))
         msg = Message(
-            subject=subject_name, sender=from_mail_address, recipients=recipients, cc=[curation_mail_address], html=body
+            subject=subject_name, sender=from_mail_address, recipients=recipients, cc=[dev_email], html=body
         )
         try:
             self.mail.send(msg)
