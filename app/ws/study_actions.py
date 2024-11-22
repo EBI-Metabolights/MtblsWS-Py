@@ -21,13 +21,16 @@ import glob
 import json
 import logging
 import os
+import pathlib
+import re
 import shutil
+from typing import Dict, Tuple, Union
 
 from flask import current_app as app
 from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
-from pandas import DataFrame
+from pydantic import BaseModel
 from app.config import get_settings
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import create_links_on_data_storage, create_links_on_private_storage, maintain_storage_study_folders
 from app.ws.db import types
@@ -114,7 +117,10 @@ class StudyModificationTime(Resource):
             return {"Success": f"Modification time of study {study_id} is now {current_time_value.isoformat()}"}
         except Exception as exc:
             return {"Error": f"Modification time of study {study_id} is not updated."}
-
+class ValidationResultFile(BaseModel):
+    validation_time: str = ""
+    task_id: str = ""
+    
 class StudyStatus(Resource):
     @swagger.operation(
         summary="Change study status",
@@ -248,9 +254,9 @@ class StudyStatus(Resource):
             if db_study_status.lower() != 'submitted':  # and study_status != 'In Curation':                
                 raise MetabolightsException(http_code=403, message="You can not change the study to this status")
             
-            validation_report: ValidationReportFile = get_validation_report(study_id=study_id)
-
-            if validation_report.validation.status in ("success", "warning", "info"):
+            # validation_report: ValidationReportFile = get_validation_report(study_id=study_id)
+            validated, message = self.has_validated(study_id)
+            if validated:
                 self.update_status(study_id, study_status, is_curator=is_curator,
                                    obfuscation_code=obfuscation_code, user_token=user_token)
 
@@ -259,7 +265,7 @@ class StudyStatus(Resource):
                     isa_study.public_release_date = new_date
                     release_date = new_date
             else:
-                if validation_report.validation.status == "not ready":
+                if "not ready" in message:
                     raise MetabolightsException(http_code=403, message="Study has not been validated yet. Validate your study, fix any problems before attempting to change study status.")
                 else:
                     raise MetabolightsException(http_code=403, message="There are validation errors. Fix any problems before attempting to change study status.")
@@ -301,6 +307,110 @@ class StudyStatus(Resource):
             response.update({"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'"})
             return response
 
+    def get_validation_summary_result_files_from_history(self, study_id: str) -> Dict[str, Tuple[str, ValidationResultFile]]:
+        internal_files_root_path = pathlib.Path(
+            get_settings().study.mounted_paths.study_internal_files_root_path
+        )
+        files = {}
+        validation_history_path: pathlib.Path = internal_files_root_path / pathlib.Path(
+            f"{study_id}/validation-history"
+        )
+        validation_history_path.mkdir(exist_ok=True)
+        result = [x for x in validation_history_path.glob(f"validation-history__*__*.json")]
+        for item in result:
+            match = re.match(r"(.*)validation-history__(.+)__(.+).json$", str(item))
+            if match:
+                groups = match.groups()
+                definition = ValidationResultFile(
+                    validation_time=groups[1], task_id=groups[2]
+                )
+                files[groups[2]] = (item, definition)
+        return files
+
+    def get_all_metadata_files(self, study_metadata_files_path: str):
+        metadata_files = []
+        if not os.path.exists(study_metadata_files_path):
+            return metadata_files
+        patterns = ["a_*.txt", "s_*.txt", "i_*.txt", "m_*.tsv"]
+        for pattern in patterns:
+            metadata_files.extend(glob.glob(os.path.join(study_metadata_files_path, pattern), recursive=False))
+        return metadata_files
+
+
+    def get_validation_overrides(self, study_id: str) -> Dict[str, str]:
+        internal_files_root_path = pathlib.Path(
+            get_settings().study.mounted_paths.study_internal_files_root_path
+        )
+        validation_overrides_folder_path: pathlib.Path = (
+            internal_files_root_path / pathlib.Path(f"{study_id}/validation-overrides")
+        )
+        target_path = validation_overrides_folder_path / pathlib.Path(
+            f"validation-overrides.json"
+        )
+        if target_path.exists():
+            try:
+                with open(target_path, "r") as f:
+                    validations_obj = json.load(f)
+                if validations_obj:
+                    overrides = validations_obj["validation_overrides"]
+                    override_summary = {}
+                    for override in overrides:
+                        if override["enabled"]:
+                            override_summary[override["rule_id"]] = override["new_type"]
+                    return override_summary
+            except Exception as exc:
+                logger.error(str(exc))
+        return {}
+
+    def has_validated(self, study_id: str) -> Tuple[bool, str]:
+        if not study_id:
+            return None, "study_id is not valid."
+        metadata_root_path = get_settings().study.mounted_paths.study_metadata_files_root_path
+        study_path = os.path.join(metadata_root_path, study_id)
+        metadata_files = self.get_all_metadata_files(study_path)
+        last_modified = -1
+        for file in metadata_files:
+            modified_time = os.path.getmtime(file)
+            if modified_time > last_modified:
+                last_modified = modified_time
+
+        result: Dict[str, Tuple[str, ValidationResultFile]] = self.get_validation_summary_result_files_from_history(study_id)
+        
+        result_file = ""
+        validation_time = ""
+        if result:
+            try:
+                sorted_result = [result[x] for x in result]
+                sorted_result.sort(key=lambda x: x[1].validation_time if x and x[1] else "", reverse=True)
+                latest_validation = sorted_result[0]
+
+                result_file = latest_validation[0]
+                
+                content = json.loads(
+                    pathlib.Path(result_file).read_text(encoding="utf-8")
+                )
+                start_time = datetime.datetime.fromisoformat(content["start_time"]).timestamp()
+                
+                if start_time < last_modified:
+                    return False, "Metadata files are updated after the last validation. Re-run validation."
+                
+                if not content["study_id"]:
+                    return False, "Validation file content is not valid. Study id is different."
+                violations = content["messages"]["violations"]
+                overrides = self.get_validation_overrides(study_id)
+                for violation in violations:
+                    violation_type = violation["type"].upper()
+                    if violation["identifier"] in overrides:
+                        violation_type = overrides[violation["identifier"]].upper()
+                    if violation_type == "ERROR":
+                        return False, "There are validation errors. Update metadata and data files and re-run validation"
+                return True, "There is no validation errors"
+            except Exception as exc:
+                message = f"Validation file read error. {validation_time}: {str(exc)}"
+                logger.error(message)
+                return False, message
+        else:
+            return False, "Validation report is not ready. Run validation."
 
     def refactor_study_folder(self, study, study_location: str, user_token, study_id: str, updated_study_id: str):
         if study_id == updated_study_id:
