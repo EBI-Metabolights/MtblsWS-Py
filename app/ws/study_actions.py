@@ -485,7 +485,7 @@ class StudyStatus(Resource):
         mtbls_accession_states = (types.StudyStatus.INCURATION, types.StudyStatus.INREVIEW, types.StudyStatus.PUBLIC)
         submission_id_states = (types.StudyStatus.SUBMITTED, types.StudyStatus.DORMANT)
         mtbls_prefix = get_settings().study.accession_number_prefix
-        submission_id_prefix = get_settings().study.submission_id_prefix
+        # submission_id_prefix = get_settings().study.submission_id_prefix
         target_study_id = current_study_id
         if requested_study_status in mtbls_accession_states and current_study_status in submission_id_states and not current_study_id.startswith(mtbls_prefix):
             if not reserved_accession:
@@ -494,10 +494,10 @@ class StudyStatus(Resource):
             if not target_study_id:
                 raise MetabolightsException(http_code=403, message=f"Error while assigning MetaboLights accession number for {current_study_id}")
 
-        elif requested_study_status in submission_id_states and current_study_status in mtbls_accession_states and not current_study_id.startswith(submission_id_prefix):
-            target_study_id = update_study_id_from_submission_id(current_study_id)
-            if not target_study_id:
-                raise MetabolightsException(http_code=403, message=f"Error while assigning MetaboLights submission id for {current_study_id}")
+        # elif requested_study_status in submission_id_states and current_study_status in mtbls_accession_states and not current_study_id.startswith(submission_id_prefix):
+        #     target_study_id = update_study_id_from_submission_id(current_study_id)
+        #     if not target_study_id:
+        #         raise MetabolightsException(http_code=403, message=f"Error while assigning MetaboLights submission id for {current_study_id}")
         if not target_study_id:
             raise MetabolightsException(message="Could not update the study id")
         return target_study_id
