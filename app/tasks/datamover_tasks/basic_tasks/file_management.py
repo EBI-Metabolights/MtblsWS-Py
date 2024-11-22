@@ -274,6 +274,7 @@ def update_permission(path_item, permission):
                 "status": False,
                 "message": f"Path '{path_item}' does not exist.",
             }
+        return result
     current_permission = os.stat(path_item).st_mode & 0o777
     current_permission_str = oct(current_permission).replace("0o", "")
     permission_str = oct(permission & 0o777).replace("0o", "")
@@ -292,10 +293,10 @@ def update_permission(path_item, permission):
                     "message": f"Path '{path_item}'  already exists. Permission could not be updated from {current_permission_str} to {permission_str}.",
                 }
         except Exception as ex:
-            result = {
-                "status": False,
-                "message": f"Path '{path_item}' permission could not be updated from {current_permission_str} to {permission_str}. Root cause: {str(ex)}",
-            }
+            # result = {
+            #     "status": False,
+            #     "message": f"Path '{path_item}' permission could not be updated from {current_permission_str} to {permission_str}. Root cause: {str(ex)}",
+            # }
             raise ex
     else:
         result = {"status": True, "message": f"Path '{path_item}' permission is already {current_permission_str}."}

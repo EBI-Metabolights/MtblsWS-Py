@@ -39,8 +39,7 @@ from app.tasks.common_tasks.basic_tasks.elasticsearch import (
     reindex_study,
 )
 from app.tasks.common_tasks.basic_tasks.email import (
-    send_email_for_private_ftp_folder,
-    send_email_for_study_submitted,
+    send_email_for_new_submission,
     send_technical_issue_email,
 )
 from app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization import sync_studies_on_es_and_db
@@ -1196,17 +1195,6 @@ class CreateAccession(Resource):
             else:
                 raise MetabolightsException(message="Study id creation on db was failed.", http_code=501, exception=exc)
 
-        # Send email if it is new study
-        if new_accession_number:
-            inputs = {"user_token": user_token, "study_id": study_acc}
-            new_study_email_task = send_email_for_study_submitted.apply_async(kwargs=inputs)
-            logger.info(f"Step 3: Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
-        else:
-            logger.info(f"Step 3: Skipping email. No email will be sent for the study {study_acc}")
-
-        # maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
-        # result = maintenance_task.execute_future_actions()
-        # maintenance_task.future_actions.clear()
         inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False, "task_name": "INITIAL_METADATA", 
                   "maintain_metadata_storage": True, "maintain_data_storage": False, "maintain_private_ftp_storage": False}
         try:
@@ -1228,7 +1216,7 @@ class CreateAccession(Resource):
             study: Study = StudyService.get_instance().get_study_by_acc(study_acc)
             ftp_folder_name = study_acc.lower() + "-" + study.obfuscationcode
             inputs = {"user_token": user_token, "study_id": study_acc, "folder_name": ftp_folder_name}
-            send_email_for_private_ftp_folder.apply_async(kwargs=inputs)
+            send_email_for_new_submission.apply_async(kwargs=inputs)
             logger.info(f"Step 5: Sending FTP folder email for the study {study_acc}")
         else:
             logger.info(f"Step 5: Skipping FTP folder email for the study {study_acc}")

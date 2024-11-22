@@ -146,7 +146,7 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service=None
         if submitter_emails:
             submitters_email_list = [submitter[0] for submitter in submitter_emails if submitter]
 
-        email_service.send_email_for_requested_ftp_folder_created(study_id, relative_study_path, user_email,
+        email_service.send_email_for_new_submission(study_id, relative_study_path, user_email,
                                                                   submitters_email_list)
     status_message = "FTP folder created" if new_folder else "Folder is already created"
 

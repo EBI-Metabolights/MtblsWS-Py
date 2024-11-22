@@ -2,7 +2,6 @@ import datetime
 import json
 import logging
 import os
-import shutil
 from typing import Union
 
 import pandas as pd
@@ -142,7 +141,6 @@ def delete_study_folders(
         raise ex
 
 
-
 @celery.task(
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance.create_links_on_data_storage",
@@ -171,7 +169,6 @@ def create_links_on_data_storage(study_id: str, updated_study_id: str):
             os.symlink(current_path, new_path, target_is_directory=True)
 
 
-
 @celery.task(
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance.create_links_on_private_storage",
@@ -179,7 +176,6 @@ def create_links_on_data_storage(study_id: str, updated_study_id: str):
 def create_links_on_private_storage(study_id: str, updated_study_id: str, obfuscation_code: str):
     folder_name = f"{study_id.lower()}-{obfuscation_code}"
     new_folder_name = f"{updated_study_id.lower()}-{obfuscation_code}"
-       
     mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
     new_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, new_folder_name)
     current_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, folder_name)

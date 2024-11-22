@@ -1,0 +1,35 @@
+<p>We are happy to inform you that your request <b> {{ submission_id }} </b> has been successfully processed and is now ready for use. </p> 
+
+<p>You can access your submission here: {{ private_study_url }}. </p> 
+
+
+<p>We will share MetaboLights accession number of your dataset as soon as the status of your study is 'In Curation'.</p>
+<p>For private pre-publication access to your study, please complete your submission and update its status to 'In Curation'.
+Please note that the pre-publication link is only accessible when the study has a MetaboLights accession number.</p>
+<br/>
+
+<p>You can use either FTP or Aspera Client to upload your study files.</p>
+<br/>
+<p>
+<b> Using FTP Client:</b><br/>
+Username : <b> {{ user_name }}</b> <br/>
+Password : <b> {{ user_password }}</b><br/>
+Server : <b> {{ server }}</b><br/>
+Remote Folder : <b> {{ ftp_folder }}</b><br/>
+</p>
+<p>
+Please, note that the remote folder needs to be entirely typed, as the folder is not browsable.
+So use the following command to access your private folder: <br/>
+<code>"cd {{ ftp_folder }}"</code>
+</p>
+
+<p>
+<b>Using Aspera Client:</b> <br/>
+You can also use the high-speed Aspera client to upload with the same username and password listed above using the command below.
+<br/>
+<code>"ascp -QT -P 33001 -L-  -l 300M <b>[your_local_data_folder]</b> {{ user_name }}@hx-fasp-1.ebi.ac.uk:{{ftp_folder}}"</code>
+</p>
+<p>
+Detailed Instructions on data upload through FTP/Aspera is available : <a href="{{ ftp_upload_doc_link }}">{{ ftp_upload_doc_link }}</a>
+</p> <br/>
+<b>Metabolights Team</b>

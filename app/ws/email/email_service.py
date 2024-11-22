@@ -60,7 +60,7 @@ class EmailService(object):
         try:
             self.mail.send(msg)
         except Exception as exc:
-            message = f"Sending email failed: subject= {subject_name} receipents:{str(recipients)} body={str(body)}\nError {str(exc)}"
+            message = f"Sending email failed: subject= {subject_name} recipients:{str(recipients)} body={str(body)}\nError {str(exc)}"
             logger.error(message)
 
     def send_email(
@@ -86,7 +86,7 @@ class EmailService(object):
         try:
             self.mail.send(msg)
         except Exception as e:
-            message = f"Sending email failed: subject= {subject_name} receipents:{str(recipients)} body={str(body)}\nError {str(e)}"
+            message = f"Sending email failed: subject= {subject_name} recipients:{str(recipients)} body={str(body)}\nError {str(e)}"
             logger.error(message)
 
     def get_rendered_body(self, template_name: str, content):
@@ -94,31 +94,18 @@ class EmailService(object):
         body = template.render(content)
         return body
 
-    def send_email_for_queued_study_submitted(self, study_id, release_date, user_email, submitters_mail_addresses):
-        file_name = " * Online submission * "
-        host = get_settings().server.service.ws_app_base_link
-        public_study_url = os.path.join(host, study_id)
-        private_study_url = os.path.join(host, "editor", "study", study_id)
-        subject_name = f"{study_id}: Your MetaboLights study request has been successfully processed!"
 
-        content = {
-            "study_id": study_id,
-            "release_date": release_date,
-            "file_name": file_name,
-            "public_study_url": public_study_url,
-            "private_study_url": private_study_url,
-        }
-        body = self.get_rendered_body("send_queued_study_submitted.html", content)
-        self.send_email(subject_name, body, submitters_mail_addresses, user_email)
-
-    def send_email_for_requested_ftp_folder_created(self, study_id, ftp_folder, user_email, submitters_mail_addresses):
+    def send_email_for_new_submission(self, study_id, ftp_folder, user_email, submitters_mail_addresses):
         settings = get_settings()
         user_name = settings.ftp_server.private.connection.username
         user_password = settings.ftp_server.private.connection.password
         server = settings.ftp_server.private.connection.host
         ftp_upload_doc_link = settings.email.template_email_configuration.ftp_upload_help_doc_url
-
+        host = get_settings().server.service.ws_app_base_link
+        private_study_url = os.path.join(host, "editor", "study", study_id)
         content = {
+            "submission_id": study_id,
+            "private_study_url": private_study_url,
             "user_name": user_name,
             "user_password": user_password,
             "server": server,
@@ -126,10 +113,39 @@ class EmailService(object):
             "ftp_upload_doc_link": ftp_upload_doc_link,
         }
 
-        body = self.get_rendered_body("requested_ftp_folder_created.html", content)
-        subject_name = f"{study_id}:  MetaboLights private FTP upload folder for your submission"
+        body = self.get_rendered_body("new_submission.html", content)
+        subject_name = f"Your MetaboLights study submission request ({study_id}) has been successfully processed!"
 
         self.send_email(subject_name, body, submitters_mail_addresses, user_email)
+        
+    def send_email_for_new_accession_number(self, study_id, submission_id, obfuscation_code, user_email, submitters_mail_addresses):
+        host = get_settings().server.service.ws_app_base_link
+        public_study_url = os.path.join(host, study_id)
+        private_study_url = os.path.join(host, "editor", "study", study_id)
+        subject_name = f"Your MetaboLights study submission {submission_id} has an accession number ({study_id})."
+        private_review_study_url = os.path.join(host, f"reviewer{obfuscation_code}")
+        content = {
+            "submission_id": submission_id,
+            "study_id": study_id,
+            "public_study_url": public_study_url,
+            "private_study_url": private_study_url,
+            "private_review_study_url": private_review_study_url
+        }
+        body = self.get_rendered_body("new_accession_number.html", content)
+        self.send_email(subject_name, body, submitters_mail_addresses, user_email)
+
+    def send_email_on_public(self, study_id, release_date, user_email, submitters_mail_addresses):
+        host = get_settings().server.service.ws_app_base_link
+        public_study_url = os.path.join(host, study_id)
+        subject_name = f"Your MetaboLights study {study_id} is Public"
+        content = {
+            "study_id": study_id,
+            "release_date": release_date,
+            "public_study_url": public_study_url
+        }
+        body = self.get_rendered_body("status_is_public.html", content)
+        self.send_email(subject_name, body, submitters_mail_addresses, user_email)
+
 
     def send_email_for_task_completed(self, subject_name, task_id, task_result, to):
         content = {"task_id": task_id, "task_result": task_result}

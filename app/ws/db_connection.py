@@ -1425,7 +1425,6 @@ def add_metabolights_data(content_name, data_format, content):
 
 def val_acc(study_id=None):
     if study_id:
-
         if not (study_id.startswith("MTBLS") or study_id.startswith("REQ")) or study_id.lower() in stop_words:
             logger.error("Incorrect accession number string pattern")
             raise MetabolightsDBException(message=f"{study_id} is incorrect accession number string pattern", http_code=406)

@@ -22,26 +22,6 @@ from app.tasks.worker import (
 
 
 @celery.task(
-    base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.email.send_email_for_study_submitted"
-)
-def send_email_for_study_submitted(user_token, study_id):
-    flask_app = get_flask_app()
-    with flask_app.app_context():
-        user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
-        email_service = get_email_service(flask_app)
-        user_email = user.username
-        submitters_email_list = [user_email]
-        release_date = get_release_date_of_study(study_id)
-        email_service.send_email_for_queued_study_submitted(
-            study_id, release_date, user_email, submitters_email_list
-        )
-        return {
-            "study_id": study_id,
-            "user_email": user_email,
-            "submitters_email_list": submitters_email_list,
-        }
-
-@celery.task(
     base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.email.send_test_email"
 )
 def send_test_email(user_token):
@@ -59,9 +39,9 @@ def send_test_email(user_token):
 
 @celery.task(
     base=MetabolightsTask,
-    name="app.tasks.common_tasks.basic_tasks.email.send_email_for_private_ftp_folder",
+    name="app.tasks.common_tasks.basic_tasks.email.send_email_for_new_submission",
 )
-def send_email_for_private_ftp_folder(user_token, study_id, folder_name):
+def send_email_for_new_submission(user_token, study_id, folder_name):
 
     flask_app = get_flask_app()
     with flask_app.app_context():
@@ -78,7 +58,7 @@ def send_email_for_private_ftp_folder(user_token, study_id, folder_name):
                 submitter[0] for submitter in submitter_emails if submitter
             ]
         email_service = get_email_service(flask_app)
-        email_service.send_email_for_requested_ftp_folder_created(
+        email_service.send_email_for_new_submission(
             study_id, relative_study_path, user_email, submitters_email_list
         )
 
@@ -89,6 +69,61 @@ def send_email_for_private_ftp_folder(user_token, study_id, folder_name):
             "submitters_email_list": submitters_email_list,
         }
 
+
+@celery.task(
+    base=MetabolightsTask,
+    name="app.tasks.common_tasks.basic_tasks.email.send_email_for_new_accession_number",
+)
+def send_email_for_new_accession_number(user_token, study_id, submission_id, obfuscation_code):
+
+    flask_app = get_flask_app()
+    with flask_app.app_context():   
+        user_email = get_email(user_token)
+        submitter_emails = query_study_submitters(study_id)
+        submitters_email_list = []
+        if submitter_emails:
+            submitters_email_list = [
+                submitter[0] for submitter in submitter_emails if submitter
+            ]
+        email_service = get_email_service(flask_app)
+        email_service.send_email_for_new_accession_number(
+            study_id, submission_id, obfuscation_code,  user_email, submitters_email_list
+        )
+
+        return {
+            "submission_id": submission_id,
+            "study_id": study_id,
+            "obfuscation_code": obfuscation_code,
+            "user_email": user_email,
+            "submitters_email_list": submitters_email_list,
+        }
+
+@celery.task(
+    base=MetabolightsTask,
+    name="app.tasks.common_tasks.basic_tasks.email.send_email_on_public",
+)
+def send_email_on_public(user_token, study_id, release_date):
+    flask_app = get_flask_app()
+    with flask_app.app_context():   
+        user_email = get_email(user_token)
+        submitter_emails = query_study_submitters(study_id)
+        submitters_email_list = []
+        if submitter_emails:
+            submitters_email_list = [
+                submitter[0] for submitter in submitter_emails if submitter
+            ]
+        email_service = get_email_service(flask_app)
+        email_service.send_email_on_public(
+            study_id, release_date,  user_email, submitters_email_list
+        )
+
+        return {
+            "study_id": study_id,
+            "release_date": release_date,
+            "user_email": user_email,
+            "submitters_email_list": submitters_email_list,
+        }
+        
 
 @celery.task(name="app.tasks.common_tasks.basic_tasks.email.send_generic_email")
 def send_generic_email(subject, body, from_address, to_addresses, cc_addresses):

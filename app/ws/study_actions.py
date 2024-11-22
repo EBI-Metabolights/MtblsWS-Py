@@ -32,6 +32,7 @@ from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from pydantic import BaseModel
 from app.config import get_settings
+from app.tasks.common_tasks.basic_tasks.email import send_email_for_new_accession_number, send_email_on_public
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import create_links_on_data_storage, create_links_on_private_storage, maintain_storage_study_folders
 from app.ws.db import types
 
@@ -276,7 +277,13 @@ class StudyStatus(Resource):
         requested_study_status = types.StudyStatus.from_name(study_status.upper())
         
         updated_study_id = self.update_db_study_id(study_id, current_study_status, requested_study_status, study.reserved_accession, study.reserved_submission_id)
+        
         if study_id != updated_study_id:
+            if updated_study_id.startswith(get_settings().study.accession_number_prefix):
+                inputs = {"user_token": user_token, "submission_id": study_id,  
+                          "study_id": updated_study_id, "obfuscation_code": obfuscation_code}
+                send_email_for_new_accession_number.apply_async(kwargs=inputs)
+                
             self.refactor_study_folder(study, study_location, user_token, study_id, updated_study_id)
             ElasticsearchService.get_instance()._delete_study_index(study_id, ignore_errors=True)
             ftp_private_study_folder = updated_study_id.lower() + '-' + obfuscation_code
@@ -301,6 +308,11 @@ class StudyStatus(Resource):
                 if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
                     ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ_WRITE)
 
+            if study_status.lower() == 'public':
+                release_date = study.releasedate 
+                inputs = {"user_token": user_token, "study_id": updated_study_id, "release_date": new_date }
+                send_email_on_public.apply_async(kwargs=inputs)
+                
             response.update({"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'"})
             return response
         else:

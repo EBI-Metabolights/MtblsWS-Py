@@ -136,11 +136,6 @@ class WsClient:
         study_id = create_empty_study(user_token)
         if not study_id:
             raise MetabolightsException("Error while creating new study in db")
-        user_email = user.username
-        submitters_email_list = [user_email]
-        release_date = get_release_date_of_study(study_id)
-        self.email_service.send_email_for_queued_study_submitted(study_id, release_date,
-                                                                 user_email, submitters_email_list)
         return study_id
 
     def reindex_study(self, study_id, user_token, include_validation_results: bool = False, sync: bool = False):

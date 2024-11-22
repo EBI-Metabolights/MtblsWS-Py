@@ -22,7 +22,6 @@ METADATA_FILE_PREFIXES = {"a_", "i_", "s_", "m_"}
 MANAGED_FOLDERS = {"FILES", "FILES/RAW_FILES", "FILES/DERIVED_FILES"}
 
 
-
 def convert_relative_to_real_path(relative_path: str) -> str:
     if not relative_path or relative_path.startswith(os.sep):
         return relative_path
