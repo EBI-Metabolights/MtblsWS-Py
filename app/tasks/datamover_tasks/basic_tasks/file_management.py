@@ -293,10 +293,6 @@ def update_permission(path_item, permission):
                     "message": f"Path '{path_item}'  already exists. Permission could not be updated from {current_permission_str} to {permission_str}.",
                 }
         except Exception as ex:
-            # result = {
-            #     "status": False,
-            #     "message": f"Path '{path_item}' permission could not be updated from {current_permission_str} to {permission_str}. Root cause: {str(ex)}",
-            # }
             raise ex
     else:
         result = {"status": True, "message": f"Path '{path_item}' permission is already {current_permission_str}."}

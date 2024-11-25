@@ -21,13 +21,16 @@ if __name__ == "__main__":
     worker_name = socket.gethostname()
 
     max_retry_count = 30
-    period = 10
+    period = 20
     
     if len(sys.argv) > 1:
         period = int(sys.argv[1])
         
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2:
         max_retry_count = int(sys.argv[2])
+
+    if len(sys.argv) > 3:
+        worker_name = int(sys.argv[3])
         
     current_retry_count = 0
     status_file_path = "/tmp/healtz.log"
