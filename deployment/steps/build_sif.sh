@@ -23,3 +23,11 @@ else
     echo " Singularity file upload failed"
     exit 1
 fi
+echo "$SIF_LATEST_FILE_URL" 
+curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $SIF_FILE_NAME "$SIF_LATEST_FILE_URL"
+if [ $? -eq 0 ]; then
+    echo " Singularity latest file upload completed "
+else
+    echo " Singularity latest file upload failed"
+    exit 1
+fi
