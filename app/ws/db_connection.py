@@ -1161,7 +1161,7 @@ def insert_update_data(query, inputs=None):
         return False, msg
 
 
-def update_study_status(study_id, study_status, is_curator=False):
+def update_study_status(study_id, study_status, is_curator=False, first_public_date=None):
     val_acc(study_id)
 
     status = '0'
@@ -1182,7 +1182,9 @@ def update_study_status(study_id, study_status, is_curator=False):
         query = query + ", updatedate = CURRENT_DATE, releasedate = CURRENT_DATE + integer '28'"
     if study_status == 'public' and is_curator:
         query = query + ", updatedate = CURRENT_DATE, releasedate = CURRENT_DATE"
-
+    if study_status == 'public' and first_public_date is None:
+        query = query + ", first_public_date = CURRENT_DATE"
+        
     query = query + " WHERE acc = %(study_id)s;"
 
     try:

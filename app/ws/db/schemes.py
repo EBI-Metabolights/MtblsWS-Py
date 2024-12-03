@@ -99,6 +99,7 @@ class Study(Base):
     curation_request = Column(BigInteger, nullable=False)
     reserved_accession = Column(Text, nullable=True)
     reserved_submission_id = Column(Text, nullable=True)
+    first_public_date = Column(DateTime, nullable=True)
     users = relationship('User', secondary='study_user', back_populates="studies")
 
 

@@ -35,6 +35,7 @@ from app.config import get_settings
 from app.tasks.common_tasks.basic_tasks.email import send_email_for_new_accession_number, send_email_on_public
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import create_links_on_data_storage, create_links_on_private_storage, maintain_storage_study_folders
 from app.ws.db import types
+from app.ws.db import schemes
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
@@ -214,6 +215,7 @@ class StudyStatus(Resource):
         obfuscation_code = study.obfuscationcode
         db_study_status =  types.StudyStatus.from_int(study.status).name
         release_date = study.releasedate.strftime('%Y-%m-%d')
+        first_public_date_baseline = study.first_public_date
         # check for access rights
         # _, _, _, _, _, _, _, _ = wsc.get_permissions(study_id, user_token)
         study_location = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
@@ -249,7 +251,7 @@ class StudyStatus(Resource):
                     isa_study.public_release_date = new_date
                     release_date = new_date
                 self.update_status(study_id, study_status, is_curator=is_curator,
-                                obfuscation_code=obfuscation_code, user_token=user_token)
+                                obfuscation_code=obfuscation_code, user_token=user_token, first_public_date=first_public_date_baseline)
             update_curation_request(study_id, curation_request)
         else:
             if db_study_status.lower() != 'submitted':  # and study_status != 'In Curation':                
@@ -259,7 +261,7 @@ class StudyStatus(Resource):
             validated, message = self.has_validated(study_id)
             if validated:
                 self.update_status(study_id, study_status, is_curator=is_curator,
-                                   obfuscation_code=obfuscation_code, user_token=user_token)
+                                   obfuscation_code=obfuscation_code, user_token=user_token, first_public_date=first_public_date_baseline)
 
                 if release_date < new_date:  # Set the release date to a minimum of 28 days in the future
                     isa_inv.public_release_date = new_date
@@ -300,7 +302,7 @@ class StudyStatus(Resource):
                     "study_table_id": study.id}
         # Explictly changing the FTP folder permission for In Curation and Submitted state
         if db_study_status.lower() != study_status.lower():
-            if study_status.lower() == 'in curation':
+            if study_status.lower() in ('in curation', 'public', 'in review', 'dormant'):
                 if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
                     ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ)
 
@@ -308,7 +310,7 @@ class StudyStatus(Resource):
                 if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
                     ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ_WRITE)
 
-            if study_status.lower() == 'public':
+            if study_status.lower() == 'public' and not first_public_date_baseline:
                 release_date = study.releasedate 
                 inputs = {"user_token": user_token, "study_id": updated_study_id, "release_date": new_date }
                 send_email_on_public.apply_async(kwargs=inputs)
@@ -424,7 +426,7 @@ class StudyStatus(Resource):
         else:
             return False, "Validation report is not ready. Run validation."
 
-    def refactor_study_folder(self, study, study_location: str, user_token, study_id: str, updated_study_id: str):
+    def refactor_study_folder(self, study: schemes.Study, study_location: str, user_token, study_id: str, updated_study_id: str):
         if study_id == updated_study_id:
             return
         maintenance_task = StudyFolderMaintenanceTask(
@@ -515,10 +517,10 @@ class StudyStatus(Resource):
         return target_study_id
 
     @staticmethod
-    def update_status(study_id, study_status, is_curator=False, obfuscation_code=None, user_token=None):
+    def update_status(study_id, study_status, is_curator=False, obfuscation_code=None, user_token=None, first_public_date=None):
         study_status = study_status.lower()
         # Update database
-        update_study_status(study_id, study_status, is_curator=is_curator)
+        update_study_status(study_id, study_status, is_curator=is_curator, first_public_date=first_public_date)
 
     # @staticmethod
     # def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
