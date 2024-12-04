@@ -1803,8 +1803,8 @@ class StudyFilesTree(Resource):
         if "obfuscation_code" in request.headers:
             obfuscation_code = request.headers["obfuscation_code"]
         
-        if not obfuscation_code and not user_token:
-            abort(401, message="At least one of them is requred: user token or obfuscation code.")
+        # if not obfuscation_code and not user_token:
+        #     abort(401, message="At least one of them is requred: user token or obfuscation code.")
         # If false, only sync ISA-Tab metadata files
         # query validation
         UserService.get_instance().validate_user_has_read_access(user_token=user_token, study_id=study_id, obfuscationcode=obfuscation_code)
