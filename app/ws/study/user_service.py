@@ -66,7 +66,7 @@ class UserService(object):
                         return True
                     else:
                         if obfuscationcode:
-                            if study[2] == obfuscationcode and study[1] == StudyStatus.INREVIEW.value:
+                            if study[2] == obfuscationcode and study[1] in (StudyStatus.INREVIEW.value, StudyStatus.INCURATION.value):
                                 return True
                             if study[2] != obfuscationcode:
                                 raise MetabolightsAuthorizationException(message=f"Not a valid study id or obfuscation code")

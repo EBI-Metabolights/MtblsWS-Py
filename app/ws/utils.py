@@ -919,7 +919,7 @@ def create_maf(technology, study_metadata_location, assay_file_name, annotation_
                     assay_names.append(assay_name)
     except:
         logger.warning('The assay ' + assay_file_name + ' does not have ' + assay_name + ' defined!')
-
+    sample_names = []
     try:
         sample_names = assay_df[sample_name]
     except:

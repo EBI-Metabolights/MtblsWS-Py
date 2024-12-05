@@ -144,7 +144,7 @@ class IsaInvestigation(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token, obfuscation_code)
         if not read_access:
-            abort(403)
+            abort(403, message=f"Study {study_id} is invalid or private.")
         study = StudyService.get_instance().get_study_by_acc(study_id)
         metadata_files = get_all_metadata_files(study_location)
         investigation_file = [x for x in metadata_files if os.path.basename(x).lower() == "i_investigation.txt"]

@@ -7,7 +7,7 @@ from app.ws.study.user_service import UserService
 
 def get_permission_by_study_id(study_id, user_token) -> StudyAccessPermission:
     filter_clause = lambda query: query.filter(Study.acc == study_id)
-    return get_study_permission(user_token, filter_clause)
+    return get_study_permission(user_token, filter_clause, obfuscation_code=None)
 
 
 def get_permission_by_obfuscation_code(obfuscation_code, user_token) -> StudyAccessPermission:
@@ -15,14 +15,14 @@ def get_permission_by_obfuscation_code(obfuscation_code, user_token) -> StudyAcc
         Study.obfuscationcode == obfuscation_code
     )
     return get_study_permission(
-        user_token, filter_clause, view_in_review_studies=True
+        user_token, filter_clause, obfuscation_code=obfuscation_code
     )
 
 
 def get_study_permission(
     user_token,
     filter_clause,
-    view_in_review_studies=False,
+    obfuscation_code=None
 ) -> StudyAccessPermission:
     permission: StudyAccessPermission = StudyAccessPermission()
     with DBManager.get_instance().session_maker() as db_session:
@@ -34,8 +34,9 @@ def get_study_permission(
         permission.studyId = study_id
 
         if (
-            view_in_review_studies
-            and StudyStatus(study["status"]) == StudyStatus.INREVIEW
+            obfuscation_code
+            and obfuscation_code == study["obfuscationcode"]
+            and StudyStatus(study["status"]) in (StudyStatus.INREVIEW, StudyStatus.INCURATION)
         ):
             permission.studyStatus = StudyStatus(study["status"]).name
             permission.obfuscationCode = study["obfuscationcode"]
