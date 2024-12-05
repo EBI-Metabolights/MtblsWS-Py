@@ -2,6 +2,7 @@ import datetime
 import json
 import logging
 import os
+import shutil
 from typing import Union
 
 import pandas as pd
@@ -187,7 +188,36 @@ def create_links_on_private_storage(study_id: str, updated_study_id: str, obfusc
         if not os.path.exists(new_path):
             os.symlink(current_path, new_path, target_is_directory=True)
             
-
+@celery.task(
+    base=MetabolightsTask,
+    name="app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance.rename_folder_on_private_storage",
+)
+def rename_folder_on_private_storage(study_id: str, updated_study_id: str, obfuscation_code: str):
+    
+    folder_name = f"{study_id.lower()}-{obfuscation_code}"
+    new_folder_name = f"{updated_study_id.lower()}-{obfuscation_code}"
+    mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+    new_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, new_folder_name)
+    current_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, folder_name)
+    if study_id == updated_study_id:
+        if not os.path.exists(current_path):
+            if os.path.islink(current_path):
+                os.unlink(current_path)
+            os.makedirs(current_path, exist_ok=True)
+        return
+    if os.path.islink(current_path):
+        os.unlink(current_path)
+    if os.path.islink(new_path):
+        os.unlink(new_path)
+    timestamp = str(int(datetime.datetime.now().timestamp()))
+    recycle_path = os.path.join(mounted_paths.cluster_private_ftp_recycle_bin_root_path,  new_folder_name, timestamp)
+    if os.path.exists(new_path):
+        shutil.move(new_path, recycle_path)
+    if not os.path.exists(current_path):
+        os.makedirs(current_path, exist_ok=True)
+    shutil.move(current_path, new_path)
+            
+            
 @celery.task(
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance.maintain_storage_study_folders",

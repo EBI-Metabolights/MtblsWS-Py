@@ -33,7 +33,7 @@ from flask_restful_swagger import swagger
 from pydantic import BaseModel
 from app.config import get_settings
 from app.tasks.common_tasks.basic_tasks.email import send_email_for_new_accession_number, send_email_on_public
-from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import create_links_on_data_storage, create_links_on_private_storage, maintain_storage_study_folders
+from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import create_links_on_data_storage, create_links_on_private_storage, maintain_storage_study_folders, rename_folder_on_private_storage
 from app.ws.db import types
 from app.ws.db import schemes
 
@@ -492,7 +492,7 @@ class StudyStatus(Resource):
         inputs = {"updated_study_id": updated_study_id, 
                   "study_id": study_id,
                   "obfuscation_code": study.obfuscationcode}
-        create_links_on_private_storage.apply_async(kwargs=inputs)
+        rename_folder_on_private_storage.apply_async(kwargs=inputs)
 
 
     def update_db_study_id(self, current_study_id: str, current_study_status: types.StudyStatus, requested_study_status: types.StudyStatus, reserved_accession: str, reserved_submission_id: str):
