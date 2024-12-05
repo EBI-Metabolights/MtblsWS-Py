@@ -465,5 +465,5 @@ class AuthUserStudyPermissions2(Resource):
         if not obfuscation_code:
             return jsonify(permission.model_dump()) 
         
-        permission = get_permission_by_obfuscation_code(obfuscation_code, user_token)
+        permission = get_permission_by_obfuscation_code(user_token, obfuscation_code)
         return jsonify(permission.model_dump())
