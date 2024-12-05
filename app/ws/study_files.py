@@ -943,7 +943,7 @@ class StudyFilesReuse(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             },
             {
