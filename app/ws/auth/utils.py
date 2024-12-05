@@ -10,7 +10,7 @@ def get_permission_by_study_id(study_id, user_token) -> StudyAccessPermission:
     return get_study_permission(user_token, filter_clause, obfuscation_code=None)
 
 
-def get_permission_by_obfuscation_code(obfuscation_code, user_token) -> StudyAccessPermission:
+def get_permission_by_obfuscation_code(user_token, obfuscation_code) -> StudyAccessPermission:
     filter_clause = lambda query: query.filter(
         Study.obfuscationcode == obfuscation_code
     )

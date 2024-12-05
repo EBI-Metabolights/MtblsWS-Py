@@ -1293,7 +1293,7 @@ class GetTsvFile(Resource):
         logger.info('Assay Table: Getting ISA-JSON Study Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         if obfuscation_code:
-            permission: StudyAccessPermission = get_permission_by_obfuscation_code(study_id, obfuscation_code)
+            permission: StudyAccessPermission = get_permission_by_obfuscation_code(user_token, obfuscation_code)
         else:
             permission: StudyAccessPermission = get_permission_by_study_id(study_id, user_token)
         
