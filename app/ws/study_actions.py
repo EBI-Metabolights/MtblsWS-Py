@@ -281,14 +281,15 @@ class StudyStatus(Resource):
         updated_study_id = self.update_db_study_id(study_id, current_study_status, requested_study_status, study.reserved_accession, study.reserved_submission_id)
         
         if study_id != updated_study_id:
-            if updated_study_id.startswith(get_settings().study.accession_number_prefix):
-                inputs = {"user_token": user_token, "submission_id": study_id,  
-                          "study_id": updated_study_id, "obfuscation_code": obfuscation_code}
-                send_email_for_new_accession_number.apply_async(kwargs=inputs)
-                
             self.refactor_study_folder(study, study_location, user_token, study_id, updated_study_id)
             ElasticsearchService.get_instance()._delete_study_index(study_id, ignore_errors=True)
             ftp_private_study_folder = updated_study_id.lower() + '-' + obfuscation_code
+            if updated_study_id.startswith(get_settings().study.accession_number_prefix):
+                study_title = isa_study.title
+                inputs = {"user_token": user_token, "submission_id": study_id,  
+                          "study_id": updated_study_id, "obfuscation_code": obfuscation_code, 
+                          "study_title": study_title, "release_date": release_date}
+                send_email_for_new_accession_number.apply_async(kwargs=inputs)
         ElasticsearchService.get_instance()._reindex_study(updated_study_id, user_token)
         study = StudyService.get_instance().get_study_by_acc(updated_study_id)
         current_curation_request = CurationRequest(study.curation_request)

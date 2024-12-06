@@ -95,53 +95,76 @@ class EmailService(object):
         return body
 
 
-    def send_email_for_new_submission(self, study_id, ftp_folder, user_email, submitters_mail_addresses):
+    def send_email_for_new_submission(self, submission_id, ftp_folder, user_email, submitters_mail_addresses, submitter_fullname):
         settings = get_settings()
         user_name = settings.ftp_server.private.connection.username
         user_password = settings.ftp_server.private.connection.password
-        server = settings.ftp_server.private.connection.host
+        ftp_server = settings.ftp_server.private.connection.host
         ftp_upload_doc_link = settings.email.template_email_configuration.ftp_upload_help_doc_url
         host = get_settings().server.service.ws_app_base_link
-        private_study_url = os.path.join(host, "editor", "study", study_id)
+        submision_url = os.path.join(host, "editor", "study", submission_id)
+        metabolights_help_email = "metabolights-help@ebi.ac.uk"
+        metabolights_website_url = get_settings().server.service.ws_app_base_link
         content = {
-            "submission_id": study_id,
-            "private_study_url": private_study_url,
+            "submission_id": submission_id,
+            "submitter_fullname": submitter_fullname,
+            "submision_url": submision_url,
             "user_name": user_name,
             "user_password": user_password,
-            "server": server,
+            "ftp_server": ftp_server,
             "ftp_folder": ftp_folder,
-            "ftp_upload_doc_link": ftp_upload_doc_link,
+            "metabolights_website_url": metabolights_website_url,
+            "metabolights_help_email": metabolights_help_email
         }
 
         body = self.get_rendered_body("new_submission.html", content)
-        subject_name = f"Your MetaboLights study submission request ({study_id}) has been successfully processed!"
+        subject_name = f"MetaboLights Temporary Submission initiated ({submission_id})"
 
         self.send_email(subject_name, body, submitters_mail_addresses, user_email)
         
-    def send_email_for_new_accession_number(self, study_id, submission_id, obfuscation_code, user_email, submitters_mail_addresses):
+    def send_email_for_new_accession_number(self, study_id, submission_id, obfuscation_code, user_email, submitters_mail_addresses, submitter_fullname, study_title, release_date, previous_ftp_folder, new_ftp_folder):
         host = get_settings().server.service.ws_app_base_link
-        public_study_url = os.path.join(host, study_id)
-        private_study_url = os.path.join(host, "editor", "study", study_id)
-        subject_name = f"Your MetaboLights study submission {submission_id} has an accession number ({study_id})."
-        private_review_study_url = os.path.join(host, f"reviewer{obfuscation_code}")
+        subject_name = f"Submission Complete and Accessioned"
+        if study_id != submission_id:
+            subject_name += f" - from {submission_id} to {study_id}"
+        reviewer_url = os.path.join(host, f"reviewer{obfuscation_code}")
+        metabolights_help_email = "metabolights-help@ebi.ac.uk"
+        metabolights_website_url = get_settings().server.service.ws_app_base_link
         content = {
             "submission_id": submission_id,
-            "study_id": study_id,
-            "public_study_url": public_study_url,
-            "private_study_url": private_study_url,
-            "private_review_study_url": private_review_study_url
+            "mtbls_accession": study_id,
+            "submitter_fullname": submitter_fullname,
+            "study_title": study_title,
+            "release_date": release_date,
+            "reviewer_url": reviewer_url,
+            "previous_ftp_folder": previous_ftp_folder,
+            "new_ftp_folder": new_ftp_folder,
+            "metabolights_website_url": metabolights_website_url,
+            "metabolights_help_email": metabolights_help_email
         }
         body = self.get_rendered_body("new_accession_number.html", content)
         self.send_email(subject_name, body, submitters_mail_addresses, user_email)
 
-    def send_email_on_public(self, study_id, release_date, user_email, submitters_mail_addresses):
-        host = get_settings().server.service.ws_app_base_link
-        public_study_url = os.path.join(host, study_id)
-        subject_name = f"Your MetaboLights study {study_id} is Public"
+    def send_email_on_public(self, study_id, release_date, user_email, submitters_mail_addresses, 
+                             submitter_fullname, study_title, study_contacts, publication_doi, publication_pubmed_id):
+        subject_name = f"MetaboLights Study ({study_id}) Made Public"
+        metabolights_help_email = "metabolights-help@ebi.ac.uk"
+        metabolights_website_url = get_settings().server.service.ws_app_base_link
+        mtbls_accession_url = os.path.join(metabolights_website_url, study_id)
+        public_ftp_base_url = "http://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public"
+        study_ftp_download_url = os.path.join(public_ftp_base_url, study_id)
         content = {
-            "study_id": study_id,
+            "mtbls_accession": study_id,
+            "submitter_fullname": submitter_fullname,
+            "study_title": study_title,
             "release_date": release_date,
-            "public_study_url": public_study_url
+            "study_contacts": study_contacts,
+            "mtbls_accession_url": mtbls_accession_url,
+            "study_ftp_download_url": study_ftp_download_url,
+            "metabolights_website_url": metabolights_website_url,
+            "metabolights_help_email": metabolights_help_email,
+            "publication_doi": publication_doi,
+            "publication_pubmed_id": publication_pubmed_id
         }
         body = self.get_rendered_body("status_is_public.html", content)
         self.send_email(subject_name, body, submitters_mail_addresses, user_email)

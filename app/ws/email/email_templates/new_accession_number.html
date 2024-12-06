@@ -1,12 +1,69 @@
-<p>Your submission {{ submission_id }} was completed and we assigned a MetaboLights accession number {{ study_id }} for it.</p>
+<head>
+  <link rel="stylesheet" type="text/css" href='{{ metabolights_website_url }}/css/ml.css' media="screen" />
+</head>
+<body class="level2">
+  
+<div class="ml-header-section-top ml-header clearfix">
+  <div class="col-md-12">
+      <div class="row">
+          <div class="col-md-7 col-sm-6">
+              <div class="alpha logo-title"  id="local-title">
+                  <a id="mlLogo" class="ml-logo" style="text-decoration: none; display: flex; align-items: center;" href="{{ metabolights_website_url }}" title="MetaboLights homepage">
+                      <img src="{{ metabolights_website_url }}/img/MetaboLightsLogo.png" alt="MetaboLights" width="64" height="64" />MetaboLights
+                  </a>
+              </div>
+          </div>
+      </div>
+  </div>
+</div><br/>
 
-<p>You can use {{ private_study_url }} to view your submission.</p>
-<p>Once your study reaches to 'In Review' status, you can share the private link {{ private_review_study_url }} with reviewers and your collaborators.</p>
+<p>Dear {{ submitter_fullname }},</p>
 <br/>
-<p>Citing MetaboLights generally:</p>
-<p>Ozgur Yurekten, Thomas Payne, Noemi Tejera, Felix Xavier Amaladoss, Callum Martin, Mark Williams, Claire O’Donovan, <br/>
-    MetaboLights: open data repository for metabolomics, Nucleic Acids Research, <br/>
-    Volume 52, Issue D1, 5 January 2024, Pages D640–D646, doi:10.1093/nar/gkad1045, PMID:37971328.</p>
+{% if submission_id != mtbls_accession  -%}
+<p>We are happy to inform you that your study "{{ study_title }}" with {{ submission_id }} has been successfully submitted to MetaboLights as {{ mtbls_accession }}. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.</p>
+{% else -%}
+<p>We are happy to inform you that your study "{{ study_title }}" has been successfully submitted to MetaboLights as {{ mtbls_accession }}. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.</p>
+{% endif -%}
 <br/>
-<p>Many thanks for your time and effort.</p>
-<b>Metabolights Team</b>
+<p>The requested Study Public Release Date is <b>{{ release_date }}</bb>. The date can be changed at any stage by contacting us directly. Please note that it is essential that you notify us of the first (online) publication of the corresponding manuscript.</p>
+<br/>
+<p><b>SUBMISSION DETAILS</b><br/>
+MetaboLights study title: {{ study_title }}<br/>
+{% if submission_id != mtbls_accession  -%}
+MetaboLights request ID: <b>{{ submission_id }}</b><br/>
+{% endif -%}
+MetaboLights accession: <b>{{ mtbls_accession }}</b><br/>
+</p>
+<br/>
+{% if submission_id != mtbls_accession  -%}
+<p>The FTP upload folder is now read only and has been renamed from <code>{{ previous_ftp_folder }}</code> to <code>{{ new_ftp_folder }}</code></p>
+{% endif -%}
+<br/>
+<p><b>REVIEWER ACCESS</b><br/>
+Private reviewer link: <a href="{{ reviewer_url }}">{{ reviewer_url }}</a>
+<br/><br/>
+<p><b>CITATION</b></p>
+<p>Please add to your manuscript the following sentence (typically in the "Methods" section or just before/in the Acknowledgements): <br/><br/>
+<blockquote>
+"The metabolomics data have been deposited to MetaboLights[1] repository with the study identifier {{ mtbls_accession }}". <br/>
+[1] Yurekten O, Payne T, Tejera N, Amaladoss FX, Martin C, Williams M, O'Donovan C. MetaboLights: open data repository for metabolomics.
+Nucleic Acids Res. 2024 Jan 5;52(D1):D640-D646. doi:<a href="https://doi.org/10.1093/nar/gkad1045">10.1093/nar/gkad1045</a>. PMID:37971328.</blockquote>
+</p>
+<br/>
+<p>We would recommend you to also include this information in a much abridged form into the abstract itself, e.g. "Data are available via MetaboLights with identifier {{ mtbls_accession }}."</p>
+<br/>
+<p>Thank you for choosing MetaboLights for the dissemination of your data, and looking forward to receiving more of your data in the future.</p>
+<br/>
+<p>Regards, <br/>
+The MetaboLights Team, EMBL-EBI <br/>
+<br/>
+Website: <a href="{{ metabolights_website_url }}">{{ metabolights_website_url }}</a> <br/>
+Email: <a href="mailto:{{ metabolights_help_email }}">{{ metabolights_help_email }}</a> <br/>
+X/Twitter: <a href="https://x.com/MetaboLights">@MetaboLights</a> <br/>
+Bluesky: <a href="https://bsky.app/profile/metabolights.bsky.social">@metabolights.bsky.social</a> <br/>
+<br/>
+
+MetaboLights <a href="https://www.ebi.ac.uk/about/terms-of-use">data policy</a><br/>
+<br/>
+EMBL-EBI, Wellcome Trust Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK <br/></p>
+</body>
