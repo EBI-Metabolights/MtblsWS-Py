@@ -5,7 +5,7 @@ from typing import Union
 from flask_mail import Mail, Message
 from jinja2 import Environment, PackageLoader, select_autoescape
 from app.config import get_settings
-
+import urllib.parse
 from app.config.model.email import EmailSettings
 
 
@@ -151,8 +151,15 @@ class EmailService(object):
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
         metabolights_website_url = get_settings().server.service.ws_app_base_link
         mtbls_accession_url = os.path.join(metabolights_website_url, study_id)
-        public_ftp_base_url = "http://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public"
+        public_ftp_server = "ftp.ebi.ac.uk"
+        public_ftp_remote_folder = "/pub/databases/metabolights/studies/public"
+        public_ftp_base_url = f"http://{public_ftp_server}{public_ftp_remote_folder}"
         study_ftp_download_url = os.path.join(public_ftp_base_url, study_id)
+        globus_collection_name = "EMBL-EBI Public Data"
+        study_path = os.path.join(public_ftp_remote_folder, study_id)
+        origin_path = urllib.parse.quote(study_path)
+        origin_id = "47772002-3e5b-4fd3-b97c-18cee38d6df2"
+        study_globus_url = f"https://app.globus.org/file-manager?origin_id={origin_id}&origin_path={origin_path}%2F"
         content = {
             "mtbls_accession": study_id,
             "submitter_fullname": submitter_fullname,
@@ -161,10 +168,14 @@ class EmailService(object):
             "study_contacts": study_contacts,
             "mtbls_accession_url": mtbls_accession_url,
             "study_ftp_download_url": study_ftp_download_url,
+            "public_ftp_server": public_ftp_server,
+            "public_ftp_remote_folder": study_path,
             "metabolights_website_url": metabolights_website_url,
             "metabolights_help_email": metabolights_help_email,
             "publication_doi": publication_doi,
-            "publication_pubmed_id": publication_pubmed_id
+            "publication_pubmed_id": publication_pubmed_id,
+            "globus_collection_name": globus_collection_name,
+            "study_globus_url": study_globus_url
         }
         body = self.get_rendered_body("status_is_public.html", content)
         self.send_email(subject_name, body, submitters_mail_addresses, user_email)

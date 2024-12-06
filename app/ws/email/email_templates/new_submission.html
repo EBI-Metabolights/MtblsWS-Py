@@ -17,12 +17,12 @@
   </div>
 </div><br/>
 
-<p>Dear {{ submitter_fullname }},</p><br/>
+Dear {{ submitter_fullname }},<br/><br/>
 
-<p>We are happy to inform you that your temporary submission has been successfully initiated, and your FTP upload folder has been created and is now ready for use. You can use either FTP or Aspera to upload your data.</p>
-
-<p>Your temporary submission is now referenced by MetaboLights as <b>{{ submission_id }}</b> and can be accessed here: {{ submision_url }}</p>
-<p><br/>
+We are happy to inform you that your temporary submission has been successfully initiated, and your FTP upload folder has been created and is now ready for use. You can use either FTP or Aspera to upload your data.<br/>
+<br/>
+Your temporary submission is now referenced by MetaboLights as <b>{{ submission_id }}</b> and can be accessed here: {{ submision_url }}<br/>
+<br/>
 <b>SUBMISSION WORKFLOW</b> <br/>
 Your submission will not be published and made available to the world, until the following conditions have been satisfied:<br/>
 A. Data files are complete and successfully uploaded.<br/>
@@ -31,35 +31,37 @@ C. Validation has successfully passed.<br/>
 D. Public release date has been updated.<br/>
 E. The submitter (you) promotes the status from Submitted to In Curation. A MetaboLights accession number will be then assigned and a private reviewer link will be accessible at the top of the study page.<br/>
 F. The MetaboLights team approves the study and promotes the status from In Curation to Public.<br/>
-</p>
+
 <br/>
-<p><b>FTP UPLOAD</b><br/>
-<b>Using FTP Client (e.g., FileZilla):</b><br/>
-Username : <b> {{ user_name }}</b> <br/>
-Password : <b> {{ user_password }}</b><br/>
-Server : <b> {{ ftp_server }}</b><br/>
-Remote Folder : <b> {{ ftp_folder }}</b><br/>
-</p>
+<b>FTP UPLOAD</b><br/>
+<i>Using FTP Client (e.g., FileZilla):</i><br/>
+Username : <code> {{ user_name }}</code>  <br/>
+Password : <code> {{ user_password }}</code> </b><br/>
+Server : <code>  {{ ftp_server }}</code> </b><br/>
+Remote folder : <code> {{ ftp_folder }}</code> </b><br/>
+
 <br/>
-<p>
+
 Please, note that the remote folder needs to be entirely typed, as the folder is not browsable.
 So use the following command to access your private folder: <br/>
 <code>"cd {{ ftp_folder }}"</code>
-</p>
+
 <br/>
-<p>
-<b>Using Aspera Client:</b> <br/>
+<br/>
+<i>Using Aspera Client:</i> <br/>
 You can also use the high-speed Aspera client to upload with the same username and password listed above using the command below.
 <br/>
 <code>"ascp -QT -P 33001 -L-  -l 300M <b>[your_local_data_folder]</b> {{ user_name }}@hx-fasp-1.ebi.ac.uk:{{ftp_folder}}"</code>
-</p>
-<br/>
-<p><b>HELP</b><br/>
-<p>
+
+<br/><br/>
+<b>SUBMISSION GUIDELINE</b><br/>
+
 Detailed instructions on data upload and submission are available on <a href="{{ metabolights_website_url }}/guides">{{ metabolights_website_url }}/guides</a>
-</p>
+<br/><br/>
 <br/>
-<p>Regards, <br/>
+Thank you for choosing MetaboLights for the dissemination of your data. 
+<br/><br/>
+Regards, <br/><br/>
   The MetaboLights Team, EMBL-EBI <br/>
   <br/>
   Website: <a href="{{ metabolights_website_url }}">{{ metabolights_website_url }}</a> <br/>
@@ -69,7 +71,7 @@ Detailed instructions on data upload and submission are available on <a href="{{
   <br/>
   MetaboLights <a href="https://www.ebi.ac.uk/about/terms-of-use">data policy</a><br/>
   <br/>
-  EMBL-EBI, Wellcome Trust Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK<br></p>
+  EMBL-EBI, Wellcome Trust Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK<br>
 
 
 </body>

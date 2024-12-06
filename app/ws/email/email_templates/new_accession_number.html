@@ -17,44 +17,47 @@
   </div>
 </div><br/>
 
-<p>Dear {{ submitter_fullname }},</p>
+Dear {{ submitter_fullname }},<br/><br/>
 <br/>
 {% if submission_id != mtbls_accession  -%}
-<p>We are happy to inform you that your study "{{ study_title }}" with {{ submission_id }} has been successfully submitted to MetaboLights as {{ mtbls_accession }}. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.</p>
+We are happy to inform you that your study "{{ study_title }}" with temporary request ID {{ submission_id }} has been successfully submitted to MetaboLights as {{ mtbls_accession }}. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
 {% else -%}
-<p>We are happy to inform you that your study "{{ study_title }}" has been successfully submitted to MetaboLights as {{ mtbls_accession }}. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.</p>
+We are happy to inform you that your study "{{ study_title }}" has been successfully submitted to MetaboLights as {{ mtbls_accession }}. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
 {% endif -%}
-<br/>
-<p>The requested Study Public Release Date is <b>{{ release_date }}</bb>. The date can be changed at any stage by contacting us directly. Please note that it is essential that you notify us of the first (online) publication of the corresponding manuscript.</p>
-<br/>
-<p><b>SUBMISSION DETAILS</b><br/>
-MetaboLights study title: {{ study_title }}<br/>
-{% if submission_id != mtbls_accession  -%}
-MetaboLights request ID: <b>{{ submission_id }}</b><br/>
-{% endif -%}
-MetaboLights accession: <b>{{ mtbls_accession }}</b><br/>
-</p>
-<br/>
-{% if submission_id != mtbls_accession  -%}
-<p>The FTP upload folder is now read only and has been renamed from <code>{{ previous_ftp_folder }}</code> to <code>{{ new_ftp_folder }}</code></p>
-{% endif -%}
-<br/>
-<p><b>REVIEWER ACCESS</b><br/>
-Private reviewer link: <a href="{{ reviewer_url }}">{{ reviewer_url }}</a>
 <br/><br/>
-<p><b>CITATION</b></p>
-<p>Please add to your manuscript the following sentence (typically in the "Methods" section or just before/in the Acknowledgements): <br/><br/>
-<blockquote>
-"The metabolomics data have been deposited to MetaboLights[1] repository with the study identifier {{ mtbls_accession }}". <br/>
-[1] Yurekten O, Payne T, Tejera N, Amaladoss FX, Martin C, Williams M, O'Donovan C. MetaboLights: open data repository for metabolomics.
-Nucleic Acids Res. 2024 Jan 5;52(D1):D640-D646. doi:<a href="https://doi.org/10.1093/nar/gkad1045">10.1093/nar/gkad1045</a>. PMID:37971328.</blockquote>
-</p>
+The requested Study Public Release Date is <b>{{ release_date }}</b>. The date can be changed at any stage by contacting us directly. Please note that it is essential that you notify us of the first (online) publication of the corresponding manuscript.
+<br/><br/>
+<b>SUBMISSION DETAILS</b><br/>
+MetaboLights study title: <code>{{ study_title }}</code><br/>
+{% if submission_id != mtbls_accession  -%}
+MetaboLights request ID: <code>{{ submission_id }}</code><br/>
+{% endif -%}
+MetaboLights accession: <code>{{ mtbls_accession }}</code><br/>
+
 <br/>
-<p>We would recommend you to also include this information in a much abridged form into the abstract itself, e.g. "Data are available via MetaboLights with identifier {{ mtbls_accession }}."</p>
+{% if submission_id != mtbls_accession  -%}
+The FTP upload folder is now read only and has been renamed from "<code><i>{{ previous_ftp_folder }}</i></code>" to "<code><i>{{ new_ftp_folder }}</i></code>"
+{% endif -%}
+<br/><br/>
+<b>REVIEWER ACCESS</b><br/>
+    You can share the following private link with your study contributors and reviewers to facilitate the peer review process. <br><br>
+Private reviewer link: <code><a href="{{ reviewer_url }}">{{ reviewer_url }}</a></code>
+<br/><br/>
+<b>CITATION</b><br/>
+Please add to your manuscript the following sentence (typically in the "Methods" section or just before/in the Acknowledgements): <br/><br/>
+<i>
+    "The metabolomics data have been deposited to MetaboLights[1] repository with the study identifier {{ mtbls_accession }}".<br/> 
+  </i><br/>
+  MetaboLigths reference:<br/>
+  [1] Yurekten O, Payne T, Tejera N, Amaladoss FX, Martin C, Williams M, O'Donovan C. MetaboLights: open data repository for metabolomics.
+  Nucleic Acids Res. 2024 Jan 5;52(D1):D640-D646. doi:<a href="https://doi.org/10.1093/nar/gkad1045">10.1093/nar/gkad1045</a>. PMID:37971328.<br/> 
+  
 <br/>
-<p>Thank you for choosing MetaboLights for the dissemination of your data, and looking forward to receiving more of your data in the future.</p>
-<br/>
-<p>Regards, <br/>
+We would recommend you to also include this information in a much abridged form into the abstract itself, e.g. "Data are available via MetaboLights with identifier {{ mtbls_accession }}."
+<br/><br/><br/>
+Thank you for choosing MetaboLights for the dissemination of your data. We look forward to receiving more of your data in the future.
+<br/><br/>
+Regards, <br/><br/>
 The MetaboLights Team, EMBL-EBI <br/>
 <br/>
 Website: <a href="{{ metabolights_website_url }}">{{ metabolights_website_url }}</a> <br/>
@@ -65,5 +68,5 @@ Bluesky: <a href="https://bsky.app/profile/metabolights.bsky.social">@metaboligh
 
 MetaboLights <a href="https://www.ebi.ac.uk/about/terms-of-use">data policy</a><br/>
 <br/>
-EMBL-EBI, Wellcome Trust Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK <br/></p>
+EMBL-EBI, Wellcome Trust Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK <br/>
 </body>

@@ -157,6 +157,10 @@ def send_email_on_public(user_token, study_id, release_date):
         publication_pubmed_id_list = [x.pubmed_id for x in study.publications]
         publication_doi = ", ".join([x if x else "-" for x in publication_doi_list])
         publication_pubmed_id = ", ".join([x if x else "-" for x in publication_pubmed_id_list])
+        if not publication_doi:
+            publication_doi = "-"
+        if not publication_pubmed_id:
+            publication_pubmed_id = "-"
         if not study_contacts:
             study_contacts = user.fullName
         email_service.send_email_on_public(
