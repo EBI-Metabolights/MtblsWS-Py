@@ -44,7 +44,7 @@ from app.ws.study.folder_utils import get_files_for_validation
 from app.ws.study.study_service import StudyService
 from app.ws.study_folder_utils import FileSearchResult
 from app.ws.utils import (find_text_in_isatab_file,
-                          get_assay_headers_and_protcols,
+                          get_assay_headers_and_protocols,
                           get_assay_type_from_file_name, get_table_header,
                           map_file_type, read_tsv)
 from isatools.model import Study
@@ -1113,7 +1113,7 @@ def validate_assays(isa_study, readonly_files_folder, metadata_files_folder, int
         assay_type = get_assay_type_from_file_name(study_id, assay.filename)
         if assay_type != 'a':  # Not created from the online editor, so we have to skip this validation
             tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
-            assay_mandatory_type = get_assay_headers_and_protcols(assay_type)
+            assay_mandatory_type = get_assay_headers_and_protocols(assay_type)
             for idx, template_header in enumerate(tidy_header_row):
 
                 assay_header_pos = None

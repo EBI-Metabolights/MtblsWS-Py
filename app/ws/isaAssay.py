@@ -36,7 +36,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import AssaySchema, ProcessSchema, OtherMaterialSchema, DataFileSchema, SampleSchema
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
-from app.ws.utils import get_assay_type_from_file_name, get_assay_headers_and_protcols, get_sample_headers_and_data, write_tsv, remove_file, \
+from app.ws.utils import get_assay_type_from_file_name, get_assay_headers_and_protocols, get_sample_headers_and_data, write_tsv, remove_file, \
     get_maf_name_from_assay_name, add_new_protocols_from_assay, create_maf, add_ontology_to_investigation, read_tsv, \
     log_request,copy_file, new_timestamped_folder, totuples
 from app.ws.db_connection import update_study_sample_type
@@ -149,7 +149,7 @@ class StudyAssayDelete(Resource):
             }
         ]
     )
-    def delete(self, study_id, assay_file_name):
+    def delete(self, study_id: str, assay_file_name: str):
         log_request(request)
         # param validation
         if study_id is None:
@@ -169,7 +169,7 @@ class StudyAssayDelete(Resource):
 
         # query validation
         parser = reqparse.RequestParser()
-        
+
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
@@ -190,78 +190,83 @@ class StudyAssayDelete(Resource):
         study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
                                                          skip_load_tables=True, study_location=study_location)
         isa_study: Study = study
-        unique_protocols = get_all_unique_protocols_from_study_assays(study_id, isa_study.assays)
+        input_assay = [x for x in isa_study.assays if x.filename == assay_file_name]        
+        if not input_assay:
+            abort(404)
+        selected_assay: Assay = input_assay[0]
+        # unique_protocols = get_all_unique_protocols_from_study_assays(study_id, isa_study.assays)
+    
+        # Collect all protocols from templates
         assay_protocols_and_parameters: Dict[str, Dict[str, Set[str]]] = {}
         assay_type_protocols: Dict[str, Tuple[str, str, str]] = {}
-        # Remove the assay from the study
-        for item in isa_study.assays:  # ToDo, check if we can delete the correct assay if the file is missing
+        for item in isa_study.assays:  
             assay: Assay = item
             a_file = assay.filename
-            a_file = a_file.strip().rstrip('\n')
+            a_file = a_file.strip()
             assay_type = get_assay_type_from_file_name(study_id, assay.filename)
 
             
             if assay_type not in assay_type_protocols:
                 tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
-                    assay_mandatory_type = get_assay_headers_and_protcols(assay_type)
+                    assay_mandatory_type = get_assay_headers_and_protocols(assay_type)
                 assay_type_protocols[assay_type] = protocols
             protocols = assay_type_protocols[assay_type]
             for _, protocol_name, parameters in protocols:
                 if protocol_name not in assay_protocols_and_parameters:
                     assay_protocols_and_parameters[protocol_name] = {}
                 if a_file not in assay_protocols_and_parameters[protocol_name]: 
-                     assay_protocols_and_parameters[protocol_name][a_file] = set()
+                    assay_protocols_and_parameters[protocol_name][a_file] = set()
                     
                 if parameters:
                     for param in parameters.split(";"):
                         assay_protocols_and_parameters[protocol_name][a_file].add(param)
-                    
-        for item in isa_study.assays:
-            assay: Assay = item
-            a_file = assay.filename
-            a_file = a_file.strip().rstrip('\n')
-            if assay_file_name == a_file:
-                logger.info("Removing assay " + assay_file_name + " from study " + study_id)
-                assay_type = get_assay_type_from_file_name(study_id, a_file)
-                # Get all unique protocols for the study, ie. any protocol that is only used once
-                
-                for protocol_name in assay_protocols_and_parameters:
-                    assay_names = assay_protocols_and_parameters[protocol_name]
-                    if not assay_names or (assay_names and len(assay_names) == 1 and a_file in assay_names):
-                        obj = isa_study.get_prot(protocol_name)
-                        if not obj:
-                            abort(404)
-                        # remove object
-                        isa_study.protocols.remove(obj)
-                    elif assay_names and len(assay_names) > 1 and a_file in assay_names:
-                        assay_names = assay_protocols_and_parameters[protocol_name]
-                        other_assays = [x for x in assay_names if x != a_file ]
-                        assay_params =  assay_names[a_file]
-                        if assay_params:
-                            new_params = set()
-                            for other_assay in other_assays:
-                                new_params = new_params.union(assay_names[other_assay])
 
-                            if not assay_params.issubset(new_params):
-                                new_params_list = []
-                                protocol: Protocol = isa_study.get_prot(protocol_name)
-                                for param in protocol.parameters:
-                                    protocol_param: ProtocolParameter = param
-                                    if protocol_param.parameter_name.term in new_params:
-                                        new_params_list.append(param)
-                                protocol.parameters = new_params_list
-                isa_study.assays.remove(assay)
-                maf_name = get_maf_name_from_assay_name(a_file)
-                logger.info("A copy of the previous files will %s saved", save_msg_str)
-                iac.write_isa_study(isa_inv, user_token, std_path,
-                                    save_investigation_copy=save_audit_copy, save_assays_copy=save_audit_copy,
-                                    save_samples_copy=save_audit_copy)
-                try:
-                    remove_file(study_location, a_file, always_remove=True, is_curator=is_curator)  # We have to remove active metadata files
-                    if maf_name is not None:
-                        remove_file(study_location, maf_name, always_remove=True, is_curator=is_curator)
-                except:
-                    logger.error("Failed to remove assay file " + a_file + " from study " + study_id)
+        a_file = selected_assay.filename
+        logger.info("Removing assay " + assay_file_name + " from study " + study_id)
+        assay_type = get_assay_type_from_file_name(study_id, assay_file_name)
+        # Get all unique protocols for the study, ie. any protocol that is only used once
+        
+        for protocol_name in assay_protocols_and_parameters:
+            if protocol_name.lower() == "sample collection":
+                continue
+            assay_names = assay_protocols_and_parameters[protocol_name]
+            if assay_file_name not in assay_names:
+                continue
+            if not assay_names or (assay_names and len(assay_names) == 1 and assay_file_name in assay_names):
+                obj = isa_study.get_prot(protocol_name)
+                if not obj:
+                    abort(404)
+                # remove object
+                isa_study.protocols.remove(obj)
+            elif assay_names and len(assay_names) > 1 and assay_file_name in assay_names:
+                assay_names = assay_protocols_and_parameters[protocol_name]
+                other_assays = [x for x in assay_names if x != assay_file_name ]
+                assay_params =  assay_names[assay_file_name]
+                if assay_params:
+                    new_params = set()
+                    for other_assay in other_assays:
+                        new_params = new_params.union(assay_names[other_assay])
+
+                    if not assay_params.issubset(new_params):
+                        new_params_list = []
+                        protocol: Protocol = isa_study.get_prot(protocol_name)
+                        for param in protocol.parameters:
+                            protocol_param: ProtocolParameter = param
+                            if protocol_param.parameter_name.term in new_params:
+                                new_params_list.append(param)
+                        protocol.parameters = new_params_list
+        isa_study.assays.remove(assay)
+        maf_name = get_maf_name_from_assay_name(a_file)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path,
+                            save_investigation_copy=save_audit_copy, save_assays_copy=save_audit_copy,
+                            save_samples_copy=save_audit_copy)
+        try:
+            remove_file(study_location, a_file, always_remove=True, is_curator=is_curator)  # We have to remove active metadata files
+            if maf_name is not None:
+                remove_file(study_location, maf_name, always_remove=True, is_curator=is_curator)
+        except:
+            logger.error("Failed to remove assay file " + a_file + " from study " + study_id)
 
         return {"success": "The assay was removed from study " + study_id}
 
@@ -564,34 +569,34 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                 "assay": json_assay[0]}
 
 
-def get_all_unique_protocols_from_study_assays(study_id, assays):
-    all_protocols = []
-    unique_protocols = []
-    all_names = []
-    short_list = []
+# def get_all_unique_protocols_from_study_assays(study_id, assays):
+#     all_protocols = []
+#     unique_protocols = []
+#     all_names = []
+#     short_list = []
 
-    try:
-        for assay in assays:
-            assay_type = get_assay_type_from_file_name(study_id, assay.filename)
-            tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
-                assay_mandatory_type = get_assay_headers_and_protcols(assay_type)
-            all_protocols = all_protocols + protocols
-    except:
-        return []
+#     try:
+#         for assay in assays:
+#             assay_type = get_assay_type_from_file_name(study_id, assay.filename)
+#             tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
+#                 assay_mandatory_type = get_assay_headers_and_protocols(assay_type)
+#             all_protocols = all_protocols + protocols
+#     except:
+#         return []
 
-    for protocol in all_protocols:
-        all_names.append(protocol[1])
+#     for protocol in all_protocols:
+#         all_names.append(protocol[1])
 
-    for prot_name in all_names:
-        unique_protocols.append([prot_name, all_names.count(prot_name)])
+#     for prot_name in all_names:
+#         unique_protocols.append([prot_name, all_names.count(prot_name)])
 
-    unique_protocols = list(map(list, set(map(lambda i: tuple(i), unique_protocols))))
+#     unique_protocols = list(map(list, set(map(lambda i: tuple(i), unique_protocols))))
 
-    for i in unique_protocols:
-        if i[1] == 1:
-            short_list.append(i[0])
+#     for i in unique_protocols:
+#         if i[1] == 1:
+#             short_list.append(i[0])
 
-    return short_list
+#     return short_list
 
 
 def create_assay(assay_type, columns, study_id, ontology, output_folder=None):
@@ -609,7 +614,7 @@ def create_assay(assay_type, columns, study_id, ontology, output_folder=None):
             column = key_val['value']
 
     tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_types, assay_file_type, \
-        assay_data_mandatory = get_assay_headers_and_protcols(assay_type)
+        assay_data_mandatory = get_assay_headers_and_protocols(assay_type)
 
     assay_platform = assay_desc + ' - ' + polarity
     if column != '':

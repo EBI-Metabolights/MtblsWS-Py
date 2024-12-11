@@ -278,7 +278,7 @@ def get_single_file_information(file_name):
     return file_time
 
 
-def get_assay_headers_and_protcols(assay_type):
+def get_assay_headers_and_protocols(assay_type):
     tidy_header_row = ""
     tidy_data_row = ""
     protocols = ""
