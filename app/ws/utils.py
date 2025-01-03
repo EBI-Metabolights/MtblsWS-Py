@@ -895,7 +895,7 @@ def add_new_protocols_from_assay(
 def validate_mzml_files(study_id):
     status, result = True, "All mzML files validated in both study and upload folder"
     settings = get_settings()
-    studies_folder = settings.study.mounted_paths.study_readonly_files_root_path
+    studies_folder = settings.study.mounted_paths.study_readonly_files_actual_root_path
     study_folder = os.path.join(studies_folder, study_id)
     xsd_path = settings.file_resources.mzml_xsd_schema_file_path
     xmlschema_doc = etree.parse(xsd_path)
@@ -972,7 +972,7 @@ def collect_all_mzml_files(study_id, study_metadata_files_folder):
     )
     folder_path = create_temp_dir_in_study_folder(parent_folder=temp_folder)
     files_folder = os.path.join(
-        settings.mounted_paths.study_readonly_files_root_path, study_id
+        settings.mounted_paths.study_readonly_files_actual_root_path, study_id
     )
     mzml_files = {}
     if os.path.exists(files_folder) and os.path.isdir(
@@ -1309,7 +1309,7 @@ def remove_file(
         mounted_paths = settings.hpc_cluster.datamover.mounted_paths
         new_file_relative_path = file_name.replace(f"{files_folder_name}/", "", 1)
         files_folder_root_path = os.path.join(
-            mounted_paths.cluster_study_readonly_files_root_path, study_id
+            mounted_paths.cluster_study_readonly_files_actual_root_path, study_id
         )
         remote_path = os.path.join(files_folder_root_path, new_file_relative_path)
 

@@ -517,7 +517,7 @@ def update_validation_schema_files(validation_file, study_id, user_token, obfusc
         study_settings = settings.study
         
     internal_files_folder = os.path.join(study_settings.mounted_paths.study_internal_files_root_path, study_id)
-    readonly_files_folder = os.path.join(study_settings.mounted_paths.study_readonly_files_root_path, study_id)
+    readonly_files_folder = os.path.join(study_settings.mounted_paths.study_readonly_files_actual_root_path, study_id)
     metadata_files_folder = os.path.join(study_settings.mounted_paths.study_metadata_files_root_path, study_id)
     # Tidy up old files first
     validation_files_path = os.path.join(internal_files_folder, study_settings.validation_files_json_name)
@@ -608,7 +608,7 @@ def validate_study(study_id, study_location_old, user_token, obfuscation_code,
     if not settings:
         settings = get_study_settings()
     internal_files_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
-    readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
+    readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_actual_root_path, study_id)
     metadata_files_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
 
     
