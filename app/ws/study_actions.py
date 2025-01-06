@@ -24,41 +24,39 @@ import os
 import pathlib
 import re
 import shutil
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple
 
 from flask import current_app as app
 from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
+from isatools.model import Study
 from pydantic import BaseModel
+
 from app.config import get_settings
+from app.config.utils import get_private_ftp_relative_root_path
+from app.services.storage_service.acl import Acl
+from app.services.storage_service.storage_service import StorageService
 from app.tasks.common_tasks.basic_tasks.email import (
     send_email_for_new_accession_number,
     send_email_on_public,
 )
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import (
     create_links_on_data_storage,
-    create_links_on_private_storage,
-    maintain_storage_study_folders,
     rename_folder_on_private_storage,
 )
-from app.ws.db import types
-from app.ws.db import schemes
-
-from app.services.storage_service.acl import Acl
-from app.services.storage_service.storage_service import StorageService
 from app.utils import (
+    MetabolightsException,
     current_time,
     metabolights_exception_handler,
-    MetabolightsException,
 )
+from app.ws.db import schemes, types
 from app.ws.db.types import CurationRequest, UserRole
 from app.ws.db_connection import (
     reserve_mtbls_accession,
     update_curation_request,
     update_modification_time,
     update_study_id_from_mtbls_accession,
-    update_study_id_from_submission_id,
     update_study_status,
     update_study_status_change_date,
 )
@@ -72,9 +70,6 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
-from app.ws.utils import read_tsv, write_tsv
-from app.ws.validation_utils import ValidationReportFile, get_validation_report
-from isatools.model import Study
 
 logger = logging.getLogger("wslog")
 
@@ -139,7 +134,7 @@ class StudyModificationTime(Resource):
             return {
                 "Success": f"Modification time of study {study_id} is now {current_time_value.isoformat()}"
             }
-        except Exception as exc:
+        except Exception:
             return {"Error": f"Modification time of study {study_id} is not updated."}
 
 
@@ -218,7 +213,7 @@ class StudyStatus(Resource):
             study_status = data_dict["status"]
             if "curation_request" in data_dict:
                 curation_request_str = data_dict["curation_request"]
-        except Exception as ex:
+        except Exception:
             pass
 
         if not study_status or study_status.upper() not in [
@@ -385,6 +380,11 @@ class StudyStatus(Resource):
         study = StudyService.get_instance().get_study_by_acc(updated_study_id)
         current_curation_request = CurationRequest(study.curation_request)
         current_status = types.StudyStatus(study.status)
+        ftp_private_relative_root_path = get_private_ftp_relative_root_path()
+        ftp_private_folder_path = os.path.join(
+            ftp_private_relative_root_path, ftp_private_study_folder
+        )
+
         response = {
             "release-date": release_date,
             "curation_request": current_curation_request.to_camel_case_str(),
@@ -392,7 +392,7 @@ class StudyStatus(Resource):
             "assigned_status": current_status.to_camel_case_str(),
             "assigned_status_code": current_status.value,
             "curation_request_code": current_curation_request,
-            "ftp_folder_path": ftp_private_study_folder,
+            "ftp_folder_path": ftp_private_folder_path,
             "obfuscation_code": obfuscation_code,
             "study_table_id": study.id,
         }
@@ -462,7 +462,7 @@ class StudyStatus(Resource):
         )
         validation_history_path.mkdir(exist_ok=True)
         result = [
-            x for x in validation_history_path.glob(f"validation-history__*__*.json")
+            x for x in validation_history_path.glob("validation-history__*__*.json")
         ]
         for item in result:
             match = re.match(r"(.*)validation-history__(.+)__(.+).json$", str(item))
@@ -495,7 +495,7 @@ class StudyStatus(Resource):
             internal_files_root_path / pathlib.Path(f"{study_id}/validation-overrides")
         )
         target_path = validation_overrides_folder_path / pathlib.Path(
-            f"validation-overrides.json"
+            "validation-overrides.json"
         )
         if target_path.exists():
             try:
