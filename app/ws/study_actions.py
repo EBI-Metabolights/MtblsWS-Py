@@ -342,7 +342,7 @@ class StudyStatus(Resource):
                         message="There are validation errors. Fix any problems before attempting to change study status.",
                     )
 
-        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True, save_assays_copy=True, save_samples_copy=True)
 
         current_study_status = types.StudyStatus.from_int(study.status)
         requested_study_status = types.StudyStatus.from_name(study_status.upper())
@@ -617,7 +617,7 @@ class StudyStatus(Resource):
             for assay in isa_study_item.assays:
                 assay.filename = assay.filename.replace(study_id, updated_study_id, 1)
             iac.write_isa_study(
-                isa_inv, user_token, std_path, save_investigation_copy=True
+                isa_inv, user_token, std_path, save_investigation_copy=True, save_assays_copy=True, save_samples_copy=True
             )
 
         # update assay file (maf file references) and rename all metadata files
