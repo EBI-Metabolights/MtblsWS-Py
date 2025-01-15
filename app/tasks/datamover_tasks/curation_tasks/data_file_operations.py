@@ -20,7 +20,7 @@ logger = logging.getLogger("datamover_worker")
 )
 def delete_aspera_files_from_data_files(self, study_id: str):
     mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
-    study_data_path =  os.path.join(mounted_paths.cluster_study_readonly_files_root_path, study_id)
+    study_data_path =  os.path.join(mounted_paths.cluster_study_readonly_files_actual_root_path, study_id)
 
     delete_asper_files(study_data_path)
     

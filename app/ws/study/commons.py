@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from typing import Union
 
 from flask_restful import abort
 from app.config.utils import get_private_ftp_relative_root_path
@@ -9,7 +10,9 @@ from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
 from app.ws.db_connection import check_access_rights, get_submitted_study_ids_for_user, get_email, \
     query_study_submitters, get_public_studies, get_private_studies, get_study_by_type, get_all_non_public_studies
+from app.ws.email.email_service import EmailService
 from app.ws.settings.utils import get_study_settings
+from app.ws.study.user_service import UserService
 
 logger = logging.getLogger('wslog')
 
@@ -121,7 +124,7 @@ def get_study_location(study_id, user_token):
     return location
 
 
-def create_ftp_folder(study_id, obfuscation_code, user_token, email_service=None, send_email=True):
+def create_ftp_folder(study_id, obfuscation_code, user_token, email_service: Union[None, EmailService]=None, send_email=True):
     private_ftp_sm = StorageService.get_ftp_private_storage()
     new_folder_name = study_id.lower() + '-' + obfuscation_code
 
@@ -145,9 +148,12 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service=None
         submitters_email_list = []
         if submitter_emails:
             submitters_email_list = [submitter[0] for submitter in submitter_emails if submitter]
-
-        email_service.send_email_for_requested_ftp_folder_created(study_id, relative_study_path, user_email,
-                                                                  submitters_email_list)
+        submitter_email = submitters_email_list[0]
+        user = UserService.get_instance().get_db_user_by_user_name(submitter_email)
+        submitter_fullname = user.fullName
+        
+        email_service.send_email_for_new_submission(study_id, relative_study_path, user_email,
+                                                                  submitters_email_list, submitter_fullname)
     status_message = "FTP folder created" if new_folder else "Folder is already created"
 
     return {'os_upload_path': new_folder_name, 'upload_location': relative_study_path, 'status': status_message}

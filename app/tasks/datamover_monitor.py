@@ -3,6 +3,7 @@ import os
 import pathlib
 import socket
 import time
+import sys
 
 import app as current_app
 from app.config import get_settings
@@ -19,11 +20,18 @@ logger = logging.getLogger('wslog_datamover')
 if __name__ == "__main__":
     worker_name = socket.gethostname()
 
-    if not worker_name:
-        print("Invalid worker name.")
-        exit(1)
-    max_retry_count = 4
-    period = 30
+    max_retry_count = 30
+    period = 20
+    
+    if len(sys.argv) > 1:
+        period = int(sys.argv[1])
+        
+    if len(sys.argv) > 2:
+        max_retry_count = int(sys.argv[2])
+
+    if len(sys.argv) > 3:
+        worker_name = int(sys.argv[3])
+        
     current_retry_count = 0
     status_file_path = "/tmp/healtz.log"
     status_file = pathlib.Path(status_file_path)
@@ -37,14 +45,13 @@ if __name__ == "__main__":
                 if worker_version != current_app.__api_version__:
                     print(
                         f"Versions are not same. App version: {current_app.__api_version__}, " +
-                        "Datamover worker version: {worker_version}"
+                        f"Datamover worker version: {worker_version}"
                     )
                 current = current_time().strftime("%Y-%m-%d %H:%M:%S")
                 status_file.write_text(f"{worker_name}, version: {worker_version}, last_update: {current}")
             if current_retry_count >= max_retry_count:
                 print("There is no response from datamover. Exiting")
                 raise Exception(f"There is no response from datamover. Maximum retry count exceeded {max_retry_count}.")
-
             time.sleep(period)
     except Exception as ex:
         report_internal_technical_issue(

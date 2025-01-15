@@ -29,6 +29,7 @@ from jinja2 import Environment, select_autoescape, FileSystemLoader
 from app.config import get_settings
 from app.config.model.server import EndpointDescription, EndpointMethodOption
 
+from app.study_folder_utils import convert_relative_to_real_path
 from app.wsapp_config import initialize_app
 from app.ws.redis.redis import get_redis_server
 """
@@ -65,7 +66,7 @@ def setup_logging():
             print(f"Creating default logging config file {default_logging_config_file_path}")
 
             env = Environment(
-                loader=FileSystemLoader('resources/'),
+                loader=FileSystemLoader(convert_relative_to_real_path('resources/')),
                 autoescape=select_autoescape(['html', 'xml'])
             )
             template = env.get_template('template_logging.conf')
@@ -77,7 +78,6 @@ def setup_logging():
     logging.config.fileConfig(logging_config_file_path)
     print(f"Running on server: '{hostname}' using logging config {logging_config_file_path}")
 
-mtbls_pattern = re.compile(r'MTBLS[1-9][0-9]*')
 MANAGED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"}
 BYPASS_HTTP_METHODS = ("OPTIONS", "HEAD")
 @application.before_request

@@ -3,7 +3,7 @@ DO
 $$
     DECLARE maxacc integer;
     BEGIN
-        SELECT max(lpad(replace(acc, 'MTBLS', ''), 5, '0')) as acc_short from studies order by acc_short asc into maxacc;
+        SELECT max(lpad(replace(acc, 'MTBLS', ''), 5, '0')) as acc_short from studies where acc like 'MTBLS%' order by acc_short asc into maxacc;
         FOR i_acc in 1..maxacc
             LOOP
                 insert into curation_log_temp(acc, acc_short)

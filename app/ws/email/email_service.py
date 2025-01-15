@@ -5,7 +5,7 @@ from typing import Union
 from flask_mail import Mail, Message
 from jinja2 import Environment, PackageLoader, select_autoescape
 from app.config import get_settings
-
+import urllib.parse
 from app.config.model.email import EmailSettings
 
 
@@ -60,7 +60,7 @@ class EmailService(object):
         try:
             self.mail.send(msg)
         except Exception as exc:
-            message = f"Sending email failed: subject= {subject_name} receipents:{str(recipients)} body={str(body)}\nError {str(exc)}"
+            message = f"Sending email failed: subject= {subject_name} recipients:{str(recipients)} body={str(body)}\nError {str(exc)}"
             logger.error(message)
 
     def send_email(
@@ -86,7 +86,7 @@ class EmailService(object):
         try:
             self.mail.send(msg)
         except Exception as e:
-            message = f"Sending email failed: subject= {subject_name} receipents:{str(recipients)} body={str(body)}\nError {str(e)}"
+            message = f"Sending email failed: subject= {subject_name} recipients:{str(recipients)} body={str(body)}\nError {str(e)}"
             logger.error(message)
 
     def get_rendered_body(self, template_name: str, content):
@@ -94,42 +94,92 @@ class EmailService(object):
         body = template.render(content)
         return body
 
-    def send_email_for_queued_study_submitted(self, study_id, release_date, user_email, submitters_mail_addresses):
-        file_name = " * Online submission * "
-        host = get_settings().server.service.ws_app_base_link
-        public_study_url = os.path.join(host, study_id)
-        private_study_url = os.path.join(host, "editor", "study", study_id)
-        subject_name = f"Congratulations! Your study {study_id} has been successfully processed!"
 
-        content = {
-            "study_id": study_id,
-            "release_date": release_date,
-            "file_name": file_name,
-            "public_study_url": public_study_url,
-            "private_study_url": private_study_url,
-        }
-        body = self.get_rendered_body("send_queued_study_submitted.html", content)
-        self.send_email(subject_name, body, submitters_mail_addresses, user_email)
-
-    def send_email_for_requested_ftp_folder_created(self, study_id, ftp_folder, user_email, submitters_mail_addresses):
+    def send_email_for_new_submission(self, submission_id, ftp_folder, user_email, submitters_mail_addresses, submitter_fullname):
         settings = get_settings()
         user_name = settings.ftp_server.private.connection.username
         user_password = settings.ftp_server.private.connection.password
-        server = settings.ftp_server.private.connection.host
+        ftp_server = settings.ftp_server.private.connection.host
         ftp_upload_doc_link = settings.email.template_email_configuration.ftp_upload_help_doc_url
-
+        host = get_settings().server.service.ws_app_base_link
+        submision_url = os.path.join(host, "editor", "study", submission_id)
+        metabolights_help_email = "metabolights-help@ebi.ac.uk"
+        metabolights_website_url = get_settings().server.service.ws_app_base_link
         content = {
+            "submission_id": submission_id,
+            "submitter_fullname": submitter_fullname,
+            "submision_url": submision_url,
             "user_name": user_name,
             "user_password": user_password,
-            "server": server,
+            "ftp_server": ftp_server,
             "ftp_folder": ftp_folder,
-            "ftp_upload_doc_link": ftp_upload_doc_link,
+            "metabolights_website_url": metabolights_website_url,
+            "metabolights_help_email": metabolights_help_email
         }
 
-        body = self.get_rendered_body("requested_ftp_folder_created.html", content)
-        subject_name = f"Requested Study upload folder for {study_id}"
+        body = self.get_rendered_body("new_submission.html", content)
+        subject_name = f"MetaboLights Temporary Submission initiated ({submission_id})"
 
         self.send_email(subject_name, body, submitters_mail_addresses, user_email)
+        
+    def send_email_for_new_accession_number(self, study_id, submission_id, obfuscation_code, user_email, submitters_mail_addresses, submitter_fullname, study_title, release_date, previous_ftp_folder, new_ftp_folder):
+        host = get_settings().server.service.ws_app_base_link
+        subject_name = f"Submission Complete and Accessioned"
+        if study_id != submission_id:
+            subject_name += f" - from {submission_id} to {study_id}"
+        reviewer_url = os.path.join(host, f"reviewer{obfuscation_code}")
+        metabolights_help_email = "metabolights-help@ebi.ac.uk"
+        metabolights_website_url = get_settings().server.service.ws_app_base_link
+        content = {
+            "submission_id": submission_id,
+            "mtbls_accession": study_id,
+            "submitter_fullname": submitter_fullname,
+            "study_title": study_title,
+            "release_date": release_date,
+            "reviewer_url": reviewer_url,
+            "previous_ftp_folder": previous_ftp_folder,
+            "new_ftp_folder": new_ftp_folder,
+            "metabolights_website_url": metabolights_website_url,
+            "metabolights_help_email": metabolights_help_email
+        }
+        body = self.get_rendered_body("new_accession_number.html", content)
+        self.send_email(subject_name, body, submitters_mail_addresses, user_email)
+
+    def send_email_on_public(self, study_id, release_date, user_email, submitters_mail_addresses, 
+                             submitter_fullname, study_title, study_contacts, publication_doi, publication_pubmed_id):
+        subject_name = f"MetaboLights Study ({study_id}) Made Public"
+        metabolights_help_email = "metabolights-help@ebi.ac.uk"
+        metabolights_website_url = get_settings().server.service.ws_app_base_link
+        mtbls_accession_url = os.path.join(metabolights_website_url, study_id)
+        public_ftp_server = "ftp.ebi.ac.uk"
+        public_ftp_remote_folder = "/pub/databases/metabolights/studies/public"
+        public_ftp_base_url = f"http://{public_ftp_server}{public_ftp_remote_folder}"
+        study_ftp_download_url = os.path.join(public_ftp_base_url, study_id)
+        globus_collection_name = "EMBL-EBI Public Data"
+        study_path = os.path.join(public_ftp_remote_folder, study_id)
+        origin_path = urllib.parse.quote(study_path)
+        origin_id = "47772002-3e5b-4fd3-b97c-18cee38d6df2"
+        study_globus_url = f"https://app.globus.org/file-manager?origin_id={origin_id}&origin_path={origin_path}%2F"
+        content = {
+            "mtbls_accession": study_id,
+            "submitter_fullname": submitter_fullname,
+            "study_title": study_title,
+            "release_date": release_date,
+            "study_contacts": study_contacts,
+            "mtbls_accession_url": mtbls_accession_url,
+            "study_ftp_download_url": study_ftp_download_url,
+            "public_ftp_server": public_ftp_server,
+            "public_ftp_remote_folder": study_path,
+            "metabolights_website_url": metabolights_website_url,
+            "metabolights_help_email": metabolights_help_email,
+            "publication_doi": publication_doi,
+            "publication_pubmed_id": publication_pubmed_id,
+            "globus_collection_name": globus_collection_name,
+            "study_globus_url": study_globus_url
+        }
+        body = self.get_rendered_body("status_is_public.html", content)
+        self.send_email(subject_name, body, submitters_mail_addresses, user_email)
+
 
     def send_email_for_task_completed(self, subject_name, task_id, task_result, to):
         content = {"task_id": task_id, "task_result": task_result}

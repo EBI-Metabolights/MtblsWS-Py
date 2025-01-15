@@ -1,4 +1,5 @@
 import datetime
+import traceback
 from typing import Union
 from flask import make_response
 import re
@@ -49,10 +50,12 @@ def metabolights_exception_handler(func):
         except MetabolightsException as e:
             data = {"content": None, "message": e.message, "err": str(e)}
             response = make_response(data, e.http_code)
+            traceback.print_exc()
             return response
         except Exception as e:
             data = {"content": None, "message": "Error while procession data", "err": str(e)}
             response = make_response(data, 400)
+            traceback.print_exc()
             return response
 
     return exception_handler

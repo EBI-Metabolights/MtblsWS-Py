@@ -44,7 +44,7 @@ from app.ws.study.folder_utils import get_files_for_validation
 from app.ws.study.study_service import StudyService
 from app.ws.study_folder_utils import FileSearchResult
 from app.ws.utils import (find_text_in_isatab_file,
-                          get_assay_headers_and_protcols,
+                          get_assay_headers_and_protocols,
                           get_assay_type_from_file_name, get_table_header,
                           map_file_type, read_tsv)
 from isatools.model import Study
@@ -517,7 +517,7 @@ def update_validation_schema_files(validation_file, study_id, user_token, obfusc
         study_settings = settings.study
         
     internal_files_folder = os.path.join(study_settings.mounted_paths.study_internal_files_root_path, study_id)
-    readonly_files_folder = os.path.join(study_settings.mounted_paths.study_readonly_files_root_path, study_id)
+    readonly_files_folder = os.path.join(study_settings.mounted_paths.study_readonly_files_actual_root_path, study_id)
     metadata_files_folder = os.path.join(study_settings.mounted_paths.study_metadata_files_root_path, study_id)
     # Tidy up old files first
     validation_files_path = os.path.join(internal_files_folder, study_settings.validation_files_json_name)
@@ -608,7 +608,7 @@ def validate_study(study_id, study_location_old, user_token, obfuscation_code,
     if not settings:
         settings = get_study_settings()
     internal_files_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
-    readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
+    readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_actual_root_path, study_id)
     metadata_files_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
 
     
@@ -918,7 +918,7 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
             aqc_file_value = None
             nmr_data_row = False
             derived_data_value = None
-            for header, value in row.iteritems():  # Check cells
+            for header, value in row.items():  # Check cells
                 if header == raw_file:
                     raw_tested = True
                     if value:
@@ -1113,7 +1113,7 @@ def validate_assays(isa_study, readonly_files_folder, metadata_files_folder, int
         assay_type = get_assay_type_from_file_name(study_id, assay.filename)
         if assay_type != 'a':  # Not created from the online editor, so we have to skip this validation
             tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
-            assay_mandatory_type = get_assay_headers_and_protcols(assay_type)
+            assay_mandatory_type = get_assay_headers_and_protocols(assay_type)
             for idx, template_header in enumerate(tidy_header_row):
 
                 assay_header_pos = None

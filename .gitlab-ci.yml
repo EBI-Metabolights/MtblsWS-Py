@@ -1,61 +1,140 @@
 variables:
   APP_VERSION: "2.2.0"
   API_VERSION: "2.2.0"
+  APPS_PROJECT_BRANCH_NAME: "${CI_COMMIT_REF_NAME}"
+  BUILD_NUMBER: "${CI_COMMIT_REF_NAME}-${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}"
+  IMAGE_TAG: "${APP_VERSION}-${CI_COMMIT_REF_NAME}"
+  IMAGE_NAME: "${CI_REGISTRY_IMAGE}:${IMAGE_TAG}"
+  IMAGE_LATEST_TAG: "${CI_COMMIT_REF_NAME}-latest"
+  LATEST_IMAGE_NAME: "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_NAME}-latest"
+  SIF_FILE_NAME: "${CI_PROJECT_NAME}_${APP_VERSION}_${CI_COMMIT_REF_NAME}.sif"
+  SIF_LATEST_FILE_NAME: "${CI_PROJECT_NAME}_${CI_COMMIT_REF_NAME}_latest.sif"
+  SIF_FILE_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}_sif/$APP_VERSION/$SIF_FILE_NAME"
+  SIF_LATEST_FILE_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}_sif/$CI_COMMIT_REF_NAME/$SIF_LATEST_FILE_NAME"
 workflow:
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "migration"
+    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "development"
 stages:
-- build
-- deploy
+  - build
+  - deploy
+
+configuration_parameters:
+  stage: build
+  script:
+    - echo "CI_BUILDS_DIR $CI_BUILDS_DIR"
+    - echo "CI_REGISTRY_USER $CI_REGISTRY_USER"
+    - echo "CI_REGISTRY $CI_REGISTRY"
+    - echo "BRANCH $CI_COMMIT_REF_NAME"
+    - echo "CI_PIPELINE_ID $CI_PIPELINE_ID"
+    - echo "CI_COMMIT_SHORT_SHA $CI_COMMIT_SHORT_SHA"
+    - echo "CI_REGISTRY_IMAGE CI_REGISTRY_IMAGE"
+    - echo "APP_VERSION $APP_VERSION"
+    - echo "API_VERSION $API_VERSION"
+    - echo "BUILD_NUMBER $BUILD_NUMBER"
+    - echo "IMAGE_TAG $IMAGE_TAG"
+    - echo "IMAGE NAME $IMAGE_NAME"
+    - echo "IMAGE NAME (with latest tag) $LATEST_IMAGE_NAME" 
+    - echo "APPS_ROOT_PATH $APPS_ROOT_PATH"
+    - echo "DEPLOYMENTS_FOLDER $DEPLOYMENTS_FOLDER"
+    - echo "APPS_PROJECT_URL $APPS_PROJECT_URL"
+    - echo "APPS_PROJECT_BRANCH_NAME $APPS_PROJECT_BRANCH_NAME"
+    - echo "MTBLS_NFS_USER_GROUP1_ID $MTBLS_NFS_USER_GROUP1_ID"
+    - echo "MTBLS_NFS_USER_GROUP2_ID $MTBLS_NFS_USER_GROUP2_ID"
+    - echo "MTBLS_NFS_USER_ID $MTBLS_NFS_USER_ID"
 
 build_docker:
   stage: build
   script:
-  - bash "deployment/steps/build_container.sh"
+    - docker image prune -f
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
+    - echo "Build number $BUILD_NUMBER, commit name ${CI_COMMIT_REF_NAME}"
+    - echo "${BUILD_NUMBER}" > build_number
+    - echo  "$APP_VERSION" | xargs > app_version
+    - echo  "$API_VERSION" | xargs > api_version
+    - git status
+    - echo "docker build --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $IMAGE_NAME ."
+    - docker build --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $IMAGE_NAME .
+    - echo "docker build --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $LATEST_IMAGE_NAME ."
+    - docker build --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $LATEST_IMAGE_NAME .
+    - docker push $IMAGE_NAME
+    - docker push $LATEST_IMAGE_NAME
 
 build_sif:
   stage: build
   script:
-  - bash "deployment/steps/build_sif.sh"
+    - singularity build $SIF_FILE_NAME docker-daemon://$IMAGE_NAME
+    - echo "$SIF_FILE_URL"
+    - |-
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $SIF_FILE_NAME "$SIF_FILE_URL"
+    - echo "$SIF_LATEST_FILE_URL" 
+    - |-
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $SIF_FILE_NAME "$SIF_LATEST_FILE_URL"
 
-deploy_ws:
-  stage: deploy
+deploy_metablsws_py:
+  variables:
+    CHART_NAME: metablsws-py
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development"
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development"
     when: on_success
-  - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "migration"
+  - if: $CI_COMMIT_BRANCH == "main"
     when: manual
-    allow_failure: true
-  script:
-  - bash "deployment/steps/deploy_ws.sh"
+  extends: .kube_deploy_script
 
 deploy_common_worker:
-  stage: deploy
+  variables:
+    CHART_NAME: metablsws-py-common-worker
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "development"
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development"
     when: on_success
-  - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "migration"
+  - if: $CI_COMMIT_BRANCH == "main"
     when: manual
-    allow_failure: true
-  script:
-  - bash "deployment/steps/deploy_common_worker.sh"
+  extends: .kube_deploy_script
+
+deploy_datamover_proxy:
+  variables:
+    CHART_NAME: metablsws-py-datamover-proxy
+  rules:
+  - if: $CI_COMMIT_BRANCH == "test"
+    when: on_success
+  - if: $CI_COMMIT_BRANCH == "main"
+    when: manual
+  extends: .kube_deploy_script
 
 deploy_datamover_worker:
-  stage: deploy
+  variables:
+    CHART_NAME: metablsws-py-datamover-worker
   rules:
   - if: $CI_COMMIT_BRANCH == "development"
     when: on_success
-  script:
-  - bash "deployment/steps/deploy_datamover_worker.sh"
+  extends: .kube_deploy_script
 
-
-deploy_datamover_proxy:
+.kube_deploy_script:
   stage: deploy
-  rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "staging"
-    when: on_success
-  - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "migration"
-    when: manual
-    allow_failure: true
   script:
-  - bash "deployment/steps/deploy_datamover_proxy.sh"
+  - BUILD_PATH=$(realpath tmp)
+  - echo "BUILD_PATH $BUILD_PATH"
+  - mkdir -p $BUILD_PATH
+  - cd $BUILD_PATH
+  - APPS_ROOT_PATH="$BUILD_PATH/apps"
+  - rm -rf $APPS_ROOT_PATH
+  - echo git clone https://$CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD@${APPS_PROJECT_URL}
+  - git clone https://$CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD@${APPS_PROJECT_URL}
+  - cd $APPS_ROOT_PATH
+  - git switch $APPS_PROJECT_BRANCH_NAME
+  - git status
+  - git pull
+  - DEPLOYMENTS_FOLDER_SCRIPTS="$APPS_ROOT_PATH/$DEPLOYMENTS_FOLDER/scripts"
+  - echo "DEPLOYMENTS_FOLDER_SCRIPTS $DEPLOYMENTS_FOLDER_SCRIPTS"
+  - cd $DEPLOYMENTS_FOLDER_SCRIPTS
+  - cat initial_setup.sh
+  - bash initial_setup.sh
+  - DEPLOYMENTS_CHART_PATH="$APPS_ROOT_PATH/$DEPLOYMENTS_FOLDER/charts/$CHART_NAME"
+  - echo "DEPLOYMENTS_CHART_PATH $DEPLOYMENTS_CHART_PATH"
+  - cd $DEPLOYMENTS_CHART_PATH
+  - cat template.sh
+  - echo template.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG"
+  - bash template.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG"
+  - cat install.sh
+  - echo install.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG,sifImageFileUrl=$SIF_FILE_URL"
+  - bash install.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG,sifImageFileUrl=$SIF_FILE_URL"
+  - rm -rf $BUILD_PATH

@@ -39,8 +39,7 @@ from app.tasks.common_tasks.basic_tasks.elasticsearch import (
     reindex_study,
 )
 from app.tasks.common_tasks.basic_tasks.email import (
-    send_email_for_private_ftp_folder,
-    send_email_for_study_submitted,
+    send_email_for_new_submission,
     send_technical_issue_email,
 )
 from app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization import sync_studies_on_es_and_db
@@ -60,7 +59,7 @@ from app.ws.db_connection import (
     create_empty_study,
     get_all_private_studies_for_user,
     get_all_studies_for_user,
-    get_obfuscation_code,
+    get_id_list_by_req_id,
     get_public_studies_with_methods,
     query_study_submitters,
     study_submitters,
@@ -68,6 +67,7 @@ from app.ws.db_connection import (
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_cluster_settings, get_study_settings
+from app.ws.study import identifier_service
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
@@ -1195,67 +1195,12 @@ class CreateAccession(Resource):
             else:
                 raise MetabolightsException(message="Study id creation on db was failed.", http_code=501, exception=exc)
 
-        # try:
-        #     # All required steps are completed. RENAME temp study folder to study accession number
-        #     if new_accession_number:
-        #         root_study_path = study_settings.mounted_paths.study_metadata_files_root_path
-        #         last_study_path = os.path.join(root_study_path, study_acc)
-        #         os.rename(study_path, last_study_path)
-        #         logger.info(f"Step 5: Study folder {folder_name} is renamed to {study_acc}.")
-        #     else:
-        #         logger.info(f"Step 5: Renaming {study_acc} study folder task is skipped.")
-        # except Exception as exc:
-        #     inputs = {"subject": "Failed to rename new study folder",
-        #               "body":f"Study folder rename task was failed. Rename from {folder_name} to {study_acc}, user: {user.username} <p> {str(exc)}"}
-        #     logger.error(f"Failed to rename new study folder {str(inputs)}")
-        #     send_technical_issue_email.apply_async(kwargs=inputs)
-        #     raise MetabolightsException(message=f"Could not renamed {folder_name}  to {study_acc} ", http_code=503)
-        # maintenance_task = None
-        # try:
-        #     maintenance_task = StudyFolderMaintenanceTask(
-        #         study.acc,
-        #         StudyStatus(study.status),
-        #         study.releasedate,
-        #         study.submissiondate,
-        #         obfuscationcode=study.obfuscationcode,
-        #         task_name=f"_INITIAL_{study.acc}",
-        #         delete_unreferenced_metadata_files=False,
-        #         settings=get_study_settings(),
-        #         apply_future_actions=False,
-        #         force_to_maintain=True,
-        #     )
-        #     maintenance_task.maintain_study_rw_storage_folders()
-        #     maintenance_task.create_maintenance_actions_for_study_data_files()
-        #     maintenance_task.execute_future_actions()
-        #     maintenance_task.future_actions.clear()
-        #     logger.info(f"Step 3: Study folders and initial files are created for {study_acc}.")
-        # except Exception as exc:
-        #     inputs = {"subject": "Failed to create initial files for new study folder",
-        #               "body":f"Failed to create initial files for new study folder {study_acc}, user: {user.username} <p> {str(exc)}"}
-        #     logger.error(f"Failed to create audit/internal folders for new study folder {str(inputs)}")
-        #     send_technical_issue_email.apply_async(kwargs=inputs)
-        #     if isinstance(exc, MetabolightsException):
-        #         raise exc
-        #     else:
-        #         raise MetabolightsException(message="Study folder creation was failed.", http_code=501, exception=exc)
-
-        # Send email if it is new study
-        if new_accession_number:
-            inputs = {"user_token": user_token, "study_id": study_acc}
-            new_study_email_task = send_email_for_study_submitted.apply_async(kwargs=inputs)
-            logger.info(f"Step 3: Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
-        else:
-            logger.info(f"Step 3: Skipping email. No email will be sent for the study {study_acc}")
-
-        # maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
-        # result = maintenance_task.execute_future_actions()
-        # maintenance_task.future_actions.clear()
         inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False, "task_name": "INITIAL_METADATA", 
                   "maintain_metadata_storage": True, "maintain_data_storage": False, "maintain_private_ftp_storage": False}
         try:
             maintain_storage_study_folders(**inputs)
             logger.info(f"Step 4.1: 'Create initial files and folders' task completed for study {study_acc}")
-        except Exception as ex:
+        except Exception as exc:
             logger.info(f"Step 4.1: 'Create initial files and folders' task failed for study {study_acc}. {str(exc)}")
             
         # Start ftp folder creation task
@@ -1271,7 +1216,7 @@ class CreateAccession(Resource):
             study: Study = StudyService.get_instance().get_study_by_acc(study_acc)
             ftp_folder_name = study_acc.lower() + "-" + study.obfuscationcode
             inputs = {"user_token": user_token, "study_id": study_acc, "folder_name": ftp_folder_name}
-            send_email_for_private_ftp_folder.apply_async(kwargs=inputs)
+            send_email_for_new_submission.apply_async(kwargs=inputs)
             logger.info(f"Step 5: Sending FTP folder email for the study {study_acc}")
         else:
             logger.info(f"Step 5: Skipping FTP folder email for the study {study_acc}")
@@ -1301,22 +1246,13 @@ class CreateAccession(Resource):
         Rule 5- study_id must not be in database
         """
         # Rule 1
-        study_id_prefix = "MTBLS"
+        study_id_prefix = identifier_service.default_submission_identifier.get_prefix()
         if not requested_study_id.startswith(study_id_prefix):
-            abort(401, message="Invalid study id format. Study id must start with %s" % study_id_prefix)
+            abort(401, message="Invalid request id format. Request id must start with %s" % study_id_prefix)
         # Rule 2
         UserService.get_instance().validate_user_has_curator_role(user_token)
         # Rule 3
-        last_stable_id = StudyService.get_instance().get_next_stable_study_id()
-        requested_id_str = requested_study_id.upper().replace(study_id_prefix, "")
-        requested_id = None
-        try:
-            requested_id = int(requested_id_str)
-        except:
-            abort(400, message="Invalid study id")
-        if requested_id:
-            if not (last_stable_id >= requested_id > 0):
-                raise MetabolightsException(message="Requested study id must be less then last study id", http_code=400)
+        # disable this rule for request id
         # Rule 4
         study_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, requested_study_id)
         if os.path.exists(study_location):
@@ -1324,9 +1260,13 @@ class CreateAccession(Resource):
             if files:
                 raise MetabolightsException(message="Study folder is already exist", http_code=400)
         # Rule 5
-        obfuscation_code = get_obfuscation_code(requested_study_id)
-        if obfuscation_code:
-            raise MetabolightsException(message="Study id already used in DB.", http_code=400)
+        try:
+            id_list = get_id_list_by_req_id(requested_study_id)
+        except Exception as ex:
+            raise MetabolightsException(message=f"Requested id is not valid in db. {str(ex)}", http_code=400)
+            
+        if id_list:
+            raise MetabolightsException(message="Requested id already used in DB.", http_code=400)
         else:
             return requested_study_id
 
@@ -1400,65 +1340,6 @@ class DeleteStudy(Resource):
         cluster_settings = get_cluster_settings()
         task = delete_study_folders.apply_async(kwargs=inputs)
         output = task.get(timeout=cluster_settings.task_get_timeout_in_seconds*2)
-
-        # study_settings = get_study_settings()
-        # study_location = os.path.join(study_settings.mounted_paths.study_metadata_files_root_path, study_id)
-        # # Remove all files in the study folder except the sample sheet and the investigation sheet.
-        # if not os.path.exists(study_location):
-        #     os.makedirs(study_location, exist_ok=True)
-        # template_folder = study_settings.study_default_template_path
-        # target_file = os.path.join(study_location, "s_{0}.txt".format(study_id))
-        # if not os.path.exists(target_file):
-        #     from_path = os.path.join(template_folder, "s_Sample.txt")
-        #     copy_file(from_path, target_file)
-        # target_file = os.path.join(study_location, "s_{0}.txt".format(study_id))
-        # if not os.path.exists(target_file):
-        #     from_path = os.path.join(template_folder, "i_Investigation.txt")
-        #     copy_file(from_path, target_file)
-
-        # files = os.listdir(study_location)
-        # files_to_delete = [file for file in files if StudyUtils.is_template_file(file, study_id) is False]
-
-        # for file_name in files_to_delete:
-        #     status, message = remove_file(study_location, file_name, True)
-
-        # Remove all files in the upload folder
-        # ftp_private_storage = StorageService.get_ftp_private_storage()
-        # private_ftp_study_folder = study_id.lower() + "-" + obfuscation_code
-        # if ftp_private_storage.remote.does_folder_exist(private_ftp_study_folder):
-        #     ftp_private_storage.remote.delete_folder(private_ftp_study_folder)
-
-        # # ftp_private_storage.remote.create_folder(private_ftp_study_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
-        # # raw_files_folder = os.path.join(private_ftp_study_folder, 'RAW_FILES')
-        # # derived_files_folder = os.path.join(private_ftp_study_folder, 'DERIVED_FILES')
-        # # ftp_private_storage.remote.create_folder(raw_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
-        # # ftp_private_storage.remote.create_folder(derived_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
-
-        # # Here we want to overwrite the 2 basic files,the sample sheet and the investigation sheet
-        # for file_name in os.listdir(study_location):
-        #     if file_name.startswith("i_Investigation"):
-        #         from_path = os.path.join(study_settings.study_default_template_path, "i_Investigation.txt")
-
-        #         logger.info("Attempting to copy {0} to {1}".format(from_path, study_location))
-
-        #         copy_file(from_path, study_location + "/i_Investigation.txt")
-        #         logger.info("Restored investigation.txt file for {0} to template state.".format(study_id))
-
-        #         StudyUtils.overwrite_investigation_file(study_location=study_location, study_id=study_id)
-        #         logger.info(
-        #             "Updated investigation file with values for Study Identifier and Study File Name for study: {0}".format(
-        #                 study_id
-        #             )
-        #         )
-        #     else:
-        #         # as there are only two files in the directory this will be the sample file.
-        #         from_path = os.path.join(
-        #             study_settings.mounted_paths.study_metadata_files_root_path,
-        #             study_settings.study_default_template_path,
-        #             "s_Sample.txt",
-        #         )
-        #         copy_file(from_path, study_location + "/s_{0}.txt".format(study_id))
-        #         logger.info("Restored sample.txt file for {0} to template state.".format(study_id))
 
         status, message = wsc.reindex_study(study_id, user_token)
         if not status:

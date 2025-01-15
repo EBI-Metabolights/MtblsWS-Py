@@ -802,7 +802,7 @@ class NewValidation(Resource):
         pattern = re.compile(".validation_" + section + "\S+.json")
         
         internal_files_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
-        readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
+        readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_actual_root_path, study_id)
         metadata_files_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
     
         for file_item in os.listdir(internal_files_folder):

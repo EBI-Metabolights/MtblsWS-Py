@@ -1,0 +1,78 @@
+<head>
+  <link rel="stylesheet" type="text/css" href='{{ metabolights_website_url }}/css/ml.css' media="screen" />
+</head>
+<body class="level2">
+  
+<div class="ml-header-section-top ml-header clearfix">
+  <div class="col-md-12">
+      <div class="row">
+          <div class="col-md-7 col-sm-6">
+              <div class="alpha logo-title"  id="local-title">
+                  <a id="mlLogo" class="ml-logo" style="text-decoration: none; display: flex; align-items: center;" href="{{ metabolights_website_url }}" title="MetaboLights homepage">
+                      <img src="{{ metabolights_website_url }}/img/MetaboLightsLogo.png" alt="MetaboLights" width="64" height="64" />MetaboLights
+                  </a>
+              </div>
+          </div>
+      </div>
+  </div>
+</div><br/>
+
+Dear {{ submitter_fullname }},
+<br/><br/>
+We are happy to inform you that your MetaboLights study has been successfully made public.
+<br/><br/>
+<b>SUBMISSION DETAILS</b><br/>
+Public release date: <code>{{ release_date }}</code><br/>
+MetaboLights study title: <code>{{ study_title }}</code><br/>
+MetaboLights accession: <code>{{ mtbls_accession }}</code><br/>
+MetaboLights study contacts: <code>{{ study_contacts }}</code><br/>
+Publication DOI: <code>{{ publication_doi }}</code><br/>
+Publication PubMed ID: <code>{{ publication_pubmed_id }}</code><br/>
+MetaboLights study URL: <code>{{ mtbls_accession_url }}</code><br/><br/>
+
+<b>ACCESS YOUR PUBLIC DATASET</b><br/>
+<i>Using FTP</i><br/>
+Server: <code> {{public_ftp_server}} </code> <br/>
+Dataset remote folder: <code> {{ public_ftp_remote_folder }}</code> <br/><br/>
+
+<i>Using HTTP</i><br/>
+Dataset browse URL : <code> {{ study_ftp_download_url }}</code><br/><br/>
+
+<i>Using Globus</i><br/>
+Collection name: <code> {{ globus_collection_name }} </code> <br/>
+Dataset path:<code>{{ public_ftp_remote_folder }}</code><br/>
+Dataset browse URL: <code><a href="{{ study_globus_url }}">Dataset on Globus File Manager</a></code>
+<br/>
+
+<br/>
+Please note:<br/>
+  <li><i>Synchronization with EBI's public FTP site may take up to 24 hours.</i></li>
+  <li><i>You may need to sign up Globus (https://app.globus.org) to explore your dataset.</i></li>
+  <li><i>The collection '{{ globus_collection_name}}' on Globus File Manager is only visible if 'Search All Collections' is selected.</i></li>
+  
+</ul>
+<br/>
+<br/>
+<b>CITATION</b><br/>
+To cite your MetaboLights data, please use the following format: <br/><br/>
+<i>
+  "The metabolomics data have been deposited to MetaboLights[1] repository with the study identifier {{ mtbls_accession }}".<br/> 
+</i><br/>
+MetaboLigths reference:<br/>
+[1] Yurekten O, Payne T, Tejera N, Amaladoss FX, Martin C, Williams M, O'Donovan C. MetaboLights: open data repository for metabolomics.
+Nucleic Acids Res. 2024 Jan 5;52(D1):D640-D646. doi:<a href="https://doi.org/10.1093/nar/gkad1045">10.1093/nar/gkad1045</a>. PMID:37971328.<br/> 
+<br/>
+Thank you for choosing MetaboLights for the dissemination of your data. We look forward to receiving more of your data in the future.
+<br/><br/>
+Regards, <br/><br/>
+  The MetaboLights Team, EMBL-EBI <br/>
+  <br/>
+  Website: <a href="{{ metabolights_website_url }}">{{ metabolights_website_url }}</a> <br/>
+  Email: <a href="mailto:{{ metabolights_help_email }}">{{ metabolights_help_email }}</a> <br/>
+  X/Twitter: <a href="https://x.com/MetaboLights">@MetaboLights</a> <br/>
+  Bluesky: <a href="https://bsky.app/profile/metabolights.bsky.social">@metabolights.bsky.social</a> <br/>
+  <br/>
+MetaboLights <a href="https://www.ebi.ac.uk/about/terms-of-use">data policy</a><br/>
+<br/>
+EMBL-EBI, Wellcome Trust Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK<br>
+</body>

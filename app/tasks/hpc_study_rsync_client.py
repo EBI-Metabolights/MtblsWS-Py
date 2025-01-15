@@ -4,7 +4,10 @@ import os
 from typing import List, Union
 from pydantic import BaseModel
 from app.config import get_settings
-from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult
+from app.services.storage_service.models import (
+    SyncCalculationTaskResult,
+    SyncTaskResult,
+)
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
 
 from app.utils import MetabolightsException, current_time
@@ -51,13 +54,20 @@ VALID_FOLDERS = {
         StudyFolderType.PUBLIC_METADATA_VERSIONS,
         StudyFolderType.INTEGRITY_CHECK,
     },
-    StudyFolderLocation.PRIVATE_FTP_STORAGE: {StudyFolderType.METADATA, StudyFolderType.DATA, StudyFolderType.INTERNAL},
+    StudyFolderLocation.PRIVATE_FTP_STORAGE: {
+        StudyFolderType.METADATA,
+        StudyFolderType.DATA,
+        StudyFolderType.INTERNAL,
+    },
 }
 
 ALLOWED_STAGING_AREA_DIRECTIONS = {
     StudyFolderLocation.PRIVATE_FTP_STORAGE: {
         StudyFolderLocation.READONLY_STUDY_STORAGE: {StudyFolderType.DATA},
-        StudyFolderLocation.RW_STUDY_STORAGE: {StudyFolderType.METADATA, StudyFolderType.INTERNAL},
+        StudyFolderLocation.RW_STUDY_STORAGE: {
+            StudyFolderType.METADATA,
+            StudyFolderType.INTERNAL,
+        },
     },
     StudyFolderLocation.RW_STUDY_STORAGE: {
         StudyFolderLocation.READONLY_STUDY_STORAGE: {
@@ -65,7 +75,10 @@ ALLOWED_STAGING_AREA_DIRECTIONS = {
             StudyFolderType.AUDIT,
             StudyFolderType.INTEGRITY_CHECK,
         },
-        StudyFolderLocation.PRIVATE_FTP_STORAGE: {StudyFolderType.METADATA, StudyFolderType.INTERNAL},
+        StudyFolderLocation.PRIVATE_FTP_STORAGE: {
+            StudyFolderType.METADATA,
+            StudyFolderType.INTERNAL,
+        },
     },
     StudyFolderLocation.PUBLIC_FTP_STORAGE: {
         StudyFolderLocation.READONLY_STUDY_STORAGE: {
@@ -93,7 +106,9 @@ ALLOWED_STAGING_AREA_DIRECTIONS = {
 
 
 class StudyRsyncClient:
-    def __init__(self, study_id: str, obfuscation_code: Union[None, str] = None) -> None:
+    def __init__(
+        self, study_id: str, obfuscation_code: Union[None, str] = None
+    ) -> None:
         self.study_id = study_id
         self.obfuscation_code = obfuscation_code
         self.settings = get_settings()
@@ -102,10 +117,10 @@ class StudyRsyncClient:
             mounted_paths.cluster_study_internal_files_root_path,
             self.study_id,
             self.settings.study.internal_logs_folder_name,
-            "rsync_logs"
+            "rsync_logs",
         )
         os.makedirs(self.log_path, exist_ok=True)
-        
+
     def rsync(
         self,
         source: StudyFolder,
@@ -123,10 +138,14 @@ class StudyRsyncClient:
         stderr_log_file_path = os.path.join(self.log_path, stderr_log_filename)
 
         if status_check_only:
-            result: SyncTaskResult = HpcRsyncWorker.get_rsync_status(task_name, self.study_id)
+            result: SyncTaskResult = HpcRsyncWorker.get_rsync_status(
+                task_name, self.study_id
+            )
         else:
             if not include_list and not exclude_list:
-                include_list, exclude_list = self.get_include_and_exlude_lists(source, target)
+                include_list, exclude_list = self.get_include_and_exlude_lists(
+                    source, target
+                )
             rsync_arguments = "-auv"
             source_path = self.get_folder_path(source)
             target_path = self.get_folder_path(target)
@@ -154,9 +173,10 @@ class StudyRsyncClient:
         self.validate_sync_direction(source, target)
         task_name = self.get_task_name(source, target, dry_run_mode=True)
 
-
         if status_check_only:
-            result: SyncCalculationTaskResult = HpcRsyncWorker.get_rsync_dry_run_status(task_name, self.study_id)
+            result: SyncCalculationTaskResult = HpcRsyncWorker.get_rsync_dry_run_status(
+                task_name, self.study_id
+            )
         else:
             date_timestamp = current_time().strftime("%y-%m-%d-%m_%H:%M:%S")
             stdout_log_filename = f"{task_name}_{date_timestamp}.stdout.txt"
@@ -164,7 +184,9 @@ class StudyRsyncClient:
             stdout_log_file_path = os.path.join(self.log_path, stdout_log_filename)
             stderr_log_file_path = os.path.join(self.log_path, stderr_log_filename)
             if not include_list and not exclude_list:
-                include_list, exclude_list = self.get_include_and_exlude_lists(source, target)
+                include_list, exclude_list = self.get_include_and_exlude_lists(
+                    source, target
+                )
             rsync_arguments = "-aunv"
             source_path = self.get_folder_path(source)
             target_path = self.get_folder_path(target)
@@ -186,7 +208,11 @@ class StudyRsyncClient:
         path = None
         if folder.location == StudyFolderLocation.RW_STUDY_STORAGE:
             if folder.folder_type == StudyFolderType.AUDIT:
-                path = os.path.join(mounted_paths.cluster_study_audit_files_root_path, self.study_id, self.settings.study.audit_folder_name)
+                path = os.path.join(
+                    mounted_paths.cluster_study_audit_files_root_path,
+                    self.study_id,
+                    self.settings.study.audit_folder_name,
+                )
                 return path
             elif folder.folder_type == StudyFolderType.INTERNAL:
                 path = mounted_paths.cluster_study_internal_files_root_path
@@ -198,16 +224,22 @@ class StudyRsyncClient:
                 return os.path.join(path, self.study_id)
         elif folder.location == StudyFolderLocation.READONLY_STUDY_STORAGE:
             if folder.folder_type == StudyFolderType.AUDIT:
-                path = os.path.join(mounted_paths.cluster_study_readonly_audit_files_root_path, self.study_id, self.settings.study.audit_folder_name)
+                path = os.path.join(
+                    mounted_paths.cluster_study_readonly_audit_files_actual_root_path,
+                    self.study_id,
+                    self.settings.study.audit_folder_name,
+                )
                 return path
             elif folder.folder_type == StudyFolderType.DATA:
-                path = mounted_paths.cluster_study_readonly_files_root_path
+                path = mounted_paths.cluster_study_readonly_files_actual_root_path
             elif folder.folder_type == StudyFolderType.METADATA:
                 path = mounted_paths.cluster_study_readonly_metadata_files_root_path
             elif folder.folder_type == StudyFolderType.PUBLIC_METADATA_VERSIONS:
                 path = mounted_paths.cluster_study_readonly_public_metadata_versions_root_path
             elif folder.folder_type == StudyFolderType.INTEGRITY_CHECK:
-                path = mounted_paths.cluster_study_readonly_integrity_check_files_root_path
+                path = (
+                    mounted_paths.cluster_study_readonly_integrity_check_files_root_path
+                )
             if path:
                 return os.path.join(path, self.study_id)
         elif folder.location == StudyFolderLocation.PUBLIC_FTP_STORAGE:
@@ -227,12 +259,22 @@ class StudyRsyncClient:
             elif folder.folder_type == StudyFolderType.METADATA:
                 path = mounted_paths.cluster_private_ftp_root_path
             elif folder.folder_type == StudyFolderType.INTERNAL:
-                internal_folder_name = self.settings.study.internal_files_symbolic_link_name
-                path = os.path.join(mounted_paths.cluster_private_ftp_root_path, f"{self.study_id.lower()}-{self.obfuscation_code}", internal_folder_name)
+                internal_folder_name = (
+                    self.settings.study.internal_files_symbolic_link_name
+                )
+                path = os.path.join(
+                    mounted_paths.cluster_private_ftp_root_path,
+                    f"{self.study_id.lower()}-{self.obfuscation_code}",
+                    internal_folder_name,
+                )
                 return path
             if path:
-                return os.path.join(path, f"{self.study_id.lower()}-{self.obfuscation_code}")
-        raise MetabolightsException(message=f"Folder path is not valid for {folder.model_dump()}")
+                return os.path.join(
+                    path, f"{self.study_id.lower()}-{self.obfuscation_code}"
+                )
+        raise MetabolightsException(
+            message=f"Folder path is not valid for {folder.model_dump()}"
+        )
 
     def get_include_and_exlude_lists(self, source: StudyFolder, target: StudyFolder):
         include_list = []
@@ -241,13 +283,30 @@ class StudyRsyncClient:
             include_list = ["[asi]_*.txt", "m_*.tsv"]
             exclude_list = ["*"]
         elif source.folder_type == StudyFolderType.DATA:
-            exclude_list = ["[asi]_*.txt", "m_*.tsv", self.settings.study.internal_files_symbolic_link_name, self.settings.study.audit_files_symbolic_link_name, self.settings.chebi.pipeline.chebi_annotation_sub_folder]
+            exclude_list = [
+                "[asi]_*.txt",
+                "m_*.tsv",
+                self.settings.study.internal_files_symbolic_link_name,
+                self.settings.study.audit_files_symbolic_link_name,
+                self.settings.chebi.pipeline.chebi_annotation_sub_folder,
+            ]
         elif source.folder_type == StudyFolderType.AUDIT:
-            exclude_list = [f"{self.settings.study.readonly_audit_folder_symbolic_name}"]
+            exclude_list = [
+                f"{self.settings.study.readonly_audit_folder_symbolic_name}"
+            ]
         elif source.folder_type == StudyFolderType.INTERNAL:
-            if target.location == StudyFolderLocation.PRIVATE_FTP_STORAGE or source.location == StudyFolderLocation.PRIVATE_FTP_STORAGE:
-                chebi_pipeline_folder_name = self.settings.chebi.pipeline.chebi_annotation_sub_folder
-                include_list = [f"{chebi_pipeline_folder_name}.zip", f"{chebi_pipeline_folder_name}/",f"{chebi_pipeline_folder_name}/***"]
+            if (
+                target.location == StudyFolderLocation.PRIVATE_FTP_STORAGE
+                or source.location == StudyFolderLocation.PRIVATE_FTP_STORAGE
+            ):
+                chebi_pipeline_folder_name = (
+                    self.settings.chebi.pipeline.chebi_annotation_sub_folder
+                )
+                include_list = [
+                    f"{chebi_pipeline_folder_name}.zip",
+                    f"{chebi_pipeline_folder_name}/",
+                    f"{chebi_pipeline_folder_name}/***",
+                ]
             elif target.location == StudyFolderLocation.READONLY_STUDY_STORAGE:
                 include_list = ["metadata_summary.tsv", "data_files_summary.txt"]
 
@@ -255,8 +314,10 @@ class StudyRsyncClient:
 
         return include_list, exclude_list
 
-    def get_task_name(self, source: StudyFolder, target: StudyFolder, dry_run_mode: bool = False):
-        mode = 'rsync_dry_run' if dry_run_mode else 'rsync'
+    def get_task_name(
+        self, source: StudyFolder, target: StudyFolder, dry_run_mode: bool = False
+    ):
+        mode = "rsync_dry_run" if dry_run_mode else "rsync"
         src_location = source.location.lower()
         tgt_location = target.location.lower()
         src_type = source.folder_type.lower()
@@ -271,13 +332,18 @@ class StudyRsyncClient:
             raise MetabolightsException(message="Target study folder is not valid.")
 
         if source.location == target.location:
-            raise MetabolightsException(message="Source and target should be different.")
+            raise MetabolightsException(
+                message="Source and target should be different."
+            )
 
         if target.location not in ALLOWED_STAGING_AREA_DIRECTIONS[source.location]:
             raise MetabolightsException(
                 message="From selected source staging area to target staging area is not allowed."
             )
-        if target.folder_type not in ALLOWED_STAGING_AREA_DIRECTIONS[source.location][target.location]:
+        if (
+            target.folder_type
+            not in ALLOWED_STAGING_AREA_DIRECTIONS[source.location][target.location]
+        ):
             raise MetabolightsException(
                 message="Selected study folder synchronization is not allowed from source staging area to target staging area ."
             )
@@ -285,6 +351,9 @@ class StudyRsyncClient:
     def is_valid_study_folder(self, study_folder: StudyFolder):
         if not study_folder:
             return False
-        if study_folder.location in VALID_FOLDERS and study_folder.folder_type in VALID_FOLDERS[study_folder.location]:
+        if (
+            study_folder.location in VALID_FOLDERS
+            and study_folder.folder_type in VALID_FOLDERS[study_folder.location]
+        ):
             return True
         return False
