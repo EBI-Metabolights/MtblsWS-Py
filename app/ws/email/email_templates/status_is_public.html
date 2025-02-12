@@ -19,7 +19,7 @@
 
 Dear {{ submitter_fullname }},
 <br/><br/>
-We are happy to inform you that your MetaboLights study has been successfully made public.
+We are happy to inform you that your MetaboLights study "{{ study_title }}" with <b>{{ mtbls_accession }}</b> MetaboLights accession number has been successfully made public.
 <br/><br/>
 <b>SUBMISSION DETAILS</b><br/>
 Public release date: <code>{{ release_date }}</code><br/>
@@ -28,7 +28,7 @@ MetaboLights accession: <code>{{ mtbls_accession }}</code><br/>
 MetaboLights study contacts: <code>{{ study_contacts }}</code><br/>
 Publication DOI: <code>{{ publication_doi }}</code><br/>
 Publication PubMed ID: <code>{{ publication_pubmed_id }}</code><br/>
-MetaboLights study URL: <code>{{ mtbls_accession_url }}</code><br/><br/>
+MetaboLights study URL: <code> <a href="{{ mtbls_accession_url }}">{{ mtbls_accession_url }}</a></code><br/><br/>
 
 <b>ACCESS YOUR PUBLIC DATASET</b><br/>
 <i>Using FTP</i><br/>
@@ -36,7 +36,7 @@ Server: <code> {{public_ftp_server}} </code> <br/>
 Dataset remote folder: <code> {{ public_ftp_remote_folder }}</code> <br/><br/>
 
 <i>Using HTTP</i><br/>
-Dataset browse URL : <code> {{ study_ftp_download_url }}</code><br/><br/>
+Dataset browse URL : <code> <a href="{{ study_ftp_download_url }}">{{ study_ftp_download_url }}</a></code><br/><br/>
 
 <i>Using Globus</i><br/>
 Collection name: <code> {{ globus_collection_name }} </code> <br/>
@@ -45,13 +45,12 @@ Dataset browse URL: <code><a href="{{ study_globus_url }}">Dataset on Globus Fil
 <br/>
 
 <br/>
-Please note:<br/>
+Please note:
+<ul>
   <li><i>Synchronization with EBI's public FTP site may take up to 24 hours.</i></li>
   <li><i>You may need to sign up Globus (https://app.globus.org) to explore your dataset.</i></li>
   <li><i>The collection '{{ globus_collection_name}}' on Globus File Manager is only visible if 'Search All Collections' is selected.</i></li>
-  
 </ul>
-<br/>
 <br/>
 <b>CITATION</b><br/>
 To cite your MetaboLights data, please use the following format: <br/><br/>

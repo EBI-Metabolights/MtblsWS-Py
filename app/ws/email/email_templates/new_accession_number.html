@@ -1,37 +1,34 @@
 <head>
-  <link rel="stylesheet" type="text/css" href='{{ metabolights_website_url }}/css/ml.css' media="screen" />
-</head>
-<body class="level2">
-  
-<div class="ml-header-section-top ml-header clearfix">
-  <div class="col-md-12">
-      <div class="row">
-          <div class="col-md-7 col-sm-6">
-              <div class="alpha logo-title"  id="local-title">
-                  <a id="mlLogo" class="ml-logo" style="text-decoration: none; display: flex; align-items: center;" href="{{ metabolights_website_url }}" title="MetaboLights homepage">
-                      <img src="{{ metabolights_website_url }}/img/MetaboLightsLogo.png" alt="MetaboLights" width="64" height="64" />MetaboLights
-                  </a>
-              </div>
-          </div>
-      </div>
-  </div>
+    <link rel="stylesheet" type="text/css" href='{{ metabolights_website_url }}/css/ml.css' media="screen" />
+  </head>
+  <body class="level2">
+    
+  <div class="ml-header-section-top ml-header clearfix">
+    <div class="col-md-12">
+        <div class="row">
+            <div class="col-md-7 col-sm-6">
+                <div class="alpha logo-title"  id="local-title">
+                    <a id="mlLogo" class="ml-logo" style="text-decoration: none; display: flex; align-items: center;" href="{{ metabolights_website_url }}" title="MetaboLights homepage">
+                        <img src="{{ metabolights_website_url }}/img/MetaboLightsLogo.png" alt="MetaboLights" width="64" height="64" />MetaboLights
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div><br/>
 
 Dear {{ submitter_fullname }},<br/><br/>
 
 {% if submission_id != mtbls_accession  -%}
-We are happy to inform you that your study "{{ study_title }}" with temporary request ID {{ submission_id }} has been successfully submitted to MetaboLights as {{ mtbls_accession }}. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
+We are happy to inform you that your study "{{ study_title }}" with temporary request ID {{ submission_id }} has been successfully submitted to MetaboLights as <b>{{ mtbls_accession }}</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
 {% else -%}
-We are happy to inform you that your study "{{ study_title }}" has been successfully submitted to MetaboLights as {{ mtbls_accession }}. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
+We are happy to inform you that your study "{{ study_title }}" has been successfully submitted to MetaboLights as <b>{{ mtbls_accession }}</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
 {% endif -%}
 <br/><br/>
 The requested Study Public Release Date is <b>{{ release_date }}</b>. The date can be changed at any stage by contacting us directly. Please note that it is essential that you notify us of the first (online) publication of the corresponding manuscript.
 <br/><br/>
 <b>SUBMISSION DETAILS</b><br/>
 MetaboLights study title: <code>{{ study_title }}</code><br/>
-{% if submission_id != mtbls_accession  -%}
-MetaboLights request ID: <code>{{ submission_id }}</code><br/>
-{% endif -%}
 MetaboLights accession: <code>{{ mtbls_accession }}</code><br/>
 
 <br/>
@@ -40,18 +37,18 @@ The FTP upload folder is now read only and has been renamed from "<code><i>{{ pr
 {% endif -%}
 <br/><br/>
 <b>REVIEWER ACCESS</b><br/>
-    You can share the following private link with your study contributors and reviewers to facilitate the peer review process. <br><br>
+You can share the following private link with your study contributors and reviewers to facilitate the peer review process. <br><br>
 Private reviewer link: <code><a href="{{ reviewer_url }}">{{ reviewer_url }}</a></code>
 <br/><br/>
 <b>CITATION</b><br/>
 Please add to your manuscript the following sentence (typically in the "Methods" section or just before/in the Acknowledgements): <br/><br/>
 <i>
     "The metabolomics data have been deposited to MetaboLights[1] repository with the study identifier {{ mtbls_accession }}".<br/> 
-  </i><br/>
-  MetaboLigths reference:<br/>
-  [1] Yurekten O, Payne T, Tejera N, Amaladoss FX, Martin C, Williams M, O'Donovan C. MetaboLights: open data repository for metabolomics.
-  Nucleic Acids Res. 2024 Jan 5;52(D1):D640-D646. doi:<a href="https://doi.org/10.1093/nar/gkad1045">10.1093/nar/gkad1045</a>. PMID:37971328.<br/> 
-  
+    </i><br/>
+    MetaboLigths reference:<br/>
+    [1] Yurekten O, Payne T, Tejera N, Amaladoss FX, Martin C, Williams M, O'Donovan C. MetaboLights: open data repository for metabolomics.
+    Nucleic Acids Res. 2024 Jan 5;52(D1):D640-D646. doi:<a href="https://doi.org/10.1093/nar/gkad1045">10.1093/nar/gkad1045</a>. PMID:37971328.<br/> 
+    
 <br/>
 We would recommend you to also include this information in a much abridged form into the abstract itself, e.g. "Data are available via MetaboLights with identifier {{ mtbls_accession }}."
 <br/><br/>
