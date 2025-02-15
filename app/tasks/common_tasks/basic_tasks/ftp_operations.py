@@ -1,4 +1,4 @@
-from app.tasks.common_tasks.basic_tasks.email import send_email_for_new_submission
+from app.tasks.common_tasks.basic_tasks.email import send_email_for_new_provisional_study
 from app.tasks.worker import MetabolightsTask, celery, get_flask_app
 from app.ws.db.schemes import Study
 from app.ws.study.commons import create_ftp_folder
@@ -29,5 +29,5 @@ def create_private_ftp_folder(self, user_token=None, study_id=None, send_email=F
         if result and "upload_location" in result and result["upload_location"]:
             upload_location = result["upload_location"]
 
-            send_email_for_new_submission(user_token, study_id, upload_location)
+            send_email_for_new_provisional_study(user_token, study_id, upload_location)
     return result

@@ -913,13 +913,12 @@ class StudyFolderMaintenanceTask(object):
 
         if (
             self.study_status == StudyStatus.INREVIEW
-            or self.study_status == StudyStatus.INCURATION
+            or self.study_status == StudyStatus.PRIVATE
         ):
             permission = Acl.AUTHORIZED_READ.value
-        elif self.study_status == StudyStatus.SUBMITTED:
+        elif self.study_status == StudyStatus.PROVISIONAL:
             permission = Acl.AUTHORIZED_READ_WRITE.value
 
-        # create_folder = self.study_status == StudyStatus.INCURATION or self.study_status == StudyStatus.SUBMITTED or self.study_status == StudyStatus.INREVIEW
         if not os.path.exists(private_ftp_root_path):
             self._create_folder_future_actions(
                 private_ftp_root_path,
@@ -975,7 +974,7 @@ class StudyFolderMaintenanceTask(object):
             )
             self.update_permission(sub_folder, Acl.AUTHORIZED_READ_WRITE.value)
         else:
-            if self.study_status == StudyStatus.SUBMITTED:
+            if self.study_status == StudyStatus.PROVISIONAL:
                 self.update_permission(private_ftp_root_path, 0o770)
                 sub_folder = os.path.join(private_ftp_root_path, "RAW_FILES")
                 self._create_folder_future_actions(

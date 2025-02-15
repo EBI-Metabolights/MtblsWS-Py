@@ -202,8 +202,8 @@ class cronjob(Resource):
             if len(submit) + len(curation) + len(review) == 0:
                 return jsonify({'result': 'Nothing to change'})
             else:
-                res = {"Change ftp folder access permission": {'Submission studies (770)': submit,
-                                                               'In curation studies (750)': curation,
+                res = {"Change ftp folder access permission": {'Provisional studies (770)': submit,
+                                                               'Private studies (750)': curation,
                                                                'In review studies (550)': review,
                                                                'Public studies (550)': public}}
                 return jsonify(res)
@@ -437,10 +437,10 @@ def file_permission(force: bool = False):
     #         db_study_status = study_status_map[study_id]
     #         permission = ftp_private_storage.remote.get_folder_permission(ftp_path)
     #
-    #         if db_study_status == StudyStatus.INCURATION and (permission != Acl.AUTHORIZED_READ or force):
+    #         if db_study_status == StudyStatus.PRIVATE and (permission != Acl.AUTHORIZED_READ or force):
     #             ftp_private_storage.remote.update_folder_permission(ftp_path, Acl.AUTHORIZED_READ)
     #             curation.append(study_id)
-    #         elif db_study_status == StudyStatus.SUBMITTED and (permission != Acl.AUTHORIZED_READ_WRITE or force):
+    #         elif db_study_status == StudyStatus.PROVISIONAL and (permission != Acl.AUTHORIZED_READ_WRITE or force):
     #             ftp_private_storage.remote.update_folder_permission(ftp_path, Acl.AUTHORIZED_READ_WRITE)
     #             submit.append(study_id)
     #         elif db_study_status == StudyStatus.INREVIEW and (permission != Acl.READ_ONLY or force):

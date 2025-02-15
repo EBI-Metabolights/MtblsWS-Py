@@ -183,7 +183,7 @@ class SyncFromFtpFolder(Resource):
         if sync_type not in ("data", "metadata"):
             UserService.get_instance().validate_user_has_write_access(user_token, study_id)
             study = StudyService.get_instance().get_study_by_acc(study_id)
-            if StudyStatus(study.status) != StudyStatus.SUBMITTED:
+            if StudyStatus(study.status) != StudyStatus.PROVISIONAL:
                 UserService.get_instance().validate_user_has_curator_role(user_token)
         else:
             UserService.get_instance().validate_user_has_curator_role(user_token)
@@ -676,7 +676,7 @@ class SyncFromStudyFolder(Resource):
         if sync_type not in ("data", "metadata"):
             UserService.get_instance().validate_user_has_write_access(user_token, study_id)
             study = StudyService.get_instance().get_study_by_acc(study_id)
-            if StudyStatus(study.status) != StudyStatus.SUBMITTED:
+            if StudyStatus(study.status) != StudyStatus.PROVISIONAL:
                 UserService.get_instance().validate_user_has_curator_role(user_token)
         else:
             UserService.get_instance().validate_user_has_curator_role(user_token)

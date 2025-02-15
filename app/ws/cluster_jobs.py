@@ -118,8 +118,8 @@ def get_permissions(study_id, user_token, obfuscation_code=None):
     Check MTBLS-WS for permissions on this Study for this user
 
     Study       User    Submitter   Curator     Reviewer/Read-only
-    SUBMITTED   ----    Read+Write  Read+Write  Read
-    INCURATION  ----    Read        Read+Write  Read
+    PROVISIONAL   ----    Read+Write  Read+Write  Read
+    PRIVATE  ----    Read        Read+Write  Read
     INREVIEW    ----    Read        Read+Write  Read
     PUBLIC      Read    Read        Read+Write  Read
 

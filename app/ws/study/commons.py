@@ -8,7 +8,7 @@ from app.config.utils import get_private_ftp_relative_root_path
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
-from app.ws.db_connection import check_access_rights, get_submitted_study_ids_for_user, get_email, \
+from app.ws.db_connection import check_access_rights, get_provisional_study_ids_for_user, get_email, \
     query_study_submitters, get_public_studies, get_private_studies, get_study_by_type, get_all_non_public_studies
 from app.ws.email.email_service import EmailService
 from app.ws.settings.utils import get_study_settings
@@ -62,8 +62,8 @@ def get_public_studies_list():
 
 
 def get_all_studies_for_user(user_token):
-    logger.info('Getting submitted studies using user_token')
-    study_id_list = get_submitted_study_ids_for_user(user_token)
+    logger.info('Getting provisional studies using user_token')
+    study_id_list = get_provisional_study_ids_for_user(user_token)
     text_resp = json.dumps(study_id_list)
     logger.info('Found the following studies %s', text_resp)
     return text_resp
@@ -74,8 +74,8 @@ def get_permissions(study_id, user_token, obfuscation_code=None):
     Check MTBLS-WS for permissions on this Study for this user
 
     Study       User    Submitter   Curator     Reviewer/Read-only
-    SUBMITTED   ----    Read+Write  Read+Write  Read
-    INCURATION  ----    Read        Read+Write  Read
+    PROVISIONAL   ----    Read+Write  Read+Write  Read
+    PRIVATE  ----    Read        Read+Write  Read
     INREVIEW    ----    Read        Read+Write  Read
     PUBLIC      Read    Read        Read+Write  Read
 
@@ -152,7 +152,7 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service: Uni
         user = UserService.get_instance().get_db_user_by_user_name(submitter_email)
         submitter_fullname = user.fullName
         
-        email_service.send_email_for_new_submission(study_id, relative_study_path, user_email,
+        email_service.send_email_for_new_provisional_study(study_id, relative_study_path, user_email,
                                                                   submitters_email_list, submitter_fullname)
     status_message = "FTP folder created" if new_folder else "Folder is already created"
 

@@ -147,10 +147,10 @@ class StudyStatus(Resource):
     @swagger.operation(
         summary="Change study status",
         nickname="Change study status",
-        notes="""Change study status from 'Submitted' to 'In Curation'.<br>
+        notes="""Change study status from 'Provisional' to 'Private'.<br>
         Please note a *minimum* of 28 days is required for curation, this will be added to the release date</p>
-                <pre><code>Curators can change status to any of: 'Submitted', 'In Curation', 'In Review', 'Public' or 'Dormant'. curation_request is optional and can get the values: 'Manual Curation', 'No Curation', 'Semi-automated Curation'
-                <p>Example: { "status": "In Curation" } { "status": "Public" }   {"status": "Public", "curation_request": "No Curation"}
+                <pre><code>Curators can change status to any of: 'Provisional', 'Private', 'In Review', 'Public' or 'Dormant'. curation_request is optional and can get the values: 'Manual Curation', 'No Curation', 'Semi-automated Curation'
+                <p>Example: { "status": "Private" } { "status": "Public" }   {"status": "Public", "curation_request": "No Curation"}
                 </code></pre>""",
         parameters=[
             {
@@ -218,10 +218,10 @@ class StudyStatus(Resource):
 
         if not study_status or study_status.upper() not in [
             x.upper()
-            for x in ["Submitted", "In Curation", "In Review", "Public", "Dormant"]
+            for x in ["provisional", "Private", "In Review", "Public", "Dormant"]
         ]:
             raise MetabolightsException(
-                message="Please provide study status: 'Submitted', 'In Curation', 'In Review', 'Public' or 'Dormant'"
+                message="Please provide study status: 'provisional', 'Private', 'In Review', 'Public' or 'Dormant'"
             )
 
         if curation_request_str and curation_request_str.upper() not in [
@@ -306,8 +306,8 @@ class StudyStatus(Resource):
             update_curation_request(study_id, curation_request)
         else:
             if (
-                db_study_status.lower() != "submitted"
-            ):  # and study_status != 'In Curation':
+                db_study_status.lower() != "provisional"
+            ):  # and study_status != 'Private':
                 raise MetabolightsException(
                     http_code=403, message="You can not change the study to this status"
                 )
@@ -352,7 +352,6 @@ class StudyStatus(Resource):
             current_study_status,
             requested_study_status,
             study.reserved_accession,
-            study.reserved_submission_id,
         )
 
         if study_id != updated_study_id:
@@ -369,7 +368,7 @@ class StudyStatus(Resource):
                 study_title = isa_study.title
                 inputs = {
                     "user_token": user_token,
-                    "submission_id": study_id,
+                    "provisional_id": study_id,
                     "study_id": updated_study_id,
                     "obfuscation_code": obfuscation_code,
                     "study_title": study_title,
@@ -396,10 +395,10 @@ class StudyStatus(Resource):
             "obfuscation_code": obfuscation_code,
             "study_table_id": study.id,
         }
-        # Explictly changing the FTP folder permission for In Curation and Submitted state
+        # Explictly changing the FTP folder permission for Private and Provisional state
         if db_study_status.lower() != study_status.lower():
             if study_status.lower() in (
-                "in curation",
+                "private",
                 "public",
                 "in review",
                 "dormant",
@@ -411,7 +410,7 @@ class StudyStatus(Resource):
                         ftp_private_study_folder, Acl.AUTHORIZED_READ
                     )
 
-            if study_status.lower() == "submitted":
+            if study_status.lower() == "provisional":
                 if ftp_private_storage.remote.does_folder_exist(
                     ftp_private_study_folder
                 ):
@@ -676,20 +675,18 @@ class StudyStatus(Resource):
         current_study_status: types.StudyStatus,
         requested_study_status: types.StudyStatus,
         reserved_accession: str,
-        reserved_submission_id: str,
     ):
         mtbls_accession_states = (
-            types.StudyStatus.INCURATION,
+            types.StudyStatus.PRIVATE,
             types.StudyStatus.INREVIEW,
             types.StudyStatus.PUBLIC,
         )
-        submission_id_states = (types.StudyStatus.SUBMITTED, types.StudyStatus.DORMANT)
+        provisional_id_states = (types.StudyStatus.PROVISIONAL, types.StudyStatus.DORMANT)
         mtbls_prefix = get_settings().study.accession_number_prefix
-        # submission_id_prefix = get_settings().study.submission_id_prefix
         target_study_id = current_study_id
         if (
             requested_study_status in mtbls_accession_states
-            and current_study_status in submission_id_states
+            and current_study_status in provisional_id_states
             and not current_study_id.startswith(mtbls_prefix)
         ):
             if not reserved_accession:
@@ -700,11 +697,6 @@ class StudyStatus(Resource):
                     http_code=403,
                     message=f"Error while assigning MetaboLights accession number for {current_study_id}",
                 )
-
-        # elif requested_study_status in submission_id_states and current_study_status in mtbls_accession_states and not current_study_id.startswith(submission_id_prefix):
-        #     target_study_id = update_study_id_from_submission_id(current_study_id)
-        #     if not target_study_id:
-        #         raise MetabolightsException(http_code=403, message=f"Error while assigning MetaboLights submission id for {current_study_id}")
         if not target_study_id:
             raise MetabolightsException(message="Could not update the study id")
         return target_study_id

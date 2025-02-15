@@ -39,7 +39,7 @@ from app.tasks.common_tasks.basic_tasks.elasticsearch import (
     reindex_study,
 )
 from app.tasks.common_tasks.basic_tasks.email import (
-    send_email_for_new_submission,
+    send_email_for_new_provisional_study,
     send_technical_issue_email,
 )
 from app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization import sync_studies_on_es_and_db
@@ -1135,11 +1135,11 @@ class CreateAccession(Resource):
 
         user: User = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
         studies = UserService.get_instance().get_user_studies(user.apitoken)
-        submitted_studies = []
+        provisional_studies = []
         last_study_datetime = datetime.fromtimestamp(0)
         for study in studies:
-            if study.status == StudyStatus.SUBMITTED.value:
-                submitted_studies.append(study)
+            if study.status == StudyStatus.PROVISIONAL.value:
+                provisional_studies.append(study)
             if study.submissiondate.timestamp() > last_study_datetime.timestamp():
                 last_study_datetime = study.submissiondate
         study_settings = get_study_settings()
@@ -1151,15 +1151,15 @@ class CreateAccession(Resource):
             raise MetabolightsException(message="Submitter can create only one study in five minutes.", http_code=429)
 
         if (
-            len(submitted_studies) >= study_settings.max_study_in_submitted_status
+            len(provisional_studies) >= study_settings.max_study_in_provisional_status
             and user.role != UserRole.ROLE_SUPER_USER.value
             and user.role != UserRole.SYSTEM_ADMIN.value
         ):
             logger.warning(
-                f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_submitted_status} study in Submitted status."
+                f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_provisional_status} study in Provisional status."
             )
             raise MetabolightsException(
-                message="The user can have at most two studies in Submitted status. Please complete and update status of your current studies.",
+                message="The user can have at most two studies in Provisional status. Please complete and update status of your current studies.",
                 http_code=400,
             )
 
@@ -1216,7 +1216,7 @@ class CreateAccession(Resource):
             study: Study = StudyService.get_instance().get_study_by_acc(study_acc)
             ftp_folder_name = study_acc.lower() + "-" + study.obfuscationcode
             inputs = {"user_token": user_token, "study_id": study_acc, "folder_name": ftp_folder_name}
-            send_email_for_new_submission.apply_async(kwargs=inputs)
+            send_email_for_new_provisional_study.apply_async(kwargs=inputs)
             logger.info(f"Step 5: Sending FTP folder email for the study {study_acc}")
         else:
             logger.info(f"Step 5: Skipping FTP folder email for the study {study_acc}")
@@ -1246,7 +1246,7 @@ class CreateAccession(Resource):
         Rule 5- study_id must not be in database
         """
         # Rule 1
-        study_id_prefix = identifier_service.default_submission_identifier.get_prefix()
+        study_id_prefix = identifier_service.default_provisional_identifier.get_prefix()
         if not requested_study_id.startswith(study_id_prefix):
             abort(401, message="Invalid request id format. Request id must start with %s" % study_id_prefix)
         # Rule 2
@@ -2111,7 +2111,7 @@ class StudyFolderSynchronization(Resource):
         if source_staging_area == "private-ftp" and ((sync_type == "data" and target_staging_area == "readonly-study") or (sync_type == "metadata" and target_staging_area == "rw-study")):
             study = StudyService.get_instance().get_study_by_acc(study_id)
             UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-            if StudyStatus(study.status) != StudyStatus.SUBMITTED:
+            if StudyStatus(study.status) != StudyStatus.PROVISIONAL:
                 UserService.get_instance().validate_user_has_curator_role(user_token)
         else:
             UserService.get_instance().validate_user_has_curator_role(user_token)

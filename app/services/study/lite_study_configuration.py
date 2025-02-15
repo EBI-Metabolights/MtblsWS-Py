@@ -28,7 +28,7 @@ class LiteStudyConfiguration(object):
             self.study_id
         )
         if not valid:
-            if not identifier_service.default_submission_identifier.validate_format(
+            if not identifier_service.default_provisional_identifier.validate_format(
                 self.study_id
             ):
                 raise MetabolightsException(

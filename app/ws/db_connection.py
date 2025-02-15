@@ -47,8 +47,8 @@ query_all_studies = """
           string_agg(u.firstname || ' ' || u.lastname, ', ' order by u.lastname) as username, 
           to_char(s.releasedate, 'YYYYMMDD') as release_date,
           to_char(s.updatedate, 'YYYYMMDD') as update_date, 
-          case when s.status = 0 then 'Submitted' 
-               when s.status = 1 then 'In Curation'
+          case when s.status = 0 then 'Provisional' 
+               when s.status = 1 then 'Private'
                when s.status = 2 then 'In Review'
                when s.status = 3 then 'Public'
                else 'Dormant' end as status,
@@ -71,8 +71,8 @@ query_study_info = """
              select s.acc                                                                as studyid,
                     string_agg(u.firstname || ' ' || u.lastname, ', ' order by u.lastname) as username,
                     case
-                        when s.status = 0 then 'Submitted'
-                        when s.status = 1 then 'In Curation'
+                        when s.status = 0 then 'Provisional'
+                        when s.status = 1 then 'Private'
                         when s.status = 2 then 'In Review'
                         when s.status = 3 then 'Public'
                         else 'Dormant' end                                               as status,
@@ -95,8 +95,8 @@ query_studies_user = """
     SELECT distinct s.acc, 
     to_char(s.releasedate,'YYYY-MM-DD'), 
     to_char(s.submissiondate,'YYYY-MM-DD'), 
-      case when s.status = 0 then 'Submitted' 
-           when s.status = 1 then 'In Curation'
+      case when s.status = 0 then 'Provisional' 
+           when s.status = 1 then 'Private'
            when s.status = 2 then 'In Review' 
            when s.status = 3 then 'Public' 
            else 'Dormant' end,
@@ -109,13 +109,13 @@ query_studies_user = """
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
 
-query_submitted_study_ids_for_user = """
+query_provisional_study_ids_for_user = """
     SELECT distinct s.acc 
     from studies s, users u, study_user su 
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(user_token)s and s.status=0;
     """
 
-insert_study_with_submission_id = """   
+insert_study_with_provisional_id = """   
     insert into studies (id, obfuscationcode, releasedate, status, studysize, submissiondate, 
     updatedate, validations, validation_status, reserved_submission_id, acc) 
     values ( 
@@ -147,8 +147,8 @@ select id from users where lower(username)=%(username)s;
 
 query_user_access_rights = """
     SELECT DISTINCT role, read, write, obfuscationcode, releasedate, submissiondate, 
-        CASE    WHEN status = 0 THEN 'Submitted'
-                WHEN status = 1 THEN 'In Curation' 
+        CASE    WHEN status = 0 THEN 'Provisional'
+                WHEN status = 1 THEN 'Private' 
                 WHEN status = 2 THEN 'In Review' 
                 WHEN status = 3 THEN 'Public' 
                 ELSE 'Dormant' end 
@@ -164,12 +164,12 @@ query_user_access_rights = """
                 SELECT 'user' as role, 'True' as read, 'True' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
                 from studies s, study_user su, users u
                 where s.acc = %(study_id)s and s.status = 0 and s.id = su.studyid and su.userid = u.id and 
-                u.apitoken = %(apitoken)s -- USER own data, submitted
+                u.apitoken = %(apitoken)s -- USER own data, provisional
                 UNION
                 SELECT 'user' as role, 'True' as read, 'False' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
                 from studies s, study_user su, users u
                 where s.acc = %(study_id)s and s.status in (1, 2, 4) and s.id = su.studyid and su.userid = u.id and 
-                u.apitoken = %(apitoken)s -- USER own data, in curation, review or dormant
+                u.apitoken = %(apitoken)s -- USER own data, private, review or dormant
                 UNION 
                 SELECT 'user' as role, 'True' as read, 'False' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
                 from studies s where acc = %(study_id)s and status = 3) user_data 
@@ -179,8 +179,8 @@ query_user_access_rights = """
 
 study_by_obfuscation_code_query = """
     select distinct 'user', 'True', 'False', obfuscationcode, releasedate, submissiondate,
-    case when status = 0 then 'Submitted'
-         when status = 1 then 'In Curation'
+    case when status = 0 then 'Provisional'
+         when status = 1 then 'Private'
          when status = 2 then 'In Review'
          when status = 3 then 'Public'
          else 'Dormant' end as status,
@@ -330,7 +330,7 @@ def get_all_private_studies_for_user(user_token):
         status = row[3]
         curation_request = row[4]
 
-        if status.strip() == "Submitted":
+        if status.strip() == "Provisional":
             complete_study_location = os.path.join(study_location, study_id)
             complete_file_name = os.path.join(complete_study_location, file_name)
 
@@ -540,7 +540,7 @@ def get_obfuscation_code(study_id):
     return data
 
 def get_id_list_by_req_id(req_id: Union[None, str]):
-    identifier = identifier_service.default_submission_identifier
+    identifier = identifier_service.default_provisional_identifier
     parts = identifier.get_id_parts(req_id)
     if not parts or len(parts) < 2:
         raise ValueError("Invalid request ID")
@@ -597,7 +597,7 @@ def update_study_id_from_mtbls_accession(study_id):
     return None
 
 
-def update_study_id_from_submission_id(study_id):
+def update_study_id_from_provisional_id(study_id):
     val_acc(study_id)
     query = "select id, reserved_submission_id from studies where acc = %(study_id)s;"
     postgresql_pool, conn, cursor = get_connection()
@@ -605,8 +605,8 @@ def update_study_id_from_submission_id(study_id):
         cursor.execute(query, {'study_id': study_id})
         data = cursor.fetchall()
         if data:
-            set_reserved_acc_query = "update studies set acc = %(reserved_submission_id)s where id = %(table_id)s;"
-            cursor.execute(set_reserved_acc_query, {"table_id": data[0][0], "reserved_submission_id": data[0][1]})
+            set_reserved_acc_query = "update studies set acc = %(provisional_id)s where id = %(table_id)s;"
+            cursor.execute(set_reserved_acc_query, {"table_id": data[0][0], "provisional_id": data[0][1]})
             conn.commit()
             get_reserved_acc_query = "select id, acc from studies where id = %(table_id)s;"
             cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
@@ -627,8 +627,8 @@ def get_study(study_id):
     select 
        case
            when s.placeholder = '1' then 'Placeholder'
-           when s.status = 0 then 'Submitted'
-           when s.status = 1 then 'In Curation'
+           when s.status = 0 then 'Provisional'
+           when s.status = 1 then 'Private'
            when s.status = 2 then 'In Review'
            when s.status = 3 then 'Public'
            else 'Dormant' end                  as status,
@@ -881,10 +881,10 @@ def get_user_email(user_token):
         return False
 
 
-def get_submitted_study_ids_for_user(user_token):
+def get_provisional_study_ids_for_user(user_token):
     val_query_params(user_token)
 
-    study_id_list = execute_select_with_params(query_submitted_study_ids_for_user, {"user_token": user_token})
+    study_id_list = execute_select_with_params(query_provisional_study_ids_for_user, {"user_token": user_token})
     complete_list = []
     for i, row in enumerate(study_id_list):
         study_id = row[0]
@@ -922,7 +922,7 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
         new_unique_id = cursor.fetchone()[0]
         conn.commit()
         if not req_id:
-            req_id = identifier_service.default_submission_identifier.get_id(new_unique_id, current_time)
+            req_id = identifier_service.default_provisional_identifier.get_id(new_unique_id, current_time)
         
         content = {"req_id": req_id,
                     "obfuscationcode": obfuscationcode,
@@ -932,7 +932,7 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
                    "userid": user_id,
                    "current_time": current_time
                    }
-        cursor.execute(insert_study_with_submission_id, content)
+        cursor.execute(insert_study_with_provisional_id, content)
         conn.commit()
         cursor.execute(get_study_id_sql, {"unique_id": new_unique_id})
         fetched_study = cursor.fetchone()
@@ -1166,9 +1166,9 @@ def update_study_status(study_id, study_status, is_curator=False, first_public_d
 
     status = '0'
     study_status = study_status.lower()
-    if study_status == 'submitted':
+    if study_status == 'provisional':
         status = '0'
-    elif study_status == 'in curation':
+    elif study_status == 'private':
         status = '1'
     elif study_status == 'in review':
         status = '2'
