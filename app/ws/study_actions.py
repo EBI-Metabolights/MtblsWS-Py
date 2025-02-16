@@ -248,7 +248,8 @@ class StudyStatus(Resource):
         obfuscation_code = study.obfuscationcode
         db_study_status = types.StudyStatus.from_int(study.status).name
         release_date = study.releasedate.strftime("%Y-%m-%d")
-        first_public_date_baseline = study.first_public_date
+        first_public_date_baseline: datetime.datetime = study.first_public_date
+        first_private_date_baseline: datetime.datetime = study.first_private_date
         # check for access rights
         # _, _, _, _, _, _, _, _ = wsc.get_permissions(study_id, user_token)
         study_location = os.path.join(
@@ -279,6 +280,15 @@ class StudyStatus(Resource):
             study_id, user_token, skip_load_tables=True, study_location=study_location
         )
         isa_study: Study = isa_study_item
+        if study_status.lower() in {"public", "in review", "in curation"}:
+            updated_submission_date = (
+                first_private_date_baseline.strftime("%Y-%m-%d")
+                if first_private_date_baseline
+                else isa_inv.submission_date
+            )
+            isa_inv.submission_date = updated_submission_date
+            isa_study.submission_date = updated_submission_date
+
         if (
             is_curator
         ):  # Curators can change the date to current date, submitters can not!
@@ -302,6 +312,7 @@ class StudyStatus(Resource):
                     obfuscation_code=obfuscation_code,
                     user_token=user_token,
                     first_public_date=first_public_date_baseline,
+                    first_private_date=first_private_date_baseline,
                 )
             update_curation_request(study_id, curation_request)
         else:
@@ -322,8 +333,8 @@ class StudyStatus(Resource):
                     obfuscation_code=obfuscation_code,
                     user_token=user_token,
                     first_public_date=first_public_date_baseline,
+                    first_private_date=first_private_date_baseline,
                 )
-
                 if (
                     release_date < new_date
                 ):  # Set the release date to a minimum of 28 days in the future
@@ -709,6 +720,7 @@ class StudyStatus(Resource):
         obfuscation_code=None,
         user_token=None,
         first_public_date=None,
+        first_private_date=None,
     ):
         study_status = study_status.lower()
         # Update database
@@ -717,6 +729,7 @@ class StudyStatus(Resource):
             study_status,
             is_curator=is_curator,
             first_public_date=first_public_date,
+            first_private_date=first_private_date,
         )
 
     # @staticmethod
