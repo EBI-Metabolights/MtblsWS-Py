@@ -1248,11 +1248,11 @@ class CreateAccession(Resource):
         # Rule 1
         study_id_prefix = identifier_service.default_provisional_identifier.get_prefix()
         if not requested_study_id.startswith(study_id_prefix):
-            abort(401, message="Invalid request id format. Request id must start with %s" % study_id_prefix)
+            abort(401, message="Invalid provisional id format. Provisional id must start with %s" % study_id_prefix)
         # Rule 2
         UserService.get_instance().validate_user_has_curator_role(user_token)
         # Rule 3
-        # disable this rule for request id
+        # disable this rule for provisional id
         # Rule 4
         study_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, requested_study_id)
         if os.path.exists(study_location):

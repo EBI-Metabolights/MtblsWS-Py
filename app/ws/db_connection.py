@@ -543,7 +543,7 @@ def get_id_list_by_req_id(req_id: Union[None, str]):
     identifier = identifier_service.default_provisional_identifier
     parts = identifier.get_id_parts(req_id)
     if not parts or len(parts) < 2:
-        raise ValueError("Invalid request ID")
+        raise ValueError("Invalid provisional ID")
 
     query = "select id from studies where reserved_submission_id = %(val)s or id = %(unique_id)s;"
     postgresql_pool, conn, cursor = get_connection()
