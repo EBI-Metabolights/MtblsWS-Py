@@ -37,7 +37,7 @@ class UserService(object):
 
         try:
             with DBManager.get_instance().session_maker() as db_session:
-                base_query = db_session.query(User.id, User.username, User.role, User.status, User.apitoken)
+                base_query = db_session.query(User.id, User.username, User.role, User.status, User.apitoken, User.partner)
                 query = base_query.join(Study, User.studies)
                 user = query.filter(Study.acc == study_id, User.apitoken == user_token,
                                     User.status == UserStatus.ACTIVE.value).first()
@@ -116,7 +116,7 @@ class UserService(object):
 
         try:
             with DBManager.get_instance().session_maker() as db_session:
-                query = db_session.query(User.id, User.username, User.role, User.status, User.apitoken, User.password)
+                query = db_session.query(User.id, User.username, User.role, User.status, User.apitoken, User.password, User.partner)
                 db_user = filter_clause(query).first()
         except Exception as e:
             raise MetabolightsAuthorizationException(message=f"Invalid user or credential", exception=e)
@@ -161,6 +161,7 @@ class UserService(object):
             m_user.userName = m_user.userName.lower()
             m_user.fullName = m_user.firstName + " " + m_user.lastName
             m_user.role = UserRole(m_user.role).name
+            m_user.partner = True if m_user.partner else False
             m_user.status = UserStatus(m_user.status).name
             m_user.joinDate = datetime_to_int(m_user.joinDate)
             return m_user
