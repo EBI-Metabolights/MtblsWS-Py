@@ -316,16 +316,20 @@ class StudyStatus(Resource):
                 )
             update_curation_request(study_id, curation_request)
         else:
+            validated = False
+            message = ""
             if (
-                db_study_status.lower() != "provisional"
+                db_study_status.lower() == "provisional" 
             ):  # and study_status != 'Private':
-                raise MetabolightsException(
-                    http_code=403, message="You can not change the study to this status"
-                )
+                validated, message = self.has_validated(study_id)
 
             # validation_report: ValidationReportFile = get_validation_report(study_id=study_id)
-            validated, message = self.has_validated(study_id)
-            if validated:
+            
+            if validated or db_study_status.lower() in {"private", "in review"} :
+                if study_status.lower() == "public":
+                    isa_inv.public_release_date = new_date
+                    isa_study.public_release_date = new_date
+                    release_date = new_date
                 self.update_status(
                     study_id,
                     study_status,
@@ -342,17 +346,20 @@ class StudyStatus(Resource):
                     isa_study.public_release_date = new_date
                     release_date = new_date
             else:
-                if "not ready" in message:
-                    raise MetabolightsException(
-                        http_code=403,
-                        message="Study has not been validated yet. Validate your study, fix any problems before attempting to change study status.",
-                    )
-                else:
-                    raise MetabolightsException(
-                        http_code=403,
-                        message="There are validation errors. Fix any problems before attempting to change study status.",
-                    )
-
+                if message:
+                    if "not ready" in message:
+                        raise MetabolightsException(
+                            http_code=403,
+                            message="Study has not been validated yet. Validate your study, fix any problems before attempting to change study status.",
+                        )
+                    else:
+                        raise MetabolightsException(
+                            http_code=403,
+                            message="There are validation errors. Fix any problems before attempting to change study status.",
+                        )
+                raise MetabolightsException(
+                    http_code=403, message="You can not change the study to this status"
+                )
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True, save_assays_copy=True, save_samples_copy=True)
 
         current_study_status = types.StudyStatus.from_int(study.status)
