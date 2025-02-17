@@ -13,7 +13,7 @@ variables:
   SIF_LATEST_FILE_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}_sif/$CI_COMMIT_REF_NAME/$SIF_LATEST_FILE_NAME"
 workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "development"
+    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "new-workflow" 
 stages:
   - build
   - deploy
@@ -74,7 +74,7 @@ deploy_metablsws_py:
   variables:
     CHART_NAME: metablsws-py
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development"
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "new-workflow" 
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
@@ -84,7 +84,7 @@ deploy_common_worker:
   variables:
     CHART_NAME: metablsws-py-common-worker
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development"
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "new-workflow" 
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
@@ -94,7 +94,7 @@ deploy_datamover_proxy:
   variables:
     CHART_NAME: metablsws-py-datamover-proxy
   rules:
-  - if: $CI_COMMIT_BRANCH == "test"
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "new-workflow" 
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
