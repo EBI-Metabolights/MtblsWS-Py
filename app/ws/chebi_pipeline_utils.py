@@ -2299,12 +2299,12 @@ def check_unichem_api(inchi_key='BSYNRYMUTXBXSQ-UHFFFAOYSA-N'):
         print_log(' UNICHEM API failed ', mode='info')
     return status
 
-def processDbNames(name=None):
+def processDbNames(name:str=None):
     if name:
         if name.startswith('KEGG'):
             name = name.upper()
         elif name == 'LipidMaps':
-            name = name.uppper()
+            name = name.upper()
         elif name.startswith('Human Metabolome'):
             name = 'HMDB'
     return name
