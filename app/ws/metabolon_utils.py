@@ -28,7 +28,7 @@ from typing import Dict, List, Set, Tuple
 
 import numpy as np
 import pandas as pd
-from isatools.model import Assay, Investigation, OntologyAnnotation, Study
+from isatools.model import Assay, Investigation, OntologyAnnotation, Study, OntologySource
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
 from pandas import DataFrame
@@ -810,7 +810,6 @@ def create_investigation_file(study_id, study_location, assay_file_names: List[s
         isa_inv.identifier = study_id
         isa_study.filename = f"s_{study_id}.txt"
         source_references = {x.name: x for x in isa_inv.ontology_source_references}
-
         measurement_type = OntologyAnnotation(
             term="metabolite profiling",
             term_accession="http://purl.obolibrary.org/obo/OBI_0000366",

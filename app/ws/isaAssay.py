@@ -36,6 +36,7 @@ from isatools.model import (
     Protocol,
     Study,
     ProtocolParameter,
+    OntologySource
 )
 from app.utils import metabolights_exception_handler
 
@@ -783,12 +784,10 @@ def get_valid_assay_file_name(file_name, study_path):
 
 def get_new_assay(file_name, assay_platform, assay_type, ontology):
     assay = Assay(filename=file_name, technology_platform=assay_platform)
-
     # technologyType
     technology = OntologyAnnotation(
         term_accession="http://purl.obolibrary.org/obo/OBI_0000366",
         term="metabolite profiling",
-        term_source="OBI",
     )
     # measurementType
     measurement = assay.measurement_type
@@ -815,7 +814,7 @@ def get_new_assay(file_name, assay_platform, assay_type, ontology):
 
     try:
         result = AssaySchema().load(assay, partial=True)
-    except (ValidationError, Exception):
+    except Exception:
         abort(400)
 
     return assay, overall_technology
@@ -1430,7 +1429,7 @@ class AssaySamples(Resource):
             if len(sample_list) == 0:
                 logger.warning("No valid data provided.")
                 abort(400)
-        except (ValidationError, Exception) as err:
+        except Exception as err:
             logger.warning("Bad format JSON request." + str(err))
             abort(400, message=str(err))
 
