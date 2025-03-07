@@ -535,7 +535,7 @@ def MTBLS_statistics_update():
 
 def extractUntargetStudy(studyType=None, publicStudy=True):
     def extractNum(s):
-        num = re.findall("\d+", s)[0]
+        num = re.findall(r"\d+", s)[0]
         return int(num)
 
     # get all descriptor from studies

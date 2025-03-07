@@ -143,7 +143,7 @@ def update_or_create_jira_issue(user_token, is_curator):
                         curator + '|' + status_change + '|' + due_date)
 
             # Get an issue based on a study accession search pattern
-            search_param = "project='" + mtbls_project.key + "' AND summary  ~ '" + study_id + " \\\-\\\ 20*'"
+            search_param = "project='" + mtbls_project.key + "' AND summary  ~ '" + study_id + r" \\\-\\\ 20*'"
             issues = jira.search_issues(search_param)  # project = MetaboLights AND summary ~ 'MTBLS121 '
             new_summary = study_id + ' - ' + release_date.replace('-', '') + ' - ' + \
                           study_status + ' (' + user_name + ')'

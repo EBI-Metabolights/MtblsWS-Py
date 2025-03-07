@@ -320,7 +320,7 @@ without setting the "force" parameter to True""",
 
         deleted_files = []
         if file_location == "study":
-            pattern = re.compile("([asi]_.*\.txt)|(m_.*\.tsv)")
+            pattern = re.compile(r"([asi]_.*\.txt)|(m_.*\.tsv)")
             metadata_update = False
             for file in files:
                 f_name = file["name"]

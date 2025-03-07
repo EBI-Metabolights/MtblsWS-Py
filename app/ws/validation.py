@@ -793,7 +793,7 @@ class NewValidation(Resource):
                                                                           token=user_token, section=section)
         file_name = None
         logger.info("Validation params are - " + str(log_category) + " " + str(section))
-        pattern = re.compile(".validation_" + section + "\S+.json")
+        pattern = re.compile(".validation_" + section + r"\S+.json")
         
         internal_files_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
         readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_actual_root_path, study_id)
