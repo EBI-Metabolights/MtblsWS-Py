@@ -88,7 +88,7 @@ class CompareTsvFiles(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -132,15 +132,11 @@ class CompareTsvFiles(Resource):
         if user_token is None:
             abort(401)
 
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('filename1', help='TSV filename one')
-        parser.add_argument('filename2', help='TSV filename two')
-        assay_filename = None
+        # query validation        assay_filename = None
         if request.args:
-            args = parser.parse_args(req=request)
-            filename1 = args['filename1'] if args['filename1'] else None
-            filename2 = args['filename2']if args['filename2'] else None
+            
+            filename1 = request.args.get('filename1') if request.args.get('filename1') else None
+            filename2 = request.args.get('filename2')if request.args.get('filename2') else None
         if not filename1 or not filename2:
             logger.warning("Missing TSV filenames.")
             abort(404, message="Missing TSV filenames.")

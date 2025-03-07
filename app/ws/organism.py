@@ -72,7 +72,7 @@ class Organism(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -149,13 +149,9 @@ class Organism(Resource):
         # param validation
         if study_id is None:
             abort(404)
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('existing_char_name', help="Characteristics name")
-        parser.add_argument('existing_char_value', help="Characteristics value")
-        args = parser.parse_args()
-        existing_characteristics_name = args['existing_char_name']
-        existing_characteristics_value = args['existing_char_value']
+        # query validation        
+        existing_characteristics_name = request.args.get('existing_char_name')
+        existing_characteristics_value = request.args.get('existing_char_value')
         if existing_characteristics_name is None or existing_characteristics_value is None:
             abort(404)
         # User authentication
@@ -248,7 +244,7 @@ class Organism(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

@@ -101,20 +101,20 @@ class keggid(Resource):
     )
     def get(self):
         log_request(request)
-        parser = reqparse.RequestParser()
+        
 
-        parser.add_argument('studyID', help='Metabolights studyID')
+        
         studyID = None
         if request.args:
-            args = parser.parse_args(req=request)
-            studyID = args['studyID']
+            
+            studyID = request.args.get('studyID')
             if studyID:
                 studyID = studyID.strip().upper()
 
-        parser.add_argument('kegg_only', help="only return kegg IDs")
+        
         if request.args:
-            args = parser.parse_args(req=request)
-            kegg = args['kegg_only']
+            
+            kegg = request.args.get('kegg_only')
             if not kegg:
                 kegg_only = False
             elif kegg and kegg.lower() in ['true', '1']:
@@ -245,24 +245,24 @@ class fellaPathway(Resource):
     )
     def put(self):
         log_request(request)
-        parser = reqparse.RequestParser()
+        
 
-        parser.add_argument('studyID', help='Metabolights studyID')
+        
         studyID = None
         if request.args:
-            args = parser.parse_args(req=request)
-            studyID = args['studyID']
+            
+            studyID = request.args.get('studyID')
             if studyID:
                 studyID = studyID.strip().upper()
             else:
                 abort(400)
 
-        parser.add_argument('organism', help="study organism")
+        
 
         org = 'hsa'
         if request.args:
-            args = parser.parse_args(req=request)
-            organism = args['organism']
+            
+            organism = request.args.get('organism')
             if organism:
                 try:
                     org = get_kegg_organism_abbr(organism)

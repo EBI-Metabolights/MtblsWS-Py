@@ -81,7 +81,7 @@ class ValidationFile(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -137,7 +137,7 @@ class ValidationReport(Resource):
                 "default": "all"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -167,12 +167,12 @@ class ValidationReport(Resource):
     )
     def get(self, study_id):
         user_token = None
-        parser = reqparse.RequestParser()
-        parser.add_argument('level', help="Validation level")
+        
+        
         level = "all"
         if request.args:
-            args = parser.parse_args(req=request)
-            level = args['level']
+            
+            level = request.args.get('level')
             
         if level not in ("all", "error", "warning", "info", "success"):
             raise MetabolightsException(message="level is not valid.")
@@ -261,7 +261,7 @@ class ValidationProcess(Resource):
                 "default": True
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -301,12 +301,10 @@ class ValidationProcess(Resource):
 
         study_id = study_id.upper()
         
-        parser = reqparse.RequestParser()
-        parser.add_argument("force", help="force to start validation if it is not started.", location="args")
-        args = parser.parse_args()
+        
         force_to_start = True
-        if args and "force" in args and args["force"]:
-            force_to_start = False if args["force"].lower() == "false" else True
+        if args and "force" in args and request.args.get("force"):
+            force_to_start = False if request.args.get("force").lower() == "false" else True
             
         # param validation
         # is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
@@ -338,7 +336,7 @@ class StudyValidationTask(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -396,7 +394,7 @@ class StudyValidationTask(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -476,7 +474,7 @@ class OverrideValidation(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -588,7 +586,7 @@ class ValidationComment(Resource):
 
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -726,7 +724,7 @@ class NewValidation(Resource):
             },
 
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -772,21 +770,17 @@ class NewValidation(Resource):
         if not write_access:
             abort(403)
 
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('section', help="Validation section", location="args")
-        parser.add_argument('level', help="Validation message levels", location="args")
-        parser.add_argument('force_run', help="Validation message levels", location="args")
-        args = parser.parse_args()
-        section = args['section']
-        force_run = args['force_run']
+        # query validation        
+        
+        section = request.args.get('section')
+        force_run = request.args.get('force_run')
         if section is None or section == "":
             section = 'meta'
         if force_run is None:
             force_run = False
         if section:
             query = section.strip()
-        log_category = args['level']
+        log_category = request.args.get('level')
 
         log_categories = "error", "warning", "info", "success", "all"
         if log_category is None or log_category not in log_categories:

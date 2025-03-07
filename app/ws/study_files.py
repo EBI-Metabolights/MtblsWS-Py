@@ -103,7 +103,7 @@ class StudyFiles(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -132,19 +132,15 @@ class StudyFiles(Resource):
             user_token = request.headers["user_token"]
 
         # If false, only sync ISA-Tab metadata files
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("include_raw_data", help="Include raw data")
-        parser.add_argument("directory", help="List files in sub-directory")
-        include_raw_data = False
+        # query validation        include_raw_data = False
         directory = None
 
         if request.args:
-            args = parser.parse_args(req=request)
+            
             include_raw_data = (
-                False if args["include_raw_data"].lower() != "true" else True
+                False if request.args.get("include_raw_data").lower() != "true" else True
             )
-            directory = args["directory"] if args["directory"] else None
+            directory = request.args.get("directory") if request.args.get("directory") else None
 
         if directory and directory.startswith(os.sep):
             abort(
@@ -247,7 +243,7 @@ without setting the "force" parameter to True""",
                 "default": True,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -282,21 +278,17 @@ without setting the "force" parameter to True""",
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("files", help="files")
-        parser.add_argument("location", help="Location")
-        parser.add_argument("force", help="Remove active metadata files")
+        # query validation        
         file_location = "study"
         files = None
         always_remove = False
 
         # If false, only sync ISA-Tab metadata files
         if request.args:
-            args = parser.parse_args(req=request)
-            files = args["files"] if args["files"] else None
-            file_location = args["location"] if args["location"] else "study"
-            always_remove = False if args["force"].lower() != "true" else True
+            
+            files = request.args.get("files") if request.args.get("files") else None
+            file_location = request.args.get("location") if request.args.get("location") else "study"
+            always_remove = False if request.args.get("force").lower() != "true" else True
 
         if file_location not in ["study", "upload"]:
             abort(400, message="Location is invalid")
@@ -457,7 +449,7 @@ class StudyRawAndDerivedDataFiles(Resource):
                 "default": False,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -487,11 +479,7 @@ class StudyRawAndDerivedDataFiles(Resource):
             user_token = request.headers["user_token"]
 
         # If false, only sync ISA-Tab metadata files
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("search_pattern", help="Search pattern")
-        parser.add_argument("folder_match", help="Folder matches")
-        parser.add_argument("file_match", help="File matches")
+        # query validation        
         settings = get_study_settings()
 
         data_files_subfolder = settings.readonly_files_symbolic_link_name
@@ -499,19 +487,16 @@ class StudyRawAndDerivedDataFiles(Resource):
         file_match = False
         folder_match = False
         if request.args:
-            args = parser.parse_args(req=request)
-            file_match = True if args["file_match"].lower() == "true" else False
-            folder_match = True if args["folder_match"].lower() == "true" else False
+            
+            file_match = True if request.args.get("file_match").lower() == "true" else False
+            folder_match = True if request.args.get("folder_match").lower() == "true" else False
             if not folder_match and not file_match:
                 raise MetabolightsException(
                     http_code=401,
                     message="At least one of them should be True: file_match, folder_match",
                 )
-            search_pattern = (
-                f"{args['search_pattern']}"
-                if "search_pattern" in args and args["search_pattern"]
-                else search_pattern
-            )
+            search_pattern = request.args.get('search_pattern') if request.args.get("search_pattern") else search_pattern
+
             if (
                 ".." + os.path.sep in search_pattern
                 or "." + os.path.sep in search_pattern
@@ -653,7 +638,7 @@ class StudyRawAndDerivedDataFiles(Resource):
                 "default": False,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -689,25 +674,21 @@ class StudyRawAndDerivedDataFiles(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("files", help="files")
-        parser.add_argument("target_location", help="Target Location")
-        parser.add_argument("override", help="Override target file if it exists")
+        # query validation        
 
         target_location = None
         files = None
         override = False
         # If false, only sync ISA-Tab metadata files
         if request.args:
-            args = parser.parse_args(req=request)
-            files = args["files"] if args["files"] else None
+            
+            files = request.args.get("files") if request.args.get("files") else None
             target_location = (
-                args["target_location"] if args["target_location"] else None
+                request.args.get("target_location") if request.args.get("target_location") else None
             )
             override = (
                 True
-                if args["override"] and args["override"].lower() == "true"
+                if request.args.get("override") and request.args.get("override").lower() == "true"
                 else False
             )
 
@@ -785,7 +766,7 @@ class StudyRawAndDerivedDataFolder(Resource):
                 "default": "*",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -814,15 +795,11 @@ class StudyRawAndDerivedDataFolder(Resource):
             user_token = request.headers["user_token"]
 
         # If false, only sync ISA-Tab metadata files
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("search_pattern", help="Search pattern")
-
-        search_pattern = "*"
+        # query validation        search_pattern = "*"
 
         if request.args:
-            args = parser.parse_args(req=request)
-            search_pattern = args["search_pattern"] if args["search_pattern"] else "*"
+            
+            search_pattern = request.args.get("search_pattern") if request.args.get("search_pattern") else "*"
             if (
                 ".." + os.path.sep in search_pattern
                 or "." + os.path.sep in search_pattern
@@ -948,7 +925,7 @@ class StudyRawAndDerivedDataFolder(Resource):
                 "default": False,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -983,25 +960,21 @@ class StudyRawAndDerivedDataFolder(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("folders", help="folders")
-        parser.add_argument("target_location", help="Target Location")
-        parser.add_argument("override", help="Override target file if it exists")
+        # query validation        
 
         target_location = None
         folders = None
         override = False
         # If false, only sync ISA-Tab metadata files
         if request.args:
-            args = parser.parse_args(req=request)
-            folders = args["folders"] if args["folders"] else None
+            
+            folders = request.args.get("folders") if request.args.get("folders") else None
             target_location = (
-                args["target_location"] if args["target_location"] else None
+                request.args.get("target_location") if request.args.get("target_location") else None
             )
             override = (
                 True
-                if args["override"] and args["override"].lower() == "true"
+                if request.args.get("override") and request.args.get("override").lower() == "true"
                 else False
             )
 
@@ -1154,7 +1127,7 @@ class StudyFilesReuse(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1226,26 +1199,22 @@ class StudyFilesReuse(Resource):
         obfuscation_code = None
         if "obfuscation_code" in request.headers:
             obfuscation_code = request.headers["obfuscation_code"]
-
-        parser = reqparse.RequestParser()
-        parser.add_argument("force", help="Force writing files list schema json")
-        parser.add_argument("readonlyMode", help="Readonly Mode")
-        parser.add_argument("include_internal_files", help="Ignores internal files")
+        
         force_write = False
         include_internal_files = False
         if request.args:
-            args = parser.parse_args(req=request)
+            
             force_write = (
-                True if args["force"] and args["force"].lower() == "true" else False
+                True if request.args.get("force") and request.args.get("force").lower() == "true" else False
             )
             readonly_mode = (
                 True
-                if not args["readonlyMode"] or args["readonlyMode"].lower() == "true"
+                if not request.args.get("readonlyMode") or request.args.get("readonlyMode").lower() == "true"
                 else False
             )
-            if args["include_internal_files"]:
+            if request.args.get("include_internal_files"):
                 include_internal_files = (
-                    False if args["include_internal_files"].lower() != "true" else True
+                    False if request.args.get("include_internal_files").lower() != "true" else True
                 )
         settings = get_study_settings()
         study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
@@ -1451,7 +1420,7 @@ class CopyFilesFolders(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1506,17 +1475,17 @@ class CopyFilesFolders(Resource):
     #         user_token = request.headers["user_token"]
     #
     #     # query validation
-    #     parser = reqparse.RequestParser()
-    #     parser.add_argument('include_raw_data', help='Include raw data')
-    #     parser.add_argument('file_location', help='Alternative file location')
+    #     
+    #     
+    #     
     #     include_raw_data = False
     #     file_location = None
     #
     #     # If false, only sync ISA-Tab metadata files
     #     if request.args:
-    #         args = parser.parse_args(req=request)
-    #         include_raw_data = False if args['include_raw_data'].lower() != 'true' else True
-    #         file_location = args['file_location']
+    #         
+    #         include_raw_data = False if request.args.get('include_raw_data').lower() != 'true' else True
+    #         file_location = request.args.get('file_location')
     #
     #     # body content validation
     #     files = {}
@@ -1640,7 +1609,7 @@ class SyncFolder(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1677,13 +1646,13 @@ class SyncFolder(Resource):
             user_token = request.headers["user_token"]
 
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("directory_name", help="Alternative file location")
+        
+        
         directory_name = ""
         # If false, only sync ISA-Tab metadata files
         if request.args:
-            args = parser.parse_args(req=request)
-            directory_name = args["directory_name"]
+            
+            directory_name = request.args.get("directory_name")
 
         # check for access rights
         (
@@ -1754,7 +1723,7 @@ class SampleStudyFiles(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1909,7 +1878,7 @@ class UnzipFiles(Resource):
                 "default": True,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1945,18 +1914,14 @@ class UnzipFiles(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("files", help="files")
-        parser.add_argument("force", help="Remove zip files")
-        files = None
+        # query validation        files = None
         remove_zip = False
 
         # If false, only sync ISA-Tab metadata files
         if request.args:
-            args = parser.parse_args(req=request)
-            files = args["files"] if args["files"] else None
-            remove_zip = False if args["force"].lower() != "true" else True
+            
+            files = request.args.get("files") if request.args.get("files") else None
+            remove_zip = False if request.args.get("force").lower() != "true" else True
 
         # body content validation
         try:
@@ -2084,7 +2049,7 @@ class StudyFilesTree(Resource):
                 "default": "study",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -2132,28 +2097,21 @@ class StudyFilesTree(Resource):
         UserService.get_instance().validate_user_has_read_access(
             user_token=user_token, study_id=study_id, obfuscationcode=obfuscation_code
         )
-        parser = reqparse.RequestParser()
-        parser.add_argument(
-            "include_sub_dir", help="include files in all sub-directories"
-        )
-        parser.add_argument("directory", help="List files in a specific sub-directory")
-        parser.add_argument("location", help="File location")
-        parser.add_argument("include_internal_files", help="Ignores internal files")
         include_sub_dir = False
         directory = None
         location = "study"
         include_internal_files = True
         if request.args:
-            args = parser.parse_args(req=request)
-            if args["include_sub_dir"]:
+            
+            if request.args.get("include_sub_dir"):
                 include_sub_dir = (
-                    False if args["include_sub_dir"].lower() != "true" else True
+                    False if request.args.get("include_sub_dir").lower() != "true" else True
                 )
-            location = args["location"] if args["location"] else "study"
-            directory = args["directory"] if args["directory"] else None
-            if args["include_internal_files"]:
+            location = request.args.get("location") if request.args.get("location") else "study"
+            directory = request.args.get("directory") if request.args.get("directory") else None
+            if request.args.get("include_internal_files"):
                 include_internal_files = (
-                    False if args["include_internal_files"].lower() != "true" else True
+                    False if request.args.get("include_internal_files").lower() != "true" else True
                 )
         if location not in ["study", "upload"]:
             abort(401, message="Study location is not valid")
@@ -2259,11 +2217,20 @@ class FileList(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
+                "allowMultiple": False,
+            },
+            
+            {
+                "name": "obfuscation-code",
+                "description": "obfuscation code",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
                 "allowMultiple": False,
             },
         ],
@@ -2287,6 +2254,10 @@ class FileList(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
+        obfuscation_code = None
+        if "obfuscation_code" in request.headers:
+            obfuscation_code = request.headers["obfuscation_code"]
+
         if not obfuscation_code and not user_token:
             abort(
                 401,
@@ -2294,13 +2265,13 @@ class FileList(Resource):
             )
 
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("directory_name", help="Alternative file location")
+        
+        
         directory_name = ""
         # If false, only sync ISA-Tab metadata files
         if request.args:
-            args = parser.parse_args(req=request)
-            directory_name = args["directory_name"]
+            
+            directory_name = request.args.get("directory_name")
 
         # check for access rights
         (
@@ -2345,7 +2316,7 @@ class DeleteAsperaFiles(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

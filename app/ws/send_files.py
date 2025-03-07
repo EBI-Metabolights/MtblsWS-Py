@@ -21,7 +21,7 @@ import os
 import random
 from zipfile import ZipFile
 
-from flask import request, send_file, safe_join, make_response
+from flask import request, send_file, make_response
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from app.utils import metabolights_exception_handler
@@ -60,7 +60,7 @@ class SendFiles(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -105,14 +105,14 @@ class SendFiles(Resource):
             user_token = "public_access_only"
 
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('file', help='The file or sub-directory to download')
+        
+        
         file_name = None
         metadata_only = False
 
         if request.args:
-            args = parser.parse_args(req=request)
-            file_name = args['file'] if args['file'] else None
+            
+            file_name = request.args.get('file') if request.args.get('file') else None
 
         if file_name is None:
             logger.info('No file name given')
@@ -137,7 +137,7 @@ class SendFiles(Resource):
             file_name = files.rstrip("|")
 
         remove_file = False
-        safe_path = safe_join(study_metadata_location, file_name)
+        safe_path = os.path.join(study_metadata_location, file_name)
         zip_name = None
         try:
             download_folder_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, "temp")
@@ -151,7 +151,7 @@ class SendFiles(Resource):
                 remove_file = True
                 files = file_name.split('|')
                 for file in files:
-                    safe_path = safe_join(study_metadata_location, file)
+                    safe_path = os.path.join(study_metadata_location, file)
                     if os.path.isdir(safe_path):
                         for sub_file in recursively_get_files(safe_path):
                             f_name = sub_file.path.replace(study_metadata_location, '')
@@ -224,7 +224,7 @@ class SendFilesPrivate(Resource):
                 "allowEmptyValue": True,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -271,14 +271,14 @@ class SendFilesPrivate(Resource):
             obfuscation_code = request.headers["obfuscation_code"]
 
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('file', help='The file or sub-directory to download')
+        
+        
         file_name = None
         metadata_only = False
 
         if request.args:
-            args = parser.parse_args(req=request)
-            file_name = args['file'] if args['file'] else None
+            
+            file_name = request.args.get('file') if request.args.get('file') else None
 
         if file_name is None:
             logger.info('No file name given')
@@ -305,7 +305,7 @@ class SendFilesPrivate(Resource):
             file_name = files.rstrip("|")
 
         remove_file = False
-        safe_path = safe_join(study_metadata_location, file_name)
+        safe_path = os.path.join(study_metadata_location, file_name)
         zip_name = None
         try:
             download_folder_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, "temp")
@@ -319,7 +319,7 @@ class SendFilesPrivate(Resource):
                 remove_file = True
                 files = file_name.split('|')
                 for file in files:
-                    safe_path = safe_join(study_metadata_location, file)
+                    safe_path = os.path.join(study_metadata_location, file)
                     if os.path.isdir(safe_path):
                         for sub_file in recursively_get_files(safe_path):
                             f_name = sub_file.path.replace(study_metadata_location, '')

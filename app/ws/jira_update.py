@@ -47,7 +47,7 @@ class Jira(Resource):
         summary="Create (or update) Jira tickets for MetaboLights study curation (curator only)",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

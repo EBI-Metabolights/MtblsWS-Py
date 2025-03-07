@@ -1,4 +1,4 @@
-FROM python:3.8-slim-buster AS builder
+FROM python:3.12-slim-buster AS builder
 LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
 
 RUN apt-get clean && apt-get -y update && apt-get -y install build-essential python3-dev python3-pip libpq-dev libglib2.0-0 libsm6 libxrender1 libxext6
@@ -13,7 +13,7 @@ ENV POETRY_HOME=/opt/poetry
 WORKDIR /app-root
 
 RUN pip3 install --upgrade pip 
-RUN pip3 install poetry==1.6.1
+RUN pip3 install poetry==1.8.5
 RUN poetry --version
 
 COPY pyproject.toml .

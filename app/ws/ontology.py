@@ -103,12 +103,12 @@ class MtblsControlLists(Resource):
     )
     def get(self):
         log_request(request)
-        parser = reqparse.RequestParser()
+        
 
-        parser.add_argument('name', help="Control list name")
+        
 
-        args = parser.parse_args(req=request)
-        name = args['name'].strip() if args['name'] else None
+        
+        name = request.args.get('name').strip() if request.args.get('name') else None
         filepath = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
         mtbl_ontology: MetaboLightsOntology = load_ontology_file(filepath)
         return jsonify(mtbl_ontology.get_default_control_lists(name))
@@ -196,20 +196,12 @@ class Ontology(Resource):
     )
     def get(self):
         log_request(request)
-        parser = reqparse.RequestParser()
-
-        parser.add_argument('term', help="Ontology term")
-        parser.add_argument('branch', help='Starting branch of ontology')
-        parser.add_argument('mapping', help='Mapping approaches')
-        parser.add_argument('queryFields', help='query Fields')
-        parser.add_argument('ontology', help='ontology')
-
-        args = parser.parse_args(req=request)
-        term = parse_input(args['term'])
-        branch =  parse_input(args['branch'])
-        mapping = parse_input(args['mapping'])
-        queryFields = parse_set_str(parse_input(args['queryFields']))
-        ontologies = parse_set_str(parse_input(args['ontology']), lowercase=False)
+                
+        term = parse_input(request.args.get('term'))
+        branch =  parse_input(request.args.get('branch'))
+        mapping = parse_input(request.args.get('mapping'))
+        queryFields = parse_set_str(parse_input(request.args.get('queryFields')))
+        ontologies = parse_set_str(parse_input(request.args.get('ontology')), lowercase=False)
         if not term.startswith("http://") and not term.startswith("https://") and ":" in term:
             splitted_term = term.split(":")
             listed_ontologies = parse_set_str(splitted_term[0], lowercase=False)
@@ -242,7 +234,7 @@ class Ontology(Resource):
 
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -284,7 +276,7 @@ class Ontology(Resource):
     )
     def put(self):
         log_request(request)
-        parser = reqparse.RequestParser()
+        
 
         # User authentication
         user_token = None
@@ -353,13 +345,13 @@ class Placeholder(Resource):
     )
     def get(self):
         log_request(request)
-        parser = reqparse.RequestParser()
+        
 
         query = ''
-        parser.add_argument('query', help='data field to extract from studies')
+        
         if request.args:
-            args = parser.parse_args(req=request)
-            query = args['query']
+            
+            query = request.args.get('query')
             if query is None:
                 abort(400)
             if query:
@@ -416,7 +408,7 @@ class Placeholder(Resource):
 
         # Ranking the row according to studyIDs
         def extractNum(s):
-            num = re.findall("\d+", s)[0]
+            num = re.findall(r"\d+", s)[0]
             return int(num)
 
         df_connect['num'] = df_connect['studyID'].apply(extractNum)
@@ -459,13 +451,13 @@ class Placeholder(Resource):
     )
     def put(self):
         log_request(request)
-        parser = reqparse.RequestParser()
+        
 
         query = ''
-        parser.add_argument('query', help='data field to update')
+        
         if request.args:
-            args = parser.parse_args(req=request)
-            query = args['query']
+            
+            query = request.args.get('query')
             if query is None:
                 abort(400)
             if query:
@@ -959,13 +951,9 @@ class Cellosaurus(Resource):
     )
     def get(self):
         log_request(request)
-        parser = reqparse.RequestParser()
-
         query = ''
-        parser.add_argument('query', help='Query to search Cellosaurus')
         if request.args:
-            args = parser.parse_args(req=request)
-            query = args['query']
+            query = request.args.get('query')
             if query is None:
                 abort(400)
             if query:

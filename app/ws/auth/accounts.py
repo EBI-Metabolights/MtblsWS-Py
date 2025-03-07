@@ -41,7 +41,7 @@ class UserAccounts(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "Admin/Curator API token",
                 "paramType": "header",
                 "type": "string",
@@ -69,20 +69,16 @@ class UserAccounts(Resource):
         ]
     )
     @metabolights_exception_handler
-    def get(self):
+    def get(self):        
         
-        parser = reqparse.RequestParser()
-        parser.add_argument('user_name', help="The row number of the cell to update (exclude header)")
-        parser.add_argument('email', help="The column name of the cell to update")
-        parser.add_argument('user_id', help="The column name of the cell to update")
         user_name = None
         email = None
         user_id = None
         if request.args:
-            args = parser.parse_args(req=request)
-            user_name = args['user_name']
-            email = args['email']
-            user_id = args['user_id']
+            
+            user_name = request.args.get('user_name')
+            email = request.args.get('email')
+            user_id = request.args.get('user_id')
 
         user_token = None
         if "user_token" in request.headers:
@@ -135,7 +131,7 @@ class UserAccounts(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "Admin/Curator API token",
                 "paramType": "header",
                 "type": "string",
@@ -247,7 +243,7 @@ class UserAccounts(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "Admin/Curator API token",
                 "paramType": "header",
                 "type": "string",
@@ -344,7 +340,7 @@ class UserAccounts(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "Admin/Curator API token",
                 "paramType": "header",
                 "type": "string",
@@ -378,13 +374,13 @@ class UserAccounts(Resource):
         email = None
         user_id = None
         if "user_name" in request.args:
-            user_name = request.args['user_name']
+            user_name = request.args.get('user_name')
         
         if "email" in request.args:
-            email = request.args['email']
+            email = request.args.get('email')
             
         if "user_id" in request.args:
-            user_id = request.args['user_id']
+            user_id = request.args.get('user_id')
 
         user_token = None
         if "user_token" in request.headers:

@@ -32,6 +32,7 @@ from app.ws.mm_models import *
 from app.ws.models import Investigation_api_model, serialize_investigation
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import delete_column_from_tsv_file, log_request, add_ontology_to_investigation, read_tsv, update_ontolgies_in_isa_tab_sheets, write_tsv
+import logging 
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -60,7 +61,7 @@ class IsaJsonStudy(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -130,7 +131,7 @@ class StudyTitle(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -205,7 +206,7 @@ class StudyTitle(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -324,7 +325,7 @@ class StudyReleaseDate(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -442,7 +443,7 @@ class StudyMetaInfo(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -506,7 +507,7 @@ class StudyDescription(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -579,7 +580,7 @@ class StudyDescription(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -747,7 +748,7 @@ class StudyContacts(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -808,10 +809,8 @@ class StudyContacts(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('email', help="Contact's email")
-        args = parser.parse_args()
-        email = args['email']
+        
+        email = request.args.get('email')
         # No email param allowed, just to prevent confusion with UPDATE
         if email:
             abort(400)
@@ -911,7 +910,7 @@ class StudyContacts(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -969,16 +968,12 @@ class StudyContacts(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
-        parser = reqparse.RequestParser()
-        parser.add_argument('email', help="Contact's email")
-        parser.add_argument('full_name', help="Contact's first and last name")
         email = None
         full_name = None
         if request.args:
-            args = parser.parse_args(req=request)
-            email = args['email']
-            full_name = args['full_name']
+            
+            email = request.args.get('email')
+            full_name = request.args.get('full_name')
 
         logger.info('Getting Contacts %s for Study %s', email, study_id)
         # check for access rights
@@ -1060,7 +1055,7 @@ class StudyContacts(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1133,13 +1128,9 @@ class StudyContacts(Resource):
         # param validation
         if study_id is None:
             abort(404)
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('email', help="Contact's email")
-        parser.add_argument('full_name', help="Contact's first and last name")
-        args = parser.parse_args()
-        email = args['email']
-        full_name = args['full_name']
+        # query validation        
+        email = request.args.get('email')
+        full_name = request.args.get('full_name')
         if email is None and full_name is None:
             abort(404)
 
@@ -1226,7 +1217,7 @@ class StudyContacts(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1290,13 +1281,9 @@ class StudyContacts(Resource):
         # param validation
         if study_id is None:
             abort(404)
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('email', help="Contact's email", location="args")
-        parser.add_argument('full_name', help="Contact's first and last name")
-        args = parser.parse_args()
-        email = args['email']
-        full_name = args['full_name']
+        # query validation        
+        email = request.args.get('email')
+        full_name = request.args.get('full_name')
         if email is None and full_name is None:
             abort(404)
 
@@ -1395,7 +1382,7 @@ class StudyProtocols(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1456,10 +1443,8 @@ class StudyProtocols(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help="Protocol name")
-        args = parser.parse_args()
-        obj_name = args['name'].lower() if args['name'] else None
+        
+        obj_name = request.args.get('name').lower() if request.args.get('name') else None
         # No protocol param allowed, just to prevent confusion with UPDATE
         if obj_name:
             abort(400)
@@ -1531,7 +1516,7 @@ class StudyProtocols(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1581,12 +1566,12 @@ class StudyProtocols(Resource):
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help='Protocol name')
+        
+        
         obj_name = None
         if request.args:
-            args = parser.parse_args(req=request)
-            obj_name = args['name'].lower() if args['name'] else None
+            
+            obj_name = request.args.get('name').lower() if request.args.get('name') else None
 
         logger.info('Getting Study protocols for %s', study_id)
         # check for access rights
@@ -1635,7 +1620,7 @@ class StudyProtocols(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1702,15 +1687,11 @@ class StudyProtocols(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help="Protocol name", location="args")
-        parser.add_argument('force', help="Force remove protocol", location="args")
-
         force_remove_protocols = True
-        args = parser.parse_args()
-        force_remove = args['force']
+        
+        force_remove = request.args.get('force')
         force_remove_protocols = False if force_remove.lower() != 'true' else True
-        prot_name = args['name'] if args['name'] else None
+        prot_name = request.args.get('name') if request.args.get('name') else None
 
         if not prot_name:
             abort(404)
@@ -1816,7 +1797,7 @@ class StudyProtocols(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1881,10 +1862,8 @@ class StudyProtocols(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help="Protocol name")
-        args = parser.parse_args()
-        obj_name = args['name'].lower() if args['name'] else None
+        
+        obj_name = request.args.get('name').lower() if request.args.get('name') else None
         if not obj_name:
             abort(404)
         # User authentication
@@ -1971,7 +1950,7 @@ class StudyFactors(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -2032,10 +2011,8 @@ class StudyFactors(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help="Study Factor name")
-        args = parser.parse_args()
-        obj_name = args['name'].lower() if args['name'] else None
+        
+        obj_name = request.args.get('name').lower() if request.args.get('name') else None
         # No params allowed, just to prevent confusion with UPDATE
         if obj_name:
             abort(400)
@@ -2118,7 +2095,7 @@ class StudyFactors(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -2168,12 +2145,12 @@ class StudyFactors(Resource):
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help='Factor name')
+        
+        
         obj_name = None
         if request.args:
-            args = parser.parse_args(req=request)
-            obj_name = args['name'].lower() if args['name'] else None
+            
+            obj_name = request.args.get('name').lower() if request.args.get('name') else None
 
         logger.info('Getting Study Factors for %s', study_id)
         # check for access rights
@@ -2220,7 +2197,7 @@ class StudyFactors(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -2276,10 +2253,8 @@ class StudyFactors(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help="Factor name", location="args")
-        args = parser.parse_args()
-        obj_name = args['name'] if args['name'] else None
+        
+        obj_name = request.args.get('name') if request.args.get('name') else None
         if not obj_name:
             abort(404)
         # User authentication
@@ -2372,7 +2347,7 @@ class StudyFactors(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -2441,10 +2416,8 @@ class StudyFactors(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help="Factor name")
-        args = parser.parse_args()
-        factor_name = args['name']
+        
+        factor_name = request.args.get('name')
         if factor_name is None:
             abort(404)
         # User authentication
@@ -2547,7 +2520,7 @@ class StudyDescriptors(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -2608,10 +2581,8 @@ class StudyDescriptors(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('term', help="Study Design Descriptor annotation value")
-        args = parser.parse_args()
-        obj_term = args['term']
+        
+        obj_term = request.args.get('term')
         # No params allowed, just to prevent confusion with UPDATE
         if obj_term:
             abort(400)
@@ -2690,7 +2661,7 @@ class StudyDescriptors(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -2740,12 +2711,12 @@ class StudyDescriptors(Resource):
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('annotationValue', help='Design Descriptor value')
+        
+        
         obj_term = None
         if request.args:
-            args = parser.parse_args(req=request)
-            obj_term = args['annotationValue']
+            
+            obj_term = request.args.get('annotationValue')
 
         logger.info('Getting Study Design Descriptors for %s', study_id)
         # check for access rights
@@ -2793,7 +2764,7 @@ class StudyDescriptors(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -2849,10 +2820,8 @@ class StudyDescriptors(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('term', help="Design Descriptor annotation value", location="args")
-        args = parser.parse_args()
-        obj_term = args['term']
+        
+        obj_term = request.args.get('term')
         if obj_term is None:
             abort(404)
         # User authentication
@@ -2924,7 +2893,7 @@ class StudyDescriptors(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -2989,10 +2958,8 @@ class StudyDescriptors(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('term', help="Design Descriptor annotation value")
-        args = parser.parse_args()
-        descriptor_term = args['term']
+        
+        descriptor_term = request.args.get('term')
         if descriptor_term is None:
             abort(404)
         # User authentication
@@ -3083,7 +3050,7 @@ class StudyPublications(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -3144,10 +3111,8 @@ class StudyPublications(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('title', help="Study Publication title")
-        args = parser.parse_args()
-        publication_title = args['title']
+        
+        publication_title = request.args.get('title')
         # No params allowed, just to prevent confusion with UPDATE
         if publication_title:
             abort(400)
@@ -3255,7 +3220,7 @@ class StudyPublications(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -3306,12 +3271,12 @@ class StudyPublications(Resource):
             user_token = request.headers['user_token']
         # query validation
         # ToDo add authors, PubMedID and DOI filters
-        parser = reqparse.RequestParser()
-        parser.add_argument('title', help='Publication title')
+        
+        
         obj_title = None
         if request.args:
-            args = parser.parse_args(req=request)
-            obj_title = args['title']
+            
+            obj_title = request.args.get('title')
 
         logger.info('Getting Study Publications for %s', study_id)
         # check for access rights
@@ -3359,7 +3324,7 @@ class StudyPublications(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -3415,10 +3380,8 @@ class StudyPublications(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('title', help="Publication title", location="args")
-        args = parser.parse_args()
-        publication_title = args['title']
+        
+        publication_title = request.args.get('title')
         if publication_title is None:
             abort(404)
         # User authentication
@@ -3490,7 +3453,7 @@ class StudyPublications(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -3555,10 +3518,8 @@ class StudyPublications(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('title', help="Publication title")
-        args = parser.parse_args()
-        publication_title = args['title']
+        
+        publication_title = request.args.get('title')
         if publication_title is None:
             abort(404)
         # User authentication
@@ -3640,7 +3601,7 @@ class StudySources(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -3700,16 +3661,12 @@ class StudySources(Resource):
         user_token = None
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help='Study Sample name')
-        parser.add_argument('list_only', help='List names only')
-        list_only = True
+        # query validation        list_only = True
         obj_name = None
         if request.args:
-            args = parser.parse_args(req=request)
-            obj_name = args['name'].lower() if args['name'] else None
-            list_only = False if args['list_only'].lower() != 'true' else True
+            
+            obj_name = request.args.get('name').lower() if request.args.get('name') else None
+            list_only = False if request.args.get('list_only').lower() != 'true' else True
 
         logger.info('Getting Study Sources for %s', study_id)
         # check for access rights
@@ -3760,7 +3717,7 @@ class StudySources(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -3825,10 +3782,8 @@ class StudySources(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help="Study Source name")
-        args = parser.parse_args()
-        obj_name = args['name'].lower() if args['name'] else None
+        
+        obj_name = request.args.get('name').lower() if request.args.get('name') else None
         if not obj_name:
             abort(404)
         # User authentication
@@ -3908,7 +3863,7 @@ class StudySamples(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -3969,10 +3924,8 @@ class StudySamples(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help="Study Sample name")
-        args = parser.parse_args()
-        obj_name = args['name'].lower() if args['name'] else None
+        
+        obj_name = request.args.get('name').lower() if request.args.get('name') else None
         # No params allowed, just to prevent confusion with UPDATE
         if obj_name:
             abort(400)
@@ -4095,7 +4048,7 @@ class StudySamples(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -4155,16 +4108,12 @@ class StudySamples(Resource):
         user_token = None
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help='Study Sample name')
-        parser.add_argument('list_only', help='List names only')
-        list_only = True
+        # query validation        list_only = True
         obj_name = None
         if request.args:
-            args = parser.parse_args(req=request)
-            obj_name = args['name'].lower() if args['name'] else None
-            list_only = False if args['list_only'].lower() != 'true' else True
+            
+            obj_name = request.args.get('name').lower() if request.args.get('name') else None
+            list_only = False if request.args.get('list_only').lower() != 'true' else True
 
         logger.info('Getting Samples for %s', study_id)
         # check for access rights
@@ -4214,7 +4163,7 @@ class StudySamples(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -4279,15 +4228,15 @@ class StudySamples(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help='Study Sample name')
+        
+        
         obj_name = None
-        parser.add_argument('list_only', help='List names only')
+        
         list_only = True
         if request.args:
-            args = parser.parse_args(req=request)
-            obj_name = args['name'].lower() if args['name'] else None
-            list_only = True if args['list_only'].lower() == 'true' else False
+            
+            obj_name = request.args.get('name').lower() if request.args.get('name') else None
+            list_only = True if request.args.get('list_only').lower() == 'true' else False
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -4402,7 +4351,7 @@ class StudySamples(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -4477,7 +4426,7 @@ class StudyOtherMaterials(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -4538,11 +4487,9 @@ class StudyOtherMaterials(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help="Material Sample name")
-        args = parser.parse_args()
-        obj_name = args['name']
-        obj_name = args['name'].lower() if args['name'] else None
+        
+        obj_name = request.args.get('name')
+        obj_name = request.args.get('name').lower() if request.args.get('name') else None
         # No params allowed, just to prevent confusion with UPDATE
         if obj_name:
             abort(400)
@@ -4620,7 +4567,7 @@ class StudyOtherMaterials(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -4680,16 +4627,12 @@ class StudyOtherMaterials(Resource):
         user_token = None
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help='Study Other Materials name')
-        parser.add_argument('list_only', help='List names only')
-        list_only = True
+        # query validation        list_only = True
         obj_name = None
         if request.args:
-            args = parser.parse_args(req=request)
-            obj_name = args['name'].lower() if args['name'] else None
-            list_only = False if args['list_only'].lower() != 'true' else True
+            
+            obj_name = request.args.get('name').lower() if request.args.get('name') else None
+            list_only = False if request.args.get('list_only').lower() != 'true' else True
 
         logger.info('Getting Other Materials for %s', study_id)
         # check for access rights
@@ -4740,7 +4683,7 @@ class StudyOtherMaterials(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -4796,10 +4739,8 @@ class StudyOtherMaterials(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help="Material name", location="args")
-        args = parser.parse_args()
-        obj_name = args['name'].lower() if args['name'] else None
+        
+        obj_name = request.args.get('name').lower() if request.args.get('name') else None
         if not obj_name:
             abort(404)
         # User authentication
@@ -4860,7 +4801,7 @@ class StudyOtherMaterials(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -4925,10 +4866,8 @@ class StudyOtherMaterials(Resource):
         if study_id is None:
             abort(404)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help="Study Material name")
-        args = parser.parse_args()
-        obj_name = args['name'].lower() if args['name'] else None
+        
+        obj_name = request.args.get('name').lower() if request.args.get('name') else None
         if not obj_name:
             abort(404)
         # User authentication
@@ -5035,7 +4974,7 @@ class StudyProcesses(Resource):
                 "default": True
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -5075,19 +5014,15 @@ class StudyProcesses(Resource):
         user_token = None
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help='Study Processes name')
-        parser.add_argument('prot_name', help='Protocol name')
-        parser.add_argument('list_only', help='List names only')
+        # query validation        
         list_only = True
         obj_name = None
         prot_name = None
         if request.args:
-            args = parser.parse_args(req=request)
-            obj_name = args['name'].lower() if args['name'] else None
-            prot_name = args['prot_name'].lower() if args['prot_name'] else None
-            list_only = False if args['list_only'].lower() != 'true' else True
+            
+            obj_name = request.args.get('name').lower() if request.args.get('name') else None
+            prot_name = request.args.get('prot_name').lower() if request.args.get('prot_name') else None
+            list_only = False if request.args.get('list_only').lower() != 'true' else True
 
         logger.info('Getting Study Processes for %s', study_id)
         # check for access rights
@@ -5145,7 +5080,7 @@ class StudySubmitters(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -5249,7 +5184,7 @@ class StudySubmitters(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

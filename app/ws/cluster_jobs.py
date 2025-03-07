@@ -168,7 +168,7 @@ class LsfUtils(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -206,14 +206,10 @@ class LsfUtils(Resource):
 
         if user_token is None:
             abort(401)
-
-        parser = reqparse.RequestParser()
-        parser.add_argument('job_id', help="LSF job to terminate", location="args")
-        parser.add_argument('queue', help="Queue in which Job running", location="args")
         if request.args:
-            args = parser.parse_args()
-            lsf_job_id = args['job_id']
-            queue = args['queue']
+            
+            lsf_job_id = request.args.get('job_id')
+            queue = request.args.get('queue')
 
         if lsf_job_id is None:
             abort(404)
@@ -247,7 +243,7 @@ class LsfUtils(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -288,14 +284,10 @@ class LsfUtils(Resource):
         study_status = get_permissions('MTBLS2', user_token)
         if not is_curator:
             abort(403)
-
-        parser = reqparse.RequestParser()
-        parser.add_argument('queue', help="queue on which job to be submitted")
-        parser.add_argument('job_name', help="job name to be queried")
         if request.args:
-            args = parser.parse_args(req=request)
-            queue = args['queue']
-            job_name = args['job_name']
+            
+            queue = request.args.get('queue')
+            job_name = request.args.get('job_name')
 
         status, message, job_out, job_err = list_jobs(queue, job_name)
 
@@ -340,7 +332,7 @@ class LsfUtils(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -378,18 +370,14 @@ class LsfUtils(Resource):
 
         if user_token is None:
             abort(401)
-
-        parser = reqparse.RequestParser()
-        parser.add_argument('command', help="Command to run on the LSF cluster")
-        parser.add_argument('params', help="Params with command to run on the LSF cluster")
-        parser.add_argument('email', help="email to receive output")
-        parser.add_argument('queue', help="queue on which job to be submitted")
+        
+        
         if request.args:
-            args = parser.parse_args(req=request)
-            command = args['command']
-            params = args['params']
-            email = args['email']
-            queue = args['queue']
+            
+            command = request.args.get('command')
+            params = request.args.get('params')
+            email = request.args.get('email')
+            queue = request.args.get('queue')
 
         if command is None:
             abort(404)

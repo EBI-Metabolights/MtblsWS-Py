@@ -46,7 +46,7 @@ class StudyJsonExporter(Resource):
         summary="Export all studies in a folder (Curator only)",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "user token",
                 "paramType": "header",
                 "type": "string",
@@ -199,7 +199,7 @@ class PublicStudyJsonExporter(Resource):
         summary="Export all public studies in a folder (Curator only)",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "user token",
                 "paramType": "header",
                 "type": "string",

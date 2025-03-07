@@ -26,7 +26,6 @@ from marshmallow import ValidationError
 
 from app.ws.db_connection import create_user, update_user, get_user
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.misc_utilities.request_parsers import RequestParsers
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import log_request, val_email, get_new_password_and_api_token
 
@@ -56,7 +55,7 @@ class UserManagement(Resource):
     Username will be set to the same as the email. A password will be emailed to the email address''',
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -172,7 +171,7 @@ class UserManagement(Resource):
     Username will be set to the same as the email.''',
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -296,7 +295,7 @@ class UserManagement(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -348,11 +347,8 @@ class UserManagement(Resource):
 
         # pull username from query params.
         username = None
-
-        user_parser = RequestParsers.username_parser()
         if request.args:
-            args = user_parser.parse_args(req=request)
-            username = args['username']
+            username = request.args.get('username')
 
         # username has not been properly provided, abort with code 400 (bad request).
         if username is None:

@@ -29,6 +29,7 @@ from app.tasks.common_tasks.curation_tasks.chebi_pipeline import run_chebi_pipel
 from app.ws.chebi_pipeline_utils import check_maf_for_pipes, print_log
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import write_audit_files, get_all_files_from_filesystem
+from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.utils import get_assay_file_list
 from app.ws.redis.redis import get_redis_server
@@ -86,7 +87,7 @@ class ChEBIPipeLine(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -128,8 +129,8 @@ class ChEBIPipeLine(Resource):
         user = UserService.get_instance().validate_user_has_curator_role(user_token)
         email = user['username']
         
-        annotation_file_name = request.args['annotation_file_name']
-        classyfire_search = request.args['classyfire_search']
+        annotation_file_name = request.args.get('annotation_file_name')
+        classyfire_search = request.args.get('classyfire_search')
         update_study_maf = request.args.get('update_study_maf')
 
         classyfire_search = True if classyfire_search == 'true' else False
@@ -177,7 +178,7 @@ class CheckCompounds(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -214,10 +215,8 @@ class CheckCompounds(Resource):
         UserService.get_instance().validate_user_has_read_access(user_token)
 
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('compound_names', help='compound_names')
-        args = parser.parse_args()
-        compound_names = args['compound_names']
+        
+        compound_names = request.args.get('compound_names')
 
         return {"success": compound_names}
 
@@ -238,7 +237,7 @@ class ChEBIPipeLineLoad(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -272,10 +271,8 @@ class ChEBIPipeLineLoad(Resource):
             user_token = request.headers["user_token"]
         UserService.get_instance().validate_user_has_curator_role(user_token)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('sdf_file_name', help="SDF File to load into ChEBI", location="args")
-        args = parser.parse_args()
-        sdf_file_name = args['sdf_file_name']
+        
+        sdf_file_name = request.args.get('sdf_file_name')
 
         shell_script = get_settings().chebi.pipeline.chebi_upload_script
         command = shell_script
@@ -314,13 +311,14 @@ class SplitMaf(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
             }
+            
         ],
         responseMessages=[
             {
@@ -360,12 +358,11 @@ class SplitMaf(Resource):
         settings = get_settings()
         study_metdata_location = os.path.join(settings.study.mounted_paths.study_metadata_files_root_path, study_id)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('annotation_file_name', help="Metabolite Annotation File", location="args")
-        args = parser.parse_args()
+        study = StudyService.get_instance().get_study_by_acc (study_id)
+        obfuscation_code = study.obfuscationcode
         annotation_file_name = None
-        if args['annotation_file_name']:
-            annotation_file_name = args['annotation_file_name'].strip()
+        if request.args.get('annotation_file_name'):
+            annotation_file_name = request.args.get('annotation_file_name').strip()
 
         if not annotation_file_name:
             # Loop through all m_*_v2_maf.tsv files

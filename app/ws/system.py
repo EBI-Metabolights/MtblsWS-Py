@@ -13,7 +13,7 @@ class SystemTestEmail(Resource):
         summary="Send Test email",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "Admin/Curator API token",
                 "paramType": "header",
                 "type": "string",
