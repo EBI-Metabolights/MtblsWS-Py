@@ -179,7 +179,7 @@ class UserManagement(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "existing_user_name",
+                "name": "existing-user-name",
                 "description": "Existing username in MetaboLights",
                 "paramType": "header",
                 "type": "string",

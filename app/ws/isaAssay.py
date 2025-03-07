@@ -140,7 +140,7 @@ class StudyAssayDelete(Resource):
                 "dataType": "string",
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -513,7 +513,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                 "allowMultiple": False,
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -1348,7 +1348,7 @@ class AssaySamples(Resource):
                 "default": True,
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -1965,7 +1965,7 @@ class StudySampleTemplate(Resource):
                 request.args.get("sample_type").lower() if request.args.get("sample_type") else "minimum"
             )
 
-            if args and "force" in args and request.args.get("force"):
+            if request.args and request.args.get("force"):
                 force_override = True if request.args.get("force").lower() == "true" else False
 
         logger.info("Init Sample for %s; Type %s", study_id, sampleType)

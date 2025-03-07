@@ -229,7 +229,7 @@ class OneTimeTokenValidation(Resource):
         notes="Get current JWT token from one time token",
         parameters=[
             {
-                "name": "one_time_token",
+                "name": "one-time-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

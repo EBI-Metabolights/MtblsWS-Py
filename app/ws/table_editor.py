@@ -50,7 +50,7 @@ logger = logging.getLogger('wslog')
 
 
 def insert_row(idx, df, df_insert):
-    return df.iloc[:idx, ].append(df_insert, ignore_index=True).append(df.iloc[idx:, ]).reset_index(drop=True)
+    return pd.concat([df.iloc[:idx, ], df_insert, df.iloc[idx:, ]], ignore_index=True).reset_index(drop=True)
 
 def filter_dataframe(filename: str, df: pd.DataFrame, df_data_dict, df_header) -> pd.DataFrame:
     if filename.startswith("m_") and filename.endswith(".tsv"):
@@ -629,7 +629,7 @@ class ColumnsRows(Resource):
                              + cell_value + ", row: " + row_index + ", column: " + column + ". " + str(e))
                 abort(417, message="(ValueError) Unable to find the required 'value', 'row' and 'column' values. Value: "
                       + cell_value + ", row: " + row_index + ", column: " + column)
-            except IndexError:
+            except IndexError as e:
                 logger.error("(IndexError) Unable to find the required 'value', 'row' and 'column' values. Value: "
                              + cell_value + ", row: " + row_index + ", column: " + column + ". " + str(e))
                 abort(417, message="(IndexError) Unable to find the required 'value', 'row' and 'column' values. Value: "
@@ -811,7 +811,7 @@ class AddRows(Resource):
                     complete_row.update(row)
                     row = complete_row
                     line = pd.DataFrame(row, index=[start_index])
-                    file_df = file_df.append(line, ignore_index=False)
+                    file_df = pd.concat([file_df, line], ignore_index=False)
                     file_df = file_df.sort_index().reset_index(drop=True)
                     start_index += 1
 
@@ -1234,7 +1234,7 @@ class GetTsvFile(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "obfuscation_code",
+                "name": "obfuscation-code",
                 "description": "obfuscation code of study",
                 "paramType": "header",
                 "type": "string",

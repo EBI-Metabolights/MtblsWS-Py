@@ -1135,7 +1135,7 @@ class StudyFilesReuse(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "obfuscation_code",
+                "name": "obfuscation-code",
                 "description": "obfuscation code of study",
                 "paramType": "header",
                 "type": "string",
@@ -2057,7 +2057,7 @@ class StudyFilesTree(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "obfuscation_code",
+                "name": "obfuscation-code",
                 "description": "Study obfuscation code",
                 "paramType": "header",
                 "type": "string",

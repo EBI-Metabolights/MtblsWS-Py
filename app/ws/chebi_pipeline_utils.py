@@ -453,7 +453,7 @@ def get_sample_details(study_id, user_token, study_location):
     all_orgs_with_index = []
     for idx, sample in sample_df.iterrows():
         try:
-            org_term = sample[organism_pos + 2]
+            org_term = sample.iloc[organism_pos + 2]
             org = sample['Characteristics[Organism]']
             org = unidecode(org)
             if org_term != '':
@@ -465,7 +465,7 @@ def get_sample_details(study_id, user_token, study_location):
             org = ""
 
         try:
-            org_part_term = sample[organism_part_pos + 2]
+            org_part_term = sample.iloc[organism_part_pos + 2]
             org_part = sample['Characteristics[Organism part]']
             org_part = unidecode(org_part)
             if org_part_term != '':
@@ -481,7 +481,7 @@ def get_sample_details(study_id, user_token, study_location):
         try:
             variant = sample['Characteristics[Variant]']  # There may not always be an ontology for this, so two calls
             variant = unidecode(variant)
-            variant_part_term = sample[variant_pos + 2]
+            variant_part_term = sample.iloc[variant_pos + 2]
             if variant_part_term != '':
                 variant_onto = ' [' + convert_to_chebi_onto(variant_part_term) + ']'
                 variant = variant + variant_onto
@@ -529,7 +529,7 @@ def populate_sample_rows(pubchem_df, study_id, user_token, study_location):
     org_part_pos = newdf.columns.get_loc('ORGANISM_PART')
     strain_pos = newdf.columns.get_loc('STRAIN')
     for idx, row in newdf.iterrows():  # Loop and add the different unique sample rows
-        if row[0] == "" and all_organisms and len(all_organisms) > idx:  # Only add if database is not known and sample file is valid.
+        if row.iloc[0] == "" and all_organisms and len(all_organisms) > idx:  # Only add if database is not known and sample file is valid.
             s_row = all_organisms[idx]
             org_parts = s_row.split('|')
             newdf.iloc[idx, [org_pos, org_part_pos, strain_pos]] = org_parts[0], org_parts[1], org_parts[2]
@@ -560,7 +560,7 @@ def unique_list(l):
 
 
 def get_cas_from_synonyms(synonyms):
-    pattern = re.compile("CAS-\S")
+    pattern = re.compile(r"CAS-\S")
     result = unique_list(synonyms.split(';'))
     for i in result:
         if pattern.match(i):

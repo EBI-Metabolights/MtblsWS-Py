@@ -68,7 +68,7 @@ class IsaInvestigation(Resource):
                 "default": True
             },
             {
-                "name": "obfuscation_code",
+                "name": "obfuscation-code",
                 "description": "Study obfuscation code",
                 "paramType": "header",
                 "type": "string",
@@ -206,7 +206,7 @@ Please use the GET method above to retrieve the structure of your study prior to
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",

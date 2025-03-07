@@ -107,7 +107,7 @@ class Organism(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",

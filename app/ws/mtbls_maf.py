@@ -61,7 +61,7 @@ def get_table_header(table_df):
 
 
 def insert_row(idx, df, df_insert):
-    return df.iloc[:idx, ].append(df_insert, ignore_index=True).append(df.iloc[idx:, ]).reset_index(drop=True)
+    return  pd.concat([df.iloc[:idx, ], df_insert, df.iloc[idx:, ]], ignore_index=True).reset_index(drop=True)
 
 
 class MtblsMAFSearch(Resource):

@@ -442,7 +442,7 @@ class IsaTabInvestigationFile(Resource):
             file_path = files[0]
             filename = os.path.basename(file_path)
             try:
-                return send_file(file_path, cache_timeout=-1, as_attachment=True, attachment_filename=filename)
+                return send_file(file_path, max_age=0, as_attachment=True, download_file=filename)
             except OSError as err:
                 logger.error(err)
                 abort(503, message="Wrong investigation filename or file could not be read.")
@@ -535,7 +535,7 @@ class IsaTabSampleFile(Resource):
             file_path = files[0]
             filename = os.path.basename(file_path)
             try:
-                return send_file(file_path, cache_timeout=-1, as_attachment=True, attachment_filename=filename)
+                return send_file(file_path, max_age=0, as_attachment=True, download_file=filename)
             except OSError as err:
                 logger.error(err)
                 abort(404, message="Wrong sample filename or file could not be read.")
@@ -628,7 +628,7 @@ class IsaTabAssayFile(Resource):
             file_path = files[0]
             filename = os.path.basename(file_path)
             try:
-                return send_file(file_path, cache_timeout=-1, as_attachment=True, attachment_filename=filename)
+                return send_file(file_path, max_age=0, as_attachment=True, download_file=filename)
             except OSError as err:
                 logger.error(err)
                 abort(404, message="Wrong assay filename or file could not be read.")
@@ -660,7 +660,7 @@ class CloneAccession(Resource):
                 "dataType": "string",
             },
             {
-                "name": "include_raw_data",
+                "name": "include-raw-data",
                 "description": "Include raw data when cloning a study.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -1105,7 +1105,7 @@ class CreateAccession(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "study_id",
+                "name": "study-id",
                 "description": "Requested study id (Leave it empty for new study id)",
                 "paramType": "header",
                 "type": "string",
@@ -1776,7 +1776,7 @@ class MtblsStudyFolders(Resource):
                 "dataType": "string",
             },
             {
-                "name": "target_folder",
+                "name": "target-folder",
                 "description": "Select target study folders: metadata, data and private ftp folder",
                 "required": False,
                 "allowMultiple": False,
@@ -1799,7 +1799,7 @@ class MtblsStudyFolders(Resource):
                 "default": True,
             },
             {
-                "name": "task_name",
+                "name": "task-name",
                 "description": "Any task name, backup folders created with this name",
                 "required": False,
                 "allowMultiple": False,
@@ -1857,7 +1857,7 @@ class MtblsStudyFolders(Resource):
             
         
         force_to_maintain = False
-        if args and "force" in args and request.args.get("force"):
+        if request.args.get("force"):
             force_to_maintain = True if request.args.get("force").lower() == "true" else False
 
         logger.info("Searching study folders")
@@ -1895,7 +1895,7 @@ class StudyFolderSynchronization(Resource):
                 "dataType": "string"
             },
             {
-                "name": "source_staging_area",
+                "name": "source-staging-area",
                 "description": "Source study folder stage",
                 "required": True,
                 "allowMultiple": False,
@@ -1907,7 +1907,7 @@ class StudyFolderSynchronization(Resource):
                 "default": "private-ftp"
             },
             {
-                "name": "target_staging_area",
+                "name": "target-staging-area",
                 "description": "Target study folder stage",
                 "required": True,
                 "allowMultiple": False,
@@ -1919,7 +1919,7 @@ class StudyFolderSynchronization(Resource):
                 "default": "rw-study"
             },
             {
-                "name": "sync_type",
+                "name": "sync-type",
                 "description": "Sync category: sync metadada or data or internal files",
                 "required": True,
                 "allowMultiple": False,
@@ -1931,7 +1931,7 @@ class StudyFolderSynchronization(Resource):
                 "default": "metadata"
             },
             {
-                "name": "dry_run",
+                "name": "dry-run",
                 "description": "Only check whether there is a difference ",
                 "required": False,
                 "allowMultiple": False,
@@ -1986,7 +1986,7 @@ class StudyFolderSynchronization(Resource):
                 "dataType": "string"
             },
             {
-                "name": "source_staging_area",
+                "name": "source-staging-area",
                 "description": "Source study folder stage",
                 "required": True,
                 "allowMultiple": False,
@@ -1998,7 +1998,7 @@ class StudyFolderSynchronization(Resource):
                 "default": "private-ftp"
             },
             {
-                "name": "target_staging_area",
+                "name": "target-staging-area",
                 "description": "Target study folder stage",
                 "required": True,
                 "allowMultiple": False,
@@ -2010,7 +2010,7 @@ class StudyFolderSynchronization(Resource):
                 "default": "rw-study"
             },
             {
-                "name": "sync_type",
+                "name": "sync-type",
                 "description": "Sync category: sync metadada or data or internal files",
                 "required": True,
                 "allowMultiple": False,
@@ -2022,7 +2022,7 @@ class StudyFolderSynchronization(Resource):
                 "default": "metadata"
             },
             {
-                "name": "dry_run",
+                "name": "dry-run",
                 "description": "Only check whether there is a difference ",
                 "required": False,
                 "allowMultiple": False,

@@ -621,7 +621,7 @@ def getNMRinfo():
         sample_temp.insert(0, 'Study', studyID)
         sample_temp = DataFrameUtils.sample_cleanup(sample_temp)
 
-        sample_df = sample_df.append(sample_temp, ignore_index=True)
+        sample_df = pd.concat([sample_df, sample_temp], ignore_index=True)
         # print('get sample file from', studyID, end='\t')
         # print(sample_temp.shape)
 
@@ -633,7 +633,7 @@ def getNMRinfo():
             else:
                 assay_temp.insert(0, 'Study', studyID)
                 assay_temp = DataFrameUtils.NMR_assay_cleanup(assay_temp)
-                assay_df = assay_df.append(assay_temp, ignore_index=True)
+                assay_df = pd.concat([assay_df, assay_temp], ignore_index=True)
 
             # print('get assay file from', studyID, end='\t')
             # print(assay_temp.shape)
@@ -688,7 +688,7 @@ def getLCMSinfo():
                 else:
                     assay_temp.insert(0, 'Study', studyID)
                     assay_temp = DataFrameUtils.LCMS_assay_cleanup(assay_temp)
-                    assay_df = assay_df.append(assay_temp, ignore_index=True)
+                    assay_df = pd.concat([assay_df, assay_temp], ignore_index=True)
 
                     # print('get assay file from', studyID, end='\t')
                     # print(assay_temp.shape)
@@ -698,7 +698,7 @@ def getLCMSinfo():
             sample_temp.insert(0, 'Study', studyID)
             sample_temp = DataFrameUtils.sample_cleanup(sample_temp)
 
-            sample_df = sample_df.append(sample_temp, ignore_index=True)
+            sample_df = pd.concat([sample_df, sample_temp], ignore_index=True)
             # print('get sample file from', studyID, end='\t')
             # print(sample_temp.shape)
         except Exception as e:

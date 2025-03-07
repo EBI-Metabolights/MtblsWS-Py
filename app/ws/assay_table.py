@@ -40,7 +40,7 @@ wsc = WsClient()
 
 
 def insert_row(idx, df, df_insert):
-    return df.iloc[:idx, ].append(df_insert, ignore_index=True).append(df.iloc[idx:, ]).reset_index(drop=True)
+    return pd.concat([df.iloc[:idx, ], df_insert, df.iloc[idx:, ]], ignore_index=True).reset_index(drop=True)
 
 
 class AssayTable(Resource):
@@ -354,7 +354,7 @@ class EditAssayFile(Resource):
 
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
         assay_df = assay_df.replace(np.nan, '', regex=True)  # Remove NaN
-        assay_df = assay_df.append(new_row, ignore_index=True)  # Add new row to the spreadsheet
+        assay_df = pd.concat([assay_df, new_row], ignore_index=True)  # Add new row to the spreadsheet
 
         # Remove all ".n" numbers at the end of duplicated column names
         assay_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)

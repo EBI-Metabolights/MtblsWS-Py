@@ -54,7 +54,7 @@ class StudyJsonExporter(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "study_id",
+                "name": "study-id",
                 "description": "Requested study id",
                 "paramType": "header",
                 "type": "string",
@@ -62,7 +62,7 @@ class StudyJsonExporter(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "json_folder",
+                "name": "json-folder",
                 "description": "current json folder if resume process.",
                 "paramType": "header",
                 "type": "string",
@@ -207,7 +207,7 @@ class PublicStudyJsonExporter(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "study_id",
+                "name": "study-id",
                 "description": "Requested public study id",
                 "paramType": "header",
                 "type": "string",

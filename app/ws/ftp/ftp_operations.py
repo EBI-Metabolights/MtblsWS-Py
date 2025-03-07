@@ -123,7 +123,7 @@ class SyncFromFtpFolder(Resource):
                 "dataType": "string"
             },
             {
-                "name": "sync_type",
+                "name": "sync-type",
                 "description": "Sync category: sync metadada or data or internal files",
                 "required": False,
                 "allowMultiple": False,
@@ -609,7 +609,7 @@ class SyncFromStudyFolder(Resource):
                 "dataType": "string"
             },
             {
-                "name": "sync_type",
+                "name": "sync-type",
                 "description": "Sync category: sync metadada or data or internal files",
                 "required": False,
                 "allowMultiple": False,

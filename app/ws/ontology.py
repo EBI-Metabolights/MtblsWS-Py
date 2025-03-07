@@ -1211,7 +1211,7 @@ def addZoomaTerm(studyID, Property_type, Property_value, url):
     t = current_time().strftime("%d/%m/%Y %H:%M")
     temp = {'STUDY': studyID, 'BIOENTITY': bioentity, 'PROPERTY_TYPE': Property_type, 'PROPERTY_VALUE': Property_value,
             'SEMANTIC_TAG': url, 'ANNOTATOR': 'Jiakang Chang', 'ANNOTATION_DATE': t}
-    zooma_df = zooma_df.append(temp, ignore_index=True)
+    zooma_df = pd.concat([zooma_df, temp], ignore_index=True)
     zooma_df.to_csv(zooma_path, sep='\t', index=False)
 
 

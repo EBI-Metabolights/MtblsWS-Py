@@ -176,7 +176,7 @@ class SendFiles(Resource):
                     head, tail = os.path.split(file_name)
                     file_name = tail
 
-            resp = make_response(send_file(safe_path, as_attachment=True, attachment_filename=file_name, cache_timeout=0))
+            resp = make_response(send_file(safe_path, as_attachment=True, download_name=file_name, max_age=0))
             # response.headers["Content-Disposition"] = "attachment; filename={}".format(file_name)
             resp.headers['Content-Type'] = 'application/octet-stream'
             return resp
@@ -215,15 +215,6 @@ class SendFilesPrivate(Resource):
                 "dataType": "string"
             },
             {
-                "name": "obfuscation_code",
-                "description": "Study obfuscation code",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "header",
-                "dataType": "string",
-                "allowEmptyValue": True,
-            },
-            {
                 "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
@@ -232,7 +223,6 @@ class SendFilesPrivate(Resource):
                 "allowMultiple": False
             }
         ],
-        defaults=[{"obfuscation_code": "public"}],
         responseMessages=[
             {
                 "code": 200,
@@ -269,7 +259,8 @@ class SendFilesPrivate(Resource):
 
         if 'obfuscation_code' in request.headers:
             obfuscation_code = request.headers["obfuscation_code"]
-
+        if not obfuscation_code:
+            obfuscation_code = "public"
         # query validation
         
         
@@ -344,7 +335,7 @@ class SendFilesPrivate(Resource):
                     head, tail = os.path.split(file_name)
                     file_name = tail
 
-            resp = make_response(send_file(safe_path, as_attachment=True, attachment_filename=file_name, cache_timeout=0))
+            resp = make_response(send_file(safe_path, as_attachment=True, download_name=file_name, max_age=0))
             # response.headers["Content-Disposition"] = "attachment; filename={}".format(file_name)
             resp.headers['Content-Type'] = 'application/octet-stream'
             return resp

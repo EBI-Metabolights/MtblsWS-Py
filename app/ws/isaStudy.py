@@ -223,7 +223,7 @@ class StudyTitle(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -342,7 +342,7 @@ class StudyReleaseDate(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -597,7 +597,7 @@ class StudyDescription(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -765,7 +765,7 @@ class StudyContacts(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -1090,7 +1090,7 @@ class StudyContacts(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -1243,7 +1243,7 @@ class StudyContacts(Resource):
                 "dataType": "string"
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -1399,7 +1399,7 @@ class StudyProtocols(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -1648,7 +1648,7 @@ class StudyProtocols(Resource):
                 "default": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -1823,7 +1823,7 @@ class StudyProtocols(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -1967,7 +1967,7 @@ class StudyFactors(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -2214,7 +2214,7 @@ class StudyFactors(Resource):
                 "dataType": "string"
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -2373,7 +2373,7 @@ class StudyFactors(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -2537,7 +2537,7 @@ class StudyDescriptors(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -2781,7 +2781,7 @@ class StudyDescriptors(Resource):
                 "dataType": "string"
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -2919,7 +2919,7 @@ class StudyDescriptors(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -3067,7 +3067,7 @@ class StudyPublications(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -3341,7 +3341,7 @@ class StudyPublications(Resource):
                 "dataType": "string"
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -3479,7 +3479,7 @@ class StudyPublications(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -3743,7 +3743,7 @@ class StudySources(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -3880,7 +3880,7 @@ class StudySamples(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -4189,7 +4189,7 @@ class StudySamples(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -4443,7 +4443,7 @@ class StudyOtherMaterials(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -4700,7 +4700,7 @@ class StudyOtherMaterials(Resource):
                 "dataType": "string"
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -4827,7 +4827,7 @@ class StudyOtherMaterials(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
