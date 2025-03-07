@@ -53,7 +53,7 @@ class DataFolders(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -80,13 +80,9 @@ class DataFolders(Resource):
 
         # check for access rights
         user = UserService.get_instance().validate_user_has_curator_role(user_token)
-
-        parser = reqparse.RequestParser()
-        parser.add_argument("folder_path", location="args")
-        parser.add_argument("folder_permission", location="args")
-        args = parser.parse_args()
-        folder_path = args["folder_path"]
-        folder_permission = args["folder_permission"]
+        
+        folder_path = request.args.get("folder_path")
+        folder_permission = request.args.get("folder_permission")
         try:
             folder_permission_int = int(folder_permission, 8)
         except Exception as exc:

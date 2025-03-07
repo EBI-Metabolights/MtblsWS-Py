@@ -99,7 +99,7 @@ class FTPRemoteFileManager(Resource):
                          "set ftp folder permission"]
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -136,18 +136,14 @@ class FTPRemoteFileManager(Resource):
 
         if user_token is None:
             abort(401)
-
-        parser = reqparse.RequestParser()
-        parser.add_argument('study_id', help="Study ID", location="args")
-        parser.add_argument('source_folder', help="Source folder", location="args")
-        parser.add_argument('target_folder', help="Source folder", location="args")
-        parser.add_argument('operation', help="Type of operation", location="args")
+        
+        
         if request.args:
-            args = parser.parse_args()
-            study_id = args['study_id']
-            source_folder = args['source_folder']
-            target_folder = args['target_folder']
-            operation = args['operation']
+            
+            study_id = request.args.get('study_id')
+            source_folder = request.args.get('source_folder')
+            target_folder = request.args.get('target_folder')
+            operation = request.args.get('operation')
             if operation:
                 operation = operation.strip()
 

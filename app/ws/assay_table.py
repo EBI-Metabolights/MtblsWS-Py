@@ -91,7 +91,7 @@ class AssayTable(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -119,18 +119,13 @@ class AssayTable(Resource):
         ]
     )
     def put(self, study_id, assay_file_name):
-        parser = reqparse.RequestParser()
-        parser.add_argument('row_num', help="The row number of the cell to update (exclude header)")
-        parser.add_argument('column_name', help="The column name of the cell to update")
-        parser.add_argument('cell_value', help="The column name of the cell to update")
         row_num = None
         column_name = None
         cell_value = None
         if request.args:
-            args = parser.parse_args(req=request)
-            row_num = args['row_num']
-            column_name = args['column_name']
-            cell_value = args['cell_value']
+            row_num = request.args.get('row_num')
+            column_name = request.args.get('column_name')
+            cell_value = request.args.get('cell_value')
 
         # param validation
         if study_id is None or assay_file_name is None or row_num is None or column_name is None:
@@ -205,7 +200,7 @@ class EditAssayFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -295,7 +290,7 @@ class EditAssayFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -404,7 +399,7 @@ class EditAssayFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -529,7 +524,7 @@ class EditAssayFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -559,10 +554,7 @@ class EditAssayFile(Resource):
     def delete(self, study_id, assay_file_name):
 
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('row_num', help="The row number of the cell(s) to remove (exclude header)", location="args")
-        args = parser.parse_args()
-        row_num = args['row_num']
+        row_num = request.args.get('row_num')
 
         # param validation
         if study_id is None or assay_file_name is None or row_num is None:

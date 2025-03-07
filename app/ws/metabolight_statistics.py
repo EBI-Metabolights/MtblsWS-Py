@@ -23,7 +23,7 @@ class MetabolightsStatistics(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "Admin/Curator API token",
                 "paramType": "header",
                 "type": "string",
@@ -51,14 +51,11 @@ class MetabolightsStatistics(Resource):
         ]
     )
     @metabolights_exception_handler
-    def get(self):
-        
-        parser = reqparse.RequestParser()
-        parser.add_argument('category_name')
+    def get(self):        
         category_name = None
         if request.args:
-            args = parser.parse_args(req=request)
-            category_name = args['category_name']
+            
+            category_name = request.args.get('category_name')
             
 
         user_token = None

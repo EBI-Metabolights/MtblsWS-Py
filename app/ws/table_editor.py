@@ -133,7 +133,7 @@ class SimpleColumns(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -162,19 +162,19 @@ class SimpleColumns(Resource):
     )
     def post(self, study_id, file_name):
 
-        parser = reqparse.RequestParser()
-        parser.add_argument('new_column_name', help="Name of new column")
+        
+        
         new_column_name = None
-        parser.add_argument('new_column_position', help="The position (column #) of new column")
+        
         new_column_position = None
-        parser.add_argument('new_column_default_value', help="The (optional) default value of new column")
+        
         new_column_default_value = None
 
         if request.args:
-            args = parser.parse_args(req=request)
-            new_column_name = args['new_column_name']
-            new_column_position = args['new_column_position']
-            new_column_default_value = args['new_column_default_value']
+            
+            new_column_name = request.args.get('new_column_name')
+            new_column_position = request.args.get('new_column_position')
+            new_column_default_value = request.args.get('new_column_default_value')
 
         if new_column_name is None:
             abort(404, message="Please provide valid name for the new column")
@@ -259,7 +259,7 @@ class ComplexColumns(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -404,7 +404,7 @@ class ComplexColumns(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -538,7 +538,7 @@ class ColumnsRows(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -700,7 +700,7 @@ class AddRows(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -870,7 +870,7 @@ class AddRows(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1012,7 +1012,7 @@ class AddRows(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1041,10 +1041,8 @@ class AddRows(Resource):
     )
     def delete(self, study_id, file_name):
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('row_num', help="The row number of the cell(s) to remove (exclude header)", location="args")
-        args = parser.parse_args()
-        row_num = args['row_num']
+        
+        row_num = request.args.get('row_num')
 
         # param validation
         if study_id is None or file_name is None or row_num is None:
@@ -1127,7 +1125,7 @@ class AddRows(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1156,10 +1154,8 @@ class AddRows(Resource):
     )
     def get(self, study_id, file_name):
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('row_num', help="The row number of the cell(s) to get (exclude header)", location="args")
-        args = parser.parse_args()
-        row_num = args['row_num']
+        
+        row_num = request.args.get('row_num')
 
         # param validation
         if study_id is None or file_name is None or row_num is None:
@@ -1230,7 +1226,7 @@ class GetTsvFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1379,7 +1375,7 @@ class TsvFileRows(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

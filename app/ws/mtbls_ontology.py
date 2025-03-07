@@ -73,14 +73,10 @@ class MtblsOntologyTerms(Resource):
             }
         ]
     )
-    def get(self,):
-        parser = reqparse.RequestParser()
-        parser.add_argument('keyword', help="MTBLS ontology term")
-        parser.add_argument('case_insensitive', help="Case insensitive search")
-        args = parser.parse_args(req=request)
+    def get(self,):        
         
-        query = args['keyword'] if args['keyword'] else None
-        case_insensitive = True if args['case_insensitive'] and args['case_insensitive'].lower() == "true" else False
+        query = request.args.get('keyword') if request.args.get('keyword') else None
+        case_insensitive = True if request.args.get('case_insensitive') and request.args.get('case_insensitive').lower() == "true" else False
         
         filepath = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
         mtbl_ontology: MetaboLightsOntology = load_ontology_file(filepath)
@@ -131,12 +127,12 @@ class MtblsOntologyTerm(Resource):
         ]
     )
     def get(self, term_id: str):
-        parser = reqparse.RequestParser()
-
-        # parser.add_argument('q', help="MTBLS ontology term")
         
-        args = parser.parse_args(req=request)
-        # query = args['q'] if args['q'] else None
+
+        # 
+        
+        
+        # query = request.args.get('q') if request.args.get('q') else None
         filepath = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
         mtbl_ontology: MetaboLightsOntology = load_ontology_file(filepath)
         prefix = "http://www.ebi.ac.uk/metabolights/ontology"

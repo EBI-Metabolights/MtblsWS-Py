@@ -24,7 +24,7 @@ class MetabolightsParameters(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "Admin/Curator API token",
                 "paramType": "header",
                 "type": "string",
@@ -52,14 +52,10 @@ class MetabolightsParameters(Resource):
         ]
     )
     @metabolights_exception_handler
-    def get(self):
-        
-        parser = reqparse.RequestParser()
-        parser.add_argument('name')
+    def get(self):        
         name = None
         if request.args:
-            args = parser.parse_args(req=request)
-            name = args['name']
+            name = request.args.get('name')
             
 
         user_token = None
@@ -116,7 +112,7 @@ class MetabolightsParameters(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "Admin/Curator API token",
                 "paramType": "header",
                 "type": "string",
@@ -201,7 +197,7 @@ class MetabolightsParameters(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "Admin/Curator API token",
                 "paramType": "header",
                 "type": "string",
@@ -272,7 +268,7 @@ class MetabolightsParameters(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "Admin/Curator API token",
                 "paramType": "header",
                 "type": "string",
@@ -304,7 +300,7 @@ class MetabolightsParameters(Resource):
         
         name = None
         if "name" in request.args:
-            name = request.args['name']
+            name = request.args.get('name')
 
 
         user_token = None

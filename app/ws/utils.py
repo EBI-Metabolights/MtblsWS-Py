@@ -2101,7 +2101,7 @@ def get_public_review_studies():
         return int(text) if text.isdigit() else text
 
     def natural_keys(text):
-        return [atoi(c) for c in re.split("(\d+)", text)]
+        return [atoi(c) for c in re.split(r"(\d+)", text)]
 
     query = "select acc from studies where status= 3 or status = 2"
     query = query.replace("\\", "")

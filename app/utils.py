@@ -148,7 +148,7 @@ class ValueMaskUtility(object):
         if len(data) > 1:
             head = data[0]
             if len(head) > 3:
-                replaced = re.sub("[\w]", "*", head)
+                replaced = re.sub(r"[\w]", "*", head)
                 replaced = head[0] + replaced[1:-1] + head[-1:]
             else:
                 if len(head) > 1:
@@ -159,7 +159,7 @@ class ValueMaskUtility(object):
             email = "@".join(data)
             return email
 
-        replaced = re.sub("[\w]", "*", value)
+        replaced = re.sub(r"[\w]", "*", value)
         if len(replaced) > 2:
             replaced = value[0] + replaced[1:-1] + value[-1:]
         return replaced

@@ -68,7 +68,7 @@ class EditSampleFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -162,7 +162,7 @@ class EditSampleFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -268,7 +268,7 @@ class EditSampleFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -390,7 +390,7 @@ class EditSampleFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -420,10 +420,8 @@ class EditSampleFile(Resource):
     def delete(self, study_id, sample_file_name):
 
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('row_num', help="The row number of the cell(s) to remove (exclude header)", location="args")
-        args = parser.parse_args()
-        row_num = args['row_num']
+        
+        row_num = request.args.get('row_num')
 
         # param validation
         if study_id is None or sample_file_name is None or row_num is None:

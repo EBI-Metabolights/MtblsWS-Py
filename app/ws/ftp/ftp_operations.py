@@ -45,7 +45,7 @@ class SyncCalculation(Resource):
                 "default": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -79,13 +79,13 @@ class SyncCalculation(Resource):
         if study_id is None:
             abort(404, message='Please provide valid parameter for study identifier')
         study_id = study_id.upper()
-        parser = reqparse.RequestParser()
-        parser.add_argument('force', help='Force to recalculate')
+        
+        
         force_recalculate = False
         
         if request.args:
-            args = parser.parse_args(req=request)
-            force_recalculate = True if args['force'].lower() == 'true' else False
+            
+            force_recalculate = True if request.args.get('force').lower() == 'true' else False
 
         # User authentication
         user_token = None
@@ -135,7 +135,7 @@ class SyncFromFtpFolder(Resource):
                 "default": "metadata"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -230,7 +230,7 @@ class FtpFolderSyncStatus(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -293,7 +293,7 @@ class FtpFolderPermission(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -352,7 +352,7 @@ class FtpFolderPermissionModification(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -419,7 +419,7 @@ class PrivateFtpFolder(Resource):
                 "default": True
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -457,14 +457,10 @@ class PrivateFtpFolder(Resource):
 
         if user_token is None or study_id is None:
             abort(401)
-
-        parser = reqparse.RequestParser()
-        parser.add_argument('send_email', help='send_email')
-
         send_email = None
         if request.args:
-            args = parser.parse_args(req=request)
-            send_email = True if args['send_email'] and args['send_email'].lower() == "true" else False
+            
+            send_email = True if request.args.get('send_email') and request.args.get('send_email').lower() == "true" else False
 
         study_id = study_id.upper()
 
@@ -487,7 +483,7 @@ class PrivateFtpFolderPath(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -548,7 +544,7 @@ class PrivateFtpUploadInfo(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -625,7 +621,7 @@ class SyncFromStudyFolder(Resource):
                 "default": "metadata"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -709,12 +705,12 @@ class SyncFromStudyFolder(Resource):
         # if "user_token" in request.headers:
         #     user_token = request.headers["user_token"]
 
-        # parser = reqparse.RequestParser()
-        # parser.add_argument('sync_only_chebi_pipeline_results', help='Sync only CHEBI pipeline')
+        # 
+        # 
         # sync_only_chebi_results = True
         # if request.args:
-        #     args = parser.parse_args(req=request)
-        #     sync_only_chebi_results = False if args['sync_only_chebi_pipeline_results'].lower() == 'false' else True
+        #     
+        #     sync_only_chebi_results = False if request.args.get('sync_only_chebi_pipeline_results').lower() == 'false' else True
 
         # UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         # study = StudyService.get_instance().get_study_by_acc(study_id)
@@ -743,7 +739,7 @@ class SyncPublicStudyToFTP(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
