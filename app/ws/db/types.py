@@ -1,4 +1,5 @@
 from enum import Enum
+import enum
 
 
 class UserRole(Enum):
@@ -128,3 +129,9 @@ class StudyTaskName(str, Enum):
     REINDEX = 'REINDEX'
     SEND_TWEET = 'SEND_TWEET'
     SEND_EMAIL = 'SEND_EMAIL'
+
+class StudyRevisionStatus(enum.IntEnum):
+    INITIATED = 0
+    IN_PROGRESS = 1
+    FAILED = 2
+    COMPLETED = 3

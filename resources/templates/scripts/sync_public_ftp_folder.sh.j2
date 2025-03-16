@@ -1,0 +1,47 @@
+#!/bin/bash
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+curl -X PUT --header "Status: In Progress" --header "task-start-at: $CURRENT_TIME" --header "Task-Message: FTP Folder Sync Task Failed." --header "User-Token: {{ USER_TOKEN }}" {{ UPDATE_URL }}
+RETURN=$?
+if [ $RETURN -eq 0 ];
+then
+  echo "{{ UPDATE_URL }} is used to update revision FTP sync status to 'In Progress'"
+else
+  echo "{{ UPDATE_URL }} : Failed to update revision FTP sync status to 'In Progress'"
+fi
+
+echo "FTP SYNC TASK STARTED at $CURRENT_TIME"
+
+echo "rsync -Lauv --delete-after --chmod=+rx {{ SOURCE_PATH }}/. {{ TARGET_PATH }}/ "
+rsync -Lauv --delete-after --ignore-errors --chmod=+rx "{{ SOURCE_PATH }}/." "{{ TARGET_PATH }}/"
+RETURN=$?
+echo "Exit code: $RETURN"
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "FTP SYNC TASK ENDED at $CURRENT_TIME"
+
+echo "UPDATE URL: {{ UPDATE_URL }}"
+
+if [ $RETURN -eq 0 ];
+then
+  echo "RSYNC completed successfully."
+  curl -X PUT --header "Status: Completed" --header "task-completed-at: $CURRENT_TIME" --header "Task-Message: FTP Folder Sync Task Completed." --header "User-Token: {{ USER_TOKEN }}" {{ UPDATE_URL }}
+  RETURN_COMPLETED=$?
+  if [ $RETURN_COMPLETED -eq 0 ];
+  then
+    echo "{{ UPDATE_URL }}- Update revision status to 'Completed'"
+  else
+    echo "{{ UPDATE_URL }}- Failed to update revision status to 'Completed'."
+  fi
+  exit $RETURN_COMPLETED
+else
+  echo "RSYNC failed."
+  curl -X PUT --header "Status: Failed" --header "task-completed-at: $CURRENT_TIME" --header "Task-Message: FTP Folder Sync Task Failed." --header "User-Token: {{ USER_TOKEN }}" {{ UPDATE_URL }}
+  RETURN_FAILED=$?
+  if [ $RETURN_FAILED -eq 0 ];
+  then
+    echo "{{ UPDATE_URL }}- Updated revision status: Completed."
+  else
+    echo "{{ UPDATE_URL }}- Failed to update revision status."
+  fi
+  exit $RETURN
+fi

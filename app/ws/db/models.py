@@ -1,9 +1,40 @@
 import datetime
 from typing import List, Dict, Union
 
-from pydantic import field_validator, BaseModel, Field, ConfigDict
+from pydantic import field_serializer, field_validator, BaseModel, Field, ConfigDict
 
+from app.ws.db.types import StudyRevisionStatus
 from app.ws.db.utils import datetime_to_int
+class StudyRevisionModel(BaseModel):        
+    accession_number: Union[None, str] = None
+    revision_number: Union[None, int] = None
+    revision_datetime: Union[None, datetime.datetime] = None
+    revision_comment: Union[None, str] = None
+    created_by: Union[None, str] = None
+    status: Union[None, StudyRevisionStatus] = None
+    task_started_at: Union[None, datetime.datetime] = None
+    task_completed_at: Union[None, datetime.datetime] = None
+    task_message: Union[None, str] = None
+
+
+    @field_serializer('revision_datetime', 'task_started_at', 'task_completed_at')
+    @classmethod
+    def datetime_serializer(cls, value):
+        if value:
+            return value.isoformat()
+        return ""
+
+
+    @field_serializer('status')
+    @classmethod
+    def status_serializer(cls, value):
+        if isinstance(value, StudyRevisionStatus):
+            return value.name
+        elif isinstance(value, str):
+            return StudyRevisionStatus(int(value)).name
+        elif isinstance(value, int):
+            return StudyRevisionStatus(value).name
+        return StudyRevisionStatus.INITIATED.name
 
 
 class StudyAccessPermission(BaseModel):
@@ -328,6 +359,8 @@ class LiteStudyModel(EntityModel):
     ObjectType: str = "Study"
     id: int = Field(...)
     studyIdentifier: str = Field(...)  # assigned as not_analyzed in es
+    revisionNumber: Union[None, int] = None
+    revisionDatetime: Union[None, str] = None
     title: Union[None, str] = None
 
     studyDescription: Union[None, str] = None

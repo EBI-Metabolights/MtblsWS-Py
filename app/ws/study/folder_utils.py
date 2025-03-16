@@ -365,12 +365,14 @@ def write_audit_files(study_location_or_study_id):
                 pass
             
         if last_audit_folder and metadata_files_signature:
-            audit_folder_signature = maintenance_task.read_hash_file(metadata_files_signature_root_path=last_audit_folder)
+            hashes_path = os.path.join(last_audit_folder, "HASHES")
+            audit_folder_signature = maintenance_task.read_hash_file(metadata_files_signature_root_path=hashes_path)
             if audit_folder_signature == metadata_files_signature:
                 return False, None
         dest_path = maintenance_task.create_audit_folder()
         return  True, dest_path
     except Exception as ex:
+        logger.error(f"Error while creating audit folder: {str(ex)}")
         return False, None
     
     # settings = get_study_settings()

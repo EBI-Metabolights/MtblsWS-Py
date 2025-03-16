@@ -24,6 +24,8 @@ def create_study_model_from_db_study(db_study: Study):
     m_study = models.StudyModel(
         id=db_study.id,
         studyIdentifier=db_study.acc,
+        revisionNumber=db_study.revision_number,
+        revisionDatetime=db_study.revision_datetime.isoformat() if db_study.revision_datetime else "",
         obfuscationCode=db_study.obfuscationcode
     )
 

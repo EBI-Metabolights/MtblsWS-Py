@@ -147,6 +147,9 @@ class BashClient(object):
         if tunnel_username and tunnel_hostname:
             command.append("-o")
             subcommand = ["ssh"]
+            if identity_file:
+                subcommand.append("-i")
+                subcommand.append(identity_file)
             subcommand.append("-o")
             subcommand.append("StrictHostKeyChecking=no")
             subcommand.append("-o")

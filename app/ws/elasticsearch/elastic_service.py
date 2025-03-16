@@ -246,6 +246,7 @@ class ElasticsearchService(object):
         try:
             self.client.delete(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, id=study_id)
         except Exception as e:
+            logger.error(f"Error while deleting study index: {str(e)}")
             if not ignore_errors:
                 raise e
                 

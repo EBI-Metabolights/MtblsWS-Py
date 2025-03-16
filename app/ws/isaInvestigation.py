@@ -170,6 +170,8 @@ class IsaInvestigation(Resource):
         response['mtblsStudy']['read_access'] = read_access
         response['mtblsStudy']['write_access'] = write_access
         response['mtblsStudy']['is_curator'] = is_curator
+        response['mtblsStudy']['revisionNumber'] = study.revision_number
+        response['mtblsStudy']['revisionDatetime'] = study.revision_datetime.isoformat() if study.revision_datetime else ""
         # ToDo: Make sure this date is formatted YYYY-MM-DD and update the isa_inv, isa_study before returning
         # response['mtblsStudy']['release_date'] = release_date
         # isa_inv.public_release_date = release_date

@@ -147,10 +147,10 @@ class StudyStatus(Resource):
     @swagger.operation(
         summary="Change study status",
         nickname="Change study status",
-        notes="""Change study status from 'Provisional' to 'Private'.<br>
+        notes="""Change study status from 'Provisional' to 'Private' or 'Private' to 'Provisional'.<br>
         Please note a *minimum* of 28 days is required for curation, this will be added to the release date</p>
                 <pre><code>Curators can change status to any of: 'Provisional', 'Private', 'In Review', 'Public' or 'Dormant'. curation_request is optional and can get the values: 'Manual Curation', 'No Curation', 'Semi-automated Curation'
-                <p>Example: { "status": "Private" } { "status": "Public" }   {"status": "Public", "curation_request": "No Curation"}
+                <p>Example: { "status": "Private" }   {"status": "Private", "curation_request": "No Curation"}
                 </code></pre>""",
         parameters=[
             {
@@ -206,7 +206,7 @@ class StudyStatus(Resource):
                 message="Please provide valid parameter for study identifier"
             )
 
-        study_status: str = None
+        study_status: str = ""
         curation_request_str: str = None
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
@@ -215,7 +215,10 @@ class StudyStatus(Resource):
                 curation_request_str = data_dict["curation_request"]
         except Exception:
             pass
-
+        if study_status.upper() == "PUBLIC":
+            raise MetabolightsException(
+                message="Please use the 'revisions' endpoint to release a study"
+            )
         if not study_status or study_status.upper() not in [
             x.upper()
             for x in ["provisional", "Private", "In Review", "Public", "Dormant"]
@@ -436,14 +439,14 @@ class StudyStatus(Resource):
                         ftp_private_study_folder, Acl.AUTHORIZED_READ_WRITE
                     )
 
-            if study_status.lower() == "public" and not first_public_date_baseline:
-                release_date = study.releasedate
-                inputs = {
-                    "user_token": user_token,
-                    "study_id": updated_study_id,
-                    "release_date": new_date,
-                }
-                send_email_on_public.apply_async(kwargs=inputs)
+            # if study_status.lower() == "public" and not first_public_date_baseline:
+            #     release_date = study.releasedate
+            #     inputs = {
+            #         "user_token": user_token,
+            #         "study_id": updated_study_id,
+            #         "release_date": new_date,
+            #     }
+            #     send_email_on_public.apply_async(kwargs=inputs)
 
             response.update(
                 {

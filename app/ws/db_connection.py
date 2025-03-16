@@ -80,8 +80,8 @@ query_study_info = """
                         when s.placeholder = '1' then 'Yes'
                         else ''
                         end                                                              as placeholder
-    
-    
+                    s.revision_number,
+                    s.revision_datetime,
              from studies s,
                   study_user su,
                   users u
@@ -104,7 +104,9 @@ query_studies_user = """
            when s.curation_request = 1 then 'NO_CURATION'
            when s.curation_request = 2 then 'SEMI_AUTOMATED_CURATION' 
            else 'MANUAL_CURATION' end,
-    s.id
+    s.id,
+    s.revision_number,
+    s.revision_datetime
     from studies s, users u, study_user su 
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
@@ -354,7 +356,10 @@ def get_all_private_studies_for_user(user_token):
                                   'status': status.strip(),
                                   'title': title.strip(),
                                   'description': description.strip(),
-                                  'curationRequest': curation_request.strip()})
+                                  'curationRequest': curation_request.strip(),
+                                  'revisionNumber': row[6],
+                                  'revisionDatetime': row[7]
+                                  })
 
     return complete_list
 
@@ -413,13 +418,16 @@ def get_all_studies_for_user(user_token):
 
 
         complete_list.append({'accession': study_id,
-                              'updated': get_single_file_information(complete_file_name),
-                              'releaseDate': release_date,
-                              'createdDate': submission_date,
-                              'status': status.strip(),
-                              'title': title.strip(),
-                              'description': description.strip(),
-                            'curationRequest': curation_request.strip()})
+                            'updated': get_single_file_information(complete_file_name),
+                            'releaseDate': release_date,
+                            'createdDate': submission_date,
+                            'status': status.strip(),
+                            'title': title.strip(),
+                            'description': description.strip(),
+                            'curationRequest': curation_request.strip(),
+                            'revisionNumber': row[6],
+                            'revisionDatetime': row[7]
+                            })
 
     return complete_list
 

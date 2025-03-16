@@ -83,6 +83,7 @@ celery = Celery(
         "app.tasks.common_tasks.curation_tasks.metabolon",
         "app.tasks.common_tasks.curation_tasks.validation",
         "app.tasks.common_tasks.curation_tasks.chebi_pipeline",
+        "app.tasks.common_tasks.curation_tasks.study_revision",
         "app.tasks.common_tasks.basic_tasks.email",
         "app.tasks.common_tasks.basic_tasks.elasticsearch",
         "app.tasks.common_tasks.basic_tasks.ftp_operations",

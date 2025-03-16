@@ -11,7 +11,7 @@ import chardet
 import time
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Set, Union
+from typing import Dict, List, OrderedDict, Set, Union
 
 import numpy as np
 import pandas as pd
@@ -26,12 +26,6 @@ from app.config.model.hpc_cluster import HpcClusterConfiguration
 from app.config.model.study import StudySettings
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.acl import Acl
-from app.services.storage_service.mounted.local_file_manager import (
-    MountedVolumeFileManager,
-)
-from app.services.storage_service.remote_worker.remote_file_manager import (
-    RemoteFileManager,
-)
 from app.study_folder_utils import FileDescriptor, get_all_study_metadata_and_data_files
 from app.tasks.bash_client import BashClient
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
@@ -532,7 +526,8 @@ class StudyFolderMaintenanceTask(object):
             if not audit_folder_root_path:
                 audit_folder_root_path = self.study_audit_files_path
             audit_folder_path = os.path.join(audit_folder_root_path, folder_name)
-            os.makedirs(audit_folder_path, exist_ok=True)
+            audit_folder_hash_path = os.path.join(audit_folder_path, "HASHES") 
+            os.makedirs(audit_folder_hash_path, exist_ok=True)
 
             for file in metadata_files_list:
                 basename = os.path.basename(file)
@@ -544,7 +539,7 @@ class StudyFolderMaintenanceTask(object):
                 metadata_files_signature_root_path,
                 self.study_settings.metadata_files_signature_file_name,
             )
-            files_hash_txt = "metadata_sha256.txt"
+            files_hash_txt = "metadata_sha256.json"
             files_hash_txt_path = os.path.join(
                 metadata_files_signature_root_path, files_hash_txt
             )
@@ -554,11 +549,11 @@ class StudyFolderMaintenanceTask(object):
             )
 
             target_file = os.path.join(
-                audit_folder_path,
+                audit_folder_hash_path,
                 self.study_settings.metadata_files_signature_file_name,
             )
 
-            target_files_hash_txt = os.path.join(audit_folder_path, files_hash_txt)
+            target_files_hash_txt = os.path.join(audit_folder_hash_path, files_hash_txt)
             if target_file != metadata_files_signature_path:
                 if os.path.exists(metadata_files_signature_path):
                     shutil.copy2(metadata_files_signature_path, target_file)
@@ -1465,7 +1460,7 @@ class StudyFolderMaintenanceTask(object):
             metadata_files_signature_root_path,
             self.study_settings.metadata_files_signature_file_name,
         )
-        files_hash_txt = "metadata_sha256.txt"
+        files_hash_txt = "metadata_sha256.json"
         metadata_files_hashes_file = os.path.join(
             metadata_files_signature_root_path, files_hash_txt
         )
@@ -1622,7 +1617,7 @@ class StudyFolderMaintenanceTask(object):
         metadata_files_list = self.get_all_metadata_files(
             recursive=False, search_path=search_path
         )
-        file_hashes = {}
+        file_hashes = OrderedDict()
         metadata_files_list.sort()
         hashes = []
         for file in metadata_files_list:
@@ -1634,6 +1629,23 @@ class StudyFolderMaintenanceTask(object):
         final_hash = hashlib.sha256(",".join(hashes).encode("utf-8")).hexdigest()
         return final_hash, file_hashes
 
+    def calculate_data_file_hashes(self, search_path: Union[None, str] = None):
+        search_path = search_path if search_path else f"{self.study_metadata_files_path}/FILES"
+        data_files_list = self.get_all_data_files(recursive=True, search_path=search_path)
+        file_hashes = OrderedDict()
+        data_files_list.sort()
+        hashes = []
+        prefix = search_path + "/"
+        for file in data_files_list:
+            index = file.replace(prefix, "FILES/")
+            if os.path.isfile(file):
+                hash = self.sha256sum(file)
+                file_hashes[index] = hash
+                hashes.append(f"{index}:{hash}")
+
+        final_hash = hashlib.sha256(",".join(hashes).encode("utf-8")).hexdigest()
+        return final_hash, file_hashes, search_path
+    
     def sha256sum(self, filename):
         if not filename or not os.path.exists(filename):
             return hashlib.sha256("".encode()).hexdigest()
@@ -1671,6 +1683,20 @@ class StudyFolderMaintenanceTask(object):
             metadata_files.extend(glob.glob(search_pattern, recursive=recursive))
         return metadata_files
 
+    def get_all_data_files(
+        self, recursive=True, search_path: Union[None, str] = None
+    ):
+        data_files = []
+        search_path = search_path if search_path else f"{self.study_metadata_files_path}/FILES"
+        
+        if not os.path.exists(search_path) or not os.path.isdir(search_path):
+            return data_files
+
+        search_pattern = os.path.join(search_path, "**/*")
+
+        data_files.extend(glob.iglob(search_pattern, recursive=recursive))
+        return data_files
+    
     def maintain_metadata_file_types_and_permissions(self, recursive=False):
         metadata_files = []
         metadata_files_list = self.get_all_metadata_files(recursive=False)
