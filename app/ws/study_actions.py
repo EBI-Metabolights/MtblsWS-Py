@@ -433,50 +433,53 @@ class StudyStatus(Resource):
                 )
             update_curation_request(study_id, curation_request)
         else:
-            validated = False
-            message = ""
-            if (
-                db_study_status.lower() == "provisional" 
-            ):  # and study_status != 'Private':
-                validated, message = self.has_validated(study_id)
-
-            # validation_report: ValidationReportFile = get_validation_report(study_id=study_id)
-            
-            if validated or db_study_status.lower() in {"private", "in review"} :
-                if study_status.lower() == "public":
-                    isa_inv.public_release_date = new_date
-                    isa_study.public_release_date = new_date
-                    release_date = new_date
-                self.update_status(
-                    study_id,
-                    study_status,
-                    is_curator=is_curator,
-                    obfuscation_code=obfuscation_code,
-                    user_token=user_token,
-                    first_public_date=first_public_date_baseline,
-                    first_private_date=first_private_date_baseline,
-                )
-                if (
-                    release_date < new_date
-                ):  # Set the release date to a minimum of 28 days in the future
-                    isa_inv.public_release_date = new_date
-                    isa_study.public_release_date = new_date
-                    release_date = new_date
-            else:
-                if message:
-                    if "not ready" in message:
-                        raise MetabolightsException(
-                            http_code=403,
-                            message="Study has not been validated yet. Validate your study, fix any problems before attempting to change study status.",
-                        )
-                    else:
-                        raise MetabolightsException(
-                            http_code=403,
-                            message="There are validation errors. Fix any problems before attempting to change study status.",
-                        )
+            if db_study_status.lower() in {"public"}:
                 raise MetabolightsException(
-                    http_code=403, message="You can not change the study to this status"
-                )
+                            http_code=403,
+                            message="Public studies can not be updated.",
+                        )
+            validated = True
+            message =""
+            
+            if study_status.lower() in {"public"}:
+                validated, message = self.has_validated(study_id)
+            elif study_status.lower() not in {"provisional", "dormant"} and db_study_status.lower() in {"provisional", "dormant"} :
+                validated, message = self.has_validated(study_id)
+            # validation_report: ValidationReportFile = get_validation_report(study_id=study_id)
+            if not validated:
+                if "not ready" in message:
+                    raise MetabolightsException(
+                        http_code=403,
+                        message="Study has not been validated yet. Validate your study, fix any problems before attempting to change study status.",
+                    )
+                else:
+                    raise MetabolightsException(
+                        http_code=403,
+                        message="There are validation errors. Fix any problems before attempting to change study status.",
+                    )
+                    
+            if study_status.lower() == "public":
+                isa_inv.public_release_date = new_date
+                isa_study.public_release_date = new_date
+                isa_inv.submission_date = first_private_date_baseline
+                isa_study.submission_date = first_private_date_baseline
+                release_date = new_date
+            self.update_status(
+                study_id,
+                study_status,
+                is_curator=is_curator,
+                obfuscation_code=obfuscation_code,
+                user_token=user_token,
+                first_public_date=first_public_date_baseline,
+                first_private_date=first_private_date_baseline,
+            )
+            if (
+                release_date < new_date
+            ):  # Set the release date to a minimum of 28 days in the future
+                isa_inv.public_release_date = new_date
+                isa_study.public_release_date = new_date
+                release_date = new_date
+
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True, save_assays_copy=True, save_samples_copy=True)
 
         current_study_status = types.StudyStatus.from_int(study.status)
