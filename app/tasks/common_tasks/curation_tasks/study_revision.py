@@ -10,6 +10,7 @@ from app.utils import MetabolightsException
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, StudyRevision
 
+from app.ws.db.types import StudyStatus
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
@@ -43,7 +44,7 @@ def prepare_study_revision(self, study_id: str, user_token: str):
     revisions_root_hash_path = os.path.join(audit_folder_root_path, study_id, "audit", "PUBLIC_METADATA", "HASHES")
     StudyRevisionService.create_data_file_hashes(study, search_path=study_data_files_path, copy_paths=[revisions_root_hash_path])
     
-    StudyRevisionService.check_dataset_integrity(study_id, metadata_files_path=created_path, data_files_path=study_data_files_path)
+    # StudyRevisionService.check_dataset_integrity(study_id, metadata_files_path=created_path, data_files_path=study_data_files_path)
     kwargs = {"study_id": study_id, "user_token": user_token}
     sync_study_revision.apply_async(kwargs=kwargs)
     return {"study_id": study_id, "create_folder": folder_status, "revision_folder_path": created_path}
@@ -59,6 +60,81 @@ def delete_study_revision(self, study_id: str, revision_number: int):
 
 
 
+@celery.task(bind=True, base=MetabolightsTask, default_retry_delay=10, max_retries=3, soft_time_limit=60*15, name="app.tasks.common_tasks.curation_tasks.study_revision.sync_study_metadata_folder")
+def sync_study_metadata_folder(self, study_id: str, user_token: str):
+    study: Study = StudyService.get_instance().get_study_by_acc(study_id)    
+    if StudyStatus(study.status) != StudyStatus.PUBLIC:
+        raise MetabolightsException(message="Only public studies can be sync.")
+    
+    try:
+        # Copy all revisions to Public FTP folder. AUDIT_FILES/PUBLIC_METADATA to <PUBLIC FTP FOLDER>/<STUDY ID> folder (delete folders/files if it is not on the source folder)
+        mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+
+        metadata_files_path = os.path.join(mounted_paths.cluster_study_metadata_files_root_path, study_id)
+        public_study_path = os.path.join(mounted_paths.cluster_public_ftp_root_path, study_id)
+        email = get_settings().email.email_service.configuration.hpc_cluster_job_track_email_address
+        job_id, messages = sync_public_ftp_folder_with_metadata_folder(study_id=study_id, 
+                               source_path=metadata_files_path, 
+                               target_path=public_study_path,
+                               user_token=user_token,
+                               email=email,
+                               task_name=f"{study_id}_PUBLIC_FTP_SYNC"
+                               )
+        return {"job_id": job_id, "messages": messages }
+    except Exception as e:
+        raise e
+
+
+def sync_public_ftp_folder_with_metadata_folder(task_name: str, 
+                           study_id: str, 
+                           email: str, 
+                           source_path: str, 
+                           target_path: str, 
+                           user_token: str
+                           ):
+    settings = get_settings()
+    client: HpcClient = get_new_hpc_datamover_client()
+    messages = []
+    inputs = {
+            "SOURCE_PATH": source_path,
+            "TARGET_PATH": target_path,
+            "USER_TOKEN": user_token,
+        }
+    hpc_queue_name = settings.hpc_cluster.datamover.default_queue
+    
+    script_template = "sync_public_ftp_folder_with_metadata_folder.sh.j2"
+    script_path = BashClient.prepare_script_from_template(script_template, **inputs)
+    logger.info("sync_public_ftp_folder script is ready.")
+    logger.info(Path(script_path).read_text())
+    study_log_path = os.path.join(settings.study.mounted_paths.study_internal_files_root_path, study_id, settings.study.internal_logs_folder_name)
+    task_log_path = os.path.join(study_log_path, f"{study_id}_{task_name}")
+    os.makedirs(task_log_path, exist_ok=True)
+    out_log_path = os.path.join(task_log_path, f"{task_name}_out.log")
+    err_log_path = os.path.join(task_log_path, f"{task_name}_err.log")
+    
+    try:
+        submission_result = client.submit_hpc_job(
+                    script_path, task_name, 
+                    output_file=out_log_path,
+                    error_file=err_log_path, 
+                    queue=hpc_queue_name, 
+                    account=email,
+                    mail_type="ALL"
+                )
+        job_id = submission_result.job_ids[0] if submission_result  else  None
+        
+        messages.append(f"New job was submitted with job id {job_id} for {task_name}")
+        return job_id, messages
+    except Exception as exc:
+        message = f"Exception after job submission. {str(exc)}"
+        logger.warning(message)
+        messages.append(message)
+        return None, messages
+    finally:
+        if script_path and os.path.exists(script_path):
+            os.remove(script_path)
+
+
 @celery.task(bind=True, base=MetabolightsTask, default_retry_delay=10, max_retries=3, soft_time_limit=60*15, name="app.tasks.common_tasks.curation_tasks.study_revision.sync_study_revision")
 def sync_study_revision(self, study_id: str, user_token: str):
     study: Study = StudyService.get_instance().get_study_by_acc(study_id)    
@@ -70,7 +146,7 @@ def sync_study_revision(self, study_id: str, user_token: str):
         revisions_root_path = os.path.join(mounted_paths.cluster_study_audit_files_root_path, study_id, "audit", "PUBLIC_METADATA")
         public_study_path = os.path.join(mounted_paths.cluster_public_ftp_root_path, study_id)
         email = get_settings().email.email_service.configuration.hpc_cluster_job_track_email_address
-        job_id, messages = sync_public_ftp_folder(study_id=study_id, 
+        job_id, messages = sync_public_ftp_folder_with_revisions(study_id=study_id, 
                                revision_number=study.revision_number,
                                source_path=revisions_root_path, 
                                target_path=public_study_path,
@@ -83,8 +159,7 @@ def sync_study_revision(self, study_id: str, user_token: str):
         raise e
 
 
-
-def sync_public_ftp_folder(task_name: str, 
+def sync_public_ftp_folder_with_revisions(task_name: str, 
                            study_id: str, 
                            revision_number: int,
                            email: str, 
@@ -106,7 +181,7 @@ def sync_public_ftp_folder(task_name: str,
         
     hpc_queue_name = settings.hpc_cluster.datamover.default_queue
     
-    script_template = "sync_public_ftp_folder.sh.j2"
+    script_template = "sync_public_ftp_folder_with_revisions.sh.j2"
     script_path = BashClient.prepare_script_from_template(script_template, **inputs)
     logger.info("sync_public_ftp_folder script is ready.")
     logger.info(Path(script_path).read_text())
@@ -123,7 +198,7 @@ def sync_public_ftp_folder(task_name: str,
                     error_file=err_log_path, 
                     queue=hpc_queue_name, 
                     account=email,
-                    mail_type="FAIL"
+                    mail_type="ALL"
                 )
         job_id = submission_result.job_ids[0] if submission_result  else  None
         

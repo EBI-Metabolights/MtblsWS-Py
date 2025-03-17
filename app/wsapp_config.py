@@ -264,16 +264,17 @@ def initialize_app(flask_app):
     api.add_resource(FtpFolderSyncStatus, res_path + "/studies/<string:study_id>/ftp/sync-status")
     api.add_resource(SyncFromStudyFolder, res_path + "/studies/<string:study_id>/ftp/sync-from-study-folder")
     api.add_resource(PrivateFtpUploadInfo, res_path + "/studies/<string:study_id>/upload-info")
-    api.add_resource(StudyRevisionSyncTask, res_path + "/studies/<string:study_id>/revisions/sync")
-
+    # api.add_resource(StudyRevisionSyncTask, res_path + "/studies/<string:study_id>/revisions/sync")
+    api.add_resource(StudyRevisionSyncTask, res_path + "/studies/<string:study_id>/sync-public-ftp")
 
     api.add_resource(AuditFiles, res_path + "/studies/<string:study_id>/audit")
     api.add_resource(StudyMetaInfo, res_path + "/studies/<string:study_id>/meta-info")
 
     # ISA Investigation
     api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")
-    api.add_resource(StudyRevisions, res_path + "/studies/<string:study_id>/revisions")
-    api.add_resource(StudyRevision, res_path + "/studies/<string:study_id>/revisions/<int:revision_number>")
+    # Enable for Milestone 2
+    # api.add_resource(StudyRevisions, res_path + "/studies/<string:study_id>/revisions")
+    # api.add_resource(StudyRevision, res_path + "/studies/<string:study_id>/revisions/<int:revision_number>")
 
     api.add_resource(StudyTitle, res_path + "/studies/<string:study_id>/title")
     api.add_resource(StudyReleaseDate, res_path + "/studies/<string:study_id>/release-date")

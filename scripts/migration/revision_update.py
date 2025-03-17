@@ -1,5 +1,4 @@
 import glob
-import json
 import os.path
 import logging
 from pathlib import Path
@@ -7,23 +6,12 @@ import re
 import shutil
 
 from app.config import get_settings
-from app.tasks.common_tasks.basic_tasks.email import send_email_on_public
-from app.ws.db.models import StudyRevisionModel
-from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus
-from app.ws.elasticsearch.elastic_service import ElasticsearchService
-from app.ws.folder_maintenance import StudyFolderMaintenanceTask
-import datetime
-from typing import List, Union
-from app.utils import MetabolightsException, current_time, current_utc_time_without_timezone
+from app.utils import  current_time
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.schemes import Study, StudyRevision
+from app.ws.db.schemes import Study, StudyRevision, User
 from app.ws.db.types import StudyRevisionStatus, StudyStatus
-from app.ws.isaApiClient import IsaApiClient
-from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_revision_service import StudyRevisionService
-from app.ws.study.study_service import StudyService
-from isatools import model
 
 from app.ws.study.user_service import UserService
 
@@ -50,7 +38,7 @@ def prepare_revisions():
             except Exception as e:
                 db_session.rollback()
                 raise e
-        studies = [x for x in studies if int(x["acc"].replace("MTBLS", "").replace("REQ", "")) > 998]
+        studies = [x for x in studies if int(x["acc"].replace("MTBLS", "").replace("REQ", "")) > 0]
         for study in studies:
             study_id = study["acc"]
             
@@ -219,6 +207,27 @@ def prepare_revisions():
                     if os.path.exists(target_file):
                         shutil.rmtree(target_file)
                     shutil.copytree(file, target_file)
+
+            mounted_paths = get_settings().study.mounted_paths
+            
+            data_files_path = os.path.join(mounted_paths.study_readonly_files_actual_root_path, study_id)
+            data_files_link_path = os.path.join(mounted_paths.study_metadata_files_root_path, study_id, "FILES")
+            os.unlink(data_files_link_path)
+            os.symlink(data_files_path, data_files_link_path)
+            
+            audit_files_path = os.path.join(mounted_paths.study_audit_files_root_path, study_id, "audit")
+            audit_files_link_path = os.path.join(mounted_paths.study_metadata_files_root_path, study_id, "AUDIT_FILES")
+            os.makedirs(audit_files_path, exist_ok=True)
+
+            os.unlink(audit_files_link_path)
+            os.symlink(audit_files_path, audit_files_link_path)       
+            
+            internal_files_path = os.path.join(mounted_paths.study_internal_files_root_path, study_id)
+            internal_files_link_path = os.path.join(mounted_paths.study_metadata_files_root_path, study_id, "INTERNAL_FILES")
+            os.unlink(internal_files_link_path)
+            os.makedirs(internal_files_path, exist_ok=True)
+            os.symlink(internal_files_path, internal_files_link_path)
+
             print(f"{study_id} ended.")
 
 if __name__ == "__main__":
