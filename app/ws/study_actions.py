@@ -144,6 +144,100 @@ class ValidationResultFile(BaseModel):
     task_id: str = ""
 
 
+class StudyCurationType(Resource):
+    @swagger.operation(
+        summary="Change study curation type (Manual Curation, No Curation) or (MetaboLights, Minimum)",
+        nickname="Change study status",
+        notes="""Change study status from 'Provisional' to 'Private' or 'Private' to 'Provisional'.<br>
+        Please note a *minimum* of 28 days is required for curation, this will be added to the release date</p>
+                <pre><code>Curators can change status to any of: 'Provisional', 'Private', 'In Review', 'Public' or 'Dormant'. curation_request is optional and can get the values: 'Manual Curation', 'No Curation', 'Semi-automated Curation'
+                <p>Example: { "status": "Private" }   {"status": "Private", "curation_request": "No Curation"}
+                </code></pre>""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string",
+            },
+            {
+                "name": "curation_type",
+                "description": "The status to change a study to",
+                "paramType": "header",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False,
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            },
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The Metabolite Annotation File (MAF) is returned",
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication.",
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user.",
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
+    )
+    @metabolights_exception_handler
+    def put(self, study_id: str):
+        # param validation
+        if study_id is None:
+            raise MetabolightsException(
+                message="Please provide valid parameter for study identifier"
+            )
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        UserService.get_instance().validate_user_has_curator_role(user_token, study_id)
+
+        # User authentication
+        curation_type_str = None
+        if "curation_type" in request.headers:
+            curation_type_str = request.headers["curation_type"]
+        
+        if curation_type_str and curation_type_str.upper() not in [
+            x.upper()
+            for x in ["Manual Curation", "No Curation", "MetaboLights", "Minimum"]
+        ]:
+            raise MetabolightsException(
+                message="Please provide curation request: 'Manual Curation', 'No Curation' or 'Semi-automated Curation'"
+            )
+        curation_type = CurationRequest.NO_CURATION
+        if curation_type_str and curation_type_str.upper() in [
+            x.upper()
+            for x in ["Manual Curation", "MetaboLights"]
+        ]:
+            curation_type = CurationRequest.MANUAL_CURATION
+
+        
+        update_curation_request(study_id, curation_type)
+        
+        return {"curation_type": curation_type.name}
+
 class StudyStatus(Resource):
     @swagger.operation(
         summary="Change study status",
@@ -221,10 +315,6 @@ class StudyStatus(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        if study_status.upper() == "PUBLIC":
-            raise MetabolightsException(
-                message="Please use the 'revisions' endpoint to release a study"
-            )
         if not study_status or study_status.upper() not in [
             x.upper()
             for x in ["provisional", "Private", "In Review", "Public", "Dormant"]
@@ -496,6 +586,10 @@ class StudyStatus(Resource):
             return response
 
     def update_status_m2(self, user_token: str, study_id: str, study_status: str, curation_request_str: str):
+        if study_status.upper() == "PUBLIC":
+            raise MetabolightsException(
+                message="Please use the 'revisions' endpoint to release a study"
+            )
         curation_request = (
             CurationRequest.from_name(curation_request_str)
             if curation_request_str
