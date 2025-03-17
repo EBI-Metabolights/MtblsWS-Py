@@ -3,7 +3,7 @@ from flask import request
 from flask_restful_swagger import swagger
 from flask_restful import Resource
 
-from app.tasks.common_tasks.curation_tasks.study_revision import delete_study_revision, prepare_study_revision, sync_study_revision
+from app.tasks.common_tasks.curation_tasks.study_revision import delete_study_revision, prepare_study_revision, sync_study_revision, sync_study_metadata_folder
 from app.utils import metabolights_exception_handler
 from app.ws.db.models import StudyRevisionModel
 from app.ws.db.schemes import  User, Study
@@ -440,7 +440,7 @@ class StudyRevisionSyncTask(Resource):
             raise Exception(f"User is not allowed to sync FTP folder for study {study.acc}.")
         
 
-
-        task = sync_study_revision.apply_async(kwargs={"study_id": study_id, "user_token": user_token})
+        task = sync_study_metadata_folder.apply_async(kwargs={"study_id": study_id, "user_token": user_token})
+        # task = sync_study_revision.apply_async(kwargs={"study_id": study_id, "user_token": user_token})
 
         return {"task": task.id, "message": "Task started."}
