@@ -95,7 +95,7 @@ from app.ws.settings.utils import get_study_settings
 from app.ws.species import SpeciesTree
 from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
 from app.ws.stats import StudyStats
-from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet, StudyModificationTime
+from app.ws.study_actions import StudyCurationType, StudyStatus, ToggleAccess, ToggleAccessGet, StudyModificationTime
 from app.ws.study_files import (CopyFilesFolders, DeleteAsperaFiles, FileList,
                                 SampleStudyFiles, StudyFiles, StudyFilesReuse,
                                 StudyFilesTree, StudyRawAndDerivedDataFiles, SyncFolder,
@@ -266,7 +266,8 @@ def initialize_app(flask_app):
     api.add_resource(PrivateFtpUploadInfo, res_path + "/studies/<string:study_id>/upload-info")
     # api.add_resource(StudyRevisionSyncTask, res_path + "/studies/<string:study_id>/revisions/sync")
     api.add_resource(StudyRevisionSyncTask, res_path + "/studies/<string:study_id>/sync-public-ftp")
-
+    api.add_resource(StudyCurationType, res_path + "/studies/<string:study_id>/curation-type")
+    
     api.add_resource(AuditFiles, res_path + "/studies/<string:study_id>/audit")
     api.add_resource(StudyMetaInfo, res_path + "/studies/<string:study_id>/meta-info")
 

@@ -6,7 +6,7 @@ from app.services.cluster.hpc_client import HpcClient
 from app.services.cluster.hpc_utils import get_new_hpc_datamover_client
 from app.tasks.bash_client import BashClient
 from app.tasks.worker import MetabolightsTask, celery
-from app.utils import MetabolightsException
+from app.utils import MetabolightsException, current_time
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, StudyRevision
 
@@ -69,7 +69,7 @@ def sync_study_metadata_folder(self, study_id: str, user_token: str):
     try:
         # Copy all revisions to Public FTP folder. AUDIT_FILES/PUBLIC_METADATA to <PUBLIC FTP FOLDER>/<STUDY ID> folder (delete folders/files if it is not on the source folder)
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
-
+        current = current_time().strftime("%Y-%m-%d_%H-%M-%S")
         metadata_files_path = os.path.join(mounted_paths.cluster_study_metadata_files_root_path, study_id)
         public_study_path = os.path.join(mounted_paths.cluster_public_ftp_root_path, study_id)
         email = get_settings().email.email_service.configuration.hpc_cluster_job_track_email_address
@@ -78,7 +78,7 @@ def sync_study_metadata_folder(self, study_id: str, user_token: str):
                                target_path=public_study_path,
                                user_token=user_token,
                                email=email,
-                               task_name=f"{study_id}_PUBLIC_FTP_SYNC"
+                               task_name=f"{study_id}_PUBLIC_FTP_SYNC_{current}"
                                )
         return {"job_id": job_id, "messages": messages }
     except Exception as e:
@@ -106,8 +106,8 @@ def sync_public_ftp_folder_with_metadata_folder(task_name: str,
     script_path = BashClient.prepare_script_from_template(script_template, **inputs)
     logger.info("sync_public_ftp_folder script is ready.")
     logger.info(Path(script_path).read_text())
-    study_log_path = os.path.join(settings.study.mounted_paths.study_internal_files_root_path, study_id, settings.study.internal_logs_folder_name)
-    task_log_path = os.path.join(study_log_path, f"{study_id}_{task_name}")
+    study_log_path = os.path.join(settings.study.mounted_paths.study_internal_files_root_path, study_id, settings.study.internal_logs_folder_name, "PUBLIC_FTP_SYNC")
+    task_log_path = os.path.join(study_log_path, task_name)
     os.makedirs(task_log_path, exist_ok=True)
     out_log_path = os.path.join(task_log_path, f"{task_name}_out.log")
     err_log_path = os.path.join(task_log_path, f"{task_name}_err.log")
@@ -146,13 +146,14 @@ def sync_study_revision(self, study_id: str, user_token: str):
         revisions_root_path = os.path.join(mounted_paths.cluster_study_audit_files_root_path, study_id, "audit", "PUBLIC_METADATA")
         public_study_path = os.path.join(mounted_paths.cluster_public_ftp_root_path, study_id)
         email = get_settings().email.email_service.configuration.hpc_cluster_job_track_email_address
+        current = current_time().strftime("%Y-%m-%d_%H-%M-%S")
         job_id, messages = sync_public_ftp_folder_with_revisions(study_id=study_id, 
                                revision_number=study.revision_number,
                                source_path=revisions_root_path, 
                                target_path=public_study_path,
                                user_token=user_token,
                                email=email,
-                               task_name=f"{study_id}_{study.revision_number:02}_PUBLIC_FTP_SYNC"
+                               task_name=f"{study_id}_{study.revision_number:02}_PUBLIC_FTP_SYNC_{current}"
                                )
         return {"job_id": job_id, "messages": messages }
     except Exception as e:
@@ -185,8 +186,8 @@ def sync_public_ftp_folder_with_revisions(task_name: str,
     script_path = BashClient.prepare_script_from_template(script_template, **inputs)
     logger.info("sync_public_ftp_folder script is ready.")
     logger.info(Path(script_path).read_text())
-    study_log_path = os.path.join(settings.study.mounted_paths.study_internal_files_root_path, study_id, settings.study.internal_logs_folder_name)
-    task_log_path = os.path.join(study_log_path, f"{study_id}_{task_name}")
+    study_log_path = os.path.join(settings.study.mounted_paths.study_internal_files_root_path, study_id, settings.study.internal_logs_folder_name, "PUBLIC_FTP_SYNC")
+    task_log_path = os.path.join(study_log_path, task_name)
     os.makedirs(task_log_path, exist_ok=True)
     out_log_path = os.path.join(task_log_path, f"{task_name}_out.log")
     err_log_path = os.path.join(task_log_path, f"{task_name}_err.log")
