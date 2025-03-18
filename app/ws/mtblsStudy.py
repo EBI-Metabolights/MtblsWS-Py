@@ -1151,6 +1151,7 @@ class CreateAccession(Resource):
             len(submitted_studies) >= study_settings.max_study_in_submitted_status
             and user.role != UserRole.ROLE_SUPER_USER.value
             and user.role != UserRole.SYSTEM_ADMIN.value
+            and user.partner == 0
         ):
             logger.warning(
                 f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_submitted_status} study in Submitted status."
