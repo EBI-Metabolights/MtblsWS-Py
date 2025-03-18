@@ -53,7 +53,7 @@ class Convert2ISAtab(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -130,7 +130,7 @@ class ValidateMzML(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -195,7 +195,7 @@ class ValidateMzML(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

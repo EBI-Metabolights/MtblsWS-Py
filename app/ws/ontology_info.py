@@ -194,7 +194,7 @@ class MetaboLightsOntology():
     
     
     def __add_entity(self, entity, children=None):
-        label =  re.sub("\s+", " ", str(entity.label[0]))
+        label =  re.sub(r"\s+", " ", str(entity.label[0]))
         self.iri_set.add(entity.iri)
         self.label_set.add(label)
         if not children:
@@ -213,7 +213,7 @@ class MetaboLightsOntology():
         if not entity.iri in self.search_entities:
             self.search_entities[entity.iri] = Entity(name=label, iri=entity.iri, provenance_name='Metabolights', provenance_uri="http://www.ebi.ac.uk/metabolights/ontology")
         if entity.isDefinedBy:
-            definition = re.sub("\s+", " ", " ".join(entity.isDefinedBy))
+            definition = re.sub(r"\s+", " ", " ".join(entity.isDefinedBy))
             self.search_entities[entity.iri].definition = definition
             mtbls_entity.description = definition
         

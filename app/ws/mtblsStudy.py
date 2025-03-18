@@ -100,7 +100,7 @@ class EbEyeStudies(Resource):
         notes="Process studies for EB EYE Search.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -156,7 +156,7 @@ class MtblsPrivateStudies(Resource):
         notes="Get a list of all Private Studies for Curator.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -208,7 +208,7 @@ class MtblsStudyValidationStatus(Resource):
                 "enum": ["error", "warn", "success"],
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -285,7 +285,7 @@ class MyMtblsStudies(Resource):
         notes="Get a list of all private studies for a user.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -316,7 +316,7 @@ class MyMtblsStudiesDetailed(Resource):
         notes="Get a list of all studies for a user. This also includes the status, release date, title and abstract",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -373,7 +373,7 @@ class IsaTabInvestigationFile(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -475,7 +475,7 @@ class IsaTabSampleFile(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -568,7 +568,7 @@ class IsaTabAssayFile(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -663,7 +663,7 @@ class CloneAccession(Resource):
                 "dataType": "string",
             },
             {
-                "name": "include_raw_data",
+                "name": "include-raw-data",
                 "description": "Include raw data when cloning a study.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -673,7 +673,7 @@ class CloneAccession(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -854,7 +854,7 @@ class CreateUploadFolder(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -920,7 +920,7 @@ class AuditFiles(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -991,7 +991,7 @@ class AuditFiles(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1100,7 +1100,7 @@ class CreateAccession(Resource):
         one additional data row to be ISA-Tab compliant""",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1108,7 +1108,7 @@ class CreateAccession(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "study_id",
+                "name": "study-id",
                 "description": "Requested study id (Leave it empty for new study id)",
                 "paramType": "header",
                 "type": "string",
@@ -1287,7 +1287,7 @@ class DeleteStudy(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1375,7 +1375,7 @@ class ReindexStudy(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1466,7 +1466,7 @@ class ReindexStudy(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1508,7 +1508,7 @@ class UnindexedStudy(Resource):
         notes="""Gets MetaboLights studies that should be updated for the up-to-date search index""",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1567,7 +1567,7 @@ class RetryReindexStudies(Resource):
         summary="Reindex unindexed public studies",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1637,7 +1637,7 @@ class MtblsPublicStudiesIndexAll(Resource):
         notes="Start a task to index all public studies and return task id. Result will be sent by email.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1682,7 +1682,7 @@ class MtblsStudiesIndexAll(Resource):
         notes="Start a task to index all studies and return task id. Result will be sent by email.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1727,7 +1727,7 @@ class MtblsStudiesIndexSync(Resource):
         notes="Start a task to sync all studies on database and elasticsearch, and return task id. Result will be sent by email.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1814,7 +1814,7 @@ class MtblsStudyFolders(Resource):
                 "default": "MAINTAIN"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1948,7 +1948,7 @@ class StudyFolderSynchronization(Resource):
                 "default": True
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -2039,7 +2039,7 @@ class StudyFolderSynchronization(Resource):
                 "default": True
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

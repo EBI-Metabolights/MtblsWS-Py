@@ -135,7 +135,7 @@ class GoogleCalendar(Resource):
         summary="Create (or update) Google Calendar entries for MetaboLights study curation (curator only)",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

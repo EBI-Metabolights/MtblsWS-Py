@@ -2859,7 +2859,7 @@ class StudyFolderMaintenanceTask(object):
     ):
         pass
 
-    def maintain_assay_file_content(self, investigation: isatab.Investigation):
+    def maintain_assay_file_content(self, investigation: isatools_model.Investigation):
         study_id = self.study_id
         assignment_column_name = "Metabolite Assignment File"
         updated_file_references = {}

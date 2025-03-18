@@ -76,7 +76,7 @@ class CompressRawDataFolders(Resource):
                 "enum": ["*.d", "*.raw"]
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -123,13 +123,13 @@ class CompressRawDataFolders(Resource):
         except Exception as ex:
             raise Exception(f"User has no curator role or database connection failure: {str(ex)}") from ex
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('filename_pattern', help='Filename pattern')
+        
+        
         filename_pattern = None
         
         if request.args:
-            args = parser.parse_args(req=request)
-            filename_pattern = args['filename_pattern'] if "filename_pattern" in args and args['filename_pattern'] else None
+            
+            filename_pattern = request.args.get('filename_pattern') if "filename_pattern" in args and request.args.get('filename_pattern') else None
 
         if filename_pattern is None:
             logger.info('No filename pattern is not given')

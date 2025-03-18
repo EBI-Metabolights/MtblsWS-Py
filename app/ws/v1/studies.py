@@ -30,7 +30,7 @@ class V1StudyDetail(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

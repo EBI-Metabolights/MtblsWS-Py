@@ -1742,7 +1742,7 @@ def safe_str(obj):
 
 
 def val_email(email=None):
-    email_username_pattern = "^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
+    email_username_pattern = r"^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
     if not email or not re.search(email_username_pattern, email):
         abort(406, message="Incorrect email " + email)
 
@@ -2028,7 +2028,7 @@ def get_instruments_organism(studyID=None):
                         i,
                     ]
 
-        organism_df = organism_df.append(get_organisms(studyID, sample_file))
+        organism_df = pd.concat([organism_df, get_organisms(studyID, sample_file)])
 
     instruments = {}
     for index, row in instruments_df.iterrows():
@@ -2101,7 +2101,7 @@ def get_public_review_studies():
         return int(text) if text.isdigit() else text
 
     def natural_keys(text):
-        return [atoi(c) for c in re.split("(\d+)", text)]
+        return [atoi(c) for c in re.split(r"(\d+)", text)]
 
     query = "select acc from studies where status= 3 or status = 2"
     query = query.replace("\\", "")

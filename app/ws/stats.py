@@ -40,7 +40,7 @@ class StudyStats(Resource):
         summary="Update sample, assay and maf stats for all MetaboLights studies (curator only)",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

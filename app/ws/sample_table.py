@@ -42,7 +42,7 @@ wsc = WsClient()
 
 
 def insert_row(idx, df, df_insert):
-    return df.iloc[:idx, ].append(df_insert, ignore_index=True).append(df.iloc[idx:, ]).reset_index(drop=True)
+    return pd.concat([df.iloc[:idx, ], df_insert, df.iloc[idx:, ]], ignore_index=True).reset_index(drop=True)
 
 
 class EditSampleFile(Resource):
@@ -68,7 +68,7 @@ class EditSampleFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -162,7 +162,7 @@ class EditSampleFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -222,7 +222,7 @@ class EditSampleFile(Resource):
 
         sample_df = pd.read_csv(sample_file_name, sep="\t", header=0, encoding='utf-8')
         sample_df = sample_df.replace(np.nan, '', regex=True)  # Remove NaN
-        sample_df = sample_df.append(new_row, ignore_index=True)  # Add new row to the spreadsheet
+        sample_df = pd.concat([sample_df, new_row], ignore_index=True)  # Add new row to the spreadsheet
 
         # Get an indexed header row
         df_header = get_table_header(sample_df)
@@ -268,7 +268,7 @@ class EditSampleFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -390,7 +390,7 @@ class EditSampleFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -420,10 +420,8 @@ class EditSampleFile(Resource):
     def delete(self, study_id, sample_file_name):
 
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('row_num', help="The row number of the cell(s) to remove (exclude header)", location="args")
-        args = parser.parse_args()
-        row_num = args['row_num']
+        
+        row_num = request.args.get('row_num')
 
         # param validation
         if study_id is None or sample_file_name is None or row_num is None:

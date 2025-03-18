@@ -111,7 +111,7 @@ class StudyRevisions(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -291,7 +291,7 @@ class StudyRevision(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -350,7 +350,7 @@ class StudyRevision(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

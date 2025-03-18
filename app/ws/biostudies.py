@@ -42,7 +42,7 @@ class BioStudies(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -105,7 +105,7 @@ class BioStudies(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -133,10 +133,7 @@ class BioStudies(Resource):
         study_id = study_id.upper()
 
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('biostudies_acc', help="BioStudies accession", location="args")
-        args = parser.parse_args()
-        biostudies_acc = args['biostudies_acc']
+        biostudies_acc = request.args.get('biostudies_acc')
 
         if biostudies_acc is None:
             abort(404)
@@ -168,7 +165,7 @@ class BioStudies(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -225,7 +222,7 @@ class BioStudiesFromMTBLS(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -247,10 +244,8 @@ class BioStudiesFromMTBLS(Resource):
     def get(self):
 
         # param validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('biostudies_acc', help="BioStudies accession", location="args")
-        args = parser.parse_args()
-        biostudies_acc = args['biostudies_acc']
+        
+        biostudies_acc = request.args.get('biostudies_acc')
         if biostudies_acc is None:
             abort(404)
 

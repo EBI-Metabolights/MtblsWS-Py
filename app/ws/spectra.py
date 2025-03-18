@@ -81,7 +81,7 @@ class ExtractMSSpectra(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -125,15 +125,11 @@ class ExtractMSSpectra(Resource):
         if not is_curator:
             abort(403)
 
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('mzml_file_name', help="mzML file", location="args")
-        parser.add_argument('mtbls_compound_id', help="MTBLS compound id", location="args")
-        parser.add_argument('retention_time', help="RT for peaks", location="args")
-        args = parser.parse_args()
-        mzml_file_name = args['mzml_file_name'].strip()
-        mtbls_compound_id = args['mtbls_compound_id'].strip()
-        retention_time = args['retention_time']
+        # query validation        
+        
+        mzml_file_name = request.args.get('mzml_file_name').strip()
+        mtbls_compound_id = request.args.get('mtbls_compound_id').strip()
+        retention_time = request.args.get('retention_time')
         if retention_time:
             retention_time = retention_time.strip()
         full_mzml_file_name = None
@@ -220,7 +216,7 @@ class ZipSpectraFiles(Resource):
         notes="Gets every spectra file / folder, and copies it to a new directory to be later zipped.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

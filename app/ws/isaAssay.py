@@ -36,8 +36,8 @@ from isatools.model import (
     Protocol,
     Study,
     ProtocolParameter,
+    OntologySource
 )
-from marshmallow import ValidationError
 from app.utils import metabolights_exception_handler
 
 from app.ws.isaApiClient import IsaApiClient
@@ -124,7 +124,7 @@ class StudyAssayDelete(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -140,7 +140,7 @@ class StudyAssayDelete(Resource):
                 "dataType": "string",
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -194,7 +194,7 @@ class StudyAssayDelete(Resource):
             abort(401)
 
         # query validation
-        parser = reqparse.RequestParser()
+        
 
         # check for access rights
         (
@@ -367,7 +367,7 @@ class StudyAssay(Resource):
                 "default": True,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -407,15 +407,15 @@ class StudyAssay(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("filename", help="Assay filename")
+        
+        
         filename = None
-        parser.add_argument("list_only", help="List names only")
+        
         list_only = True
         if request.args:
-            args = parser.parse_args(req=request)
-            filename = args["filename"].lower() if args["filename"] else None
-            list_only = True if args["list_only"].lower() == "true" else False
+            
+            filename = request.args.get("filename").lower() if request.args.get("filename") else None
+            list_only = True if request.args.get("list_only").lower() == "true" else False
 
         logger.info("Getting Assay %s for %s", filename, study_id)
         # check for access rights
@@ -496,7 +496,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -513,7 +513,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                 "allowMultiple": False,
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -600,7 +600,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             if assay_type is None:
                 abort(412)
 
-        except (ValidationError, Exception):
+        except (Exception):
             abort(400, message="Incorrect JSON provided")
         study_metadata_location = os.path.join(
             get_study_settings().mounted_paths.study_metadata_files_root_path, study_id
@@ -784,12 +784,10 @@ def get_valid_assay_file_name(file_name, study_path):
 
 def get_new_assay(file_name, assay_platform, assay_type, ontology):
     assay = Assay(filename=file_name, technology_platform=assay_platform)
-
     # technologyType
     technology = OntologyAnnotation(
         term_accession="http://purl.obolibrary.org/obo/OBI_0000366",
         term="metabolite profiling",
-        term_source="OBI",
     )
     # measurementType
     measurement = assay.measurement_type
@@ -816,7 +814,7 @@ def get_new_assay(file_name, assay_platform, assay_type, ontology):
 
     try:
         result = AssaySchema().load(assay, partial=True)
-    except (ValidationError, Exception):
+    except Exception:
         abort(400)
 
     return assay, overall_technology
@@ -939,7 +937,7 @@ class AssayProcesses(Resource):
                 "default": True,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -979,33 +977,30 @@ class AssayProcesses(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("assay_filename", help="Assay filename")
+        
+        
         assay_filename = None
-        parser.add_argument("process_name", help="Assay Processes name")
+        
         process_name = None
-        parser.add_argument("protocol_name", help="Protocol name")
+        
         protocol_name = None
-        parser.add_argument("list_only", help="List names only")
+        
         list_only = True
-        parser.add_argument(
-            "use_default_values", help="Provide default values when empty"
-        )
         use_default_values = False
         if request.args:
-            args = parser.parse_args(req=request)
+            
             assay_filename = (
-                args["assay_filename"].lower() if args["assay_filename"] else None
+                request.args.get("assay_filename").lower() if request.args.get("assay_filename") else None
             )
             process_name = (
-                args["process_name"].lower() if args["process_name"] else None
+                request.args.get("process_name").lower() if request.args.get("process_name") else None
             )
             protocol_name = (
-                args["protocol_name"].lower() if args["protocol_name"] else None
+                request.args.get("protocol_name").lower() if request.args.get("protocol_name") else None
             )
-            list_only = True if args["list_only"].lower() == "true" else False
+            list_only = True if request.args.get("list_only").lower() == "true" else False
             use_default_values = (
-                True if args["use_default_values"].lower() == "true" else False
+                True if request.args.get("use_default_values").lower() == "true" else False
             )
 
         logger.info("Getting Processes for Assay %s in %s", assay_filename, study_id)
@@ -1185,7 +1180,7 @@ class AssaySamples(Resource):
                 "default": True,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1225,20 +1220,20 @@ class AssaySamples(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("assay_filename", help="Assay filename")
+        
+        
         assay_filename = None
-        parser.add_argument("name", help="Assay Sample name")
+        
         sample_name = None
-        parser.add_argument("list_only", help="List names only")
+        
         list_only = True
         if request.args:
-            args = parser.parse_args(req=request)
+            
             assay_filename = (
-                args["assay_filename"].lower() if args["assay_filename"] else None
+                request.args.get("assay_filename").lower() if request.args.get("assay_filename") else None
             )
-            sample_name = args["name"].lower() if args["name"] else None
-            list_only = True if args["list_only"].lower() == "true" else False
+            sample_name = request.args.get("name").lower() if request.args.get("name") else None
+            list_only = True if request.args.get("list_only").lower() == "true" else False
 
         logger.info("Getting Samples for Assay %s in %s", assay_filename, study_id)
         # check for access rights
@@ -1325,7 +1320,7 @@ class AssaySamples(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1353,7 +1348,7 @@ class AssaySamples(Resource):
                 "default": True,
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -1395,20 +1390,20 @@ class AssaySamples(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("assay_filename", help="Assay filename")
+        
+        
         assay_filename = None
-        parser.add_argument("name", help="Assay Sample name")
+        
         sample_name = None
-        parser.add_argument("list_only", help="List names only")
+        
         list_only = True
         if request.args:
-            args = parser.parse_args(req=request)
+            
             assay_filename = (
-                args["assay_filename"].lower() if args["assay_filename"] else None
+                request.args.get("assay_filename").lower() if request.args.get("assay_filename") else None
             )
-            sample_name = args["name"].lower() if args["name"] else None
-            list_only = True if args["list_only"].lower() == "true" else False
+            sample_name = request.args.get("name").lower() if request.args.get("name") else None
+            list_only = True if request.args.get("list_only").lower() == "true" else False
         if not assay_filename:
             logger.warning("Missing Assay filename.")
             abort(400)
@@ -1434,7 +1429,7 @@ class AssaySamples(Resource):
             if len(sample_list) == 0:
                 logger.warning("No valid data provided.")
                 abort(400)
-        except (ValidationError, Exception) as err:
+        except Exception as err:
             logger.warning("Bad format JSON request." + str(err))
             abort(400, message=str(err))
 
@@ -1604,7 +1599,7 @@ class AssayOtherMaterials(Resource):
                 "default": True,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1644,20 +1639,20 @@ class AssayOtherMaterials(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("assay_filename", help="Assay filename")
+        
+        
         assay_filename = None
-        parser.add_argument("name", help="Assay Other Materials name")
+        
         obj_name = None
-        parser.add_argument("list_only", help="List names only")
+        
         list_only = True
         if request.args:
-            args = parser.parse_args(req=request)
+            
             assay_filename = (
-                args["assay_filename"].lower() if args["assay_filename"] else None
+                request.args.get("assay_filename").lower() if request.args.get("assay_filename") else None
             )
-            obj_name = args["name"].lower() if args["name"] else None
-            list_only = True if args["list_only"].lower() == "true" else False
+            obj_name = request.args.get("name").lower() if request.args.get("name") else None
+            list_only = True if request.args.get("list_only").lower() == "true" else False
 
         logger.info(
             "Getting Other Materials for Assay %s in %s", assay_filename, study_id
@@ -1762,7 +1757,7 @@ class AssayDataFiles(Resource):
                 "default": True,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1802,22 +1797,22 @@ class AssayDataFiles(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("assay_filename", help="Assay filename")
+        
+        
         assay_filename = None
-        parser.add_argument("data_filename", help="Assay Data File name")
+        
         data_filename = None
-        parser.add_argument("list_only", help="List names only")
+        
         list_only = True
         if request.args:
-            args = parser.parse_args(req=request)
+            
             assay_filename = (
-                args["assay_filename"].lower() if args["assay_filename"] else None
+                request.args.get("assay_filename").lower() if request.args.get("assay_filename") else None
             )
             data_filename = (
-                args["data_filename"].lower() if args["data_filename"] else None
+                request.args.get("data_filename").lower() if request.args.get("data_filename") else None
             )
-            list_only = True if args["list_only"].lower() == "true" else False
+            list_only = True if request.args.get("list_only").lower() == "true" else False
 
         logger.info("Getting Data Files for Assay %s in %s", assay_filename, study_id)
         # check for access rights
@@ -1911,7 +1906,7 @@ class StudySampleTemplate(Resource):
                 "default": "minimum",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1962,20 +1957,16 @@ class StudySampleTemplate(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("sample_type", help="Sample type name")
-        parser.add_argument("force", help="Force overriding of sample")
-        sampleType = None
+        # query validation        sampleType = None
         force_override = False
         if request.args:
-            args = parser.parse_args(req=request)
+            
             sampleType = (
-                args["sample_type"].lower() if args["sample_type"] else "minimum"
+                request.args.get("sample_type").lower() if request.args.get("sample_type") else "minimum"
             )
 
-            if args and "force" in args and args["force"]:
-                force_override = True if args["force"].lower() == "true" else False
+            if request.args and request.args.get("force"):
+                force_override = True if request.args.get("force").lower() == "true" else False
 
         logger.info("Init Sample for %s; Type %s", study_id, sampleType)
         # check for access rights

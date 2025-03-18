@@ -38,6 +38,7 @@ from app.config.utils import get_private_ftp_relative_root_path
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
 from app.tasks.common_tasks.basic_tasks.email import (
+    get_principal_investigator_emails,
     send_email_for_new_accession_number,
     send_email_on_public,
 )
@@ -93,7 +94,7 @@ class StudyModificationTime(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -163,7 +164,7 @@ class StudyCurationType(Resource):
                 "dataType": "string",
             },
             {
-                "name": "curation_type",
+                "name": "curation-type",
                 "description": "The status to change a study to",
                 "paramType": "header",
                 "type": "string",
@@ -172,7 +173,7 @@ class StudyCurationType(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -266,7 +267,7 @@ class StudyStatus(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -511,6 +512,7 @@ class StudyStatus(Resource):
                 get_settings().study.accession_number_prefix
             ):
                 study_title = isa_study.title
+                additional_cc_emails = get_principal_investigator_emails(study)
                 inputs = {
                     "user_token": user_token,
                     "provisional_id": study_id,
@@ -518,6 +520,7 @@ class StudyStatus(Resource):
                     "obfuscation_code": obfuscation_code,
                     "study_title": study_title,
                     "release_date": release_date,
+                    "additional_cc_emails": additional_cc_emails,
                 }
                 send_email_for_new_accession_number.apply_async(kwargs=inputs)
         ElasticsearchService.get_instance()._reindex_study(updated_study_id, user_token)
@@ -1121,7 +1124,7 @@ class ToggleAccess(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1174,7 +1177,7 @@ class ToggleAccessGet(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

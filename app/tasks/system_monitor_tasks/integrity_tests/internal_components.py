@@ -51,7 +51,7 @@ def check_redis():
 
 @check_result(category="mtblsws_py")
 def check_mtblsws_py_version():
-    host = get_settings().server.service.mtbls_ws_host
+    host = get_settings().server.service.app_host_url
     context = get_settings().server.service.resources_path
 
     url = f"{host}{context}"
