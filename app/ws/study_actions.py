@@ -342,7 +342,7 @@ class StudyStatus(Resource):
             for x in ["provisional", "Private", "In Review", "Public", "Dormant"]
         ]:
             raise MetabolightsException(
-                message="Please provide study status: 'provisional', 'Private', 'In Review', 'Public' or 'Dormant'"
+                message="Please provide study status: 'Provisional', 'Private', 'In Review', 'Public'"
             )
 
         if curation_request_str and curation_request_str.upper() not in [
@@ -397,7 +397,7 @@ class StudyStatus(Resource):
             study_id, user_token, skip_load_tables=True, study_location=study_location
         )
         isa_study: Study = isa_study_item
-        if study_status.lower() in {"public", "in review", "in curation"}:
+        if study_status.lower() in {"public", "in review", "private"}:
             updated_submission_date = (
                 first_private_date_baseline.strftime("%Y-%m-%d")
                 if first_private_date_baseline
@@ -433,6 +433,12 @@ class StudyStatus(Resource):
                 )
             update_curation_request(study_id, curation_request)
         else:
+            if not status_updated:
+                raise MetabolightsException(
+                            http_code=403,
+                            message="Current status and requested status are same.",
+                        )
+            
             if db_study_status.lower() in {"public"}:
                 raise MetabolightsException(
                             http_code=403,
@@ -458,12 +464,6 @@ class StudyStatus(Resource):
                         message="There are validation errors. Fix any problems before attempting to change study status.",
                     )
                     
-            if study_status.lower() == "public":
-                isa_inv.public_release_date = new_date
-                isa_study.public_release_date = new_date
-                isa_inv.submission_date = first_private_date_baseline
-                isa_study.submission_date = first_private_date_baseline
-                release_date = new_date
             self.update_status(
                 study_id,
                 study_status,
@@ -480,8 +480,6 @@ class StudyStatus(Resource):
                 isa_study.public_release_date = new_date
                 release_date = new_date
 
-        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True, save_assays_copy=True, save_samples_copy=True)
-
         current_study_status = types.StudyStatus.from_int(study.status)
         requested_study_status = types.StudyStatus.from_name(study_status.upper())
 
@@ -491,6 +489,15 @@ class StudyStatus(Resource):
             requested_study_status,
             study.reserved_accession,
         )
+        study = StudyService.get_instance().get_study_by_acc(updated_study_id)
+        if study_status.lower() == "public":
+            isa_inv.public_release_date = new_date
+            isa_study.public_release_date = new_date
+            submission = study.first_private_date.strftime("%Y-%m-%d") if study.first_private_date else study.submissiondate.strftime("%Y-%m-%d")
+            isa_inv.submission_date = submission
+            isa_study.submission_date = submission
+            release_date = new_date
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True, save_assays_copy=True, save_samples_copy=True)
 
         if study_id != updated_study_id:
             self.refactor_study_folder(
@@ -514,7 +521,7 @@ class StudyStatus(Resource):
                 }
                 send_email_for_new_accession_number.apply_async(kwargs=inputs)
         ElasticsearchService.get_instance()._reindex_study(updated_study_id, user_token)
-        study = StudyService.get_instance().get_study_by_acc(updated_study_id)
+    
         current_curation_request = CurationRequest(study.curation_request)
         current_status = types.StudyStatus(study.status)
         ftp_private_relative_root_path = get_private_ftp_relative_root_path()
@@ -636,7 +643,7 @@ class StudyStatus(Resource):
             study_id, user_token, skip_load_tables=True, study_location=study_location
         )
         isa_study: Study = isa_study_item
-        if study_status.lower() in {"public", "in review", "in curation"}:
+        if study_status.lower() in {"public", "in review", "private"}:
             updated_submission_date = (
                 first_private_date_baseline.strftime("%Y-%m-%d")
                 if first_private_date_baseline
@@ -716,8 +723,6 @@ class StudyStatus(Resource):
                 raise MetabolightsException(
                     http_code=403, message="You can not change the study to this status"
                 )
-        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True, save_assays_copy=True, save_samples_copy=True)
-
         current_study_status = types.StudyStatus.from_int(study.status)
         requested_study_status = types.StudyStatus.from_name(study_status.upper())
 
@@ -751,6 +756,7 @@ class StudyStatus(Resource):
                 send_email_for_new_accession_number.apply_async(kwargs=inputs)
         ElasticsearchService.get_instance()._reindex_study(updated_study_id, user_token)
         study = StudyService.get_instance().get_study_by_acc(updated_study_id)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True, save_assays_copy=True, save_samples_copy=True)
         current_curation_request = CurationRequest(study.curation_request)
         current_status = types.StudyStatus(study.status)
         ftp_private_relative_root_path = get_private_ftp_relative_root_path()
@@ -922,8 +928,8 @@ class StudyStatus(Resource):
                 start_time = datetime.datetime.fromisoformat(
                     content["start_time"]
                 ).timestamp()
-
-                if start_time < last_modified:
+                # 1 sec threshold 
+                if start_time + 1 < last_modified:
                     return (
                         False,
                         "Metadata files are updated after the last validation. Re-run validation.",
@@ -934,17 +940,11 @@ class StudyStatus(Resource):
                         False,
                         "Validation file content is not valid. Study id is different.",
                     )
-                violations = content["messages"]["violations"]
-                overrides = self.get_validation_overrides(study_id)
-                for violation in violations:
-                    violation_type = violation["type"].upper()
-                    if violation["identifier"] in overrides:
-                        violation_type = overrides[violation["identifier"]].upper()
-                    if violation_type == "ERROR":
-                        return (
-                            False,
-                            "There are validation errors. Update metadata and data files and re-run validation",
-                        )
+                if content["status"] == "ERROR":
+                    return (
+                        False,
+                        "There are validation errors. Update metadata and data files and re-run validation",
+                    )
                 return True, "There is no validation errors"
             except Exception as exc:
                 message = f"Validation file read error. {validation_time}: {str(exc)}"

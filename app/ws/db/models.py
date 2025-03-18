@@ -360,7 +360,7 @@ class LiteStudyModel(EntityModel):
     id: int = Field(...)
     studyIdentifier: str = Field(...)  # assigned as not_analyzed in es
     revisionNumber: Union[None, int] = None
-    revisionDatetime: Union[None, str] = None
+    revisionDatetime: Union[None, str, int] = None
     title: Union[None, str] = None
 
     studyDescription: Union[None, str] = None
@@ -392,7 +392,7 @@ class StudyModel(LiteStudyModel):
     backups: Union[None, List[BackupModel]] = []
     sampleTable: Union[None, TableModel] = None  # excluded from es
 
-    @field_validator('updateDate', 'studySubmissionDate', 'studyPublicReleaseDate')
+    @field_validator('updateDate', 'studySubmissionDate', 'studyPublicReleaseDate', "revisionDatetime")
     @classmethod
     def datetime_validation(cls, value):
         if not value:
