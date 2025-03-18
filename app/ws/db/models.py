@@ -9,6 +9,7 @@ from app.ws.db.utils import datetime_to_int
 class StudyAccessPermission(BaseModel):
     userName: str = ""
     userRole: str = ""
+    partner: bool = False
     submitterOfStudy: bool = False
     obfuscationCode: str = ""
     studyId: str = ""
@@ -57,6 +58,7 @@ class UserModel(BaseModel):
     orcid: Union[None, str] = Field(None, alias="orcid")
     role: Union[int, str] = Field(..., alias="role")  # excluded from es
     status: Union[int, str] = Field(..., alias="status")  # excluded from es
+    partner: Union[bool, int] = Field(..., alias="partner")  # excluded from es
     userId: int = Field(..., alias="id")  # excluded from es
     userName: str = Field(..., alias="username")  # assigned as not_analyzed in es
     userVerifyDbPassword: Union[None, str] = None  # not in es index mapping
@@ -73,6 +75,14 @@ class UserModel(BaseModel):
             return value.isoformat()
         return value
 
+    @field_validator('partner', check_fields=False)
+    @classmethod
+    def partner_validation(cls, value):
+        try:
+            return True if int(value) > 0 else False
+        except Exception:
+            return False
+        
 class UserLiteModel(BaseModel):
     firstName: str = ""
     lastName: str = ""
@@ -85,7 +95,7 @@ class NewUserModel(BaseModel):
     email: str = Field(..., alias="email")  # excluded from es
     userName: str = Field(..., alias="username")  # assigned as not_analyzed in es
     dbPassword: str = Field(..., alias="password")  # excluded from es
-    joinDate: datetime.datetime = Field(..., alias="joindate")  # excluded from es
+    joinDate: Union[None, str, int, datetime.datetime] = Field(..., alias="joindate")  # excluded from es
     firstName: str = Field(..., alias="firstname")
     fullName: Union[None, str] = Field(None)  # assigned as not_analyzed in es
     lastName: str = Field(..., alias="lastname")
@@ -132,15 +142,23 @@ class SimplifiedUserModel(BaseModel):
     email: str = Field(..., alias="email")  # excluded from es
     firstName: Union[None, str] = Field(None, alias="firstname")
     fullName: Union[None, str] = Field(None)  # assigned as not_analyzed in es
-    joinDate: datetime.datetime = Field(None, alias="joindate")  # excluded from es
+    joinDate: Union[None, str, int, datetime.datetime] = Field(None, alias="joindate")  # excluded from es
     lastName: Union[None, str] = Field(None, alias="lastname")
     orcid: Union[None, str] = Field(None, alias="orcid")
     role: Union[int, str] = Field(..., alias="role")  # excluded from es
     status: Union[int, str] = Field(..., alias="status")  # excluded from es
+    partner: Union[bool, int] = Field(..., alias="partner")  # excluded from es
     userName: str = Field(..., alias="username")  # assigned as not_analyzed in es
     apiToken: str = Field(..., alias="apitoken")  # excluded from es
     model_config = ConfigDict(from_attributes=True)
 
+    @field_validator('joinDate', check_fields=False)
+    @classmethod
+    def partner_validation(cls, value):
+        try:
+            return True if int(value) > 0 else False
+        except Exception:
+            return False
     
     @field_validator('joinDate', check_fields=False)
     @classmethod

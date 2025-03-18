@@ -54,6 +54,7 @@ class User(Base):
     lastname = Column(String(255))
     password = Column(String(255))
     role = Column(BigInteger, nullable=False)
+    partner = Column(BigInteger, nullable=False, default=0)
     status = Column(BigInteger, nullable=False)
     username = Column(String(255), unique=True)
     orcid = Column(String(255))
