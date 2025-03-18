@@ -10,14 +10,60 @@ else
   echo "{{ UPDATE_URL }} : Failed to update revision FTP sync status to 'In Progress'"
 fi
 
-echo "FTP SYNC TASK STARTED at $CURRENT_TIME"
+#!/bin/bash
+#################################
+#  Configurable Options Follow  #
+#################################
 
-echo "rsync -Lauv --delete-after --chmod=+rx {{ SOURCE_PATH }}/. {{ TARGET_PATH }}/"
-rsync -Lauv --delete-after --ignore-errors --chmod=+rx "{{ SOURCE_PATH }}/." "{{ TARGET_PATH }}/"
-RETURN=$?
-echo "Exit code: $RETURN"
+EMAIL_TO={{ EMAIL_TO }}
+STUDY_METADATA_PATH={{ STUDY_METADATA_PATH }}
+STUDY_PUBLIC_FTP_PATH={{ STUDY_PUBLIC_FTP_PATH }}
+STUDY_PRIVATE_FTP_PATH={{ STUDY_PRIVATE_FTP_PATH }}
+SHELL_LOG_FILE_PATH= {{ SHELL_LOG_FILE_PATH }}
+
+#################################
+#  End of Configurable Options  #
+#################################
+
+rm -f $SHELL_LOG_FILE_PATH
+touch $SHELL_LOG_FILE_PATH
+
+echo "FTP SYNC TASK STARTED at $CURRENT_TIME" >>  $SHELL_LOG_FILE_PATH
+echo "STUDY_METADATA_PATH:  $STUDY_METADATA_PATH" >>  $SHELL_LOG_FILE_PATH
+echo "STUDY_PUBLIC_FTP_PATH:  $STUDY_PUBLIC_FTP_PATH" >>  $SHELL_LOG_FILE_PATH
+echo "STUDY_PRIVATE_FTP_PATH:  $STUDY_PRIVATE_FTP_PATH" >>  $SHELL_LOG_FILE_PATH
+
+
+echo "----------------------------" >>  $SHELL_LOG_FILE_PATH
+echo "Cleaning Private FTP content" >>  $SHELL_LOG_FILE_PATH
+echo "Cleaning Private FTP Path: ${STUDY_PRIVATE_FTP_PATH}" >>  $SHELL_LOG_FILE_PATH
+echo "rm -rf ${STUDY_PRIVATE_FTP_PATH}/*" >> $SHELL_LOG_FILE_PATH
+rm -rf ${STUDY_PRIVATE_FTP_PATH}/*
+
+echo "chmod -R 755 ${STUDY_PRIVATE_FTP_PATH}" >>  $SHELL_LOG_FILE_PATH
+chmod -R 755 ${STUDY_PRIVATE_FTP_PATH}
+
+echo "----------------------------" >>  $SHELL_LOG_FILE_PATH
 CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-echo "FTP SYNC TASK ENDED at $CURRENT_TIME"
+echo "$CURRENT_TIME: Syncing Study files to Public" >>  $SHELL_LOG_FILE_PATH
+echo "${STUDY_PUBLIC_FTP_PATH} is now being synced." >>  $SHELL_LOG_FILE_PATH
+echo "mkdir -p ${STUDY_PUBLIC_FTP_PATH}" >> $SHELL_LOG_FILE_PATH
+mkdir -p ${STUDY_PUBLIC_FTP_PATH}
+
+echo "rsync from ${STUDY_METADATA_PATH}/ to ${STUDY_PUBLIC_FTP_PATH}" >>  $SHELL_LOG_FILE_PATH
+echo "rsync -a -L --delete-after --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' ${STUDY_METADATA_PATH}/ ${STUDY_PUBLIC_FTP_PATH}" >>  $SHELL_LOG_FILE_PATH
+rsync -a -L --delete-after --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' --chmod=+rx ${STUDY_METADATA_PATH}/ ${STUDY_PUBLIC_FTP_PATH}
+RETURN=$?
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$CURRENT_TIME: Exit code: $RETURN" >>  $SHELL_LOG_FILE_PATH
+
+
+echo "----------------------------" >>  $SHELL_LOG_FILE_PATH
+echo "Changing permissions" >>  $SHELL_LOG_FILE_PATH
+echo "chmod -R 755 ${STUDY_PUBLIC_FTP_PATH}" >>  $SHELL_LOG_FILE_PATH
+chmod -R 755 ${STUDY_PUBLIC_FTP_PATH}
+mailx -s 'Public study files operation completed!' ${EMAIL_TO} < ${SHELL_LOG_FILE_PATH}
+
 
 echo "UPDATE URL: {{ UPDATE_URL }}"
 

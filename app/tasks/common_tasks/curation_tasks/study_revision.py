@@ -73,12 +73,19 @@ def sync_study_metadata_folder(self, study_id: str, user_token: str):
         metadata_files_path = os.path.join(mounted_paths.cluster_study_metadata_files_root_path, study_id)
         public_study_path = os.path.join(mounted_paths.cluster_public_ftp_root_path, study_id)
         email = get_settings().email.email_service.configuration.hpc_cluster_job_track_email_address
+        
+        ftp_user_home = get_settings().hpc_cluster.datamover.cluster_private_ftp_user_home_path
+        private_ftp_root_path = mounted_paths.cluster_private_ftp_root_path
+        ftp_base_folder = private_ftp_root_path.replace(ftp_user_home, "")
+        study_private_ftp_path = os.path.join(ftp_base_folder.rstrip('"'), f"{study.acc.lower()}-{study.obfuscationcode}")
+
         job_id, messages = sync_public_ftp_folder_with_metadata_folder(study_id=study_id, 
                                source_path=metadata_files_path, 
                                target_path=public_study_path,
                                user_token=user_token,
                                email=email,
-                               task_name=f"{study_id}_PUBLIC_FTP_SYNC_{current}"
+                               task_name=f"{study_id}_PUBLIC_FTP_SYNC_{current}",
+                               study_private_ftp_path=study_private_ftp_path
                                )
         return {"job_id": job_id, "messages": messages }
     except Exception as e:
@@ -90,15 +97,25 @@ def sync_public_ftp_folder_with_metadata_folder(task_name: str,
                            email: str, 
                            source_path: str, 
                            target_path: str, 
-                           user_token: str
+                           user_token: str,
+                           study_private_ftp_path
                            ):
     settings = get_settings()
     client: HpcClient = get_new_hpc_datamover_client()
+    study_log_path = os.path.join(settings.study.mounted_paths.study_internal_files_root_path, 
+                                  study_id, settings.study.internal_logs_folder_name, "PUBLIC_FTP_SYNC")
+    task_log_path = os.path.join(study_log_path, task_name)
+    os.makedirs(task_log_path, exist_ok=True)
+    out_log_path = os.path.join(task_log_path, f"{task_name}_out.log")
+    err_log_path = os.path.join(task_log_path, f"{task_name}_err.log")
+    
     messages = []
     inputs = {
-            "SOURCE_PATH": source_path,
-            "TARGET_PATH": target_path,
-            "USER_TOKEN": user_token,
+            "EMAIL_TO": email,
+            "STUDY_METADATA_PATH": source_path,
+            "STUDY_PUBLIC_FTP_PATH": target_path,
+            "STUDY_PRIVATE_FTP_PATH": study_private_ftp_path,
+            "SHELL_LOG_FILE_PATH": out_log_path,
         }
     hpc_queue_name = settings.hpc_cluster.datamover.default_queue
     
@@ -106,12 +123,7 @@ def sync_public_ftp_folder_with_metadata_folder(task_name: str,
     script_path = BashClient.prepare_script_from_template(script_template, **inputs)
     logger.info("sync_public_ftp_folder script is ready.")
     logger.info(Path(script_path).read_text())
-    study_log_path = os.path.join(settings.study.mounted_paths.study_internal_files_root_path, study_id, settings.study.internal_logs_folder_name, "PUBLIC_FTP_SYNC")
-    task_log_path = os.path.join(study_log_path, task_name)
-    os.makedirs(task_log_path, exist_ok=True)
-    out_log_path = os.path.join(task_log_path, f"{task_name}_out.log")
-    err_log_path = os.path.join(task_log_path, f"{task_name}_err.log")
-    
+
     try:
         submission_result = client.submit_hpc_job(
                     script_path, task_name, 
@@ -119,7 +131,11 @@ def sync_public_ftp_folder_with_metadata_folder(task_name: str,
                     error_file=err_log_path, 
                     queue=hpc_queue_name, 
                     account=email,
-                    mail_type="ALL"
+                    mail_type="END",
+                    mem="5G",
+                    cpu=2,
+                    runtime_limit="24:00:00"
+                    
                 )
         job_id = submission_result.job_ids[0] if submission_result  else  None
         
@@ -147,13 +163,22 @@ def sync_study_revision(self, study_id: str, user_token: str):
         public_study_path = os.path.join(mounted_paths.cluster_public_ftp_root_path, study_id)
         email = get_settings().email.email_service.configuration.hpc_cluster_job_track_email_address
         current = current_time().strftime("%Y-%m-%d_%H-%M-%S")
+        
+
+        ftp_user_home = get_settings().hpc_cluster.datamover.cluster_private_ftp_user_home_path
+        private_ftp_root_path = mounted_paths.cluster_private_ftp_root_path
+        ftp_base_folder = private_ftp_root_path.replace(ftp_user_home, "")
+        study_private_ftp_path = os.path.join(ftp_base_folder.rstrip('"'), f"{study.acc.lower()}-{study.obfuscationcode}")
+
+
         job_id, messages = sync_public_ftp_folder_with_revisions(study_id=study_id, 
                                revision_number=study.revision_number,
                                source_path=revisions_root_path, 
                                target_path=public_study_path,
                                user_token=user_token,
                                email=email,
-                               task_name=f"{study_id}_{study.revision_number:02}_PUBLIC_FTP_SYNC_{current}"
+                               task_name=f"{study_id}_{study.revision_number:02}_PUBLIC_FTP_SYNC_{current}",
+                               study_private_ftp_path=study_private_ftp_path
                                )
         return {"job_id": job_id, "messages": messages }
     except Exception as e:
@@ -166,17 +191,26 @@ def sync_public_ftp_folder_with_revisions(task_name: str,
                            email: str, 
                            source_path: str, 
                            target_path: str, 
-                           user_token: str
+                           user_token: str,
+                           study_private_ftp_path: str
                            ):
     settings = get_settings()
     client: HpcClient = get_new_hpc_datamover_client()
     resource = f"{settings.server.service.resources_path}/studies/{study_id}/revisions/{revision_number}"
     update_url = settings.server.service.app_host_url + resource
     messages = []
+    study_log_path = os.path.join(settings.study.mounted_paths.study_internal_files_root_path, study_id, settings.study.internal_logs_folder_name, "PUBLIC_FTP_SYNC")
+    task_log_path = os.path.join(study_log_path, task_name)
+    os.makedirs(task_log_path, exist_ok=True)
+    out_log_path = os.path.join(task_log_path, f"{task_name}_out.log")
+    err_log_path = os.path.join(task_log_path, f"{task_name}_err.log")
+    
     inputs = {
-            "SOURCE_PATH": source_path,
-            "TARGET_PATH": target_path,
-            "USER_TOKEN": user_token,
+            "EMAIL_TO": email,
+            "STUDY_METADATA_PATH": source_path,
+            "STUDY_PUBLIC_FTP_PATH": target_path,
+            "STUDY_PRIVATE_FTP_PATH": study_private_ftp_path,
+            "SHELL_LOG_FILE_PATH": out_log_path,
             "UPDATE_URL": update_url
         }
         
@@ -186,11 +220,7 @@ def sync_public_ftp_folder_with_revisions(task_name: str,
     script_path = BashClient.prepare_script_from_template(script_template, **inputs)
     logger.info("sync_public_ftp_folder script is ready.")
     logger.info(Path(script_path).read_text())
-    study_log_path = os.path.join(settings.study.mounted_paths.study_internal_files_root_path, study_id, settings.study.internal_logs_folder_name, "PUBLIC_FTP_SYNC")
-    task_log_path = os.path.join(study_log_path, task_name)
-    os.makedirs(task_log_path, exist_ok=True)
-    out_log_path = os.path.join(task_log_path, f"{task_name}_out.log")
-    err_log_path = os.path.join(task_log_path, f"{task_name}_err.log")
+
     
     try:
         submission_result = client.submit_hpc_job(
@@ -199,7 +229,10 @@ def sync_public_ftp_folder_with_revisions(task_name: str,
                     error_file=err_log_path, 
                     queue=hpc_queue_name, 
                     account=email,
-                    mail_type="ALL"
+                    mail_type="END",
+                    mem="5G",
+                    cpu=2,
+                    runtime_limit="24:00:00"
                 )
         job_id = submission_result.job_ids[0] if submission_result  else  None
         
