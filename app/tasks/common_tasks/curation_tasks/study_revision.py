@@ -108,7 +108,6 @@ def sync_public_ftp_folder_with_metadata_folder(task_name: str,
     os.makedirs(task_log_path, exist_ok=True)
     out_log_path = os.path.join(task_log_path, f"{task_name}_out.log")
     err_log_path = os.path.join(task_log_path, f"{task_name}_err.log")
-    bash_script_logs_path = os.path.join(task_log_path, f"{task_name}_bash.log")
     
     messages = []
     inputs = {
@@ -116,7 +115,6 @@ def sync_public_ftp_folder_with_metadata_folder(task_name: str,
             "STUDY_METADATA_PATH": source_path,
             "STUDY_PUBLIC_FTP_PATH": target_path,
             "STUDY_PRIVATE_FTP_PATH": study_private_ftp_path,
-            "SHELL_LOG_FILE_PATH": bash_script_logs_path,
         }
     hpc_queue_name = settings.hpc_cluster.datamover.default_queue
     
@@ -136,7 +134,6 @@ def sync_public_ftp_folder_with_metadata_folder(task_name: str,
                     mem="5G",
                     cpu=2,
                     runtime_limit="24:00:00"
-                    
                 )
         job_id = submission_result.job_ids[0] if submission_result  else  None
         
@@ -211,7 +208,6 @@ def sync_public_ftp_folder_with_revisions(task_name: str,
             "STUDY_METADATA_PATH": source_path,
             "STUDY_PUBLIC_FTP_PATH": target_path,
             "STUDY_PRIVATE_FTP_PATH": study_private_ftp_path,
-            "SHELL_LOG_FILE_PATH": out_log_path,
             "UPDATE_URL": update_url,
             "USER_TOKEN": user_token
         }

@@ -406,23 +406,20 @@ class StudyStatus(Resource):
             )
             isa_inv.submission_date = updated_submission_date
             isa_study.submission_date = updated_submission_date
-
-        if (
-            is_curator
-        ):  # Curators can change the date to current date, submitters can not!
-            new_date = now
-        else:
-            new_date = now + datetime.timedelta(+28)
-        new_date = new_date.strftime("%Y-%m-%d")
-
+    
+        new_date = now.strftime("%Y-%m-%d")
+        if study_status.lower() == "public":
+            isa_inv.public_release_date = new_date
+            isa_study.public_release_date = new_date
+            submission = study.first_private_date.strftime("%Y-%m-%d") if study.first_private_date else study.submissiondate.strftime("%Y-%m-%d")
+            isa_inv.submission_date = submission
+            isa_study.submission_date = submission
+            release_date = new_date
+            
         if (
             is_curator
         ):  # User is a curator, so just update status without any further checks
             if status_updated:
-                if study_status.lower() == "public":
-                    isa_inv.public_release_date = new_date
-                    isa_study.public_release_date = new_date
-                    release_date = new_date
                 self.update_status(
                     study_id,
                     study_status,
@@ -479,12 +476,7 @@ class StudyStatus(Resource):
                 first_public_date=first_public_date_baseline,
                 first_private_date=first_private_date_baseline,
             )
-            if (
-                release_date < new_date
-            ):  # Set the release date to a minimum of 28 days in the future
-                isa_inv.public_release_date = new_date
-                isa_study.public_release_date = new_date
-                release_date = new_date
+
 
         current_study_status = types.StudyStatus.from_int(study.status)
         requested_study_status = types.StudyStatus.from_name(study_status.upper())
@@ -496,13 +488,6 @@ class StudyStatus(Resource):
             study.reserved_accession,
         )
         study = StudyService.get_instance().get_study_by_acc(updated_study_id)
-        if study_status.lower() == "public":
-            isa_inv.public_release_date = new_date
-            isa_study.public_release_date = new_date
-            submission = study.first_private_date.strftime("%Y-%m-%d") if study.first_private_date else study.submissiondate.strftime("%Y-%m-%d")
-            isa_inv.submission_date = submission
-            isa_study.submission_date = submission
-            release_date = new_date
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True, save_assays_copy=True, save_samples_copy=True)
 
         if study_id != updated_study_id:
