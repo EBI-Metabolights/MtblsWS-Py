@@ -512,7 +512,7 @@ class StudyStatus(Resource):
                 get_settings().study.accession_number_prefix
             ):
                 study_title = isa_study.title
-                additional_cc_emails = get_principal_investigator_emails(study)
+                additional_cc_emails = get_principal_investigator_emails(isa_study)
                 inputs = {
                     "user_token": user_token,
                     "provisional_id": study_id,
