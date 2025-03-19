@@ -374,7 +374,7 @@ class LiteStudyModel(EntityModel):
     factors: List[StudyFactorModel] = []
     isatabErrorMessages: List[str] = []
     studyHumanReadable: Union[None, str] = None
-    users: Union[List[UserModel], List[IndexedUserModel]] = []
+    users: Union[List[UserModel], List[IndexedUserModel], List[UserLiteModel]] = []
     publicStudy: bool = False
     derivedData: Union[None, StudyDerivedData] = None
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
