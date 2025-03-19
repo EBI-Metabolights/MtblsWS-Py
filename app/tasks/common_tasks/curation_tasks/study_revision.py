@@ -74,10 +74,8 @@ def sync_study_metadata_folder(self, study_id: str, user_token: str):
         public_study_path = os.path.join(mounted_paths.cluster_public_ftp_root_path, study_id)
         email = get_settings().email.email_service.configuration.hpc_cluster_job_track_email_address
         
-        ftp_user_home = get_settings().hpc_cluster.datamover.cluster_private_ftp_user_home_path
         private_ftp_root_path = mounted_paths.cluster_private_ftp_root_path
-        ftp_base_folder = private_ftp_root_path.replace(ftp_user_home, "")
-        study_private_ftp_path = os.path.join(ftp_base_folder.rstrip('"'), f"{study.acc.lower()}-{study.obfuscationcode}")
+        study_private_ftp_path = os.path.join(private_ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}")
 
         job_id, messages = sync_public_ftp_folder_with_metadata_folder(study_id=study_id, 
                                source_path=metadata_files_path, 
@@ -163,10 +161,8 @@ def sync_study_revision(self, study_id: str, user_token: str):
         current = current_time().strftime("%Y-%m-%d_%H-%M-%S")
         
 
-        ftp_user_home = get_settings().hpc_cluster.datamover.cluster_private_ftp_user_home_path
         private_ftp_root_path = mounted_paths.cluster_private_ftp_root_path
-        ftp_base_folder = private_ftp_root_path.replace(ftp_user_home, "")
-        study_private_ftp_path = os.path.join(ftp_base_folder.rstrip('"'), f"{study.acc.lower()}-{study.obfuscationcode}")
+        study_private_ftp_path = os.path.join(private_ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}")
 
 
         job_id, messages = sync_public_ftp_folder_with_revisions(study_id=study_id, 
