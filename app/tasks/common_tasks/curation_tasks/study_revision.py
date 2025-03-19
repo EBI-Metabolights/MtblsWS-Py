@@ -211,7 +211,8 @@ def sync_public_ftp_folder_with_revisions(task_name: str,
             "STUDY_PUBLIC_FTP_PATH": target_path,
             "STUDY_PRIVATE_FTP_PATH": study_private_ftp_path,
             "SHELL_LOG_FILE_PATH": out_log_path,
-            "UPDATE_URL": update_url
+            "UPDATE_URL": update_url,
+            "USER_TOKEN": user_token
         }
         
     hpc_queue_name = settings.hpc_cluster.datamover.default_queue

@@ -457,12 +457,17 @@ class StudyStatus(Resource):
                 if "not ready" in message:
                     raise MetabolightsException(
                         http_code=403,
-                        message="Study has not been validated yet. Validate your study, fix any problems before attempting to change study status.",
+                        message="Please run validation and fix any problems before attempting to change study status.",
+                    )
+                elif "Metadata files are updated" in message:
+                   raise MetabolightsException(
+                        http_code=403,
+                        message="Metadata files are updated after validation. Please re-run validation and fix any issues before attempting to change study status.",
                     )
                 else:
                     raise MetabolightsException(
                         http_code=403,
-                        message="There are validation errors. Fix any problems before attempting to change study status.",
+                        message="There are validation errors in the latest validation report. Please fix any issues before attempting to change study status.",
                     )
                     
             self.update_status(
@@ -932,7 +937,7 @@ class StudyStatus(Resource):
                     content["start_time"]
                 ).timestamp()
                 # 1 sec threshold 
-                if start_time + 1 < last_modified:
+                if start_time < last_modified:
                     return (
                         False,
                         "Metadata files are updated after the last validation. Re-run validation.",
