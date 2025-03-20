@@ -52,10 +52,9 @@ def get_non_public_studies_list():
 
 def get_public_studies_list():
     logger.info('Getting all public studies')
-    studies = []
+    
     study_list = get_public_studies()
-    for acc in study_list:
-        studies.append(acc[0])
+    studies = [acc[0] for acc in study_list]
 
     logger.info('... found %d public studies', len(studies))
     return {"studies": len(studies), "content": studies}

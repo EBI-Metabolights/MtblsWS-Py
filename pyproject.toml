@@ -49,9 +49,10 @@ cascadict = "^0.8.5"
 fuzzywuzzy = "^0.18.0"
 marshmallow = "2.21.0"
 gunicorn = "^23.0.0"
+pyopenms = "^3.3.0"
 
 [tool.poetry.group.dev.dependencies]
-poetry = "^1.6.1"
+poetry = "^1.8.5"
 pytest = "^7.4.3"
 pylint = "^3.0.2"
 vulture = "^2.14"

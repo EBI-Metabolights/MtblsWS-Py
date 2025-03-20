@@ -85,10 +85,13 @@ class MtblsOntologyTerms(Resource):
         result = [] 
         for filter_method in (filter_term_label, filter_term_definition):
             terms = mtbl_ontology.search_ontology_entities(label=query, include_contain_matches=True, include_case_insensitive_matches=case_insensitive, limit=limit, filter_method=filter_method)
-            
-            for term  in terms:
-                if term.iri.startswith(prefix):
-                    result.append({"termAccessionNumber": term.iri, "term": term.name, "termDescription": term.definition, "termSourceRef": "MTBLS"})
+            result = [{"termAccessionNumber": term.iri, 
+                       "term": term.name, 
+                       "termDescription": term.definition, 
+                       "termSourceRef": "MTBLS" }
+                      for term  in terms
+                      if term.iri.startswith(prefix)
+                      ]
             if len(result) > limit:
                 break
                          

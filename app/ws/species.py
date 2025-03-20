@@ -81,7 +81,7 @@ class SpeciesTree(Resource):
                         groups[item.id].name = item.name
 
                     for item in result:
-                        if item.parent == None:
+                        if item.parent is None:
                             tree.children.append(groups[item.id])
                         else:
                             if item.parent.id in groups:

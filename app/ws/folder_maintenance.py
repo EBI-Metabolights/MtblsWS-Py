@@ -859,10 +859,7 @@ class StudyFolderMaintenanceTask(object):
             if assay_df is None:
                 raise MaintenanceException(message=f"{assay_file_path} is not valid.")
 
-            all_data_columns = []
-            for column in assay_df.columns:
-                if " Data File" in column:
-                    all_data_columns.append(column)
+            all_data_columns = [column for column in assay_df.columns if " Data File" in column]
             if all_data_columns:
                 for i in range(len(all_data_columns)):
                     column_name = all_data_columns[i]
@@ -876,9 +873,7 @@ class StudyFolderMaintenanceTask(object):
     ) -> List[MaintenanceActionLog]:
         self.calculate_readonly_study_folders_future_actions()
         referenced_file_set = self.get_all_referenced_data_files()
-        updated_file_names = {}
-        for item in referenced_file_set:
-            updated_file_names[item] = item
+        updated_file_names = {item:item for item in referenced_file_set}
         if updated_file_names:
             if self.future_actions_sanitise_referenced_files:
                 self._create_sanitise_file_name_actions(updated_file_names)
@@ -3116,7 +3111,7 @@ class StudyFolderMaintenanceTask(object):
         match = PARAM_COLUMN_NAME_REGEX_PATTERN.match(name)
         if match:
             groups = match.groups()
-            if groups[2] == None:
+            if groups[2] is None:
                 return f"{groups[0].strip()}[{groups[1].strip()}]"
             return f"{groups[0].strip()}[{groups[1].strip()}]{groups[2].strip()}"
         else:

@@ -149,9 +149,7 @@ class ElasticsearchService(object):
             else:
                 body["query"] = {"bool": {"must": { "query_string": {"query": search_text}}}}
             
-            boosters = []
-            for boost in query.boosters:
-                boosters.append({"term": { boost.fieldName: {"value": search_text, "boost": boost.boost}}})
+            boosters = [{"term": { boost.fieldName: {"value": search_text, "boost": boost.boost}}} for boost in query.boosters]
             if boosters:
                 if filtered:
                     body["query"]["filtered"]["query"]["bool"]["should"] = boosters

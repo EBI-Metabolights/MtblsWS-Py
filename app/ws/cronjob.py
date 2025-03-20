@@ -17,12 +17,10 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 
-import datetime
 import json
 import logging
 import os
 import re
-import urllib
 from datetime import datetime
 
 import gspread
@@ -38,18 +36,10 @@ from oauth2client.service_account import ServiceAccountCredentials
 from owlready2 import urllib
 from app.config import get_settings
 from app.config.utils import get_host_internal_url
-
-from app.services.storage_service.acl import Acl
-from app.services.storage_service.storage_service import StorageService
 from app.study_folder_utils import convert_relative_to_real_path
-from app.ws.db.dbmanager import DBManager
-from app.ws.db.schemes import Study
-from app.ws.db.types import StudyStatus
 from app.ws.db_connection import get_study_info, get_study_by_type, get_public_studies
 from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study.commons import create_ftp_folder
-from app.ws.study.user_service import UserService
 from app.ws.utils import log_request, writeDataToFile
 
 logger = logging.getLogger('wslog')

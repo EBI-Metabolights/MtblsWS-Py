@@ -1,9 +1,6 @@
 import logging
-import os
-import celery
 from app.services.external.eb_eye_search import EbEyeSearchService
-from app.tasks.worker import (MetabolightsTask, celery)
-from app.tasks.worker import MetabolightsTask
+from app.tasks.worker import MetabolightsTask, celery
 
 
 logger = logging.getLogger('wslog')

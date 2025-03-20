@@ -27,11 +27,9 @@ import socket
 import ssl
 import traceback
 from typing import Any, Callable, Dict, List, Set, Union
-import urllib
 from urllib.parse import quote_plus
 
 import pandas as pd
-from flask import current_app as app
 from owlready2 import get_ontology, urllib, IRIS
 from owlready2.namespace import Ontology
 from pydantic import BaseModel, ConfigDict
@@ -210,7 +208,7 @@ class MetaboLightsOntology():
                 break
         if not in_list:
             self.label_map[label].append(mtbls_entity)
-        if not entity.iri in self.search_entities:
+        if entity.iri not in self.search_entities:
             self.search_entities[entity.iri] = Entity(name=label, iri=entity.iri, provenance_name='Metabolights', provenance_uri="http://www.ebi.ac.uk/metabolights/ontology")
         if entity.isDefinedBy:
             definition = re.sub(r"\s+", " ", " ".join(entity.isDefinedBy))
@@ -868,7 +866,7 @@ def getStartIRI(start, onto_name):
     content = fp.read().decode('utf-8')
     json_str = json.loads(content)
     res = json_str['response']['docs'][0]['iri']
-    return urllib.parse.quote_plus(res)
+    return quote_plus(res)
 
 @ttl_cache(1024, 60*60)
 def OLSbranchSearch(keyword, branch_name, onto_name):
