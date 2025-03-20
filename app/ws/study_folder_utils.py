@@ -113,7 +113,7 @@ def evaluate_files_in_detail(
     settings = get_settings()
     derived_file_extensions = set(settings.file_filters.derived_files_list)
     raw_file_extensions = set(settings.file_filters.raw_files_list)
-    for key, file in source_file_descriptors.items():
+    for file in source_file_descriptors.values():
         name = os.path.basename(file.relative_path)
         datetime.datetime.fromtimestamp(file.modified_time)
         modified_time = datetime.datetime.fromtimestamp(file.modified_time)

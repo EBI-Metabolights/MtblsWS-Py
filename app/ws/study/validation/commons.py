@@ -30,7 +30,7 @@ from typing import List, OrderedDict, Union
 import numpy as np
 import pandas as pd
 import requests
-from isatools.model import Assay, Protocol, Study
+from isatools import model
 
 from app.config import get_settings
 from app.config.model.study import StudySettings
@@ -47,7 +47,6 @@ from app.ws.utils import (find_text_in_isatab_file,
                           get_assay_headers_and_protocols,
                           get_assay_type_from_file_name, get_table_header,
                           map_file_type, read_tsv)
-from isatools.model import Study
 iac = IsaApiClient()
 
 logger = logging.getLogger('wslog')
@@ -980,7 +979,7 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
                     add_msg(validations, val_section,
                             "Valid raw file missing from row {0} where a text file is present in the derived column"
                             .format(row_idx), error, filename, val_sequence=7.8, log_category=log_category)
-                if raw_valid and derived_found and not derived_valid['valid'] is True:
+                if raw_valid and derived_found and derived_valid['valid'] is not True:
                     add_msg(validations, val_section,
                             f"'{filename}': Derived Spectral Data Column entry missing or invalid for row {str(row_idx)}",
                             error, filename, val_sequence=7.9, log_category=log_category)
@@ -1060,7 +1059,7 @@ def validate_assays(isa_study, readonly_files_folder, metadata_files_folder, int
     total_assay_rows = 0
 
     for item in isa_study.assays:
-        assay: Assay = item
+        assay: model.Assay = item
         is_ms = False
         assays = []
         all_assay_names = []
@@ -1440,7 +1439,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
     s_file_name = isa_study.filename
     sample_header = get_table_header(isa_samples, isa_study.identifier, s_file_name)
 
-    study: Study = isa_study
+    study: model.Study = isa_study
     study_factors: List[str] = {x.name for x in study.factors}
     factor_column_pattern = r"^Factor Value\[(.+)\].*$"
     factor_columns = OrderedDict()
@@ -1561,7 +1560,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
     return return_validations(val_section, validations, override_list, comment_list)
 
 
-def validate_protocols(isa_study: Study, validation_schema, file_name, override_list, comment_list, val_section="protocols",
+def validate_protocols(isa_study: model.Study, validation_schema, file_name, override_list, comment_list, val_section="protocols",
                        log_category=error):
     # check for Publication
     validations = []
@@ -1609,7 +1608,7 @@ def validate_protocols(isa_study: Study, validation_schema, file_name, override_
         else:
             all_prots = prot_val_name
         try:
-            isa_prot: Protocol = isa_study.protocols[idx]
+            isa_prot: model.Protocol = isa_study.protocols[idx]
             isa_prot_name = isa_prot.name
             isa_prot_type = isa_prot.protocol_type
             isa_prot_type_name = isa_prot_type.term

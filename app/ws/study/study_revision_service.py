@@ -8,8 +8,6 @@ import shutil
 from app.config import get_settings
 from app.tasks.common_tasks.basic_tasks.email import send_email_on_public
 from app.ws.db.models import StudyRevisionModel
-from app.ws.db.schemes import Study
-from app.ws.db.types import StudyStatus
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.folder_maintenance import StudyFolderMaintenanceTask
 import datetime

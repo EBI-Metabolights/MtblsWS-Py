@@ -483,11 +483,11 @@ def get_study_by_type(sType, publicStudy=True):
     if publicStudy:
         q2 = ' status in (2, 3) and '
     input_data = {}
-    if type(sType) == str:
+    if type(sType) is str:
         q3 = "studytype = %(study_type)s"
         input_data['study_type'] =  sType
     # fuzzy search
-    elif type(sType) == list:
+    elif type(sType) is list:
         db_query = []
         counter = 0
         for type_item in sType:
@@ -673,9 +673,7 @@ def get_study(study_id):
     postgresql_pool, conn, cursor = get_connection2()
     cursor.execute(query, {'study_id': study_id})
     data = cursor.fetchall()
-    result = []
-    for row in data:
-        result.append(dict(row))
+    result = [dict(row) for row in data]
 
     release_connection(postgresql_pool, conn)
     return result[0]

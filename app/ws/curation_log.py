@@ -263,7 +263,7 @@ class curation_log(Resource):
         if request.args:
             
             page = request.args.get('page')
-            if page != None:
+            if page is not None:
                 page = int(request.args.get('page'))
 
         # User authentication
@@ -289,19 +289,19 @@ class curation_log(Resource):
             abort(404)
             return []
 
-        if studyID == None or (len(studyID) > 100 and page != None):
+        if studyID is None or (len(studyID) > 100 and page is not None):
             studyID = list(google_df.index.values)[100 * (page - 1): (100 * (page - 1) + 100)]
 
         # entire sheet
-        if studyID == None and field == None:
+        if studyID is None and field is None:
             result = google_df.to_json(orient="index")
 
         # entire column
-        elif studyID == None and len(field) > 0:
+        elif studyID is None and len(field) > 0:
             result = google_df[field].to_json(orient="columns")
 
         # entire row
-        elif len(studyID) > 0 and field == None:
+        elif len(studyID) > 0 and field is None:
             result = google_df.loc[studyID, :].to_json(orient="index")
 
         # combination

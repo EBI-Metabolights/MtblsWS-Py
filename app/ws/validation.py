@@ -303,7 +303,7 @@ class ValidationProcess(Resource):
         
         
         force_to_start = True
-        if args and "force" in args and request.args.get("force"):
+        if request.args.get("force"):
             force_to_start = False if request.args.get("force").lower() == "false" else True
             
         # param validation
@@ -663,9 +663,7 @@ class ValidationComment(Resource):
                 else:
                     feedback += f"Empty comment for {key} has been ignored."
                 
-        updated_comments = []
-        for key in comment_list:
-            updated_comments.append(f"{key}:{comment_list[key]}")
+        updated_comments = [f"{key}:{comment_list[key]}" for key in comment_list]
         db_update_string = "|".join(updated_comments)
 
         try:

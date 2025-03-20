@@ -1,8 +1,6 @@
 import logging
 import os
-import celery
-from app.tasks.worker import (MetabolightsTask, celery)
-from app.tasks.worker import MetabolightsTask
+from app.tasks.worker import MetabolightsTask, celery
 from app.ws.db.schemes import Study
 
 from app.ws.settings.utils import get_study_settings

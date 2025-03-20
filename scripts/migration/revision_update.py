@@ -6,7 +6,6 @@ import re
 import shutil
 
 from app.config import get_settings
-from app.ws.db.types import StudyStatus
 from app.utils import  current_time
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, StudyRevision, User

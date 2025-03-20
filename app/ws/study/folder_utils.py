@@ -3,8 +3,6 @@ import glob
 import json
 import logging
 import os
-import os.path
-import os.path
 import time
 from copy import deepcopy
 from operator import itemgetter
@@ -182,10 +180,10 @@ def flatten_list(list_name, flat_list=None):
             for sub_entry in entry:
                 if isinstance(sub_entry, list):
                     flatten_list(sub_entry, flat_list=flat_list)
-                elif sub_entry not in flat_list and type(sub_entry) != bool:
+                elif sub_entry not in flat_list and type(sub_entry) is not bool:
                     flat_list.append(sub_entry)
         else:
-            if type(entry) != bool and entry not in flat_list:
+            if type(entry) is not bool and entry not in flat_list:
                 flat_list.append(entry)
     return flat_list
 

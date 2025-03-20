@@ -3,11 +3,8 @@ import datetime
 import json
 import logging
 import os
-import pathlib
-import celery
-from app.config import get_settings
-from app.tasks.worker import (MetabolightsTask, celery, send_email)
-from app.tasks.worker import MetabolightsTask
+from app.tasks.worker import MetabolightsTask, celery, send_email
+
 from app.utils import current_time
 
 from app.ws.isaApiClient import IsaApiClient

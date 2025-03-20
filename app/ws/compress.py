@@ -129,7 +129,7 @@ class CompressRawDataFolders(Resource):
         
         if request.args:
             
-            filename_pattern = request.args.get('filename_pattern') if "filename_pattern" in args and request.args.get('filename_pattern') else None
+            filename_pattern = request.args.get('filename_pattern') if request.args.get('filename_pattern') else None
 
         if filename_pattern is None:
             logger.info('No filename pattern is not given')

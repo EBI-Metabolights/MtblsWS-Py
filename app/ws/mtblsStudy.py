@@ -228,7 +228,7 @@ class MtblsStudyValidationStatus(Resource):
 
         validation_status_list = ["error", "warn", "success"]
 
-        if not validation_status in validation_status_list:
+        if validation_status not in validation_status_list:
             abort(401)
 
         # User authentication
@@ -2118,10 +2118,10 @@ class StudyFolderSynchronization(Resource):
         source = StudyFolder(location=source_location, folder_type=folder_type)
         target = StudyFolder(location=target_location, folder_type=folder_type)
 
-        if not source.folder_type in VALID_FOLDERS[source_location]:
+        if source.folder_type not in VALID_FOLDERS[source_location]:
             raise MetabolightsException(message="Source folder type is not valid in the selected staging area.")
 
-        if not target.folder_type in VALID_FOLDERS[target_location]:
+        if target.folder_type not in VALID_FOLDERS[target_location]:
             raise MetabolightsException(message="target folder type is not valid in the selected staging area.")
         
         study = StudyService.get_instance().get_study_by_acc(study_id)

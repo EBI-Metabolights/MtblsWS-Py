@@ -1,26 +1,16 @@
-import datetime
 import json
 import logging
 import os
-from typing import Any, Dict, List
-import celery
+from typing import Any, Dict
 from app.config import get_settings
-from app.tasks.worker import (MetabolightsTask, celery, send_email)
-from app.tasks.worker import MetabolightsTask
+from app.tasks.worker import MetabolightsTask, celery, send_email
 from app.utils import current_time
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.wsproxy import get_chebi_ws_proxy
 from app.ws.chebi_pipeline_utils import run_chebi_pipeline
-from app.ws.db.schemes import Study
 from app.ws.mtblsWSclient import WsClient
-
-from app.ws.settings.utils import get_study_settings
-from app.ws.study.study_service import StudyService
-from app.ws.study.validation.commons import update_validation_schema_files
-from celery.result import AsyncResult
-from app.tasks.worker import celery
-from app.ws.redis.redis import RedisStorage, get_redis_server
+from app.ws.redis.redis import get_redis_server
 
 logger = logging.getLogger('wslog')
 
