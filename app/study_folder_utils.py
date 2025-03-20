@@ -7,6 +7,7 @@ from typing import Dict, List, Union
 from pydantic import BaseModel
 
 from app import application_path
+from app.config import get_settings
 
 STOP_FOLDER_EXTENSIONS = {".raw", ".d", ".fid"}
 
@@ -33,6 +34,8 @@ def convert_relative_to_real_path(relative_path: str) -> str:
 
 
 class FileDescriptor(BaseModel):
+    name: str = ""
+    parent_relative_path: str = ""
     relative_path: str = ""
     modified_time: float = 0
     is_dir: bool = False

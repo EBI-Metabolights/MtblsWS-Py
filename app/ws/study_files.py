@@ -37,6 +37,7 @@ from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
 
 from app.services.storage_service.storage_service import StorageService
+from app.study_folder_utils import FileDescriptor
 from app.tasks.datamover_tasks.basic_tasks.file_management import list_directory
 from app.tasks.datamover_tasks.curation_tasks import data_file_operations
 from app.utils import MetabolightsException, metabolights_exception_handler
@@ -2154,20 +2155,40 @@ class StudyFilesTree(Resource):
             include_metadata_files = True
             if directory == settings.readonly_files_symbolic_link_name:
                 include_metadata_files = False
-            directory_files = get_directory_files(
-                study_metadata_location,
-                directory,
-                search_pattern="**/*",
-                recursive=include_sub_dir,
-                exclude_list=exclude_list,
-                include_metadata_files=include_metadata_files,
-            )
+            directory_path = study_metadata_location
+            if directory:
+                directory_path: str = os.path.join(study_metadata_location, directory)
+            directory_files = {}
+
+            files_path = os.path.join(study_metadata_location, "FILES")
+            if directory_path.startswith(files_path):
+                mounted_paths = get_settings().study.mounted_paths
+                target_root_path = os.path.join(mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES")
+                target_path = os.path.join(target_root_path, "data_file_index.json")
+                if os.path.exists(target_path):
+                    with open(target_path) as f:
+                        all_directory_files = json.load(f)
+                    data_files = all_directory_files["data_files"]
+                    for x in data_files:
+                        item_relative_path = data_files[x]["relative_path"]
+                        item_parent_path = data_files[x]["parent_relative_path"]
+                        if item_parent_path == directory:
+                            descriptor = FileDescriptor.model_validate(data_files[x])
+                            directory_files[item_relative_path] = descriptor
+            else:
+                directory_files = get_directory_files(
+                    study_metadata_location,
+                    directory,
+                    search_pattern="**/*",
+                    recursive=include_sub_dir,
+                    exclude_list=exclude_list,
+                    include_metadata_files=include_metadata_files,
+                )
             # metadata_files = get_all_metadata_files()
             # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
             # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
             search_result = evaluate_files(directory_files, referenced_files)
             sortFileMetadataList(search_result.study)
-
         else:
             try:
                 settings = get_settings()
