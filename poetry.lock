@@ -3030,8 +3030,8 @@ files = [
 [package.dependencies]
 numpy = [
     {version = ">=1.22.4,<2", markers = "python_version < \"3.11\""},
-    {version = ">=1.23.2,<2", markers = "python_version == \"3.11\""},
     {version = ">=1.26.0,<2", markers = "python_version >= \"3.12\""},
+    {version = ">=1.23.2,<2", markers = "python_version == \"3.11\""},
 ]
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
@@ -3690,8 +3690,8 @@ astroid = ">=3.3.8,<=3.4.0.dev0"
 colorama = {version = ">=0.4.5", markers = "sys_platform == \"win32\""}
 dill = [
     {version = ">=0.2", markers = "python_version < \"3.11\""},
-    {version = ">=0.3.6", markers = "python_version >= \"3.11\" and python_version < \"3.12\""},
     {version = ">=0.3.7", markers = "python_version >= \"3.12\""},
+    {version = ">=0.3.6", markers = "python_version >= \"3.11\" and python_version < \"3.12\""},
 ]
 isort = ">=4.2.5,<5.13 || >5.13,<7"
 mccabe = ">=0.6,<0.8"
@@ -3703,6 +3703,36 @@ typing-extensions = {version = ">=3.10", markers = "python_version < \"3.10\""}
 [package.extras]
 spelling = ["pyenchant (>=3.2,<4.0)"]
 testutils = ["gitpython (>3)"]
+
+[[package]]
+name = "pyopenms"
+version = "3.3.0"
+description = "Python wrapper for C++ LC-MS library OpenMS"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pyopenms-3.3.0-cp310-cp310-macosx_13_0_x86_64.whl", hash = "sha256:79929fc4028b133f9ee4280a08b1355b278f945915386175d6654c73d0c22132"},
+    {file = "pyopenms-3.3.0-cp310-cp310-macosx_14_0_arm64.whl", hash = "sha256:829e298cd089af902447f65041453a04f4679d1fb5b85344d661ff5ed5657ccc"},
+    {file = "pyopenms-3.3.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:ec1c7464618729b8edd80e3810f25683757d8d94c910618e4661f4d74fb729bd"},
+    {file = "pyopenms-3.3.0-cp310-cp310-win_amd64.whl", hash = "sha256:d24185158ad1e3bd57ad9de24807083b7ca8b2854f0884f4ac5cd168d4500419"},
+    {file = "pyopenms-3.3.0-cp311-cp311-macosx_13_0_x86_64.whl", hash = "sha256:7f1b886471c9692e89a44d387c7f0da82b3b62f41c333993acfe80094f55bbeb"},
+    {file = "pyopenms-3.3.0-cp311-cp311-macosx_14_0_arm64.whl", hash = "sha256:e2b56760369f37820874a603743856d3182f24c6e0991cf8d66b7a3794bc184b"},
+    {file = "pyopenms-3.3.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:d917201c0159a67dbb43fc6659f8314f52570cf49517e955da5651125e0f3d00"},
+    {file = "pyopenms-3.3.0-cp311-cp311-win_amd64.whl", hash = "sha256:b9703322ce655563db76c2febd05ed3d26f0ab466a87203ef1b85fee2e553464"},
+    {file = "pyopenms-3.3.0-cp312-cp312-macosx_13_0_x86_64.whl", hash = "sha256:da7284294fa850b45c206b9337d39c3f9d01b9bfa013665ec0dc55da9513e49c"},
+    {file = "pyopenms-3.3.0-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:c3774b759975064d764239f2e1dbb59810a66124667bb39451e0602d13120fc7"},
+    {file = "pyopenms-3.3.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:582b585691c0fcfe8ac519849b01c5be861f66059b3c6a6c830cc14d15f20c98"},
+    {file = "pyopenms-3.3.0-cp312-cp312-win_amd64.whl", hash = "sha256:ff05ae5be93235a8f1eebef02c7e27bfc215c30b80f8c4b27d5a159ffe8f5f22"},
+    {file = "pyopenms-3.3.0-cp39-cp39-macosx_13_0_x86_64.whl", hash = "sha256:57e5c6245732cbd279eb59e85af6420b44ef84ed124eb3f202951b91291aa3b9"},
+    {file = "pyopenms-3.3.0-cp39-cp39-macosx_14_0_arm64.whl", hash = "sha256:f114f5a656beedb53d69196bff125b1b3b94b83b73e8665d3da60c2e2a14654f"},
+    {file = "pyopenms-3.3.0-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:2e9bd4b05b016835ec6c0d01f34bc1164aa8e344ca3121b33ced00780f4fa336"},
+    {file = "pyopenms-3.3.0-cp39-cp39-win_amd64.whl", hash = "sha256:90f9890e3471b446043e3b93870fd728a496bd976043bfdbe823b9030013eb49"},
+]
+
+[package.dependencies]
+matplotlib = ">=3.5"
+numpy = ">=1.25.0"
+pandas = "*"
 
 [[package]]
 name = "pyparsing"
@@ -4922,4 +4952,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "8b6c94c62baa20ba7aa10898b7ae5f4968331c35b4be5feb2db5075a5b2cc4c1"
+content-hash = "38f0ed2ba5b74932f76c536d8bc808d5a4a35db6c9d8ff3e146cf4c76b912beb"
