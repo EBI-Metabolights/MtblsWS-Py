@@ -24,7 +24,7 @@ import pathlib
 import re
 import shutil
 import time
-from typing import Dict, List, Set
+from typing import Dict, List, OrderedDict, Set
 
 from flask import request
 from flask.json import jsonify
@@ -2199,7 +2199,7 @@ class StudyFilesTree(Resource):
                             if relative_path not in private_directory_files:
                                 item.file_difference = FileDifference.DELETED
                                 private_directory_files[relative_path] = item
-                    directory_files = private_directory_files
+                    directory_files = OrderedDict(sorted(private_directory_files.items(), key=lambda x: x[0]))
             else:
                 directory_files = get_directory_files(
                     study_metadata_location,

@@ -2131,12 +2131,12 @@ class StudyFolderSynchronization(Resource):
             now = current_time()
             now_str = now.isoformat()
             now_time = now.timestamp()
+            mounted_paths = get_settings().study.mounted_paths
+            target_root_path = os.path.join(mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES")
+            target_path = os.path.join(target_root_path, "data_file_index.json")
             current_datetime_result = redis.get_value(f"{study_id}:index_private_ftp_storage:current_datetime")
-            if current_datetime_result:
+            if current_datetime_result and os.path.exists(target_path):
                 current_datetime = current_datetime_result.decode()
-                mounted_paths = get_settings().study.mounted_paths
-                target_root_path = os.path.join(mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES")
-                target_path = os.path.join(target_root_path, "data_file_index.json")
                 if os.path.exists(target_path):
                     with open(target_path) as f:
                         all_directory_files = json.load(f)
@@ -2144,9 +2144,9 @@ class StudyFolderSynchronization(Resource):
                     last_index_time = datetime.fromisoformat(index_datetime).timestamp()
                     current_index_time = datetime.fromisoformat(current_datetime).timestamp()
                     status = None
+                    task_id_result = redis.get_value(f"{study_id}:index_private_ftp_storage:task_id")
+                    task_id = task_id_result.decode() if task_id_result else None
                     if last_index_time > current_index_time:
-                        task_id_result = redis.get_value(f"{study_id}:index_private_ftp_storage:task_id")
-                        task_id = task_id_result.decode() if task_id_result else None
                         result: AsyncResult = celery.AsyncResult(task_id)
                         if result.ready:
                             redis.delete_value(f"{study_id}:index_private_ftp_storage:task_id")
@@ -2158,7 +2158,6 @@ class StudyFolderSynchronization(Resource):
                                                 task_done_time_str=index_datetime, task_done_timestamp=last_index_time, 
                                                 last_update_time=now_str, last_update_timestamp=now_time)
                     else: 
-                        
                         status = SyncTaskResult(task_id=task_id, dry_run=False, description="Private FTP Sync running...", status=SyncTaskStatus.RUNNING, 
                                               last_update_time=now_str, last_update_timestamp=now_time)
                     if status:

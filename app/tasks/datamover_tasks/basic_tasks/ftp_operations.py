@@ -65,7 +65,7 @@ def index_study_data_files(self, study_id, obfuscation_code, recursive: bool=Tru
                 public_data_files[f"FILES/{item}"] = descriptor.model_dump()
             keys = list(public_data_files.keys())
             keys.sort()
-            ordered_public_data_files = OrderedDict([(x, data_files[x]) for x in keys])
+            ordered_public_data_files = OrderedDict([(x, public_data_files[x]) for x in keys])
         
         target_root_path = os.path.join(mounted_paths.cluster_study_internal_files_root_path, study_id, "DATA_FILES")
         os.makedirs(target_root_path, exist_ok=True)
