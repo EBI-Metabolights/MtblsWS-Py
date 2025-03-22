@@ -37,7 +37,7 @@ from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
 
 from app.services.storage_service.storage_service import StorageService
-from app.study_folder_utils import FileDescriptor
+from app.study_folder_utils import FileDescriptor, FileDifference
 from app.tasks.datamover_tasks.basic_tasks.file_management import list_directory
 from app.tasks.datamover_tasks.curation_tasks import data_file_operations
 from app.utils import MetabolightsException, metabolights_exception_handler
@@ -1246,12 +1246,14 @@ class StudyFilesReuse(Resource):
         # exclude_list = set(get_settings().file_filters.internal_mapping_list)
 
         exclude_list = set()
-        for item in get_settings().file_filters.rsync_exclude_list:
+        settings = get_settings()
+        for item in settings.file_filters.rsync_exclude_list:
             exclude_list.add(
                 os.path.join(
-                    get_settings().study.readonly_files_symbolic_link_name, item
+                    settings.study.readonly_files_symbolic_link_name, item
                 )
             )
+        exclude_list.add(settings.study.readonly_files_symbolic_link_name)
         # exclude_list = extended_exclude_list.union(exclude_list)
         # if force_write:
         directory_files = get_directory_files(
@@ -1261,6 +1263,8 @@ class StudyFilesReuse(Resource):
             recursive=False,
             exclude_list=exclude_list,
         )
+        directory_files[settings.study.readonly_files_symbolic_link_name] = FileDescriptor(name=settings.study.readonly_files_symbolic_link_name, 
+                                                                                           relative_path=settings.study.readonly_files_symbolic_link_name, is_dir=True)
         # metadata_files = get_all_metadata_files()
         # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
         # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
@@ -2158,8 +2162,9 @@ class StudyFilesTree(Resource):
             directory_path = study_metadata_location
             if directory:
                 directory_path: str = os.path.join(study_metadata_location, directory)
+            private_directory_files: Dict[str, FileDescriptor] = {}
+            public_directory_files: Dict[str, FileDescriptor] = {}
             directory_files = {}
-
             files_path = os.path.join(study_metadata_location, "FILES")
             if directory_path.startswith(files_path):
                 mounted_paths = get_settings().study.mounted_paths
@@ -2167,14 +2172,34 @@ class StudyFilesTree(Resource):
                 target_path = os.path.join(target_root_path, "data_file_index.json")
                 if os.path.exists(target_path):
                     with open(target_path) as f:
-                        all_directory_files = json.load(f)
-                    data_files = all_directory_files["data_files"]
-                    for x in data_files:
-                        item_relative_path = data_files[x]["relative_path"]
-                        item_parent_path = data_files[x]["parent_relative_path"]
+                        data_file_index = json.load(f)
+                    private_data_files = data_file_index["private_data_files"]
+                    for x in private_data_files:
+                        item_relative_path = private_data_files[x]["relative_path"]
+                        item_parent_path = private_data_files[x]["parent_relative_path"]
                         if item_parent_path == directory:
-                            descriptor = FileDescriptor.model_validate(data_files[x])
-                            directory_files[item_relative_path] = descriptor
+                            descriptor = FileDescriptor.model_validate(private_data_files[x])
+                            private_directory_files[item_relative_path] = descriptor
+                    if study.first_public_date:
+                        public_data_files = data_file_index.get("public_data_files")
+                        for x in public_data_files:
+                            item_relative_path = public_data_files[x]["relative_path"]
+                            item_parent_path = public_data_files[x]["parent_relative_path"]
+                            if item_parent_path == directory:
+                                descriptor = FileDescriptor.model_validate(public_data_files[x])
+                                public_directory_files[item_relative_path] = descriptor
+                        for relative_path, item in private_directory_files.items():
+                            if relative_path in public_directory_files:
+                                public_item = public_directory_files[relative_path]
+                                if item.file_size != public_item.file_size or item.modified_time != public_item.modified_time:
+                                    item.file_difference = FileDifference.MODIFIED
+                            else:
+                                item.file_difference = FileDifference.NEW
+                        for relative_path, item in public_directory_files.items():
+                            if relative_path not in private_directory_files:
+                                item.file_difference = FileDifference.DELETED
+                                private_directory_files[relative_path] = item
+                    directory_files = private_directory_files
             else:
                 directory_files = get_directory_files(
                     study_metadata_location,
@@ -2214,7 +2239,7 @@ class StudyFilesTree(Resource):
 
         search_result.uploadPath = upload_path
         search_result.obfuscationCode = study.obfuscationcode
-        return search_result.model_dump()
+        return search_result.model_dump(serialize_as_any=True)
 
 
 class FileList(Resource):

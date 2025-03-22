@@ -37,7 +37,7 @@ from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
-from app.tasks.common_tasks.basic_tasks.email import (
+from app.tasks.common_tasks.basic_tasks.send_email import (
     get_principal_investigator_emails,
     send_email_for_new_accession_number,
     send_email_on_public,

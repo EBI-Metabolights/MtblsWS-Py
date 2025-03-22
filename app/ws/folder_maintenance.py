@@ -2037,14 +2037,14 @@ class StudyFolderMaintenanceTask(object):
         )
         self._create_rw_storage_folder(log_path, 0o777, task_temp_path)
 
-        readonly_files_symbolic_link_path = os.path.join(
-            settings.study_metadata_files_root_path,
-            study_id,
-            study_settings.readonly_files_symbolic_link_name,
-        )
-        read_only_files_actual_path = os.path.join(
-            settings.study_readonly_files_actual_root_path, study_id
-        )
+        # readonly_files_symbolic_link_path = os.path.join(
+        #     settings.study_metadata_files_root_path,
+        #     study_id,
+        #     study_settings.readonly_files_symbolic_link_name,
+        # )
+        # read_only_files_actual_path = os.path.join(
+        #     settings.study_readonly_files_actual_root_path, study_id
+        # )
 
         audit_folder_symbolic_link_path: str = os.path.join(
             settings.study_metadata_files_root_path,
@@ -2065,16 +2065,16 @@ class StudyFolderMaintenanceTask(object):
         read_only_audit_files_actual_path = os.path.join(
             settings.study_readonly_audit_files_actual_root_path, study_id
         )
-        logger.info(
-            f"{read_only_files_actual_path} folder will be used for study data files"
-        )
-        read_only_files_actual_path = os.path.join(
-            settings.study_readonly_files_actual_root_path, study_id
-        )
+        # logger.info(
+        #     f"{read_only_files_actual_path} folder will be used for study data files"
+        # )
+        # read_only_files_actual_path = os.path.join(
+        #     settings.study_readonly_files_actual_root_path, study_id
+        # )
 
-        self.maintain_study_symlinks(
-            read_only_files_actual_path, readonly_files_symbolic_link_path
-        )
+        # self.maintain_study_symlinks(
+        #     read_only_files_actual_path, readonly_files_symbolic_link_path
+        # )
         self.maintain_study_symlinks(
             study_audit_folder_path, audit_folder_symbolic_link_path
         )

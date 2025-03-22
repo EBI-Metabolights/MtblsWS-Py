@@ -9,7 +9,7 @@ from isatools.model import Investigation, Study, Assay
 import pandas as pd
 from pydantic import BaseModel, ConfigDict
 from app.config import get_settings
-from app.study_folder_utils import FileDescriptor, get_study_folder_files
+from app.study_folder_utils import FileDescriptor, FileDifference, get_study_folder_files
 
 logger = logging.getLogger("wslog")
 
@@ -21,6 +21,7 @@ class LiteFileMetadata(BaseModel):
     status: str = "unreferenced"
     timestamp: str = ""
     type: str = "unknown"
+    file_difference: Union[None, FileDifference] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -119,7 +120,7 @@ def evaluate_files_in_detail(
         modified_time = datetime.datetime.fromtimestamp(file.modified_time)
         long_datetime = modified_time.strftime("%Y-%m-%d %H:%M:%S")
         timestamp = modified_time.strftime("%Y%m%d%H%M%S")
-        metadata = FileMetadata(file=name, directory=file.is_dir, createdAt=long_datetime, timestamp=timestamp)
+        metadata = FileMetadata(file=name, directory=file.is_dir, createdAt=long_datetime, timestamp=timestamp, file_difference=file.file_difference)
         # if  file.is_stop_folder:
         #     metadata.directory = False
         # else:
