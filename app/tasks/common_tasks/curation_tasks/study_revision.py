@@ -37,15 +37,15 @@ def prepare_study_revision(self, study_id: str, user_token: str):
     StudyRevisionService.update_investigation_file_for_revision(study_id)
     
     folder_status, source_path, created_path = StudyRevisionService.create_revision_folder(study)
-    data_files_root_path = settings.mounted_paths.study_readonly_files_actual_root_path 
-    study_data_files_path = os.path.join(data_files_root_path, study_id)
+    # data_files_root_path = settings.mounted_paths.study_readonly_files_actual_root_path 
+    # study_data_files_path = os.path.join(data_files_root_path, study_id)
     
-    audit_folder_root_path = settings.mounted_paths.study_audit_files_root_path
-    revisions_root_hash_path = os.path.join(audit_folder_root_path, study_id, "audit", "PUBLIC_METADATA", "HASHES")
-    StudyRevisionService.create_data_file_hashes(study, search_path=study_data_files_path, copy_paths=[revisions_root_hash_path])
+    # study_internal_files_root_path = settings.mounted_paths.study_internal_files_root_path
+    # revisions_root_hash_path = os.path.join(study_internal_files_root_path, study_id, "PUBLIC_METADATA", "HASHES")
+    # StudyRevisionService.create_data_file_hashes(study, search_path=study_data_files_path, copy_paths=[revisions_root_hash_path])
     
     # StudyRevisionService.check_dataset_integrity(study_id, metadata_files_path=created_path, data_files_path=study_data_files_path)
-    kwargs = {"study_id": study_id, "user_token": user_token}
+    kwargs = {"study_id": study_id, "user_token": user_token, "latest_revision": study.revision_number}
     sync_study_revision.apply_async(kwargs=kwargs)
     return {"study_id": study_id, "create_folder": folder_status, "revision_folder_path": created_path}
 
@@ -67,7 +67,7 @@ def sync_study_metadata_folder(self, study_id: str, user_token: str):
         raise MetabolightsException(message="Only public studies can be sync.")
     
     try:
-        # Copy all revisions to Public FTP folder. AUDIT_FILES/PUBLIC_METADATA to <PUBLIC FTP FOLDER>/<STUDY ID> folder (delete folders/files if it is not on the source folder)
+        # Copy all revisions to Public FTP folder. METADATA_FILES/<STUDY_ID> to <PUBLIC FTP FOLDER>/<STUDY ID> folder (delete folders/files if it is not on the source folder)
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
         current = current_time().strftime("%Y-%m-%d_%H-%M-%S")
         metadata_files_path = os.path.join(mounted_paths.cluster_study_metadata_files_root_path, study_id)
@@ -148,14 +148,14 @@ def sync_public_ftp_folder_with_metadata_folder(task_name: str,
 
 
 @celery.task(bind=True, base=MetabolightsTask, default_retry_delay=10, max_retries=3, soft_time_limit=60*15, name="app.tasks.common_tasks.curation_tasks.study_revision.sync_study_revision")
-def sync_study_revision(self, study_id: str, user_token: str):
+def sync_study_revision(self, study_id: str, user_token: str, latest_revision: int):
     study: Study = StudyService.get_instance().get_study_by_acc(study_id)    
     
     try:
         # Copy all revisions to Public FTP folder. AUDIT_FILES/PUBLIC_METADATA to <PUBLIC FTP FOLDER>/<STUDY ID> folder (delete folders/files if it is not on the source folder)
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
 
-        revisions_root_path = os.path.join(mounted_paths.cluster_study_audit_files_root_path, study_id, "audit", "PUBLIC_METADATA")
+        revisions_root_path = os.path.join(mounted_paths.cluster_study_internal_files_root_path, study_id, "PUBLIC_METADATA")
         public_study_path = os.path.join(mounted_paths.cluster_public_ftp_root_path, study_id)
         email = get_settings().email.email_service.configuration.hpc_cluster_job_track_email_address
         current = current_time().strftime("%Y-%m-%d_%H-%M-%S")
@@ -163,8 +163,10 @@ def sync_study_revision(self, study_id: str, user_token: str):
 
         private_ftp_root_path = mounted_paths.cluster_private_ftp_root_path
         study_private_ftp_path = os.path.join(private_ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}")
-
-
+        root_data_files_hash_path = os.path.join(revisions_root_path, "HASHES", "data_sha256.json")
+        data_files_hash_path = os.path.join(revisions_root_path, "METADATA_REVISIONS", f"{study_id}_{latest_revision:02}", "HASHES", "data_sha256.json")
+        Path(root_data_files_hash_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(data_files_hash_path).parent.mkdir(parents=True, exist_ok=True)
         job_id, messages = sync_public_ftp_folder_with_revisions(study_id=study_id, 
                                revision_number=study.revision_number,
                                source_path=revisions_root_path, 
@@ -172,7 +174,9 @@ def sync_study_revision(self, study_id: str, user_token: str):
                                user_token=user_token,
                                email=email,
                                task_name=f"{study_id}_{study.revision_number:02}_PUBLIC_FTP_SYNC_{current}",
-                               study_private_ftp_path=study_private_ftp_path
+                               study_private_ftp_path=study_private_ftp_path,
+                               data_files_hash_path=data_files_hash_path,
+                               root_data_files_hash_path=root_data_files_hash_path
                                )
         return {"job_id": job_id, "messages": messages }
     except Exception as e:
@@ -186,7 +190,9 @@ def sync_public_ftp_folder_with_revisions(task_name: str,
                            source_path: str, 
                            target_path: str, 
                            user_token: str,
-                           study_private_ftp_path: str
+                           study_private_ftp_path: str,
+                           data_files_hash_path: str,
+                           root_data_files_hash_path: str
                            ):
     settings = get_settings()
     client: HpcClient = get_new_hpc_datamover_client()
@@ -204,6 +210,8 @@ def sync_public_ftp_folder_with_revisions(task_name: str,
             "STUDY_METADATA_PATH": source_path,
             "STUDY_PUBLIC_FTP_PATH": target_path,
             "STUDY_PRIVATE_FTP_PATH": study_private_ftp_path,
+            "DATA_FILES_HASH_PATH": data_files_hash_path,
+            "ROOT_DATA_FILES_HASH_PATH": root_data_files_hash_path,
             "UPDATE_URL": update_url,
             "USER_TOKEN": user_token
         }

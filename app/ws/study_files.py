@@ -16,6 +16,7 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 import datetime
+import fnmatch
 import glob
 import json
 import logging
@@ -419,7 +420,7 @@ class StudyRawAndDerivedDataFiles(Resource):
             },
             {
                 "name": "search_pattern",
-                "description": "search pattern (FILES/*.mzML, FILES/*.zip, FILES/**/*.d etc.). Default is FILES/*",
+                "description": "search pattern (*.mzML, *.zip, *.d etc.). Default is FILES/*",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -508,72 +509,94 @@ class StudyRawAndDerivedDataFiles(Resource):
                 )
             search_pattern_prefix = f"{data_files_subfolder}/"
             if not search_pattern.startswith(search_pattern_prefix):
-                raise MetabolightsException(
-                    http_code=401,
-                    message=f"Search pattern should start with {f'{data_files_subfolder}/'}",
-                )
+                search_pattern = f"FILES/{search_pattern}"
 
         UserService.get_instance().validate_user_has_read_access(
             user_token, study_id, None
         )
         StudyService.get_instance().get_study_by_acc(study_id)
-
-        study_folder = os.path.join(
-            settings.mounted_paths.study_metadata_files_root_path, study_id
+        study_data_file_index_path = os.path.join(
+            settings.mounted_paths.study_internal_files_root_path, 
+            study_id, "DATA_FILES", "data_file_index.json"
         )
-        search_subfolder = os.path.join(
-            settings.mounted_paths.study_metadata_files_root_path,
-            study_id,
-            data_files_subfolder,
-        )
-        search_path = os.path.join(
-            settings.mounted_paths.study_metadata_files_root_path,
-            study_id,
-            search_pattern,
-        )
-        ignore_list = self.get_ignore_list(study_folder)
+        if not os.path.exists(study_data_file_index_path):
+            return {"files": []}
+        
+        data_files = json.loads(pathlib.Path(study_data_file_index_path).read_text())
+        private_selected = fnmatch.filter(data_files["private_data_files"].keys(), search_pattern)
+        # public_selected = fnmatch.filter(data_files["public_data_files"].keys(), search_pattern)
+        result = set()
+        
+        if file_match and folder_match:
+            result.update(private_selected)
+            # result.update(public_selected)
+        elif file_match:
+            # result.update([x for x in public_selected if not data_files["public_data_files"][x]["is_dir"]])
+            result.update([x for x in private_selected if not data_files["private_data_files"][x]["is_dir"]])
+        else:
+            # result.update([x for x in public_selected if data_files["public_data_files"][x]["is_dir"]])
+            result.update([x for x in private_selected if data_files["private_data_files"][x]["is_dir"]])
+        final_result = [ {"name": x} for x in result]
+        final_result.sort(key=lambda x: x["name"])
+        return {"files": final_result}
 
-        glob_search_result = glob.glob(search_path, recursive=True)
-        search_results = [
-            os.path.abspath(file)
-            for file in glob_search_result
-            if (file_match and os.path.isfile(file))
-            or (folder_match and os.path.isdir(file))
-        ]
-        excluded_folders = get_settings().file_filters.folder_exclusion_list
+        # study_folder = os.path.join(
+        #     settings.mounted_paths.study_metadata_files_root_path, study_id
+        # )
+        # search_subfolder = os.path.join(
+        #     settings.mounted_paths.study_metadata_files_root_path,
+        #     study_id,
+        #     data_files_subfolder,
+        # )
+        # search_path = os.path.join(
+        #     settings.mounted_paths.study_metadata_files_root_path,
+        #     study_id,
+        #     search_pattern,
+        # )
+        # ignore_list = self.get_ignore_list(study_folder)
 
-        excluded_folder_set = set(
-            [
-                os.path.basename(os.path.abspath(os.path.join(study_folder, file)))
-                for file in excluded_folders
-            ]
-        )
-        filtered_result = []
-        warning_occurred = False
-        for item in search_results:
-            is_in_study_folder = (
-                item.startswith(search_subfolder + os.path.sep)
-                and ".." + os.path.sep not in item
-            )
-            if is_in_study_folder:
-                relative_path = item.replace(
-                    search_subfolder + os.path.sep, f"{search_pattern_prefix}"
-                )
-                sub_path = relative_path.split(os.path.sep)
-                if sub_path and sub_path[0] not in excluded_folder_set:
-                    filtered_result.append(relative_path)
-            else:
-                if not warning_occurred:
-                    message = f"{search_pattern} pattern results for {study_id} are not allowed: {item}"
-                    logger.warning(message)
-                    warning_occurred = True
+        
+        # glob_search_result = glob.glob(search_path, recursive=True)
+        # search_results = [
+        #     os.path.abspath(file)
+        #     for file in glob_search_result
+        #     if (file_match and os.path.isfile(file))
+        #     or (folder_match and os.path.isdir(file))
+        # ]
+        # excluded_folders = get_settings().file_filters.folder_exclusion_list
 
-        files = [file for file in filtered_result if file not in ignore_list]
-        files.sort()
+        # excluded_folder_set = set(
+        #     [
+        #         os.path.basename(os.path.abspath(os.path.join(study_folder, file)))
+        #         for file in excluded_folders
+        #     ]
+        # )
+        # filtered_result = []
+        # warning_occurred = False
+        # for item in search_results:
+        #     is_in_study_folder = (
+        #         item.startswith(search_subfolder + os.path.sep)
+        #         and ".." + os.path.sep not in item
+        #     )
+        #     if is_in_study_folder:
+        #         relative_path = item.replace(
+        #             search_subfolder + os.path.sep, f"{search_pattern_prefix}"
+        #         )
+        #         sub_path = relative_path.split(os.path.sep)
+        #         if sub_path and sub_path[0] not in excluded_folder_set:
+        #             filtered_result.append(relative_path)
+        #     else:
+        #         if not warning_occurred:
+        #             message = f"{search_pattern} pattern results for {study_id} are not allowed: {item}"
+        #             logger.warning(message)
+        #             warning_occurred = True
 
-        result = [{"name": file.replace(search_path + "/", "")} for file in files]
+        # files = [file for file in filtered_result if file not in ignore_list]
+        # files.sort()
 
-        return jsonify({"files": result})
+        # result = [{"name": file.replace(search_path + "/", "")} for file in files]
+
+        # return jsonify({"files": result})
 
     def get_ignore_list(self, search_path):
         ignore_list = []
@@ -2244,7 +2267,7 @@ class StudyFilesTree(Resource):
 
 class FileList(Resource):
     @swagger.operation(
-        summary="Get a listof all files and directories  for the given location",
+        summary="[Deprecated] Get a listof all files and directories  for the given location",
         parameters=[
             {
                 "name": "study_id",

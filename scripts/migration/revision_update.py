@@ -31,6 +31,7 @@ def prepare_revisions():
                     studies.sort(key=lambda x: int(x["acc"].replace("MTBLS", "").replace("REQ", "")))
                 
                 audit_folder_root_path = get_settings().study.mounted_paths.study_audit_files_root_path
+                internal_files_root_path = get_settings().study.mounted_paths.study_internal_files_root_path
                 user_token = get_settings().auth.service_account.api_token
                 user = UserService.get_instance().get_db_user_by_user_token(user_token) 
    
@@ -42,13 +43,13 @@ def prepare_revisions():
             study_id = study["acc"]
             
             print(study_id)
-            audit_root_path = os.path.join(audit_folder_root_path, study_id, "audit")
+            study_internal_files_path = os.path.join(internal_files_root_path, study_id)
             latest_revision = 0
-            revisions_root_path = os.path.join(audit_root_path, "PUBLIC_METADATA")
+            revisions_root_path = os.path.join(study_internal_files_path, "PUBLIC_METADATA")
             metadata_revisions_path = os.path.join(revisions_root_path, "METADATA_REVISIONS")
-            
-            public_version_1_folder_path = os.path.join(audit_root_path , "PUBLIC_VERSION_1.0")
-            public_version_2_folder_path = os.path.join(audit_root_path , "PUBLIC_VERSION_2.0")
+            study_audit_root_path = os.path.join(audit_folder_root_path, study_id, "audit")
+            public_version_1_folder_path = os.path.join(study_audit_root_path , "PUBLIC_VERSION_1.0")
+            public_version_2_folder_path = os.path.join(study_audit_root_path , "PUBLIC_VERSION_2.0")
             with DBManager.get_instance().session_maker() as db_session:
                 try:
 
@@ -56,13 +57,11 @@ def prepare_revisions():
                     db_study: Study = db_session.query(Study).filter(Study.acc == study_id).first()
                     study_status = StudyStatus(db_study.status)
                     if study_status == StudyStatus.PUBLIC:
-                        # settings = get_settings().study
-                        # audit_folder_root_path = settings.mounted_paths.study_audit_files_root_path
                         folder_name = "PUBLIC_VERSION_1.0"
                         if os.path.exists(public_version_1_folder_path):
                             folder_name = "PUBLIC_VERSION_2.0"
                             
-                        audit_folder_path = os.path.join(audit_root_path, folder_name)
+                        audit_folder_path = os.path.join(study_internal_files_path, folder_name)
                         if not os.path.exists(audit_folder_path):
                             StudyRevisionService.create_audit_folder(db_study, folder_name=folder_name)
                     
@@ -209,15 +208,14 @@ def prepare_revisions():
 
             mounted_paths = get_settings().study.mounted_paths
             
-            data_files_path = os.path.join(mounted_paths.study_readonly_files_actual_root_path, study_id)
-            data_files_link_path = os.path.join(mounted_paths.study_metadata_files_root_path, study_id, "FILES")
-            os.unlink(data_files_link_path)
-            os.symlink(data_files_path, data_files_link_path)
+            # data_files_link_path = os.path.join(mounted_paths.study_metadata_files_root_path, study_id, "FILES")
+            # os.unlink(data_files_link_path)
             
             audit_files_path = os.path.join(mounted_paths.study_audit_files_root_path, study_id, "audit")
             audit_files_link_path = os.path.join(mounted_paths.study_metadata_files_root_path, study_id, "AUDIT_FILES")
             os.makedirs(audit_files_path, exist_ok=True)
-
+            # archived_audit_files_link_path = os.path.join(audit_files_link_path, "ARCHIVED_AUDIT_FILES")
+            # os.unlink(archived_audit_files_link_path)
             os.unlink(audit_files_link_path)
             os.symlink(audit_files_path, audit_files_link_path)       
             

@@ -1,4 +1,7 @@
+import datetime
 import json
+import logging
+from app.services.storage_service.models import SyncTaskResult, SyncTaskStatus
 from app.study_folder_utils import FileDescriptor
 from app.tasks.worker import MetabolightsTask, celery
 from app.utils import current_time
@@ -6,6 +9,11 @@ import os
 import pathlib
 from typing import Dict, List, OrderedDict, Union
 from app.config import get_settings
+from app.ws.redis.redis import get_redis_server
+from app.tasks.worker import celery
+from celery.result import AsyncResult
+
+logger = logging.getLogger("wslog")
 
 @celery.task(
     base=MetabolightsTask,
@@ -15,7 +23,7 @@ from app.config import get_settings
     default_retry_delay=1,
     max_retries=1,
 )
-def index_study_data_files(self, study_id, obfuscation_code, recursive: bool=True) -> Dict[str, FileDescriptor]:
+def index_study_data_files(self, study_id: str, obfuscation_code: str, recursive: bool=True) -> Dict[str, FileDescriptor]:
         folder_name = f"{study_id.lower()}-{obfuscation_code}"
         settings = get_settings()
         mounted_paths = settings.hpc_cluster.datamover.mounted_paths
@@ -136,3 +144,51 @@ def get_study_folder_files(root_path: str, file_descriptors: Dict[str, FileDescr
                                                              is_empty=is_empty, parent_relative_path=parent_relative_path)
                                 
             yield item
+
+
+def sync_private_ftp_data_files(study_id: str, obfuscation_code: str) -> SyncTaskResult:
+    redis = get_redis_server()
+    now = current_time()
+    now_str = now.isoformat()
+    now_time = now.timestamp()
+    mounted_paths = get_settings().study.mounted_paths
+    target_root_path = os.path.join(mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES")
+    target_path = os.path.join(target_root_path, "data_file_index.json")
+    current_datetime_result = redis.get_value(f"{study_id}:index_private_ftp_storage:current_datetime")
+    if current_datetime_result and os.path.exists(target_path):
+        current_datetime = current_datetime_result.decode()
+        if os.path.exists(target_path):
+            with open(target_path) as f:
+                all_directory_files = json.load(f)
+            index_datetime = all_directory_files["index_datetime"]
+            last_index_time = datetime.datetime.fromisoformat(index_datetime).timestamp()
+            current_index_time = datetime.datetime.fromisoformat(current_datetime).timestamp()
+            status = None
+            task_id_result = redis.get_value(f"{study_id}:index_private_ftp_storage:task_id")
+            task_id = task_id_result.decode() if task_id_result else None
+            if last_index_time > current_index_time:
+                result: AsyncResult = celery.AsyncResult(task_id)
+                if result.ready:
+                    redis.delete_value(f"{study_id}:index_private_ftp_storage:task_id")
+                    redis.delete_value(f"{study_id}:index_private_ftp_storage:current_datetime")
+                if result.successful:
+                    data_result = result.get()
+                    logger.debug(data_result)
+                    status = SyncTaskResult(task_id=task_id, dry_run=False, description="Private FTP Sync completed", status=SyncTaskStatus.COMPLETED_SUCCESS, 
+                                        task_done_time_str=index_datetime, task_done_timestamp=last_index_time, 
+                                        last_update_time=now_str, last_update_timestamp=now_time)
+            else: 
+                status = SyncTaskResult(task_id=task_id, dry_run=False, description="Private FTP Sync running...", status=SyncTaskStatus.RUNNING, 
+                                        last_update_time=now_str, last_update_timestamp=now_time)
+            if status:
+                if status.description and len(status.description) > 100:
+                    status.description = f"{status.description[:100]} ..."
+                return status
+                
+    redis.set_value(f"{study_id}:index_private_ftp_storage:current_datetime", now_str, ex=30*60)
+    inputs = {"study_id":study_id, "obfuscation_code": obfuscation_code, "recursive": True} 
+    task = index_study_data_files.apply_async(kwargs=inputs)
+    task_id = task.id
+    redis.set_value(f"{study_id}:index_private_ftp_storage:task_id", task.id, ex=30*60)
+    return SyncTaskResult(task_id=task_id, dry_run=False, description="Private FTP Sync started", status=SyncTaskStatus.PENDING, 
+                                        last_update_time=now_str, last_update_timestamp=now_time)

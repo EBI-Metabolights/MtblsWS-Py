@@ -7,6 +7,7 @@ import shutil
 
 from app.config import get_settings
 from app.tasks.common_tasks.basic_tasks.send_email import send_email_on_public
+from app.tasks.datamover_tasks.basic_tasks.ftp_operations import sync_private_ftp_data_files
 from app.ws.db.models import StudyRevisionModel
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.folder_maintenance import StudyFolderMaintenanceTask
@@ -91,7 +92,7 @@ class StudyRevisionService:
                     task_name=None,
                     cluster_execution_mode=False,
                 )
-            revisions_root_path = os.path.join(maintenance_task.study_audit_files_path, "PUBLIC_METADATA")
+            revisions_root_path = os.path.join(maintenance_task.study_internal_files_path, "PUBLIC_METADATA")
             revision_folder_name = f"{study_id}_{revision_number:02d}"
             metadata_revisions_path = os.path.join(revisions_root_path, "METADATA_REVISIONS")
             revision_folder_path = os.path.join(metadata_revisions_path, revision_folder_name)
@@ -239,7 +240,7 @@ class StudyRevisionService:
                     raise MetabolightsException(http_code=401, message="Revision not found.")
 
                 if study_revision.status == StudyRevisionStatus.COMPLETED.value:
-                    if status.value != StudyRevisionStatus.COMPLETED.value:
+                    if status != StudyRevisionStatus.COMPLETED:
                         raise MetabolightsException(http_code=401, message="Revision task is already completed.")
 
                 study_revision.status = status.value
@@ -247,8 +248,7 @@ class StudyRevisionService:
                     study_revision.task_started_at = task_started_at
                 if task_completed_at:
                     study_revision.task_completed_at = task_completed_at
-                if task_message:
-                    study_revision.task_message = task_message
+                study_revision.task_message = task_message if task_message else None
                 if revision_comment:
                     study_revision.revision_comment = revision_comment
                 if created_by:
@@ -257,20 +257,22 @@ class StudyRevisionService:
                 logger.info(f'Revision task status updated : ({study_id} Revision {revision_number}), Status: {status.name}')
                 revision_model = StudyRevisionModel.model_validate(study_revision, from_attributes=True)
 
-                if status == StudyRevisionStatus.COMPLETED.value:
-                    if study_status != StudyStatus.PUBLIC and study.revision_number == study_revision.revision_number and study.revision_number == 1:
-                            study.status = StudyStatus.PUBLIC.value
-                            study.updatedate = task_completed_at.replace(tzinfo=None) or current_time().replace(tzinfo=None)
-                            ElasticsearchService.get_instance().reindex_study_with_task(study_id=study_id, 
-                                                                                        user_token=user_token, 
-                                                                                        include_validation_results=False, 
-                                                                                        sync=False)
-                            inputs = {
-                                "user_token": user_token,
-                                "study_id": study_id,
-                                "release_date": study.first_public_date.strftime("%Y-%m-%d"),
-                            }
-                            send_email_on_public.apply_async(kwargs=inputs)
+                if status == StudyRevisionStatus.COMPLETED:
+                    if study_status != StudyStatus.PUBLIC and study.revision_number == study_revision.revision_number:
+                        study.status = StudyStatus.PUBLIC.value
+                        study.updatedate = task_completed_at.replace(tzinfo=None) or current_time().replace(tzinfo=None)
+                        ElasticsearchService.get_instance().reindex_study_with_task(study_id=study_id, 
+                                                                                    user_token=user_token, 
+                                                                                    include_validation_results=False, 
+                                                                                    sync=False)
+                        sync_private_ftp_data_files(study_id=study_id, obfuscation_code=study.obfuscationcode)
+                        if study.revision_number == 1:
+                                inputs = {
+                                    "user_token": user_token,
+                                    "study_id": study_id,
+                                    "release_date": study.first_public_date.strftime("%Y-%m-%d"),
+                                }
+                                send_email_on_public.apply_async(kwargs=inputs)
 
                 db_session.commit()
                 return revision_model
@@ -376,7 +378,7 @@ class StudyRevisionService:
                     task_name=None,
                     cluster_execution_mode=False,
                 )
-            revisions_root_path = os.path.join(maintenance_task.study_audit_files_path, "PUBLIC_METADATA")
+            revisions_root_path = os.path.join(maintenance_task.study_internal_files_path, "PUBLIC_METADATA")
             revision_folder_name = f"{study_id}_{revision_number:02d}"
             metadata_revisions_path = os.path.join(revisions_root_path, "METADATA_REVISIONS")
             revisions_path = os.path.join(metadata_revisions_path, revision_folder_name)
@@ -411,12 +413,12 @@ class StudyRevisionService:
                     if os.path.exists(target_file):
                         shutil.rmtree(target_file)
                     shutil.copytree(file, target_file)
-            mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
-            files_path = os.path.join(mounted_paths.cluster_study_readonly_files_actual_root_path, study_id)
-            revisions_files_path = os.path.join(revisions_root_path, "FILES")
-            if os.path.exists(revisions_files_path):
-                os.unlink(revisions_files_path)
-            os.symlink(files_path, revisions_files_path)
+            # mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+            # files_path = os.path.join(mounted_paths.cluster_study_readonly_files_actual_root_path, study_id)
+            # revisions_files_path = os.path.join(revisions_root_path, "FILES")
+            # if os.path.exists(revisions_files_path):
+            #     os.unlink(revisions_files_path)
+            # os.symlink(files_path, revisions_files_path)
             logger.info("Revision folder created: %s", dest_path)
             return  True, maintenance_task.study_metadata_files_path, dest_path
         except Exception as ex:
@@ -443,7 +445,7 @@ class StudyRevisionService:
                     task_name=None,
                     cluster_execution_mode=False,
                 )
-            revisions_root_path = os.path.join(maintenance_task.study_audit_files_path, "PUBLIC_METADATA")
+            revisions_root_path = os.path.join(maintenance_task.study_internal_files_path, "PUBLIC_METADATA")
             metadata_revisions_root_path = os.path.join(revisions_root_path, "METADATA_REVISIONS")
             revision_folder_name = f"{study_id}_{revision_number:02d}"
 
@@ -538,8 +540,8 @@ class StudyRevisionService:
  
 #     data_files_root_path = get_settings().study.mounted_paths.study_readonly_files_actual_root_path 
 #     study_data_files_path = os.path.join(data_files_root_path, study_id)
-#     audit_folder_root_path = get_settings().study.mounted_paths.study_audit_files_root_path
-#     revisions_root_path = os.path.join(audit_folder_root_path, study_id, "audit", "PUBLIC_METADATA")
+#     study_internal_files_path = get_settings().study.mounted_paths.study_internal_files_path
+#     revisions_root_path = os.path.join(study_internal_files_path, study_id, "PUBLIC_METADATA")
 #     StudyRevisionService.create_data_file_hashes(study, search_path=study_data_files_path, copy_paths=[revisions_root_path])
     
 #     now = current_time()

@@ -348,17 +348,22 @@ def get_all_private_studies_for_user(user_token):
                             description = line.replace(isa_descr, '').replace(' "', '').replace('" ', '')
             except FileNotFoundError:
                 logger.error("The file %s was not found", complete_file_name)
-
+            revision_status = None
+            if row[6] is not None:
+                revision_success, revision = get_study_revision(study_id=study_id, revision_number=row[6])
+                if revision_success:
+                    revision_status = revision[4]
             complete_list.append({'accession': study_id,
                                   'updated': get_single_file_information(complete_file_name),
                                   'releaseDate': release_date,
                                   'createdDate': submission_date,
-                                  'status': status.strip(),
+                                  'status': status,
                                   'title': title.strip(),
                                   'description': description.strip(),
                                   'curationRequest': curation_request.strip(),
                                   'revisionNumber': row[6],
-                                  'revisionDatetime': row[7]
+                                  'revisionDatetime': row[7],
+                                  'revisionStatus': revision_status
                                   })
 
     return complete_list
@@ -415,8 +420,12 @@ def get_all_studies_for_user(user_token):
                         title = line.replace(isa_title, '').replace(' "', '').replace('" ', '')
                     if line.startswith(isa_descr):
                         description = line.replace(isa_descr, '').replace(' "', '').replace('" ', '')
-
-
+        revision_status = None
+        if row[6] is not None:
+            fetch_status, revision = get_study_revision(study_id=study_id, revision_number=row[6])
+            if fetch_status:
+                revision_status = revision[4]
+        revision_datetime = row[7].isoformat() if row[7] else None
         complete_list.append({'accession': study_id,
                             'updated': get_single_file_information(complete_file_name),
                             'releaseDate': release_date,
@@ -426,7 +435,8 @@ def get_all_studies_for_user(user_token):
                             'description': description.strip(),
                             'curationRequest': curation_request.strip(),
                             'revisionNumber': row[6],
-                            'revisionDatetime': row[7]
+                            'revisionDatetime': revision_datetime,
+                            'revisionStatus': revision_status
                             })
 
     return complete_list
@@ -732,7 +742,20 @@ def biostudies_accession(study_id, biostudies_id, method):
     except Exception as e:
         return False, "BioStudies accession was not added to the study"
 
+def get_study_revision(study_id, revision_number):
+    query = "select accession_number, revision_datetime, revision_number, revision_comment, status from study_revisions where accession_number=%(study_id)s and revision_number=%(revision_number)s;"
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query, {'study_id': study_id, 'revision_number': revision_number})
+        data = cursor.fetchall()
+        release_connection(postgresql_pool, conn)
+        if data:
+            return True, data[0]
+        return False, None
 
+    except IndexError:
+        return False, "No metabolite was found for this ChEBI id"
+     
 def mtblc_on_chebi_accession(chebi_id):
     if not chebi_id:
         return None
@@ -891,10 +914,8 @@ def get_provisional_study_ids_for_user(user_token):
     val_query_params(user_token)
 
     study_id_list = execute_select_with_params(query_provisional_study_ids_for_user, {"user_token": user_token})
-    complete_list = []
-    for i, row in enumerate(study_id_list):
-        study_id = row[0]
-        complete_list.append(study_id)
+    complete_list = [row[0] for row in study_id_list]
+
     return complete_list
 
 def create_empty_study(user_token, study_id=None, obfuscationcode=None):

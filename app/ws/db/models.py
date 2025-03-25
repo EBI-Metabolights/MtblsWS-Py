@@ -25,16 +25,16 @@ class StudyRevisionModel(BaseModel):
         return ""
 
 
-    @field_serializer('status')
-    @classmethod
-    def status_serializer(cls, value):
-        if isinstance(value, StudyRevisionStatus):
-            return value.name
-        elif isinstance(value, str):
-            return StudyRevisionStatus(int(value)).name
-        elif isinstance(value, int):
-            return StudyRevisionStatus(value).name
-        return StudyRevisionStatus.INITIATED.name
+    # @field_serializer('status')
+    # @classmethod
+    # def status_serializer(cls, value):
+    #     if isinstance(value, StudyRevisionStatus):
+    #         return value.name
+    #     elif isinstance(value, str):
+    #         return StudyRevisionStatus(int(value)).name
+    #     elif isinstance(value, int):
+    #         return StudyRevisionStatus(value).name
+    #     return StudyRevisionStatus.INITIATED.name
 
 
 class StudyAccessPermission(BaseModel):

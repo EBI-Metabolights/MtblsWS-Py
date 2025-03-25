@@ -44,7 +44,7 @@ from app.tasks.common_tasks.basic_tasks.send_email import (
     send_technical_issue_email,
 )
 from app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization import sync_studies_on_es_and_db
-from app.tasks.datamover_tasks.basic_tasks.ftp_operations import index_study_data_files
+from app.tasks.datamover_tasks.basic_tasks.ftp_operations import sync_private_ftp_data_files
 from app.tasks.common_tasks.report_tasks.eb_eye_search import eb_eye_build_public_studies, build_studies_for_europe_pmc
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import delete_study_folders, maintain_storage_study_folders
 from app.tasks.hpc_study_rsync_client import VALID_FOLDERS, StudyFolder, StudyFolderLocation, StudyFolderType, StudyRsyncClient
@@ -1199,19 +1199,19 @@ class CreateAccession(Resource):
                 raise MetabolightsException(message="Study id creation on db was failed.", http_code=501, exception=exc)
 
         inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False, "task_name": "INITIAL_METADATA", 
-                  "maintain_metadata_storage": True, "maintain_data_storage": False, "maintain_private_ftp_storage": False}
+                  "maintain_metadata_storage": True, "maintain_private_ftp_storage": False}
         try:
             maintain_storage_study_folders(**inputs)
             logger.info(f"Step 4.1: 'Create initial files and folders' task completed for study {study_acc}")
         except Exception as exc:
             logger.info(f"Step 4.1: 'Create initial files and folders' task failed for study {study_acc}. {str(exc)}")
             
-        # Start ftp folder creation task
-        inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": True, "maintain_private_ftp_storage": False,  "task_name": "INITIAL_DATA"})
-        create_study_data_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
-        logger.info(f"Step 4.2: 'Create study data files and folders' task has been started for study {study_acc} with task id: {create_study_data_folders_task.id}")
+        # # Start ftp folder creation task
+        # inputs.update({"maintain_metadata_storage": False, "maintain_private_ftp_storage": False,  "task_name": "INITIAL_DATA"})
+        # create_study_data_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
+        # logger.info(f"Step 4.2: 'Create study data files and folders' task has been started for study {study_acc} with task id: {create_study_data_folders_task.id}")
         
-        inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": False, "maintain_private_ftp_storage": True,  "task_name": "INITIAL_FTP_FOLDERS"})
+        inputs.update({"maintain_metadata_storage": False, "maintain_private_ftp_storage": True,  "task_name": "INITIAL_FTP_FOLDERS"})
         create_ftp_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
         logger.info(f"Step 4.3: 'Create study FTP folders' task has been started for study {study_acc} with task id: {create_ftp_folders_task.id}")
 
@@ -1781,7 +1781,7 @@ class MtblsStudyFolders(Resource):
                 "allowMultiple": False,
                 "paramType": "header",
                 "dataType": "string",
-                "enum": ["metadata", "data", "private-ftp"],
+                "enum": ["metadata", "private-ftp"],
                 "allowEmptyValue": False,
                 "defaultValue": "metadata",
                 "default": "metadata"
@@ -1845,12 +1845,9 @@ class MtblsStudyFolders(Resource):
         if target_folder not in ("metadata", "data", "private-ftp"):
             raise MetabolightsException(message="Target folder is not defined.")
         maintain_metadata_storage = False
-        maintain_data_storage = False
         maintain_private_ftp_storage = False
         if target_folder == "metadata":
             maintain_metadata_storage = True
-        elif target_folder == "data":
-            maintain_data_storage = True
         elif target_folder == "private-ftp":
             maintain_private_ftp_storage = True
             
@@ -1868,7 +1865,6 @@ class MtblsStudyFolders(Resource):
                 "force_to_maintain": force_to_maintain,
                 "task_name": task_name,
                 "maintain_metadata_storage": maintain_metadata_storage,
-                "maintain_data_storage": maintain_data_storage,
                 "maintain_private_ftp_storage": maintain_private_ftp_storage
             }
             task = maintain_storage_study_folders.apply_async(kwargs=inputs)
@@ -2127,51 +2123,7 @@ class StudyFolderSynchronization(Resource):
         status_check_only = not start_new_task
         
         if sync_type == "data" and source_staging_area == "private-ftp" and target_staging_area == "readonly-study":
-            redis = get_redis_server()
-            now = current_time()
-            now_str = now.isoformat()
-            now_time = now.timestamp()
-            mounted_paths = get_settings().study.mounted_paths
-            target_root_path = os.path.join(mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES")
-            target_path = os.path.join(target_root_path, "data_file_index.json")
-            current_datetime_result = redis.get_value(f"{study_id}:index_private_ftp_storage:current_datetime")
-            if current_datetime_result and os.path.exists(target_path):
-                current_datetime = current_datetime_result.decode()
-                if os.path.exists(target_path):
-                    with open(target_path) as f:
-                        all_directory_files = json.load(f)
-                    index_datetime = all_directory_files["index_datetime"]
-                    last_index_time = datetime.fromisoformat(index_datetime).timestamp()
-                    current_index_time = datetime.fromisoformat(current_datetime).timestamp()
-                    status = None
-                    task_id_result = redis.get_value(f"{study_id}:index_private_ftp_storage:task_id")
-                    task_id = task_id_result.decode() if task_id_result else None
-                    if last_index_time > current_index_time:
-                        result: AsyncResult = celery.AsyncResult(task_id)
-                        if result.ready:
-                            redis.delete_value(f"{study_id}:index_private_ftp_storage:task_id")
-                            redis.delete_value(f"{study_id}:index_private_ftp_storage:current_datetime")
-                        if result.successful:
-                            data_result = result.get()
-                            logger.debug(data_result)
-                            status = SyncTaskResult(task_id=task_id, dry_run=False, description="Private FTP Sync completed", status=SyncTaskStatus.COMPLETED_SUCCESS, 
-                                                task_done_time_str=index_datetime, task_done_timestamp=last_index_time, 
-                                                last_update_time=now_str, last_update_timestamp=now_time)
-                    else: 
-                        status = SyncTaskResult(task_id=task_id, dry_run=False, description="Private FTP Sync running...", status=SyncTaskStatus.RUNNING, 
-                                              last_update_time=now_str, last_update_timestamp=now_time)
-                    if status:
-                        if status.description and len(status.description) > 100:
-                            status.description = f"{status.description[:100]} ..."
-                        return status.model_dump()
-                        
-            redis.set_value(f"{study_id}:index_private_ftp_storage:current_datetime", now_str, ex=30*60)
-            inputs = {"study_id":study_id, "obfuscation_code": study.obfuscationcode, "recursive": True} 
-            task = index_study_data_files.apply_async(kwargs=inputs)
-            task_id = task.id
-            redis.set_value(f"{study_id}:index_private_ftp_storage:task_id", task.id, ex=30*60)
-            return SyncTaskResult(task_id=task_id, dry_run=False, description="Private FTP Sync started", status=SyncTaskStatus.PENDING, 
-                                              last_update_time=now_str, last_update_timestamp=now_time).model_dump()
+            status = sync_private_ftp_data_files(study_id=study_id, obfuscation_code=study.obfuscationcode)
             
         else:
             if dry_run:

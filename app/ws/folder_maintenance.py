@@ -1703,7 +1703,7 @@ class StudyFolderMaintenanceTask(object):
             elif os.path.islink(file):
                 self.backup_file(file, reason="Path is a symbolic link.")
             else:
-                self.update_permission(file, chmod=0o644)
+                self.update_permission(file, chmod=0o755)
                 metadata_files.append(
                     file.replace(f"{self.study_metadata_files_path}/", "")
                 )
@@ -1729,7 +1729,7 @@ class StudyFolderMaintenanceTask(object):
             )
             self.actions.append(action_log)
 
-    def update_permission(self, file_path, chmod=0o644):
+    def update_permission(self, file_path, chmod=0o755):
         octal_value = oct(os.stat(file_path).st_mode & 0o777)
         octal_value_str = octal_value.replace("0o", "")
         chmod_str = oct(chmod & 0o777).replace("0o", "")
@@ -2058,13 +2058,13 @@ class StudyFolderMaintenanceTask(object):
             study_settings.internal_files_symbolic_link_name,
         )
 
-        archived_audit_file_link_path = os.path.join(
-            study_audit_folder_path, study_settings.readonly_audit_folder_symbolic_name
-        )
+        # archived_audit_file_link_path = os.path.join(
+        #     study_audit_folder_path, study_settings.readonly_audit_folder_symbolic_name
+        # )
 
-        read_only_audit_files_actual_path = os.path.join(
-            settings.study_readonly_audit_files_actual_root_path, study_id
-        )
+        # read_only_audit_files_actual_path = os.path.join(
+        #     settings.study_readonly_audit_files_actual_root_path, study_id
+        # )
         # logger.info(
         #     f"{read_only_files_actual_path} folder will be used for study data files"
         # )
@@ -2078,9 +2078,9 @@ class StudyFolderMaintenanceTask(object):
         self.maintain_study_symlinks(
             study_audit_folder_path, audit_folder_symbolic_link_path
         )
-        self.maintain_study_symlinks(
-            read_only_audit_files_actual_path, archived_audit_file_link_path
-        )
+        # self.maintain_study_symlinks(
+        #     read_only_audit_files_actual_path, archived_audit_file_link_path
+        # )
         self.maintain_study_symlinks(
             internal_file_path, internal_file_symbolic_link_path
         )

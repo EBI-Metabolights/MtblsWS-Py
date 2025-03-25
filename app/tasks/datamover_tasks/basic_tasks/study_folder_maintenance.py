@@ -26,15 +26,12 @@ def create_study_folders(
     study: Study,
     maintenance_task: StudyFolderMaintenanceTask,
     maintain_metadata_storage,
-    maintain_data_storage,
     maintain_private_ftp_storage,
     failing_gracefully
 ):
     try:
         study_id = study.acc
         study_status = StudyStatus(study.status)
-        if maintain_data_storage:
-            maintenance_task.create_maintenance_actions_for_study_data_files()
 
         if maintain_private_ftp_storage:
             maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
@@ -132,7 +129,6 @@ def delete_study_folders(
                 study,
                 maintenance_task,
                 maintain_metadata_storage=True,
-                maintain_data_storage=True,
                 maintain_private_ftp_storage=True,
                 failing_gracefully=failing_gracefully
             )
@@ -228,7 +224,6 @@ def maintain_storage_study_folders(
     study_id: Union[None, str] = None,
     force_to_maintain=False,
     maintain_metadata_storage=True,
-    maintain_data_storage=True,
     maintain_private_ftp_storage=True,
     cluster_execution_mode=True,
     failing_gracefully=False,
@@ -282,8 +277,6 @@ def maintain_storage_study_folders(
                 
                 if maintain_metadata_storage:
                     maintenance_task.maintain_study_rw_storage_folders()
-                if maintain_data_storage:
-                    maintenance_task.create_maintenance_actions_for_study_data_files()
                 if maintain_private_ftp_storage:
                     maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
                 rows = []

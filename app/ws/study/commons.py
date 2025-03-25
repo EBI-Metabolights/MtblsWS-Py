@@ -32,30 +32,35 @@ def get_user_email(user_token):
 
 def get_private_studies_list():
     logger.info('Getting all private studies')
-    studies = []
     study_list = get_private_studies()
-    for acc in study_list:
-        studies.append(acc[0])
-
+    studies = [acc[0] for acc in study_list]
+    studies.sort(key=sort_by_study_id)
+    
     logger.info('... found %d private studies', len(studies))
     return {"studies": len(studies), "content": studies}
 
 def get_non_public_studies_list():
     logger.info('Getting all non public studies')
-    studies = []
     study_list = get_all_non_public_studies()
-    for acc in study_list:
-        studies.append(acc[0])
+    studies = [acc[0] for acc in study_list]
+    studies.sort(key=sort_by_study_id)
 
     logger.info(f'...found {len(studies)} non public studies')
     return {"studies": len(studies), "content": studies}
+
+def sort_by_study_id(key: str):
+    if key:
+        val = key.replace("MTBLS", "").replace("REQ", "")
+        if val.isnumeric():
+            return int(val)
+    return -1
 
 def get_public_studies_list():
     logger.info('Getting all public studies')
     
     study_list = get_public_studies()
     studies = [acc[0] for acc in study_list]
-
+    studies.sort(key=sort_by_study_id)
     logger.info('... found %d public studies', len(studies))
     return {"studies": len(studies), "content": studies}
 
@@ -63,6 +68,7 @@ def get_public_studies_list():
 def get_all_studies_for_user(user_token):
     logger.info('Getting provisional studies using user_token')
     study_id_list = get_provisional_study_ids_for_user(user_token)
+    study_id_list.sort(key=sort_by_study_id)
     text_resp = json.dumps(study_id_list)
     logger.info('Found the following studies %s', text_resp)
     return text_resp
