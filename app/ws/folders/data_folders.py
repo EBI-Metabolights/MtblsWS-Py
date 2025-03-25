@@ -33,7 +33,7 @@ logger = logging.getLogger("wslog")
 
 class DataFolders(Resource):
     @swagger.operation(
-        summary="Update folder or update permission",
+        summary="[Deprecated] Update folder or update permission",
         notes="""...""",
         parameters=[
             {

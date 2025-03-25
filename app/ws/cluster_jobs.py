@@ -149,7 +149,7 @@ def get_permissions(study_id, user_token, obfuscation_code=None):
 
 class LsfUtils(Resource):
     @swagger.operation(
-        summary="Kill a EBI LSF cluster job (curator only)",
+        summary="[Deprecated] Kill a EBI LSF cluster job (curator only)",
         parameters=[
             {
                 "name": "job_id",

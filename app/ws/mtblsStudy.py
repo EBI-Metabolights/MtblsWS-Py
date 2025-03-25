@@ -192,7 +192,7 @@ class MtblsPrivateStudies(Resource):
 
 class MtblsStudyValidationStatus(Resource):
     @swagger.operation(
-        summary="Override validation status of a study",
+        summary="[Deprecated] Override validation status of a study",
         notes="Curator can override the validation status of a study.",
         parameters=[
             {
@@ -286,7 +286,7 @@ class MtblsStudiesWithMethods(Resource):
 
 class MyMtblsStudies(Resource):
     @swagger.operation(
-        summary="Get all private studies for a user",
+        summary="[Deprecated] Get all private studies for a user",
         notes="Get a list of all private studies for a user.",
         parameters=[
             {
@@ -643,7 +643,7 @@ class IsaTabAssayFile(Resource):
 
 class CloneAccession(Resource):
     @swagger.operation(
-        summary="Create a new study and upload folder",
+        summary="[Deprecated] Create a new study and upload folder",
         notes="""This will clone the default template LC-MS study if no "study_id" parameter is given
         If a "to_study_id" (destination study id) is provided, <b>data will be copied into this *existing* study. 
         Please be aware that data in the destination study will be replaced with metadata files from "study_id"</b>.""",

@@ -37,7 +37,7 @@ wsc = WsClient()
 
 class Organism(Resource):
     @swagger.operation(
-        summary='Update Study Organism and Organism part',
+        summary='[Deprecated] Update Study Organism and Organism part',
         notes='''Update Study Organism and Organism part.
                   <br>
                   Use existing characteristics name and value as query parameters to update specific 
@@ -232,7 +232,7 @@ class Organism(Resource):
         return {"Success": " Sample sheet updated"}
 
     @swagger.operation(
-        summary='Get unique Study Organism and Organism part',
+        summary='[Deprecated] Get unique Study Organism and Organism part',
         notes='Get unique Study Organism and Organism part',
         parameters=[
             {

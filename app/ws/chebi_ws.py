@@ -115,7 +115,7 @@ class ChebiEntity(Resource):
 class ChebiImageProxy(Resource):
 
     @swagger.operation(
-        summary="Get image by chebi id",
+        summary="[Deprecated] Get image by chebi id",
         nickname="Get image by chebi id",
         notes="Get image by chebi id",
         parameters=[

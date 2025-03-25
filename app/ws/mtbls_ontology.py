@@ -34,7 +34,7 @@ wsc = WsClient()
 class MtblsOntologyTerms(Resource):
 
     @swagger.operation(
-        summary="Get Metabolights MTBLS controlled vocabolary and terms.",
+        summary="[Deprecated] Get Metabolights MTBLS controlled vocabolary and terms.",
         notes="Get MTBLS controlled vocabolary and terms.",
         parameters=[
             {
@@ -101,7 +101,7 @@ class MtblsOntologyTerms(Resource):
 class MtblsOntologyTerm(Resource):
 
     @swagger.operation(
-        summary="Get Metabolights MTBLS controlled vocabolary and terms.",
+        summary="[Deprecated] Get Metabolights MTBLS controlled vocabolary and terms.",
         notes="Get MTBLS controlled vocabolary and terms.",
         parameters=[
             {

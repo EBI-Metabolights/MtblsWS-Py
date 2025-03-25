@@ -13,7 +13,7 @@ from app.ws.study.user_service import UserService
 
 class MetabolightsParameters(Resource):
     @swagger.operation(
-        summary="Get Metabolights parameter",
+        summary="[Deprecated] Get Metabolights parameter",
         parameters=[
             {
                 "name": "name",
@@ -92,7 +92,7 @@ class MetabolightsParameters(Resource):
             raise ex
     
     @swagger.operation(
-        summary="Update Metabolights parameter ",
+        summary="[Deprecated] Update Metabolights parameter ",
         notes="""
         Example parameter data input
         <code>
@@ -177,7 +177,7 @@ class MetabolightsParameters(Resource):
 
     
     @swagger.operation(
-        summary="Add new Metabolights parameter",
+        summary="[Deprecated] Add new Metabolights parameter",
         notes="""
         Example parameter data input
         <code>
@@ -257,7 +257,7 @@ class MetabolightsParameters(Resource):
         
         
     @swagger.operation(
-        summary="Delete Metabolights parameter",
+        summary="[Deprecated] Delete Metabolights parameter",
         parameters=[
             {
                 "name": "name",

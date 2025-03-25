@@ -225,17 +225,17 @@ xyzservices = ">=2021.09.1"
 
 [[package]]
 name = "boto3"
-version = "1.37.18"
+version = "1.37.19"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3-1.37.18-py3-none-any.whl", hash = "sha256:1545c943f36db41853cdfdb6ff09c4eda9220dd95bd2fae76fc73091603525d1"},
-    {file = "boto3-1.37.18.tar.gz", hash = "sha256:9b272268794172b0b8bb9fb1f3c470c3b6c0ffb92fbd4882465cc740e40fbdcd"},
+    {file = "boto3-1.37.19-py3-none-any.whl", hash = "sha256:fbfc2c43ad686b63c8aa02aee634c269f856eed68941d8e570cc45950be52130"},
+    {file = "boto3-1.37.19.tar.gz", hash = "sha256:c69c90500f18fd72d782d1612170b7d3db9a98ed51a4da3bebe38e693497ebf8"},
 ]
 
 [package.dependencies]
-botocore = ">=1.37.18,<1.38.0"
+botocore = ">=1.37.19,<1.38.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.11.0,<0.12.0"
 
@@ -244,13 +244,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.37.18"
+version = "1.37.19"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.37.18-py3-none-any.whl", hash = "sha256:a8b97d217d82b3c4f6bcc906e264df7ebb51e2c6a62b3548a97cd173fb8759a1"},
-    {file = "botocore-1.37.18.tar.gz", hash = "sha256:99e8eefd5df6347ead15df07ce55f4e62a51ea7b54de1127522a08597923b726"},
+    {file = "botocore-1.37.19-py3-none-any.whl", hash = "sha256:6e1337e73a6b8146c1ec20a6a72d67e2809bd4c0af076431fe6e1561e0c89415"},
+    {file = "botocore-1.37.19.tar.gz", hash = "sha256:eadcdc37de09df25cf1e62e8106660c61f60a68e984acfc1a8d43fb6267e53b8"},
 ]
 
 [package.dependencies]
@@ -2321,19 +2321,19 @@ files = [
 
 [[package]]
 name = "kombu"
-version = "5.5.0"
+version = "5.4.2"
 description = "Messaging library for Python."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "kombu-5.5.0-py3-none-any.whl", hash = "sha256:526c6cf038c986b998639109a1eb762502f831e8da148cc928f1f95cd91eb874"},
-    {file = "kombu-5.5.0.tar.gz", hash = "sha256:72e65c062e903ee1b4e8b68d348f63c02afc172eda409e3aca85867752e79c0b"},
+    {file = "kombu-5.4.2-py3-none-any.whl", hash = "sha256:14212f5ccf022fc0a70453bb025a1dcc32782a588c49ea866884047d66e14763"},
+    {file = "kombu-5.4.2.tar.gz", hash = "sha256:eef572dd2fd9fc614b37580e3caeafdd5af46c1eff31e7fba89138cdb406f2cf"},
 ]
 
 [package.dependencies]
 amqp = ">=5.1.1,<6.0.0"
 typing-extensions = {version = "4.12.2", markers = "python_version < \"3.10\""}
-tzdata = {version = "2025.1", markers = "python_version >= \"3.9\""}
+tzdata = {version = "*", markers = "python_version >= \"3.9\""}
 vine = "5.1.0"
 
 [package.extras]
@@ -2341,16 +2341,15 @@ azureservicebus = ["azure-servicebus (>=7.10.0)"]
 azurestoragequeues = ["azure-identity (>=1.12.0)", "azure-storage-queue (>=12.6.0)"]
 confluentkafka = ["confluent-kafka (>=2.2.0)"]
 consul = ["python-consul2 (==0.1.5)"]
-gcpubsub = ["google-cloud-monitoring (>=2.16.0)", "google-cloud-pubsub (>=2.18.4)", "grpcio (==1.67.0)", "protobuf (==4.25.5)"]
 librabbitmq = ["librabbitmq (>=2.0.0)"]
 mongodb = ["pymongo (>=4.1.1)"]
 msgpack = ["msgpack (==1.1.0)"]
 pyro = ["pyro4 (==4.82)"]
 qpid = ["qpid-python (>=0.26)", "qpid-tools (>=0.26)"]
-redis = ["redis (>=4.5.2,!=4.5.5,!=5.0.2,<=5.2.1)"]
+redis = ["redis (>=4.5.2,!=4.5.5,!=5.0.2)"]
 slmq = ["softlayer-messaging (>=1.0.3)"]
 sqlalchemy = ["sqlalchemy (>=1.4.48,<2.1)"]
-sqs = ["boto3 (>=1.26.143)", "urllib3 (>=1.26.16)"]
+sqs = ["boto3 (>=1.26.143)", "pycurl (>=7.43.0.5)", "urllib3 (>=1.26.16)"]
 yaml = ["PyYAML (>=3.10)"]
 zookeeper = ["kazoo (>=2.8.0)"]
 
@@ -2817,23 +2816,19 @@ pb = ["tqdm (>=4.25,<5.0)"]
 
 [[package]]
 name = "narwhals"
-version = "1.31.0"
+version = "1.32.0"
 description = "Extremely lightweight compatibility layer between dataframe libraries"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "narwhals-1.31.0-py3-none-any.whl", hash = "sha256:2a7b79bb5f511055c4c0142121fc0d4171ea171458e12d44dbd9c8fc6488e997"},
-    {file = "narwhals-1.31.0.tar.gz", hash = "sha256:333472e2562343dfdd27407ec9b5114a07c81d0416794e4ac6b703dd925c6a1a"},
+    {file = "narwhals-1.32.0-py3-none-any.whl", hash = "sha256:8bdbf3f76155887412eea04b0b06303856ac1aa3d9e8bda5b5e54612855fa560"},
+    {file = "narwhals-1.32.0.tar.gz", hash = "sha256:bd0aa41434737adb4b26f8593f3559abc7d938730ece010fe727b58bc363580d"},
 ]
 
 [package.extras]
-core = ["duckdb", "pandas", "polars", "pyarrow", "sqlframe"]
 cudf = ["cudf (>=24.10.0)"]
 dask = ["dask[dataframe] (>=2024.8)"]
-dev = ["covdefaults", "hypothesis", "mypy (>=1.15.0,<1.16.0)", "pandas-stubs (==2.2.3.250308)", "polars (==1.25.2)", "pre-commit", "pyarrow-stubs (==17.18)", "pyright", "pytest", "pytest-cov", "pytest-env", "pytest-randomly", "sqlframe (==3.24.1)", "typing-extensions", "uv"]
-docs = ["black", "duckdb", "jinja2", "markdown-exec[ansi]", "mkdocs", "mkdocs-autorefs", "mkdocs-material", "mkdocstrings-python (>=1.16)", "mkdocstrings[python]", "pandas", "polars (>=1.0.0)", "pyarrow"]
 duckdb = ["duckdb (>=1.0)"]
-extra = ["scikit-learn"]
 ibis = ["ibis-framework (>=6.0.0)", "packaging", "pyarrow-hotfix", "rich"]
 modin = ["modin"]
 pandas = ["pandas (>=0.25.3)"]
@@ -2841,8 +2836,6 @@ polars = ["polars (>=0.20.3)"]
 pyarrow = ["pyarrow (>=11.0.0)"]
 pyspark = ["pyspark (>=3.5.0)"]
 sqlframe = ["sqlframe (>=3.22.0)"]
-tests = ["covdefaults", "hypothesis", "pytest", "pytest-cov", "pytest-env", "pytest-randomly"]
-typing = ["hypothesis", "mypy (>=1.15.0,<1.16.0)", "pandas-stubs (==2.2.3.250308)", "polars (==1.25.2)", "pyarrow-stubs (==17.18)", "pyright", "pytest", "sqlframe (==3.24.1)", "typing-extensions", "uv"]
 
 [[package]]
 name = "networkx"
@@ -3736,13 +3729,13 @@ pandas = "*"
 
 [[package]]
 name = "pyparsing"
-version = "3.2.1"
+version = "3.2.2"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "pyparsing-3.2.1-py3-none-any.whl", hash = "sha256:506ff4f4386c4cec0590ec19e6302d3aedb992fdc02c761e90416f158dacf8e1"},
-    {file = "pyparsing-3.2.1.tar.gz", hash = "sha256:61980854fd66de3a90028d679a954d5f2623e83144b5afe5ee86f43d762e5f0a"},
+    {file = "pyparsing-3.2.2-py3-none-any.whl", hash = "sha256:6ab05e1cb111cc72acc8ed811a3ca4c2be2af8d7b6df324347f04fd057d8d793"},
+    {file = "pyparsing-3.2.2.tar.gz", hash = "sha256:2a857aee851f113c2de9d4bfd9061baea478cb0f1c7ca6cbf594942d6d111575"},
 ]
 
 [package.extras]
@@ -4651,13 +4644,13 @@ files = [
 
 [[package]]
 name = "tzdata"
-version = "2025.1"
+version = "2025.2"
 description = "Provider of IANA time zone data"
 optional = false
 python-versions = ">=2"
 files = [
-    {file = "tzdata-2025.1-py2.py3-none-any.whl", hash = "sha256:7e127113816800496f027041c570f50bcd464a020098a3b6b199517772303639"},
-    {file = "tzdata-2025.1.tar.gz", hash = "sha256:24894909e88cdb28bd1636c6887801df64cb485bd593f2fd83ef29075a81d694"},
+    {file = "tzdata-2025.2-py2.py3-none-any.whl", hash = "sha256:1a403fada01ff9221ca8044d701868fa132215d84beb92242d9acd2147f667a8"},
+    {file = "tzdata-2025.2.tar.gz", hash = "sha256:b60a638fcc0daffadf82fe0f57e53d06bdec2f36c4df66280ae79bce6bd6f2b9"},
 ]
 
 [[package]]

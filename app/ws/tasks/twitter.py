@@ -22,7 +22,7 @@ logger = logging.getLogger('wslog')
 
 class PublicStudyTweet(Resource):
     @swagger.operation(
-        summary="Query studies and tweet new public ones",
+        summary="[Deprecated] Query studies and tweet new public ones",
         parameters=[
             {
                 "name": "user-token",
