@@ -420,6 +420,16 @@ def get_all_studies_for_user(user_token):
                         title = line.replace(isa_title, '').replace(' "', '').replace('" ', '')
                     if line.startswith(isa_descr):
                         description = line.replace(isa_descr, '').replace(' "', '').replace('" ', '')
+        http_url = None 
+        ftp_url = None
+        globus_url = None
+        aspera_path = None
+        if status == "Public":
+            configuration = get_settings().ftp_server.public.configuration
+            http_url = os.path.join(configuration.public_studies_http_base_url, study_id)
+            ftp_url = os.path.join(configuration.public_studies_ftp_base_url, study_id)
+            globus_url = os.path.join(configuration.public_studies_globus_base_url, study_id)
+            aspera_path = os.path.join(configuration.public_studies_aspera_base_path, study_id)
         revision_status = None
         if row[6] is not None:
             fetch_status, revision = get_study_revision(study_id=study_id, revision_number=row[6])
@@ -436,7 +446,11 @@ def get_all_studies_for_user(user_token):
                             'curationRequest': curation_request.strip(),
                             'revisionNumber': row[6],
                             'revisionDatetime': revision_datetime,
-                            'revisionStatus': revision_status
+                            'revisionStatus': revision_status,
+                            "studyHttpUrl": http_url,
+                            "studyFtpUrl": ftp_url,
+                            "studyGlobusUrl": globus_url,
+                            "studyAsperaPath": aspera_path
                             })
 
     return complete_list

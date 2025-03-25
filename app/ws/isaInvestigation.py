@@ -23,6 +23,7 @@ from flask_restful import Resource, abort, reqparse
 from isatools.model import Investigation
 from marshmallow import ValidationError
 from flask_restful_swagger import swagger
+from app.config import get_settings
 from app.study_folder_utils import get_all_metadata_files
 from app.utils import metabolights_exception_handler
 from app.ws.db.models import StudyRevisionModel
@@ -163,8 +164,17 @@ class IsaInvestigation(Resource):
             revision: StudyRevisionModel = StudyRevisionService.get_study_revision(study.acc, revision_number=study.revision_number)
             if revision:
                 revision_status = revision.status.value
+        http_url = None 
+        ftp_url = None
+        globus_url = None
+        aspera_path = None
+        if study_status == "Public":
+            configuration = get_settings().ftp_server.public.configuration
+            http_url = os.path.join(configuration.public_studies_http_base_url, study_id)
+            ftp_url = os.path.join(configuration.public_studies_ftp_base_url, study_id)
+            globus_url = os.path.join(configuration.public_studies_globus_base_url, study_id)
+            aspera_path = os.path.join(configuration.public_studies_aspera_base_path, study_id)
             
-                
         response = dict(mtblsStudy={},
                         isaInvestigation={},
                         validation={})
@@ -180,6 +190,11 @@ class IsaInvestigation(Resource):
         response['mtblsStudy']['revisionNumber'] = study.revision_number
         response['mtblsStudy']['revisionDatetime'] = study.revision_datetime.isoformat() if study.revision_datetime else ""
         response['mtblsStudy']['revisionStatus'] = revision_status
+        response['mtblsStudy']['studyHttpUrl'] = http_url
+        response['mtblsStudy']['studyFtpUrl'] = ftp_url
+        response['mtblsStudy']['studyGlobusUrl'] = globus_url
+        response['mtblsStudy']['studyAsperaPath'] = aspera_path
+        
         # ToDo: Make sure this date is formatted YYYY-MM-DD and update the isa_inv, isa_study before returning
         # response['mtblsStudy']['release_date'] = release_date
         # isa_inv.public_release_date = release_date
