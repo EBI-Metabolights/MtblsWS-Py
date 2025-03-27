@@ -24,13 +24,13 @@ import os
 import pathlib
 import re
 import shutil
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 from flask import current_app as app
 from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
-from isatools.model import Study
+from isatools import model
 from pydantic import BaseModel
 
 from app.config import get_settings
@@ -243,7 +243,7 @@ class StudyStatus(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        study = StudyService.get_instance().get_study_by_acc(study_id)
+        study: schemes.Study = StudyService.get_instance().get_study_by_acc(study_id)
         db_user = UserService.get_instance().get_db_user_by_user_token(user_token)
         is_curator = db_user.role == UserRole.ROLE_SUPER_USER.value
         obfuscation_code = study.obfuscationcode
@@ -280,7 +280,7 @@ class StudyStatus(Resource):
         isa_study_item, isa_inv, std_path = iac.get_isa_study(
             study_id, user_token, skip_load_tables=True, study_location=study_location
         )
-        isa_study: Study = isa_study_item
+        isa_study: model.Study = isa_study_item
         if study_status.lower() in {"public", "in review", "in curation"}:
             updated_submission_date = (
                 first_private_date_baseline.strftime("%Y-%m-%d")
@@ -289,7 +289,18 @@ class StudyStatus(Resource):
             )
             isa_inv.submission_date = updated_submission_date
             isa_study.submission_date = updated_submission_date
-
+            license_name = study.dataset_license if study.dataset_license else ""            
+            updated_comments = []
+            license_updated = False
+            for comment in isa_study.comments:
+                if comment.name.lower() != 'license':
+                    updated_comments.append(comment)
+                elif not license_updated:
+                    comment.value = license_name
+                    license_updated = True
+            if not license_updated:
+                updated_comments.append(model.Comment(name='License', value=license_name))
+            isa_study.comments = updated_comments
         if (
             is_curator
         ):  # Curators can change the date to current date, submitters can not!

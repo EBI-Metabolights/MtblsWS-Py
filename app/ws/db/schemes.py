@@ -102,6 +102,7 @@ class Study(Base):
     reserved_submission_id = Column(Text, nullable=True)
     first_public_date = Column(DateTime, nullable=True)
     first_private_date = Column(DateTime, nullable=True)
+    dataset_license=Column(String)
     users = relationship('User', secondary='study_user', back_populates="studies")
 
 
