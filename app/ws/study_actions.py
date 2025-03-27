@@ -25,13 +25,13 @@ import pathlib
 import re
 import shutil
 import time
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 from flask import current_app as app
 from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
-from isatools.model import Study, Assay
+from isatools import model
 from pydantic import BaseModel
 
 from app.config import get_settings
@@ -377,7 +377,9 @@ class StudyStatus(Resource):
         isa_study_item, isa_inv, std_path = iac.get_isa_study(
             study_id, user_token, skip_load_tables=True, study_location=study_location
         )
-        isa_study: Study = isa_study_item
+        isa_study: model.Study = isa_study_item
+        if status_updated:
+            self.update_license(study, isa_study)
         if study_status.lower() in {"public", "in review", "private"}:
             updated_submission_date = (
                 first_private_date_baseline.strftime("%Y-%m-%d")
@@ -386,7 +388,7 @@ class StudyStatus(Resource):
             )
             isa_inv.submission_date = updated_submission_date
             isa_study.submission_date = updated_submission_date
-    
+            
         new_date = now.strftime("%Y-%m-%d")
         if study_status.lower() == "public":
             isa_inv.public_release_date = new_date
@@ -566,6 +568,21 @@ class StudyStatus(Resource):
             )
             return response
 
+    def update_license(self, study: schemes.Study, isa_study: model.Study):
+        license_name = study.dataset_license if study.dataset_license else ""            
+        updated_comments = []
+        license_updated = False
+        for comment in isa_study.comments:
+            if comment.name.lower() != 'license':
+                updated_comments.append(comment)
+            elif not license_updated:
+                comment.value = license_name
+                license_updated = True
+        if not license_updated:
+            updated_comments.append(model.Comment(name='License', value=license_name))
+        isa_study.comments = updated_comments
+
+
     def update_status_m2(self, user_token: str, study_id: str, study_status: str, curation_request_str: str):
         if study_status.upper() == "PUBLIC":
             raise MetabolightsException(
@@ -612,7 +629,9 @@ class StudyStatus(Resource):
         isa_study_item, isa_inv, std_path = iac.get_isa_study(
             study_id, user_token, skip_load_tables=True, study_location=study_location
         )
-        isa_study: Study = isa_study_item
+        isa_study: model.Study = isa_study_item
+        if status_updated:
+            self.update_license(study, isa_study)
         if study_status.lower() in {"public", "in review", "private"}:
             updated_submission_date = (
                 first_private_date_baseline.strftime("%Y-%m-%d")
@@ -953,7 +972,7 @@ class StudyStatus(Resource):
         # update investigation file
         isa_inv.identifier = updated_study_id
         if isa_inv:
-            isa_study: Study = isa_study_item
+            isa_study: model.Study = isa_study_item
             isa_study.identifier = updated_study_id
             isa_inv.identifier = updated_study_id
             study_filename: str = isa_study.filename
@@ -961,7 +980,7 @@ class StudyStatus(Resource):
                 study_id, updated_study_id, 1
             )
             for assay_item in isa_study.assays:
-                assay: Assay = assay_item
+                assay: model.Assay = assay_item
                 assay.filename = assay.filename.replace(study_id, updated_study_id, 1)
             iac.write_isa_study(
                 isa_inv, user_token, study_location, save_investigation_copy=False, save_assays_copy=False, save_samples_copy=False

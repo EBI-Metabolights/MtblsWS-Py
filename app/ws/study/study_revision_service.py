@@ -189,9 +189,25 @@ class StudyRevisionService:
         
         for comment in revision_comments:
             isa_study.comments.remove(comment)
-        
+            
+        StudyRevisionService.update_license(study, isa_study)
         iac.write_isa_study(isa_inv_input, None, std_path, save_investigation_copy=False)
-    
+
+    @staticmethod
+    def update_license(self, study: Study, isa_study: model.Study):
+        license_name = study.dataset_license if study.dataset_license else ""            
+        updated_comments = []
+        license_updated = False
+        for comment in isa_study.comments:
+            if comment.name.lower() != 'license':
+                updated_comments.append(comment)
+            elif not license_updated:
+                comment.value = license_name
+                license_updated = True
+        if not license_updated:
+            updated_comments.append(model.Comment(name='License', value=license_name))
+        isa_study.comments = updated_comments
+
     @staticmethod
     def start_study_revision_task(study_id: str, 
                                           revision_number: int,

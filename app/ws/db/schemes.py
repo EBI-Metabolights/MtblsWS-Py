@@ -118,6 +118,7 @@ class Study(Base):
     reserved_submission_id = Column(Text, nullable=True)
     first_public_date = Column(DateTime, nullable=True)
     first_private_date = Column(DateTime, nullable=True)
+    dataset_license=Column(String)
     revision_number = Column(BigInteger, nullable=False, default=0)
     revision_datetime = Column(DateTime, nullable=True)
 
