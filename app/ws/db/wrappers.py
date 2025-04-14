@@ -116,24 +116,22 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
     investigation = None
     with open(investigation_file, encoding="utf-8") as f:
         try:
-            investigation = isatab.load_investigation(f)
+            investigation = isatab.load(f, skip_load_tables=True)
         except Exception as e:
             logger.warning(f'{investigation_file} file is not opened with utf-8 encoding')
     if investigation is None:
         with open(investigation_file, encoding="latin-1") as f:
             try:
-                investigation = isatab.load_investigation(f)
+                investigation = isatab.load(f, skip_load_tables=True)
             except Exception as e:
                 logger.error(f'{investigation_file} file is not opened with latin-1 encoding')
                 message = f'{m_study.studyIdentifier} i_Investigation.txt file can not be loaded.'
                 
     if not investigation:
         logger.error(f'{investigation_file} is not valid.')
-    elif "studies" not in investigation:
-        logger.error(f'No study is defined in {investigation_file}')
 
-    if investigation and "studies" in investigation:
-        studies = investigation["studies"]
+    if investigation:
+        studies = investigation.studies
         if studies:
             f_study = studies[0]
             create_study_model(m_study, path, f_study)
@@ -201,12 +199,12 @@ def fill_backups(m_study, path):
             m_study.backups.append(backup_model)
 
 
-def create_study_model(m_study, path, study):
-    study_title = get_value_with_column_name(study, "Study Title")
-    study_description = get_value_with_column_name(study, "Study Description")
-    study_submission_date = get_value_with_column_name(study, "Study Submission Date")
-    study_release_date = get_value_with_column_name(study, "Study Public Release Date")
-    study_file_name = get_value_with_column_name(study, "Study File Name")  # not used
+def create_study_model(m_study, path, study: Study):
+    study_title = study.title
+    study_description = study.description
+    study_submission_date = study.submission_date
+    study_release_date = study.public_release_date
+    # study_file_name = get_value_with_column_name(study, "Study File Name")  # not used
     m_study.title = study_title
     m_study.description = study_description
     # !TODO check. this assignment overrides db data
@@ -245,13 +243,13 @@ def fill_validations(m_study, path, revalidate_study, user_token_to_revalidate):
 #                             validation_entries_model.entries.append(validation_entry_model)
 
 
-def get_value_with_column_name(dataframe, column_name):
-    try:
-        ind = dataframe.columns.get_loc(column_name)
-        return dataframe.values[0][ind]
-    except KeyError:
-        logger.warning(f"Column name {column_name} does not exist in frame")
-        return None
+# def get_value_with_column_name(dataframe, column_name):
+#     try:
+#         ind = dataframe.columns.get_loc(column_name)
+#         return dataframe.values[0][ind]
+#     except KeyError:
+#         logger.warning(f"Column name {column_name} does not exist in frame")
+#         return None
 
 
 def get_value_from_dict(series, column_name):
@@ -327,25 +325,25 @@ def fill_sample_table(m_study, path):
 
 
 def fill_assays(m_study, investigation, path, include_maf_files):
-    if "s_assays" in investigation and investigation['s_assays'] and investigation['s_assays'][0] is not None:
-        items = investigation['s_assays'][0]
-        assays = []
-        for ind in range(len(items.index)):
-            assay = items.iloc[ind]
-            assays.append(assay)
+    if not investigation.studies:
+        return
+    study = investigation.studies[0]
+    
+    if study.assays:
+        assays = study.assays
         index = 0
         for item in assays:
             try:
                 model = models.AssayModel()
                 index = index + 1
                 model.assayNumber = index
-                model.fileName = get_value_from_dict(item, "Study Assay File Name")
+                model.fileName = item.filename
                 
                 
-                technology = get_value_from_dict(item, "Study Assay Technology Type")
+                technology = item.technology_type.term 
                 model.technology = remove_ontology(technology)
-                model.measurement = get_value_from_dict(item, "Study Assay Measurement Type")
-                platform = get_value_from_dict(item, "Study Assay Technology Platform")
+                model.measurement = item.measurement_type.term
+                platform = item.technology_platform
                 model.platform = remove_ontology(platform)
                 m_study.assays.append(model)
                 file = os.path.join(path, model.fileName)
@@ -433,12 +431,15 @@ def remove_ontology(data: str):
 
 
 def fill_descriptors(m_study, investigation):
-    if "s_design_descriptors" in investigation and investigation['s_design_descriptors']:
-        items = investigation['s_design_descriptors'][0]
-        for item in items.iterrows():
+    if not investigation.studies:
+        return
+    study = investigation.studies[0]
+    if study.design_descriptors:
+        items = study.design_descriptors
+        for item in items:
             model = models.StudyDesignDescriptor()
-            design_type = get_value_from_dict(item[1], "Study Design Type")
-            ref = get_value_from_dict(item[1], "Study Design Type Term Source REF")
+            design_type = item.term
+            ref = item.term_source.name if item.term_source else ""
             model.description = design_type
             if ref:
                 model.description = ref + ":" + design_type
@@ -446,60 +447,68 @@ def fill_descriptors(m_study, investigation):
 
 
 def fill_factors(m_study, investigation):
-    if "s_factors" in investigation and investigation['s_factors']:
-        items = investigation['s_factors'][0]
-        for item in items.iterrows():
+    if not investigation.studies:
+        return
+    study = investigation.studies[0]
+    if study and study.factors:
+        items = study.factors
+        for item in items:
             model = models.StudyFactorModel()
-            model.name = get_value_from_dict(item[1], "Study Factor Name")
+            model.name = item.name
             m_study.factors.append(model)
 
 
 def fill_protocols(m_study, investigation):
-    if "s_protocols" in investigation and investigation['s_protocols']:
-        items = investigation['s_protocols'][0]
-        for item in items.iterrows():
+    if not investigation.studies:
+        return
+    study = investigation.studies[0]
+    if study and study.protocols:
+        items = study.protocols
+        for item in items:
             model = models.ProtocolModel()
 
-            model.name = get_value_from_dict(item[1], "Study Protocol Name")
-            model.description = get_value_from_dict(item[1], "Study Protocol Description")
+            model.name = item.name
+            model.description = item.description
             m_study.protocols.append(model)
 
 
 def fill_publications(m_study, investigation):
-    if "s_publications" in investigation and investigation['s_publications']:
-        items = investigation['s_publications'][0]
-        for item in items.iterrows():
+    if not investigation.studies:
+        return
+    study = investigation.studies[0]
+    if study and study.publications:
+        items = study.publications
+        for item in items:
             model = models.PublicationModel()
 
-            model.pubmedId = get_value_from_dict(item[1], "Study PubMed ID")
-            model.doi = get_value_from_dict(item[1], "Study Publication DOI")
-            model.authorList = get_value_from_dict(item[1], "Study Publication Author List")
-            model.title = get_value_from_dict(item[1], "Study Publication Title")
+            model.pubmedId = item.pubmed_id
+            model.doi = item.doi
+            model.authorList = item.author_list
+            model.title = item.title
             model.abstractText = ""  # TODO how to fill abstract
             m_study.publications.append(model)
 
 
 def fill_contacts(m_study, investigation):
-    if "s_contacts" in investigation and investigation['s_contacts']:
-        items = investigation['s_contacts'][0]
-        contacts = []
-        for ind in range(len(items.index)):
-            contact = items.iloc[ind]
-            contacts.append(contact)
-            
+    if not investigation.studies:
+        return
+    study = investigation.studies[0]
+    if study and study.contacts:
+        contacts = study.contacts
+
         for item in contacts:
             try:
                 model = models.ContactModel()
 
-                model.lastName = get_value_from_dict(item, "Study Person Last Name")
-                model.firstName = get_value_from_dict(item, "Study Person First Name")
-                model.midInitial = get_value_from_dict(item, "Study Person Mid Initials")
-                model.email = get_value_from_dict(item, "Study Person Email")
-                model.phone = get_value_from_dict(item, "Study Person Phone")
-                model.address = get_value_from_dict(item, "Study Person Address")
-                model.fax = get_value_from_dict(item, "Study Person Fax")
-                model.role = get_value_from_dict(item, "Study Person Roles")
-                model.affiliation = get_value_from_dict(item, "Study Person Affiliation")
+                model.lastName = item.lastname
+                model.firstName = item.firstname
+                model.midInitial = item.midinitial
+                model.email = item.email
+                model.phone = item.phone
+                model.address = item.address
+                model.fax = item.fax
+                model.role = ", ".join(item.roles)
+                model.affiliation = item.affiliation
 
                 m_study.contacts.append(model)
             except Exception as ex:
