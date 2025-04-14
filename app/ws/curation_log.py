@@ -51,7 +51,7 @@ class curation_log(Resource):
 }</code></pre>''',
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -93,7 +93,7 @@ class curation_log(Resource):
     )
     def put(self):
         log_request(request)
-        parser = reqparse.RequestParser()
+        
 
         # User authentication
         user_token = None
@@ -197,7 +197,7 @@ class curation_log(Resource):
                 "dataType": "number",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -230,14 +230,14 @@ class curation_log(Resource):
     )
     def get(self):
         log_request(request)
-        parser = reqparse.RequestParser()
+        
 
         # studyID
-        parser.add_argument('studyID', help='studyID')
+        
         studyID = None
         if request.args:
-            args = parser.parse_args(req=request)
-            studyID = args['studyID']
+            
+            studyID = request.args.get('studyID')
             if studyID:
                 if ',' in studyID:
                     studyID = studyID.split(',')
@@ -246,11 +246,11 @@ class curation_log(Resource):
                 studyID = [x.upper() for x in studyID]
 
         # column
-        parser.add_argument('field', help='column name(s)')
+        
         field = None
         if request.args:
-            args = parser.parse_args(req=request)
-            field = args['field']
+            
+            field = request.args.get('field')
             if field:
                 if ',' in field:
                     field = field.split(',')
@@ -258,13 +258,13 @@ class curation_log(Resource):
                     field = [field]
 
         # page
-        parser.add_argument('page', help='page number')
+        
         page = None
         if request.args:
-            args = parser.parse_args(req=request)
-            page = args['page']
+            
+            page = request.args.get('page')
             if page != None:
-                page = int(args['page'])
+                page = int(request.args.get('page'))
 
         # User authentication
         user_token = None

@@ -28,7 +28,7 @@ from typing import Dict, List, Set, Tuple
 
 import numpy as np
 import pandas as pd
-from isatools.model import Assay, Investigation, OntologyAnnotation, Study
+from isatools.model import Assay, Investigation, OntologyAnnotation, Study, OntologySource
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
 from pandas import DataFrame
@@ -347,7 +347,7 @@ def create_isa_files(
         if merged_assay_df is None:
             merged_assay_df = assay_df
         else:
-            merged_assay_df = merged_assay_df.append(assay_df)
+            merged_assay_df = pd.concat([merged_assay_df, assay_df])
     assay_file_names: Dict[str, List[str]] = {}
 
     files = glob.iglob(
@@ -396,10 +396,8 @@ def create_isa_files(
             if sample_id not in sample_id_sample_name_map:
                 sample_id_sample_name_map[sample_id] = rows
             else:
-                sample_id_sample_name_map[sample_id] = sample_id_sample_name_map[
-                    sample_id
-                ].append(rows, ignore_index=True)
-
+                sample_id_sample_name_map[sample_id] = pd.concat([sample_id_sample_name_map[sample_id], rows], ignore_index=True)
+                
             assay_file_name = create_assay_file(
                 study_id,
                 target_location,
@@ -416,9 +414,7 @@ def create_isa_files(
         if all_sample_names is None:
             all_sample_names = sample_id_sample_name_map[sample_id].copy()
         else:
-            all_sample_names = all_sample_names.append(
-                sample_id_sample_name_map[sample_id], ignore_index=True
-            )
+            all_sample_names = pd.concat([all_sample_names, sample_id_sample_name_map[sample_id]], ignore_index=True)
 
     sample_name_client_id_df = None
     add_sample_id = True if len(sample_id_sample_name_map) > 1 else False
@@ -445,9 +441,7 @@ def create_isa_files(
             if sample_name_client_id_df is None:
                 sample_name_client_id_df = df
             else:
-                sample_name_client_id_df = sample_name_client_id_df.append(
-                    df, ignore_index=True
-                )
+                sample_name_client_id_df = pd.concat([sample_name_client_id_df, df], ignore_index=True)
 
     create_sample_file(
         study_id,
@@ -510,6 +504,7 @@ def create_maf_file(
     peak_table_file_path: str,
     use_sample_id_in_filename: bool = False,
 ):
+    pd.options.mode.copy_on_write = True
     metabolon_template_path = (
         get_settings().file_resources.study_partner_metabolon_template_path
     )
@@ -582,7 +577,7 @@ def create_maf_file(
     sample_headers = main_table.iloc[parent_sample_row_index][
         parent_sample_column_index + 1 :
     ]
-    maf_header = maf_header.append(sample_headers, ignore_index=True)
+    maf_header = pd.concat([maf_header, sample_headers], ignore_index=True)
 
     maf_header_update_params = {i: maf_header.iloc[i] for i in range(len(maf_header))}
 
@@ -629,7 +624,7 @@ def create_sample_file(
         if merged_df is None:
             merged_df = sample_df
         else:
-            merged_df = merged_df.append(sample_df, ignore_index=True)
+            merged_df = pd.concat([merged_df, sample_df], ignore_index=True)
     merged_data = all_sample_names[["SOURCE_NAME", "SAMPLE_NAME"]].merge(
         merged_df,
         right_on="Sample Name",
@@ -810,7 +805,6 @@ def create_investigation_file(study_id, study_location, assay_file_names: List[s
         isa_inv.identifier = study_id
         isa_study.filename = f"s_{study_id}.txt"
         source_references = {x.name: x for x in isa_inv.ontology_source_references}
-
         measurement_type = OntologyAnnotation(
             term="metabolite profiling",
             term_accession="http://purl.obolibrary.org/obo/OBI_0000366",

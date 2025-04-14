@@ -28,7 +28,6 @@ from app.config import get_settings
 from app.study_folder_utils import convert_relative_to_real_path
 from app.ws.db_connection import get_connection, get_study
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.misc_utilities.request_parsers import RequestParsers
 from app.ws.mtblsWSclient import WsClient
 from app.ws.report_builders.analytical_method_builder import AnalyticalMethodBuilder
 from app.ws.report_builders.europe_pmc_builder import EuropePmcReportBuilder
@@ -88,7 +87,7 @@ class StudyAssayTypeReports(Resource):
             },
 
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -121,14 +120,13 @@ class StudyAssayTypeReports(Resource):
     )
     def post(self):
 
-        parser = RequestParsers.study_type_report_parser()
         studytype = None
 
-        args = parser.parse_args(req=request)
-        studytype = args['studytype']
-        slim = args['slim']
-        verbose = args['verbose']
-        drive = args['drive']
+        
+        studytype = request.args.get('studytype')
+        slim = request.args.get('slim')
+        verbose = request.args.get('verbose')
+        drive = request.args.get('drive')
 
         if studytype:
             studytype = studytype.strip()
@@ -220,7 +218,7 @@ class reports(Resource):
             },
 
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -256,47 +254,47 @@ class reports(Resource):
         global start_date, query_field
         global end_date
         log_request(request)
-        parser = reqparse.RequestParser()
+        
 
-        parser.add_argument('query', help='Report query')
+        
         query = None
         if request.args:
-            args = parser.parse_args(req=request)
-            query = args['query']
+            
+            query = request.args.get('query')
             if query:
                 query = query.strip()
 
-        parser.add_argument('start', help='start date')
+        
         if request.args:
-            args = parser.parse_args(req=request)
-            start = args['start']
+            
+            start = request.args.get('start')
             if start:
                 start_date = datetime.strptime(start, '%Y%m%d')
             else:
                 start_date = datetime.strptime('20110809', '%Y%m%d')
 
-        parser.add_argument('end', help='end date')
+        
         if request.args:
-            args = parser.parse_args(req=request)
-            end = args['end']
+            
+            end = request.args.get('end')
             if end:
                 end_date = datetime.strptime(end, '%Y%m%d')
             else:
                 end_date = datetime.today()
 
-        parser.add_argument('studyStatus', help='studyStatus')
+        
         studyStatus = None
         if request.args:
-            args = parser.parse_args(req=request)
-            studyStatus = args['studyStatus']
+            
+            studyStatus = request.args.get('studyStatus')
             if studyStatus:
                 studyStatus = tuple([x.strip() for x in studyStatus.split(',')])
 
-        parser.add_argument('queryFields', help='queryFields')
+        
         query_field = None
         if request.args:
-            args = parser.parse_args(req=request)
-            queryFields = args['queryFields']
+            
+            queryFields = request.args.get('queryFields')
             if queryFields:
                 query_field = tuple([x.strip().lower() for x in queryFields.split(',')])
 
@@ -404,7 +402,7 @@ class reports(Resource):
             },
 
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -437,23 +435,23 @@ class reports(Resource):
     )
     def post(self):
         log_request(request)
-        parser = reqparse.RequestParser()
+        
 
         # query field
-        parser.add_argument('query', help='Report query')
+        
         query = None
         if request.args:
-            args = parser.parse_args(req=request)
-            query = args['query']
+            
+            query = request.args.get('query')
             if query:
                 query = query.strip()
 
         # study ID
-        parser.add_argument('studyid', help='Study ID')
+        
         studyid = None
         if request.args:
-            args = parser.parse_args(req=request)
-            studyid = args['studyid']
+            
+            studyid = request.args.get('studyid')
             if studyid:
                 studyid = studyid.strip().upper()
 
@@ -681,7 +679,7 @@ class CrossReferencePublicationInformation(Resource):
 
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -704,12 +702,11 @@ class CrossReferencePublicationInformation(Resource):
         else:
             # user token is required
             abort(401)
-        parser = RequestParsers.europepmc_report_parser()
-        args = parser.parse_args(request)
-        logger.info('ARGS ' + str(args))
+        
+        logger.info('ARGS ' + str(request.args))
         drive = False
-        if 'google_drive' in args:
-            if args['google_drive'] == 'true':
+        if 'google_drive' in request.args:
+            if request.args.get('google_drive') == 'true':
                 drive = True
 
         # check for access rights

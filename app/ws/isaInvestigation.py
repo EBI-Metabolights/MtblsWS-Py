@@ -68,7 +68,7 @@ class IsaInvestigation(Resource):
                 "default": True
             },
             {
-                "name": "obfuscation_code",
+                "name": "obfuscation-code",
                 "description": "Study obfuscation code",
                 "paramType": "header",
                 "type": "string",
@@ -76,7 +76,7 @@ class IsaInvestigation(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -127,12 +127,11 @@ class IsaInvestigation(Resource):
             obfuscation_code = request.headers['obfuscation_code']
 
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('investigation_only', help='Only load the investigation file, or the whole study?')
+        # 
+        # 
         investigation_only = True
         if request.args:
-            args = parser.parse_args(req=request)
-            investigation_only = args['investigation_only']
+            investigation_only = request.args.get('investigation_only')
 
         skip_load_tables = True
         if investigation_only == 'false':
@@ -199,7 +198,7 @@ Please use the GET method above to retrieve the structure of your study prior to
                 "allowMultiple": False
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -207,7 +206,7 @@ Please use the GET method above to retrieve the structure of your study prior to
                 "allowMultiple": False
             },
             {
-                "name": "save_audit_copy",
+                "name": "save-audit-copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",

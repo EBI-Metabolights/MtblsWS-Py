@@ -1,5 +1,6 @@
 import datetime
 import os
+from typing import List, Union
 from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
 from app.utils import current_time
@@ -21,7 +22,7 @@ from app.tasks.worker import (
     report_internal_technical_issue,
     send_email,
 )
-from isatools.model import Investigation, Study
+from isatools.model import Investigation, Study, Person
 
 
 
@@ -84,7 +85,7 @@ def send_email_for_new_submission(user_token, study_id, folder_name):
     name="app.tasks.common_tasks.basic_tasks.email.send_email_for_new_accession_number",
 )
 def send_email_for_new_accession_number(user_token: str, study_id: str, submission_id: str, 
-                                        obfuscation_code: str, study_title: str, release_date: str):
+                                        obfuscation_code: str, study_title: str, release_date: str, additional_cc_emails: Union[None, List[str]] = None):
 
     flask_app = get_flask_app()
     with flask_app.app_context():   
@@ -112,7 +113,8 @@ def send_email_for_new_accession_number(user_token: str, study_id: str, submissi
             study_id, submission_id, obfuscation_code,  user_email, submitters_email_list,
             submitter_fullname=submitter_fullname, 
             study_title=study_title, release_date=release_date, 
-            previous_ftp_folder=previous_ftp_folder, new_ftp_folder=new_ftp_folder
+            previous_ftp_folder=previous_ftp_folder, new_ftp_folder=new_ftp_folder, 
+            additional_cc_emails=additional_cc_emails
         )
 
         return {
@@ -163,11 +165,14 @@ def send_email_on_public(user_token, study_id, release_date):
             publication_pubmed_id = "-"
         if not study_contacts:
             study_contacts = user.fullName
+        additional_cc_emails = get_principal_investigator_emails(study)
         email_service.send_email_on_public(
             study_id, release_date,  user_email, submitters_email_list, 
             submitter_fullname=submitter_fullname, study_title=study_title, 
             study_contacts=study_contacts, 
-            publication_doi=publication_doi, publication_pubmed_id=publication_pubmed_id
+            publication_doi=publication_doi, 
+            publication_pubmed_id=publication_pubmed_id,
+            additional_cc_emails=additional_cc_emails
         )
 
         return {
@@ -176,6 +181,17 @@ def send_email_on_public(user_token, study_id, release_date):
             "user_email": user_email,
             "submitters_email_list": submitters_email_list,
         }
+
+def get_principal_investigator_emails(study: Study):
+    additional_cc_emails = []
+    for contact in study.contacts:
+        x: Person = contact
+        if x.email:
+            for role in x.roles:
+                if role and role.term and role.term.lower().startswith("principal investigator"):
+                    additional_cc_emails.append(x.email)
+    additional_cc_emails = additional_cc_emails if additional_cc_emails else None
+    return additional_cc_emails
         
 
 @celery.task(name="app.tasks.common_tasks.basic_tasks.email.send_generic_email")

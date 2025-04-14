@@ -229,7 +229,7 @@ class OneTimeTokenValidation(Resource):
         notes="Get current JWT token from one time token",
         parameters=[
             {
-                "name": "one_time_token",
+                "name": "one-time-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -365,7 +365,7 @@ class AuthUserStudyPermissions(Resource):
         """,
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -419,7 +419,7 @@ class AuthUserStudyPermissions2(Resource):
         summary="Return study permissions of user with study obfuscation code.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

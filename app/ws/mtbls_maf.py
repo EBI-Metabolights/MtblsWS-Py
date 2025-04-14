@@ -61,7 +61,7 @@ def get_table_header(table_df):
 
 
 def insert_row(idx, df, df_insert):
-    return df.iloc[:idx, ].append(df_insert, ignore_index=True).append(df.iloc[idx:, ]).reset_index(drop=True)
+    return  pd.concat([df.iloc[:idx, ], df_insert, df.iloc[idx:, ]], ignore_index=True).reset_index(drop=True)
 
 
 class MtblsMAFSearch(Resource):
@@ -109,12 +109,12 @@ class MtblsMAFSearch(Resource):
         if query_type is None:
             abort(404)
 
-        parser = reqparse.RequestParser()
-        parser.add_argument('search_value', help="The search string")
+        
+        
         search_value = None
         if request.args:
-            args = parser.parse_args(req=request)
-            search_value = args['search_value']
+            
+            search_value = request.args.get('search_value')
 
         if search_value is None:
             abort(404)
@@ -154,7 +154,7 @@ class MetaboliteAnnotationFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -262,7 +262,7 @@ class CombineMetaboliteAnnotationFiles(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

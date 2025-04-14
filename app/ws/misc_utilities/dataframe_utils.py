@@ -90,7 +90,7 @@ class DataFrameUtils:
                   'Data Transformation Name': 'Data.Transformation.Name',
                   'Metabolite Assignment File': 'Metabolite.Assignment.File'}
         k = pandas.DataFrame(columns=keep)
-        k = k.append(df, sort=False)
+        k = pandas.concat([k, df], sort=False)
         df = k[keep]
         df = df.rename(columns=rename)
         return df
@@ -110,7 +110,7 @@ class DataFrameUtils:
                   'Sample Name': 'Sample.Name'}
 
         k = pandas.DataFrame(columns=keep)
-        k = k.append(df, sort=False)
+        k = pandas.concat([k, df], sort=False)
         df = k[keep]
         df = df.rename(columns=rename)
         return df
@@ -171,7 +171,7 @@ class DataFrameUtils:
                 'smallmolecule_abundance_sub', 'smallmolecule_abundance_stdev_sub',
                 'smallmolecule_abundance_std_error_sub']
         k = pandas.DataFrame(columns=keep)
-        k = k.append(df, sort=False)
+        k = pandas.concat([k, df], sort=False)
         df = k[keep]
         df.insert(0, 'maf_filename', maf_filename)
         df.insert(0, 'study_id', study_id)
@@ -195,7 +195,7 @@ class DataFrameUtils:
                 'smallmolecule_abundance_stdev_sub']
         k = pandas.DataFrame(columns=keep)
         try:
-            k = k.append(df, sort=False)
+            k = pandas.concat([k, df], sort=False)
             df = k[keep]
             df.insert(0, 'maf_filename', maf_filename)
             df.insert(0, 'study_id', study_id)

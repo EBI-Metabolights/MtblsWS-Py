@@ -24,13 +24,13 @@ import os
 import pathlib
 import re
 import shutil
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 from flask import current_app as app
 from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
-from isatools.model import Study
+from isatools import model
 from pydantic import BaseModel
 
 from app.config import get_settings
@@ -38,6 +38,7 @@ from app.config.utils import get_private_ftp_relative_root_path
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
 from app.tasks.common_tasks.basic_tasks.email import (
+    get_principal_investigator_emails,
     send_email_for_new_accession_number,
     send_email_on_public,
 )
@@ -92,7 +93,7 @@ class StudyModificationTime(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -171,7 +172,7 @@ class StudyStatus(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -242,13 +243,14 @@ class StudyStatus(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        study = StudyService.get_instance().get_study_by_acc(study_id)
+        study: schemes.Study = StudyService.get_instance().get_study_by_acc(study_id)
         db_user = UserService.get_instance().get_db_user_by_user_token(user_token)
         is_curator = db_user.role == UserRole.ROLE_SUPER_USER.value
         obfuscation_code = study.obfuscationcode
         db_study_status = types.StudyStatus.from_int(study.status).name
         release_date = study.releasedate.strftime("%Y-%m-%d")
-        first_public_date_baseline = study.first_public_date
+        first_public_date_baseline: datetime.datetime = study.first_public_date
+        first_private_date_baseline: datetime.datetime = study.first_private_date
         # check for access rights
         # _, _, _, _, _, _, _, _ = wsc.get_permissions(study_id, user_token)
         study_location = os.path.join(
@@ -278,7 +280,27 @@ class StudyStatus(Resource):
         isa_study_item, isa_inv, std_path = iac.get_isa_study(
             study_id, user_token, skip_load_tables=True, study_location=study_location
         )
-        isa_study: Study = isa_study_item
+        isa_study: model.Study = isa_study_item
+        if study_status.lower() in {"public", "in review", "in curation"}:
+            updated_submission_date = (
+                first_private_date_baseline.strftime("%Y-%m-%d")
+                if first_private_date_baseline
+                else isa_inv.submission_date
+            )
+            isa_inv.submission_date = updated_submission_date
+            isa_study.submission_date = updated_submission_date
+            license_name = study.dataset_license if study.dataset_license else ""            
+            updated_comments = []
+            license_updated = False
+            for comment in isa_study.comments:
+                if comment.name.lower() != 'license':
+                    updated_comments.append(comment)
+                elif not license_updated:
+                    comment.value = license_name
+                    license_updated = True
+            if not license_updated:
+                updated_comments.append(model.Comment(name='License', value=license_name))
+            isa_study.comments = updated_comments
         if (
             is_curator
         ):  # Curators can change the date to current date, submitters can not!
@@ -302,6 +324,7 @@ class StudyStatus(Resource):
                     obfuscation_code=obfuscation_code,
                     user_token=user_token,
                     first_public_date=first_public_date_baseline,
+                    first_private_date=first_private_date_baseline,
                 )
             update_curation_request(study_id, curation_request)
         else:
@@ -322,8 +345,8 @@ class StudyStatus(Resource):
                     obfuscation_code=obfuscation_code,
                     user_token=user_token,
                     first_public_date=first_public_date_baseline,
+                    first_private_date=first_private_date_baseline,
                 )
-
                 if (
                     release_date < new_date
                 ):  # Set the release date to a minimum of 28 days in the future
@@ -367,6 +390,7 @@ class StudyStatus(Resource):
                 get_settings().study.accession_number_prefix
             ):
                 study_title = isa_study.title
+                additional_cc_emails = get_principal_investigator_emails(isa_study)
                 inputs = {
                     "user_token": user_token,
                     "submission_id": study_id,
@@ -374,6 +398,7 @@ class StudyStatus(Resource):
                     "obfuscation_code": obfuscation_code,
                     "study_title": study_title,
                     "release_date": release_date,
+                    "additional_cc_emails": additional_cc_emails,
                 }
                 send_email_for_new_accession_number.apply_async(kwargs=inputs)
         ElasticsearchService.get_instance()._reindex_study(updated_study_id, user_token)
@@ -717,6 +742,7 @@ class StudyStatus(Resource):
         obfuscation_code=None,
         user_token=None,
         first_public_date=None,
+        first_private_date=None,
     ):
         study_status = study_status.lower()
         # Update database
@@ -725,6 +751,7 @@ class StudyStatus(Resource):
             study_status,
             is_curator=is_curator,
             first_public_date=first_public_date,
+            first_private_date=first_private_date,
         )
 
     # @staticmethod
@@ -753,7 +780,7 @@ class ToggleAccess(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -806,7 +833,7 @@ class ToggleAccessGet(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

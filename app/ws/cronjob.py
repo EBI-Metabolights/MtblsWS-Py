@@ -61,7 +61,7 @@ class cronjob(Resource):
         summary="Update Google sheets for MetaboLights study curation and statistics",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -126,24 +126,24 @@ class cronjob(Resource):
     )
     def post(self):
         log_request(request)
-        parser = reqparse.RequestParser()
+        
 
-        parser.add_argument('source', help='source to update')
+        
         source = None
         if request.args:
-            args = parser.parse_args(req=request)
-            source = args['source']
+            
+            source = request.args.get('source')
             if source:
                 source = source.strip()
 
-        parser.add_argument('starting_index', help='Starting index from the study list')
-        parser.add_argument('ending_index', help='Ending index from the study list')
+        
+        
         starting_index = None
         ending_index = None
         if request.args:
-            args = parser.parse_args(req=request)
-            starting_index = args['starting_index']
-            ending_index = args['ending_index']
+            
+            starting_index = request.args.get('starting_index')
+            ending_index = request.args.get('ending_index')
 
         # User authentication
         user_token = None
@@ -535,7 +535,7 @@ def MTBLS_statistics_update():
 
 def extractUntargetStudy(studyType=None, publicStudy=True):
     def extractNum(s):
-        num = re.findall("\d+", s)[0]
+        num = re.findall(r"\d+", s)[0]
         return int(num)
 
     # get all descriptor from studies
@@ -621,7 +621,7 @@ def getNMRinfo():
         sample_temp.insert(0, 'Study', studyID)
         sample_temp = DataFrameUtils.sample_cleanup(sample_temp)
 
-        sample_df = sample_df.append(sample_temp, ignore_index=True)
+        sample_df = pd.concat([sample_df, sample_temp], ignore_index=True)
         # print('get sample file from', studyID, end='\t')
         # print(sample_temp.shape)
 
@@ -633,7 +633,7 @@ def getNMRinfo():
             else:
                 assay_temp.insert(0, 'Study', studyID)
                 assay_temp = DataFrameUtils.NMR_assay_cleanup(assay_temp)
-                assay_df = assay_df.append(assay_temp, ignore_index=True)
+                assay_df = pd.concat([assay_df, assay_temp], ignore_index=True)
 
             # print('get assay file from', studyID, end='\t')
             # print(assay_temp.shape)
@@ -688,7 +688,7 @@ def getLCMSinfo():
                 else:
                     assay_temp.insert(0, 'Study', studyID)
                     assay_temp = DataFrameUtils.LCMS_assay_cleanup(assay_temp)
-                    assay_df = assay_df.append(assay_temp, ignore_index=True)
+                    assay_df = pd.concat([assay_df, assay_temp], ignore_index=True)
 
                     # print('get assay file from', studyID, end='\t')
                     # print(assay_temp.shape)
@@ -698,7 +698,7 @@ def getLCMSinfo():
             sample_temp.insert(0, 'Study', studyID)
             sample_temp = DataFrameUtils.sample_cleanup(sample_temp)
 
-            sample_df = sample_df.append(sample_temp, ignore_index=True)
+            sample_df = pd.concat([sample_df, sample_temp], ignore_index=True)
             # print('get sample file from', studyID, end='\t')
             # print(sample_temp.shape)
         except Exception as e:

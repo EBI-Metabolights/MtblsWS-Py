@@ -25,7 +25,7 @@ class PublicStudyTweet(Resource):
         summary="Query studies and tweet new public ones",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -85,17 +85,13 @@ class PublicStudyTweet(Resource):
             user_token = request.headers["user_token"]
         else:
             abort(401)
-
-        parser = reqparse.RequestParser()
-        parser.add_argument('dry_run')
-        parser.add_argument('release_date')
         date_format = "%d/%m/%Y"
         dry_run = False
         release_date = None
         if request.args:
-            args = parser.parse_args(req=request)
-            dry_run = True if args['dry_run'].lower() == 'true' else False
-            release_date_str = args['release_date']
+            
+            dry_run = True if request.args.get('dry_run').lower() == 'true' else False
+            release_date_str = request.args.get('release_date')
             if release_date_str:
                 try:
                     release_date = datetime.strptime(release_date_str, date_format)

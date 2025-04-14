@@ -8,7 +8,7 @@ from pydantic import BaseModel
 import app
 
 isatools_version = pkg_resources.get_distribution(isatools.__name__).version
-metaspace_version = pkg_resources.get_distribution(metaspace.name).version
+metaspace_version = metaspace.__version__
 mzml2isa_version = mzml2isa.__version__
 
 class EndpointMethodOption(str, Enum):
@@ -31,7 +31,7 @@ class ServerService(BaseModel):
     mtbls_ws_host: str
     resources_path: str
     cors_hosts: str = "*"
-    allowed_host_domains: List[str] = ["https://.+\.ebi\.ac\.uk"]
+    allowed_host_domains: List[str] = [r"https://.+\.ebi\.ac\.uk"]
     cors_resources_path: str
     api_doc: str
     maintenance_mode: bool = False

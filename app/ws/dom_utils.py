@@ -28,7 +28,7 @@ def create_generic_element(doc, root, item_name, item_value):
 
 def create_generic_element_attribute(doc, root, item_name, item_value, attr_name, attr_value):
     generic_elem = doc.createElement(item_name)
-    if item_value is not None or item_value is not '':
+    if item_value is not None or item_value != '':
         generic_elem.appendChild(doc.createTextNode(item_value))
     generic_elem.setAttribute(attr_name, attr_value)
     root.appendChild(generic_elem)

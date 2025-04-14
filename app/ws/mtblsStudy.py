@@ -100,7 +100,7 @@ class EbEyeStudies(Resource):
         notes="Process studies for EB EYE Search.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -156,7 +156,7 @@ class MtblsPrivateStudies(Resource):
         notes="Get a list of all Private Studies for Curator.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -208,7 +208,7 @@ class MtblsStudyValidationStatus(Resource):
                 "enum": ["error", "warn", "success"],
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -285,7 +285,7 @@ class MyMtblsStudies(Resource):
         notes="Get a list of all private studies for a user.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -316,7 +316,7 @@ class MyMtblsStudiesDetailed(Resource):
         notes="Get a list of all studies for a user. This also includes the status, release date, title and abstract",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -373,7 +373,7 @@ class IsaTabInvestigationFile(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -402,16 +402,13 @@ class IsaTabInvestigationFile(Resource):
         if user_token is None:
             abort(401, message="Missing user_token")
 
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("investigation_filename", help="Investigation filename")
-        parser.add_argument("version", help="Version of metadata/Audit record")
-        study_version = None
+        # query validation        study_version = None
         inv_filename = None
+        study_version = None
         if request.args:
-            args = parser.parse_args(req=request)
-            inv_filename = args["investigation_filename"].lower() if args["investigation_filename"] else None
-            study_version = args["version"].lower() if args["version"] else None
+            
+            inv_filename = request.args.get("investigation_filename").lower() if request.args.get("investigation_filename") else None
+            study_version = request.args.get("version").lower() if request.args.get("version") else None
         if not inv_filename:
             logger.warning("Missing Investigation filename. Using default i_Investigation.txt")
             inv_filename = "i_Investigation.txt"
@@ -445,7 +442,7 @@ class IsaTabInvestigationFile(Resource):
             file_path = files[0]
             filename = os.path.basename(file_path)
             try:
-                return send_file(file_path, cache_timeout=-1, as_attachment=True, attachment_filename=filename)
+                return send_file(file_path, max_age=0, as_attachment=True, download_file=filename)
             except OSError as err:
                 logger.error(err)
                 abort(503, message="Wrong investigation filename or file could not be read.")
@@ -475,7 +472,7 @@ class IsaTabSampleFile(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -499,20 +496,20 @@ class IsaTabSampleFile(Resource):
 
         # User authentication
         user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        if "user-token" in request.headers:
+            user_token = request.headers["user-token"]
 
         if user_token is None:
             abort(401)
 
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("sample_filename", help="Sample filename")
+        
+        
         sample_filename = None
         if request.args:
-            args = parser.parse_args(req=request)
-            sample_filename = args["sample_filename"]
-            # sample_filename = sample_filename.lower() if args['sample_filename'] else None
+            sample_filename = request.args.get("sample_filename")
+            # sample_filename = request.args.get("sample_filename")
+            # sample_filename = sample_filename.lower() if request.args.get('sample_filename') else None
         if not sample_filename:
             logger.warning("Missing Sample filename.")
             abort(404, message="Missing Sample filename.")
@@ -538,7 +535,7 @@ class IsaTabSampleFile(Resource):
             file_path = files[0]
             filename = os.path.basename(file_path)
             try:
-                return send_file(file_path, cache_timeout=-1, as_attachment=True, attachment_filename=filename)
+                return send_file(file_path, max_age=0, as_attachment=True, download_file=filename)
             except OSError as err:
                 logger.error(err)
                 abort(404, message="Wrong sample filename or file could not be read.")
@@ -568,7 +565,7 @@ class IsaTabAssayFile(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -599,12 +596,12 @@ class IsaTabAssayFile(Resource):
             abort(401)
 
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument("assay_filename", help="Assay filename")
+        
+        
         assay_filename = None
         if request.args:
-            args = parser.parse_args(req=request)
-            assay_filename = args["assay_filename"] if args["assay_filename"] else None
+            
+            assay_filename = request.args.get("assay_filename") if request.args.get("assay_filename") else None
         if not assay_filename:
             logger.warning("Missing Assay filename.")
             abort(404, message="Missing Assay filename.")
@@ -631,7 +628,7 @@ class IsaTabAssayFile(Resource):
             file_path = files[0]
             filename = os.path.basename(file_path)
             try:
-                return send_file(file_path, cache_timeout=-1, as_attachment=True, attachment_filename=filename)
+                return send_file(file_path, max_age=0, as_attachment=True, download_file=filename)
             except OSError as err:
                 logger.error(err)
                 abort(404, message="Wrong assay filename or file could not be read.")
@@ -663,7 +660,7 @@ class CloneAccession(Resource):
                 "dataType": "string",
             },
             {
-                "name": "include_raw_data",
+                "name": "include-raw-data",
                 "description": "Include raw data when cloning a study.",
                 "paramType": "header",
                 "type": "Boolean",
@@ -673,7 +670,7 @@ class CloneAccession(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -705,16 +702,16 @@ class CloneAccession(Resource):
         # if "include_raw_data" in request.headers and request.headers["include_raw_data"].lower() == "true":
         #     include_raw_data = True
 
-        # parser = reqparse.RequestParser()
-        # parser.add_argument("study_id", help="Study Identifier")
-        # parser.add_argument("to_study_id", help="Study Identifier")
+        # 
+        # 
+        # 
         # study_id = None
         # to_study_id = None
 
         # if request.args:
-        #     args = parser.parse_args(req=request)
-        #     study_id = args["study_id"]
-        #     to_study_id = args["to_study_id"]
+        #     
+        #     study_id = request.args.get("study_id")
+        #     to_study_id = request.args.get("to_study_id")
 
         # # param validation
         # if study_id is None:
@@ -854,7 +851,7 @@ class CreateUploadFolder(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -920,7 +917,7 @@ class AuditFiles(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -991,7 +988,7 @@ class AuditFiles(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1100,7 +1097,7 @@ class CreateAccession(Resource):
         one additional data row to be ISA-Tab compliant""",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1108,7 +1105,7 @@ class CreateAccession(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "study_id",
+                "name": "study-id",
                 "description": "Requested study id (Leave it empty for new study id)",
                 "paramType": "header",
                 "type": "string",
@@ -1154,6 +1151,7 @@ class CreateAccession(Resource):
             len(submitted_studies) >= study_settings.max_study_in_submitted_status
             and user.role != UserRole.ROLE_SUPER_USER.value
             and user.role != UserRole.SYSTEM_ADMIN.value
+            and user.partner == 0
         ):
             logger.warning(
                 f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_submitted_status} study in Submitted status."
@@ -1286,7 +1284,7 @@ class DeleteStudy(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1374,7 +1372,7 @@ class ReindexStudy(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1419,12 +1417,12 @@ class ReindexStudy(Resource):
 
         study_id = study_id.upper()
 
-        parser = reqparse.RequestParser()
-        parser.add_argument("include_validation_results")
+        
+        
         include_validation_results = True
         if request.args:
-            args = parser.parse_args(req=request)
-            include_validation_results = True if args["include_validation_results"].lower() == "true" else False
+            
+            include_validation_results = True if request.args.get("include_validation_results").lower() == "true" else False
 
         # param validation
         (
@@ -1465,7 +1463,7 @@ class ReindexStudy(Resource):
                 "dataType": "string",
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1507,7 +1505,7 @@ class UnindexedStudy(Resource):
         notes="""Gets MetaboLights studies that should be updated for the up-to-date search index""",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1566,7 +1564,7 @@ class RetryReindexStudies(Resource):
         summary="Reindex unindexed public studies",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1636,7 +1634,7 @@ class MtblsPublicStudiesIndexAll(Resource):
         notes="Start a task to index all public studies and return task id. Result will be sent by email.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1681,7 +1679,7 @@ class MtblsStudiesIndexAll(Resource):
         notes="Start a task to index all studies and return task id. Result will be sent by email.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1726,7 +1724,7 @@ class MtblsStudiesIndexSync(Resource):
         notes="Start a task to sync all studies on database and elasticsearch, and return task id. Result will be sent by email.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1779,7 +1777,7 @@ class MtblsStudyFolders(Resource):
                 "dataType": "string",
             },
             {
-                "name": "target_folder",
+                "name": "target-folder",
                 "description": "Select target study folders: metadata, data and private ftp folder",
                 "required": False,
                 "allowMultiple": False,
@@ -1802,7 +1800,7 @@ class MtblsStudyFolders(Resource):
                 "default": True,
             },
             {
-                "name": "task_name",
+                "name": "task-name",
                 "description": "Any task name, backup folders created with this name",
                 "required": False,
                 "allowMultiple": False,
@@ -1813,7 +1811,7 @@ class MtblsStudyFolders(Resource):
                 "default": "MAINTAIN"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1858,12 +1856,10 @@ class MtblsStudyFolders(Resource):
         elif target_folder == "private-ftp":
             maintain_private_ftp_storage = True
             
-        parser = reqparse.RequestParser()
-        parser.add_argument("force", help="force to maintain", location="args")
-        args = parser.parse_args()
+        
         force_to_maintain = False
-        if args and "force" in args and args["force"]:
-            force_to_maintain = True if args["force"].lower() == "true" else False
+        if request.args.get("force"):
+            force_to_maintain = True if request.args.get("force").lower() == "true" else False
 
         logger.info("Searching study folders")
         try:
@@ -1900,7 +1896,7 @@ class StudyFolderSynchronization(Resource):
                 "dataType": "string"
             },
             {
-                "name": "source_staging_area",
+                "name": "source-staging-area",
                 "description": "Source study folder stage",
                 "required": True,
                 "allowMultiple": False,
@@ -1912,7 +1908,7 @@ class StudyFolderSynchronization(Resource):
                 "default": "private-ftp"
             },
             {
-                "name": "target_staging_area",
+                "name": "target-staging-area",
                 "description": "Target study folder stage",
                 "required": True,
                 "allowMultiple": False,
@@ -1924,7 +1920,7 @@ class StudyFolderSynchronization(Resource):
                 "default": "rw-study"
             },
             {
-                "name": "sync_type",
+                "name": "sync-type",
                 "description": "Sync category: sync metadada or data or internal files",
                 "required": True,
                 "allowMultiple": False,
@@ -1936,7 +1932,7 @@ class StudyFolderSynchronization(Resource):
                 "default": "metadata"
             },
             {
-                "name": "dry_run",
+                "name": "dry-run",
                 "description": "Only check whether there is a difference ",
                 "required": False,
                 "allowMultiple": False,
@@ -1947,7 +1943,7 @@ class StudyFolderSynchronization(Resource):
                 "default": True
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -1991,7 +1987,7 @@ class StudyFolderSynchronization(Resource):
                 "dataType": "string"
             },
             {
-                "name": "source_staging_area",
+                "name": "source-staging-area",
                 "description": "Source study folder stage",
                 "required": True,
                 "allowMultiple": False,
@@ -2003,7 +1999,7 @@ class StudyFolderSynchronization(Resource):
                 "default": "private-ftp"
             },
             {
-                "name": "target_staging_area",
+                "name": "target-staging-area",
                 "description": "Target study folder stage",
                 "required": True,
                 "allowMultiple": False,
@@ -2015,7 +2011,7 @@ class StudyFolderSynchronization(Resource):
                 "default": "rw-study"
             },
             {
-                "name": "sync_type",
+                "name": "sync-type",
                 "description": "Sync category: sync metadada or data or internal files",
                 "required": True,
                 "allowMultiple": False,
@@ -2027,7 +2023,7 @@ class StudyFolderSynchronization(Resource):
                 "default": "metadata"
             },
             {
-                "name": "dry_run",
+                "name": "dry-run",
                 "description": "Only check whether there is a difference ",
                 "required": False,
                 "allowMultiple": False,
@@ -2038,7 +2034,7 @@ class StudyFolderSynchronization(Resource):
                 "default": True
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",

@@ -53,7 +53,7 @@ class EbEyeCompounds(Resource):
         summary="Export Metabolights Compound for EB Eye",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -105,7 +105,7 @@ class EbEyeCompoundsAll(Resource):
         summary="Export Metabolights Compound for EB Eye",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -316,7 +316,7 @@ class MtblsCompoundIndex(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -376,7 +376,7 @@ class MtblsCompoundIndex(Resource):
                 "dataType": "string"
             },
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -429,7 +429,7 @@ class MtblsCompoundIndexAll(Resource):
         notes="Start a task to index all compound and return task id. Result will be sent by email.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
@@ -484,7 +484,7 @@ class MtblsCompoundIndexSync(Resource):
         notes="Start a task to sync compounds on database and elasticsearch and return task id. Result will be sent by email.",
         parameters=[
             {
-                "name": "user_token",
+                "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
