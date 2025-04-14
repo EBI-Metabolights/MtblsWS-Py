@@ -14,7 +14,7 @@ packages = [
 python = ">=3.9,<3.13"
 pydantic = "^2.10.6"
 pydantic-settings = "^2.8.1"
-isatools = {git = "https://github.com/ISA-tools/isa-api.git", rev = "develop"}
+isatools = {git = "https://github.com/EBI-Metabolights/isa-api-base.git", rev = "develop"}
 flask-restful-swagger = {git = "https://github.com/EBI-Metabolights/flask-restful-swagger.git", rev = "master"}
 flask-restful = "^0.3.10"
 dirsync = "^2.2.5"
