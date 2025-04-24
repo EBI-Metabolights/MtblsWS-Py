@@ -125,7 +125,7 @@ class MtblsMAFSearch(Resource):
 
 class MetaboliteAnnotationFile(Resource):
     @swagger.operation(
-        summary="Read, and add missing samples for a MAF",
+        summary="[Deprecated] Read, and add missing samples for a MAF",
         nickname="Get MAF for a given MTBLS Assay",
         notes='''Create or update a Metabolite Annotation File for an assay.
 <pre><code> 
@@ -237,7 +237,7 @@ class MetaboliteAnnotationFile(Resource):
 
 class CombineMetaboliteAnnotationFiles(Resource):
     @swagger.operation(
-        summary="Combine MAFs for a list of studies",
+        summary="[Deprecated] Combine MAFs for a list of studies",
         nickname="Combine MAF files",
         notes='''Combine MAF files for a given list of studies, by analytical method. If a study contains assays with 
         more than one analytical method, it will endeavour to try and select only the MAFs that correspond to the chosen 

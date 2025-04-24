@@ -1,10 +1,26 @@
 from sqlalchemy import BigInteger, Column, Date, DateTime, ForeignKey, Index, Numeric, String, Table, Text, \
-    UniqueConstraint, text
+    UniqueConstraint, text, Sequence
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 metadata = Base.metadata
+
+study_revisions_id_seq = Sequence('study_revisions_id_seq')
+
+class StudyRevision(Base):
+    __tablename__ = 'study_revisions'
+
+    id = Column(BigInteger, study_revisions_id_seq, server_default=study_revisions_id_seq.next_value(), primary_key=True)
+    accession_number = Column(String(255), nullable=False)
+    revision_number = Column(BigInteger, nullable=False)
+    revision_datetime = Column(DateTime, nullable=False)
+    revision_comment = Column(String(1024), nullable=False)
+    created_by = Column(String(255), nullable=False)
+    status = Column(BigInteger, nullable=False, default=0)
+    task_started_at = Column(DateTime, nullable=True)
+    task_completed_at = Column(DateTime, nullable=True)
+    task_message = Column(Text, nullable=True)
 
 
 class StudyTask(Base):
@@ -103,6 +119,9 @@ class Study(Base):
     first_public_date = Column(DateTime, nullable=True)
     first_private_date = Column(DateTime, nullable=True)
     dataset_license=Column(String)
+    revision_number = Column(BigInteger, nullable=False, default=0)
+    revision_datetime = Column(DateTime, nullable=True)
+
     users = relationship('User', secondary='study_user', back_populates="studies")
 
 

@@ -18,6 +18,7 @@
 
 
 import glob
+import json
 import logging
 import os
 from datetime import datetime
@@ -30,7 +31,7 @@ from flask_restful_swagger import swagger
 from app.config import get_settings
 
 from app.file_utils import make_dir_with_chmod
-from app.services.storage_service.models import SyncTaskResult
+from app.services.storage_service.models import SyncTaskResult, SyncTaskStatus
 from app.services.storage_service.storage_service import StorageService
 from app.tasks.common_tasks.basic_tasks.elasticsearch import (
     delete_study_index,
@@ -38,11 +39,12 @@ from app.tasks.common_tasks.basic_tasks.elasticsearch import (
     reindex_all_studies,
     reindex_study,
 )
-from app.tasks.common_tasks.basic_tasks.email import (
-    send_email_for_new_submission,
+from app.tasks.common_tasks.basic_tasks.send_email import (
+    send_email_for_new_provisional_study,
     send_technical_issue_email,
 )
 from app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization import sync_studies_on_es_and_db
+from app.tasks.datamover_tasks.basic_tasks.ftp_operations import sync_private_ftp_data_files
 from app.tasks.common_tasks.report_tasks.eb_eye_search import eb_eye_build_public_studies, build_studies_for_europe_pmc
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import delete_study_folders, maintain_storage_study_folders
 from app.tasks.hpc_study_rsync_client import VALID_FOLDERS, StudyFolder, StudyFolderLocation, StudyFolderType, StudyRsyncClient
@@ -66,6 +68,7 @@ from app.ws.db_connection import (
 )
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.redis.redis import get_redis_server
 from app.ws.settings.utils import get_cluster_settings, get_study_settings
 from app.ws.study import identifier_service
 from app.ws.study.folder_utils import write_audit_files
@@ -73,6 +76,8 @@ from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.study_utilities import StudyUtils
 from app.ws.utils import copy_file, copy_files_and_folders, get_timestamp, get_year_plus_one, log_request, remove_file
+from app.tasks.worker import celery
+from celery.result import AsyncResult
 
 logger = logging.getLogger("wslog")
 wsc = WsClient()
@@ -187,7 +192,7 @@ class MtblsPrivateStudies(Resource):
 
 class MtblsStudyValidationStatus(Resource):
     @swagger.operation(
-        summary="Override validation status of a study",
+        summary="[Deprecated] Override validation status of a study",
         notes="Curator can override the validation status of a study.",
         parameters=[
             {
@@ -228,7 +233,7 @@ class MtblsStudyValidationStatus(Resource):
 
         validation_status_list = ["error", "warn", "success"]
 
-        if not validation_status in validation_status_list:
+        if validation_status not in validation_status_list:
             abort(401)
 
         # User authentication
@@ -281,7 +286,7 @@ class MtblsStudiesWithMethods(Resource):
 
 class MyMtblsStudies(Resource):
     @swagger.operation(
-        summary="Get all private studies for a user",
+        summary="[Deprecated] Get all private studies for a user",
         notes="Get a list of all private studies for a user.",
         parameters=[
             {
@@ -638,7 +643,7 @@ class IsaTabAssayFile(Resource):
 
 class CloneAccession(Resource):
     @swagger.operation(
-        summary="Create a new study and upload folder",
+        summary="[Deprecated] Create a new study and upload folder",
         notes="""This will clone the default template LC-MS study if no "study_id" parameter is given
         If a "to_study_id" (destination study id) is provided, <b>data will be copied into this *existing* study. 
         Please be aware that data in the destination study will be replaced with metadata files from "study_id"</b>.""",
@@ -1132,11 +1137,11 @@ class CreateAccession(Resource):
 
         user: User = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
         studies = UserService.get_instance().get_user_studies(user.apitoken)
-        submitted_studies = []
+        provisional_studies = []
         last_study_datetime = datetime.fromtimestamp(0)
         for study in studies:
-            if study.status == StudyStatus.SUBMITTED.value:
-                submitted_studies.append(study)
+            if study.status == StudyStatus.PROVISIONAL.value:
+                provisional_studies.append(study)
             if study.submissiondate.timestamp() > last_study_datetime.timestamp():
                 last_study_datetime = study.submissiondate
         study_settings = get_study_settings()
@@ -1148,16 +1153,16 @@ class CreateAccession(Resource):
             raise MetabolightsException(message="Submitter can create only one study in five minutes.", http_code=429)
 
         if (
-            len(submitted_studies) >= study_settings.max_study_in_submitted_status
+            len(provisional_studies) >= study_settings.max_study_in_provisional_status
             and user.role != UserRole.ROLE_SUPER_USER.value
             and user.role != UserRole.SYSTEM_ADMIN.value
             and user.partner == 0
         ):
             logger.warning(
-                f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_submitted_status} study in Submitted status."
+                f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_provisional_status} study in Provisional status."
             )
             raise MetabolightsException(
-                message="The user can have at most two studies in Submitted status. Please complete and update status of your current studies.",
+                message="The user can have at most two studies in Provisional status. Please complete and update status of your current studies.",
                 http_code=400,
             )
 
@@ -1194,19 +1199,19 @@ class CreateAccession(Resource):
                 raise MetabolightsException(message="Study id creation on db was failed.", http_code=501, exception=exc)
 
         inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False, "task_name": "INITIAL_METADATA", 
-                  "maintain_metadata_storage": True, "maintain_data_storage": False, "maintain_private_ftp_storage": False}
+                  "maintain_metadata_storage": True, "maintain_private_ftp_storage": False}
         try:
             maintain_storage_study_folders(**inputs)
             logger.info(f"Step 4.1: 'Create initial files and folders' task completed for study {study_acc}")
         except Exception as exc:
             logger.info(f"Step 4.1: 'Create initial files and folders' task failed for study {study_acc}. {str(exc)}")
             
-        # Start ftp folder creation task
-        inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": True, "maintain_private_ftp_storage": False,  "task_name": "INITIAL_DATA"})
-        create_study_data_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
-        logger.info(f"Step 4.2: 'Create study data files and folders' task has been started for study {study_acc} with task id: {create_study_data_folders_task.id}")
+        # # Start ftp folder creation task
+        # inputs.update({"maintain_metadata_storage": False, "maintain_private_ftp_storage": False,  "task_name": "INITIAL_DATA"})
+        # create_study_data_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
+        # logger.info(f"Step 4.2: 'Create study data files and folders' task has been started for study {study_acc} with task id: {create_study_data_folders_task.id}")
         
-        inputs.update({"maintain_metadata_storage": False, "maintain_data_storage": False, "maintain_private_ftp_storage": True,  "task_name": "INITIAL_FTP_FOLDERS"})
+        inputs.update({"maintain_metadata_storage": False, "maintain_private_ftp_storage": True,  "task_name": "INITIAL_FTP_FOLDERS"})
         create_ftp_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
         logger.info(f"Step 4.3: 'Create study FTP folders' task has been started for study {study_acc} with task id: {create_ftp_folders_task.id}")
 
@@ -1214,19 +1219,12 @@ class CreateAccession(Resource):
             study: Study = StudyService.get_instance().get_study_by_acc(study_acc)
             ftp_folder_name = study_acc.lower() + "-" + study.obfuscationcode
             inputs = {"user_token": user_token, "study_id": study_acc, "folder_name": ftp_folder_name}
-            send_email_for_new_submission.apply_async(kwargs=inputs)
+            send_email_for_new_provisional_study.apply_async(kwargs=inputs)
             logger.info(f"Step 5: Sending FTP folder email for the study {study_acc}")
         else:
             logger.info(f"Step 5: Skipping FTP folder email for the study {study_acc}")
 
         # # Start ftp folder creation task
-
-        # inputs = {"user_token": user_token, "study_id": study_acc, "send_email": new_accession_number}
-
-        # create_ftp_folder_task = create_private_ftp_folder.apply_async(kwargs=inputs)
-
-        # logger.info(f"Step 6: Create ftp folder task is started for study {study_acc} with task id: {create_ftp_folder_task.id}")
-
         # Start reindex task
         inputs = {"user_token": user_token, "study_id": study_acc}
         reindex_task = reindex_study.apply_async(kwargs=inputs)
@@ -1244,13 +1242,13 @@ class CreateAccession(Resource):
         Rule 5- study_id must not be in database
         """
         # Rule 1
-        study_id_prefix = identifier_service.default_submission_identifier.get_prefix()
+        study_id_prefix = identifier_service.default_provisional_identifier.get_prefix()
         if not requested_study_id.startswith(study_id_prefix):
-            abort(401, message="Invalid request id format. Request id must start with %s" % study_id_prefix)
+            abort(401, message="Invalid provisional id format. Provisional id must start with %s" % study_id_prefix)
         # Rule 2
         UserService.get_instance().validate_user_has_curator_role(user_token)
         # Rule 3
-        # disable this rule for request id
+        # disable this rule for provisional id
         # Rule 4
         study_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, requested_study_id)
         if os.path.exists(study_location):
@@ -1783,7 +1781,7 @@ class MtblsStudyFolders(Resource):
                 "allowMultiple": False,
                 "paramType": "header",
                 "dataType": "string",
-                "enum": ["metadata", "data", "private-ftp"],
+                "enum": ["metadata", "private-ftp"],
                 "allowEmptyValue": False,
                 "defaultValue": "metadata",
                 "default": "metadata"
@@ -1847,12 +1845,9 @@ class MtblsStudyFolders(Resource):
         if target_folder not in ("metadata", "data", "private-ftp"):
             raise MetabolightsException(message="Target folder is not defined.")
         maintain_metadata_storage = False
-        maintain_data_storage = False
         maintain_private_ftp_storage = False
         if target_folder == "metadata":
             maintain_metadata_storage = True
-        elif target_folder == "data":
-            maintain_data_storage = True
         elif target_folder == "private-ftp":
             maintain_private_ftp_storage = True
             
@@ -1870,7 +1865,6 @@ class MtblsStudyFolders(Resource):
                 "force_to_maintain": force_to_maintain,
                 "task_name": task_name,
                 "maintain_metadata_storage": maintain_metadata_storage,
-                "maintain_data_storage": maintain_data_storage,
                 "maintain_private_ftp_storage": maintain_private_ftp_storage
             }
             task = maintain_storage_study_folders.apply_async(kwargs=inputs)
@@ -2082,7 +2076,7 @@ class StudyFolderSynchronization(Resource):
             dry_run = True if request.headers["dry_run"].lower() == "true" else False 
         
         if "sync_type" in request.headers:
-            sync_type = request.headers["sync_type"]
+            sync_type = request.headers["sync_type"].lower()
             
         source_staging_area = "private-ftp"
         if "source_staging_area" in request.headers:
@@ -2107,7 +2101,7 @@ class StudyFolderSynchronization(Resource):
         if source_staging_area == "private-ftp" and ((sync_type == "data" and target_staging_area == "readonly-study") or (sync_type == "metadata" and target_staging_area == "rw-study")):
             study = StudyService.get_instance().get_study_by_acc(study_id)
             UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-            if StudyStatus(study.status) != StudyStatus.SUBMITTED:
+            if StudyStatus(study.status) != StudyStatus.PROVISIONAL:
                 UserService.get_instance().validate_user_has_curator_role(user_token)
         else:
             UserService.get_instance().validate_user_has_curator_role(user_token)
@@ -2118,21 +2112,26 @@ class StudyFolderSynchronization(Resource):
         source = StudyFolder(location=source_location, folder_type=folder_type)
         target = StudyFolder(location=target_location, folder_type=folder_type)
 
-        if not source.folder_type in VALID_FOLDERS[source_location]:
+        if source.folder_type not in VALID_FOLDERS[source_location]:
             raise MetabolightsException(message="Source folder type is not valid in the selected staging area.")
 
-        if not target.folder_type in VALID_FOLDERS[target_location]:
+        if target.folder_type not in VALID_FOLDERS[target_location]:
             raise MetabolightsException(message="target folder type is not valid in the selected staging area.")
         
         study = StudyService.get_instance().get_study_by_acc(study_id)
         client = StudyRsyncClient(study_id=study_id, obfuscation_code=study.obfuscationcode)
         status_check_only = not start_new_task
-        if dry_run:
-            status: SyncTaskResult = client.rsync_dry_run(source, target, status_check_only=status_check_only)
+        
+        if sync_type == "data" and source_staging_area == "private-ftp" and target_staging_area == "readonly-study":
+            status = sync_private_ftp_data_files(study_id=study_id, obfuscation_code=study.obfuscationcode)
+            
         else:
-            if start_new_task and target.folder_type == StudyFolderType.METADATA and target.location == StudyFolderLocation.RW_STUDY_STORAGE:
-                write_audit_files(study_id)
-            status: SyncTaskResult = client.rsync(source, target, status_check_only=status_check_only)
+            if dry_run:
+                status: SyncTaskResult = client.rsync_dry_run(source, target, status_check_only=status_check_only)
+            else:
+                if start_new_task and target.folder_type == StudyFolderType.METADATA and target.location == StudyFolderLocation.RW_STUDY_STORAGE:
+                    write_audit_files(study_id)
+                status: SyncTaskResult = client.rsync(source, target, status_check_only=status_check_only)
 
         status.description = f"{status.description[:100]} ..." if status.description and len(status.description) > 100 else status.description
         return status.model_dump()

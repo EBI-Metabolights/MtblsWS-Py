@@ -26,5 +26,5 @@ app_settings = get_settings()
 accession_prefix = app_settings.study.accession_number_prefix
 
 default_mtbls_identifier = DefaultIdentifier(app_settings.study.accession_number_prefix, app_settings.study.accession_number_regex)
-default_submission_identifier = SubmissionIdentifier(app_settings.study.submission_id_prefix, app_settings.study.submission_id_regex)
+default_provisional_identifier = SubmissionIdentifier(app_settings.study.provisional_id_prefix, app_settings.study.provisional_id_regex)
 default_mxd_identifier = DefaultIdentifier("MXD", r"^(MXD)(\d+)-(\d+)$")

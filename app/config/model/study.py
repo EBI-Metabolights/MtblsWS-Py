@@ -29,11 +29,14 @@ class StudyMountedPaths(BaseModel):
 class StudySettings(BaseModel):
     mounted_paths: StudyMountedPaths
     accession_number_prefix: str = "MTBLS"
-    submission_id_prefix: str = "REQ"
+    submission_id_prefix: str = "REQ" # will be deprecated
+    provisional_id_prefix: str = "REQ"
     accession_number_regex: str = r"^(MTBLS)(\d{1,20})$"
-    submission_id_regex: str = r"^(REQ)(\d{1,20})$"
+    submission_id_regex: str = r"^(REQ)(\d{1,20})$"  # will be deprecated
+    provisional_id_regex: str = r"^(REQ)(\d{1,20})$"
     private_ftp_user_home_path: str = ""
-    max_study_in_submitted_status: int = 2
+    max_study_in_submitted_status: int = 2 # will be deprecated
+    max_study_in_provisional_status: int = 2
     min_study_creation_interval_in_mins: int = 5
     audit_files_symbolic_link_name: str = "AUDIT_FILES"
     internal_files_symbolic_link_name: str = "INTERNAL_FILES"

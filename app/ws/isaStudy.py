@@ -431,7 +431,7 @@ class StudyReleaseDate(Resource):
 
 class StudyMetaInfo(Resource):
     @swagger.operation(
-        summary="Get Study Release Date and Status",
+        summary="[Deprecated] Get Study Release Date and Status",
         notes="Get Study Release Date and Status.",
         parameters=[
             {

@@ -107,53 +107,44 @@ def unzip_folders(self, study_metadata_path: str, files: Dict[str, Any], remove_
 @celery.task(
     bind=True, base=MetabolightsTask, name="app.tasks.datamover_tasks.curation_tasks.data_file_operations.move_data_files"
 )
-def move_data_files(self, study_id: Union[None, str] = None, files: Dict[str, Any]=None,  target_location:str = "RECYCLE_BIN", override: bool = False, task_name=None):
+def move_data_files(self, study_id: Union[None, str] = None, obfuscation_code: str=None, files: Dict[str, Any]=None,  target_location:str = "RECYCLE_BIN", override: bool = False, task_name=None):
     if not study_id or not files:
         raise MaintenanceException(message="Invalid input")
     
     settings = get_study_settings()
     mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
     for file in files:
-        if "name" not in file or not file["name"] or not file["name"].startswith(f"{settings.readonly_files_symbolic_link_name}/"):
-            raise MaintenanceException(message=f"File names should start with {settings.readonly_files_symbolic_link_name}/")
+        if "name" not in file or not file["name"] or not file["name"].startswith(f"FILES/"):
+            raise MaintenanceException(message=f"File names should start with FILES/")
             
-    study_path = os.path.join(mounted_paths.cluster_study_metadata_files_root_path, study_id)
-    files_path = os.path.join(study_path, settings.readonly_files_symbolic_link_name)
+    files_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, f"{study_id.lower()}-{obfuscation_code}")
 
     date_format = "%Y-%m-%d_%H-%M-%S"
     timestamp_str = time.strftime(date_format)
     if not task_name:
         task_name =  f"{study_id}_MOVE_DATA_FILES_{timestamp_str}"
-    recycle_bin_dir = os.path.join(mounted_paths.cluster_readonly_storage_recycle_bin_root_path, task_name)
+    recycle_bin_dir = os.path.join(mounted_paths.cluster_private_ftp_recycle_bin_root_path, study_id, task_name)
 
     warnings = []
     successes = []
     errors = []
     for file in files:
         if "name" in file and file["name"]:
-            f_name = file["name"]
+            f_name = file["name"].replace("FILES/", "", 1)
             try:
-                file_path = os.path.join(study_path, f_name)
+                file_path = os.path.join(files_path, f_name)
                 if not os.path.exists(file_path):
                     warnings.append({'file': f_name, 'message': 'Operation is ignored. File does not exist.'})
                     continue
-
-                if not file_path.startswith(files_path):
-                    warnings.append({'file': f_name, 'message': 'Operation is ignored. File is in ignore list.'})
-                    continue
-
                 
                 if target_location == 'RAW_FILES':
-                    new_relative_path = f_name.replace(f"{settings.readonly_files_symbolic_link_name}/", f"{settings.readonly_files_symbolic_link_name}/RAW_FILES/", 1)
-                    target_path = os.path.join(study_path, new_relative_path)
+                    new_relative_path = f"RAW_FILES/{f_name}"
+                    target_path = os.path.join(files_path, new_relative_path)
                 elif target_location == 'DERIVED_FILES':
-                    new_relative_path = f_name.replace(f"{settings.readonly_files_symbolic_link_name}/", f"{settings.readonly_files_symbolic_link_name}/DERIVED_FILES/", 1)
-                    target_path = os.path.join(study_path, new_relative_path)
+                    new_relative_path = f"DERIVED_FILES/{f_name}"
+                    target_path = os.path.join(files_path, new_relative_path)
                 else:
                     target_path = os.path.join(recycle_bin_dir, f_name)
-                    split = os.path.split(target_path)
-                    if not os.path.exists(split[0]):
-                        os.makedirs(split[0])
                 parent_directory = os.path.dirname(target_path)
                 if not os.path.exists(parent_directory):
                     os.makedirs(parent_directory, exist_ok=True)

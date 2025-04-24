@@ -69,9 +69,7 @@ class ChebiLiteEntity(Resource):
             if not search_result:
                 return abort(404, message=f"Entity not found with name {compound_name}")
 
-            result = list()
-            for search in search_result:
-                result.append(search.model_dump())
+            result = [search.model_dump() for search in search_result]
             return result
         except ChebiWsException as e:
             abort(501, message="Remote server error")
@@ -117,7 +115,7 @@ class ChebiEntity(Resource):
 class ChebiImageProxy(Resource):
 
     @swagger.operation(
-        summary="Get image by chebi id",
+        summary="[Deprecated] Get image by chebi id",
         nickname="Get image by chebi id",
         notes="Get image by chebi id",
         parameters=[

@@ -1018,22 +1018,6 @@ def convert_to_isa(study_location, study_id):
                 shutil.rmtree(dirpath)
 
 
-def update_correct_sample_file_name(isa_study, study_location, study_id):
-    sample_file_path = os.path.join(study_location, isa_study.filename)
-    short_sample_file_name = "s_" + study_id.upper() + ".txt"
-    default_sample_file_path = os.path.join(study_location, short_sample_file_name)
-    if os.path.isfile(sample_file_path):
-        if sample_file_path != default_sample_file_path:
-            os.rename(
-                sample_file_path, default_sample_file_path
-            )  # Rename the sample file
-            isa_study.filename = (
-                short_sample_file_name  # Add the new filename to the investigation
-            )
-
-    return isa_study, short_sample_file_name
-
-
 def get_maf_name_from_assay_name(assay_file_name):
     annotation_file_name = assay_file_name.replace(".txt", "_v2_maf.tsv")
     for file_part in annotation_file_name.split("/a_"):
@@ -1060,12 +1044,8 @@ def update_ontolgies_in_isa_tab_sheets(
         elif ontology_type.lower() == "characteristics":
             prefix = "Characteristics["
 
-        file_names = list()
-        # Sample sheet
-        file_names.append(os.path.join(study_location, isa_study.filename))
-        #  assay_sheet(s)
-        for assay in isa_study.assays:
-            file_names.append(os.path.join(study_location, assay.filename))
+        file_names = [os.path.join(study_location, isa_study.filename)]
+        file_names.extend([os.path.join(study_location, assay.filename) for assay in isa_study.assays])
 
         if file_names:
             for file in file_names:
@@ -1192,13 +1172,13 @@ def create_maf(
     sample_names = []
     try:
         sample_names = assay_df[sample_name]
-    except:
+    except Exception as ex:
         logger.warning(
             "The assay "
             + assay_file_name
             + " does not have "
             + sample_name
-            + " defined!"
+            + " defined! " + str(ex) 
         )
 
     if len(assay_names) == 0:
@@ -1874,7 +1854,7 @@ def get_techniques(studyID=None):
 
 def get_instrument(studyID, assay_name):
     # print('getting instruments')
-    instrument_name = []
+    instrument_names = []
     # res.loc[len(res)] = [sheet_name, key, term]
     try:
         context_path = get_settings().server.service.resources_path
@@ -1897,14 +1877,14 @@ def get_instrument(studyID, assay_name):
         df = pd.read_csv(content, sep="\t")
         ins_df = df.loc[:, df.columns.str.contains("Instrument")]
         for col in ins_df.columns:
-            l = list(df[col].unique())
-            instrument_name += l
+            item = list(df[col].unique())
+            instrument_names .append(item)
 
-        if len(instrument_name) > 0:
+        if len(instrument_names) > 0:
             return {
                 "studyID": studyID,
                 "assay_name": assay_name,
-                "instruments": instrument_name,
+                "instruments": instrument_names,
             }
         else:
             return None
@@ -2110,9 +2090,7 @@ def get_public_review_studies():
     data = cursor.fetchall()
     release_connection(postgresql_pool, conn)
 
-    res = []
-    for id in data:
-        res.append(id[0])
+    res = [id[0] for id in data]
     res.sort(key=natural_keys)
     return res
 

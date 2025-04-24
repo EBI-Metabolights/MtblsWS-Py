@@ -15,8 +15,8 @@ $$
             ms_size           = s.studysize,
             nmr_size          = 0,
             status            = case
-                                    when s.status = 0 then 'Submitted'
-                                    when s.status = 1 then 'In Curation'
+                                    when s.status = 0 then 'Provisional'
+                                    when s.status = 1 then 'Private'
                                     when s.status = 2 then 'In Review'
                                     when s.status = 3 then 'Public'
                                     else 'Dormant' end,

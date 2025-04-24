@@ -36,7 +36,7 @@ logger = logging.getLogger('wslog')
 
 class ValidationFile(Resource):
     @swagger.operation(
-        summary="Validate study",
+        summary="[Deprecated] Validate study",
         notes='''Validating the overall study. 
         This method will validate the study metadata and check the files study folder''',
         parameters=[
@@ -115,7 +115,7 @@ class ValidationFile(Resource):
 
 class ValidationReport(Resource):
     @swagger.operation(
-        summary="Returns validation report file content. ",
+        summary="[Deprecated] Returns validation report file content. ",
         notes='''"If there is no validation report file, status is 'not ready'. The endpoind filters validation messages if validation messages exceed maximum limit 50 in each section, the endpoind filters , "''',
         parameters=[
             {
@@ -239,7 +239,7 @@ class ValidationReport(Resource):
 
 class ValidationProcess(Resource):
     @swagger.operation(
-        summary="Update validation file",
+        summary="[Deprecated] Update validation file",
         notes="Update validation file",
         parameters=[
             {
@@ -303,7 +303,7 @@ class ValidationProcess(Resource):
         
         
         force_to_start = True
-        if args and "force" in args and request.args.get("force"):
+        if request.args.get("force"):
             force_to_start = False if request.args.get("force").lower() == "false" else True
             
         # param validation
@@ -324,7 +324,7 @@ class ValidationProcess(Resource):
 
 class StudyValidationTask(Resource):
     @swagger.operation(
-        summary="A task is created to update validation report file",
+        summary="[Deprecated] A task is created to update validation report file",
         notes="If there is a current validation task for study, This enpoint returns its status",
         parameters=[
             {
@@ -442,7 +442,7 @@ class StudyValidationTask(Resource):
 
 class OverrideValidation(Resource):
     @swagger.operation(
-        summary="Approve or reject a specific validation rule (curator only)",
+        summary="[Deprecated] Approve or reject a specific validation rule (curator only)",
         notes='''For EBI curators to manually approve or fail a validation step.</br> "*" will override *all* errors!
         <pre><code>
     { 
@@ -557,7 +557,7 @@ class OverrideValidation(Resource):
 
 class ValidationComment(Resource):
     @swagger.operation(
-        summary="Add Comment To Validation",
+        summary="[Deprecated] Add Comment To Validation",
         notes='''Add a comment to a specific validation message to give the user more context.    <pre><code>
     { 
       "comments": 
@@ -663,9 +663,7 @@ class ValidationComment(Resource):
                 else:
                     feedback += f"Empty comment for {key} has been ignored."
                 
-        updated_comments = []
-        for key in comment_list:
-            updated_comments.append(f"{key}:{comment_list[key]}")
+        updated_comments = [f"{key}:{comment_list[key]}" for key in comment_list]
         db_update_string = "|".join(updated_comments)
 
         try:
@@ -679,7 +677,7 @@ class ValidationComment(Resource):
 
 class NewValidation(Resource):
     @swagger.operation(
-        summary="Validate study",
+        summary="[Deprecated] Validate study",
         notes='''Validating the study with given section
         This method will validate the study metadata and check the files study folder''',
         parameters=[

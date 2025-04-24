@@ -72,13 +72,13 @@ def update_or_create_jira_issue_task(user_token: str):
                 if issues:
                     issue = issues[0]
                 else:
-                    if study_status == 'Submitted' or study_status == 'In Curation':
+                    if study_status == 'Provisional' or study_status == 'Private':
                         logger.info("Could not find Jira issue for " + search_param)
                         print("Creating new Jira issue for " + search_param)
                         issue = jira.create_issue(project=mtbls_project.key, summary='MTBLS study - To be updated',
                                                   description='Created by API', issuetype={'name': 'Story'})
                     else:
-                        continue  # Only create new cases if the study is in status Submitted/In Curation
+                        continue  # Only create new cases if the study is in status Provisional/Private
             except:  # We could not find or create a Jira issue.
                 continue
 
@@ -164,7 +164,7 @@ def maintain_jira_labels(issue, study_status, user_name):
     metabolon_flag = False
     placeholder_flag = False
     metaspace_flag = False
-    submitted_label = 'submitted'
+    submitted_label = 'provisional'
     curation_label = 'curation'
     in_curation_label = 'in_curation'
     inreview_label = 'in_review'
@@ -191,10 +191,10 @@ def maintain_jira_labels(issue, study_status, user_name):
     if not curation_flag:  # Do not confuse with the In Curation status, this is a "curator tasks" flag
         labels.append(curation_label)
 
-    if study_status == 'Submitted' and not submitted_flag:  # The "Submitted" label is not present
+    if study_status == 'Provisional' and not submitted_flag:  # The "Submitted" label is not present
         labels.append(submitted_label)
 
-    if study_status == 'In Curation':
+    if study_status == 'Private':
         if not in_curation_flag:  # The "in_curation" label is not present
             labels.append(in_curation_label)
         if submitted_flag:

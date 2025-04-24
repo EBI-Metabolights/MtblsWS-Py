@@ -34,7 +34,7 @@ logger = logging.getLogger('wslog')
 
 class MetaspacePipeLine(Resource):
     @swagger.operation(
-        summary="Import files files and metadata from METASPACE to a MTBLS study",
+        summary="[Deprecated] Import files files and metadata from METASPACE to a MTBLS study",
         nickname="Import data from METASPACE",
         notes="""Import files files and metadata from METASPACE to a MetaboLights study. 
         </p>Please note that METASPACE API keys will take priority over username/password. 

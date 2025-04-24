@@ -47,7 +47,9 @@ class LsfClient(HpcClient):
                        timeout: Union[None, float]=30.0, 
                        runtime_limit: Union[None, str] = None, 
                        cpu: int=1,
-                       mem: str="") -> SubmittedJobResult:
+                       mem: str="",
+                       mail_type: str = ""
+                       ) -> SubmittedJobResult:
         if not queue:
             queue = self.settings.default_queue
         bsub_command = self._get_submit_command(script_path, queue, job_name, output_file, error_file, account, runtime_limit=runtime_limit, mem=mem, cpu=cpu)

@@ -22,7 +22,7 @@
                 "--loglevel=info",
                 "--concurrency=1",
                 "-Q",
-                "common-tasks,monitor-tasks"
+                "common-tasks,monitor-tasks,datamover-tasks"
             ],
             "jinja": true,
             "justMyCode": false,

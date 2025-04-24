@@ -1,5 +1,6 @@
 import datetime
 import os
+import re
 from typing import List, Union
 from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
@@ -27,7 +28,7 @@ from isatools.model import Investigation, Study, Person
 
 
 @celery.task(
-    base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.email.send_test_email"
+    base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.send_email.send_test_email"
 )
 def send_test_email(user_token):
     flask_app = get_flask_app()
@@ -44,9 +45,9 @@ def send_test_email(user_token):
 
 @celery.task(
     base=MetabolightsTask,
-    name="app.tasks.common_tasks.basic_tasks.email.send_email_for_new_submission",
+    name="app.tasks.common_tasks.basic_tasks.send_email.send_email_for_new_provisional_study",
 )
-def send_email_for_new_submission(user_token, study_id, folder_name):
+def send_email_for_new_provisional_study(user_token, study_id, folder_name):
 
     flask_app = get_flask_app()
     with flask_app.app_context():
@@ -68,7 +69,7 @@ def send_email_for_new_submission(user_token, study_id, folder_name):
         user = UserService.get_instance().get_db_user_by_user_name(submitter_email)
         submitter_fullname = user.fullName
         email_service = get_email_service(flask_app)
-        email_service.send_email_for_new_submission(
+        email_service.send_email_for_new_provisional_study(
             study_id, relative_study_path, user_email, submitters_email_list, submitter_fullname
         )
 
@@ -82,9 +83,9 @@ def send_email_for_new_submission(user_token, study_id, folder_name):
 
 @celery.task(
     base=MetabolightsTask,
-    name="app.tasks.common_tasks.basic_tasks.email.send_email_for_new_accession_number",
+    name="app.tasks.common_tasks.basic_tasks.send_email.send_email_for_new_accession_number",
 )
-def send_email_for_new_accession_number(user_token: str, study_id: str, submission_id: str, 
+def send_email_for_new_accession_number(user_token: str, study_id: str, provisional_id: str, 
                                         obfuscation_code: str, study_title: str, release_date: str, additional_cc_emails: Union[None, List[str]] = None):
 
     flask_app = get_flask_app()
@@ -106,11 +107,11 @@ def send_email_for_new_accession_number(user_token: str, study_id: str, submissi
         private_ftp_root_path = get_settings().hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path
         
         ftp_base_folder = private_ftp_root_path.replace(ftp_user_home, "")
-        previous_ftp_folder = os.path.join(ftp_base_folder.rstrip('"'), f"{submission_id.lower()}-{obfuscation_code}")
+        previous_ftp_folder = os.path.join(ftp_base_folder.rstrip('"'), f"{provisional_id.lower()}-{obfuscation_code}")
         new_ftp_folder = os.path.join(ftp_base_folder.rstrip('"'), f"{study_id.lower()}-{obfuscation_code}")
         email_service = get_email_service(flask_app)
         email_service.send_email_for_new_accession_number(
-            study_id, submission_id, obfuscation_code,  user_email, submitters_email_list,
+            study_id, provisional_id, obfuscation_code,  user_email, submitters_email_list,
             submitter_fullname=submitter_fullname, 
             study_title=study_title, release_date=release_date, 
             previous_ftp_folder=previous_ftp_folder, new_ftp_folder=new_ftp_folder, 
@@ -118,7 +119,7 @@ def send_email_for_new_accession_number(user_token: str, study_id: str, submissi
         )
 
         return {
-            "submission_id": submission_id,
+            "provisional_id": provisional_id,
             "study_id": study_id,
             "obfuscation_code": obfuscation_code,
             "user_email": user_email,
@@ -127,7 +128,7 @@ def send_email_for_new_accession_number(user_token: str, study_id: str, submissi
 
 @celery.task(
     base=MetabolightsTask,
-    name="app.tasks.common_tasks.basic_tasks.email.send_email_on_public",
+    name="app.tasks.common_tasks.basic_tasks.send_email.send_email_on_public",
 )
 def send_email_on_public(user_token, study_id, release_date):
     flask_app = get_flask_app()
@@ -194,11 +195,13 @@ def get_principal_investigator_emails(study: Study):
     return additional_cc_emails
         
 
-@celery.task(name="app.tasks.common_tasks.basic_tasks.email.send_generic_email")
+@celery.task(name="app.tasks.common_tasks.basic_tasks.send_email.send_generic_email")
 def send_generic_email(subject, body, from_address, to_addresses, cc_addresses):
 
     send_email(subject, body, from_address, to_addresses, cc_addresses)
 
-@celery.task(name="app.tasks.common_tasks.basic_tasks.email.send_technical_issue_email")
+@celery.task(name="app.tasks.common_tasks.basic_tasks.send_email.send_technical_issue_email")
 def send_technical_issue_email(subject, body):
     report_internal_technical_issue(subject, body)
+
+

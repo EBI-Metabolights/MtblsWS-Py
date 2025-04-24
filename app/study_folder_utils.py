@@ -1,3 +1,4 @@
+import enum
 import fnmatch
 import glob
 import os
@@ -30,9 +31,16 @@ def convert_relative_to_real_path(relative_path: str) -> str:
     removed_prefix = relative_path.replace(f".{os.sep}", "", 1) if relative_path.startswith(f".{os.sep}") else relative_path
     return os.path.join(application_path, removed_prefix)
     
-
+class FileDifference(enum.StrEnum):
+    NEW =  "NEW"
+    DELETED = "DELETED"
+    MODIFIED = "MODIFIED"
+    
 
 class FileDescriptor(BaseModel):
+    file_difference: Union[None, FileDifference] = None
+    name: str = ""
+    parent_relative_path: str = ""
     relative_path: str = ""
     modified_time: float = 0
     is_dir: bool = False

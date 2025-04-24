@@ -23,7 +23,7 @@ logger = logging.getLogger('wslog')
 
 class SyncCalculation(Resource):
     @swagger.operation(
-        summary="Calculate differences between FTP upload folder and study folder",
+        summary="[Deprecated] Calculate differences between FTP upload folder and study folder",
         parameters=[
             {
                 "name": "study_id",
@@ -111,7 +111,7 @@ class SyncCalculation(Resource):
 
 class SyncFromFtpFolder(Resource):
     @swagger.operation(
-        summary="FTP folder sync process is triggered, and new/updated files are copied to study folder",
+        summary="[Deprecated] FTP folder sync process is triggered, and new/updated files are copied to study folder",
         nickname="Start sync process new and updated files from upload folder",
         parameters=[
             {
@@ -183,7 +183,7 @@ class SyncFromFtpFolder(Resource):
         if sync_type not in ("data", "metadata"):
             UserService.get_instance().validate_user_has_write_access(user_token, study_id)
             study = StudyService.get_instance().get_study_by_acc(study_id)
-            if StudyStatus(study.status) != StudyStatus.SUBMITTED:
+            if StudyStatus(study.status) != StudyStatus.PROVISIONAL:
                 UserService.get_instance().validate_user_has_curator_role(user_token)
         else:
             UserService.get_instance().validate_user_has_curator_role(user_token)
@@ -219,7 +219,7 @@ class SyncFromFtpFolder(Resource):
 
 class FtpFolderSyncStatus(Resource):
     @swagger.operation(
-        summary="Returns  status of FTP folder synchronization task",
+        summary="[Deprecated] Returns  status of FTP folder synchronization task",
         parameters=[
             {
                 "name": "study_id",
@@ -397,7 +397,7 @@ class FtpFolderPermissionModification(Resource):
 
 class PrivateFtpFolder(Resource):
     @swagger.operation(
-        summary="Create a new study upload FTP folder",
+        summary="[Deprecated] Create a new study upload FTP folder",
         parameters=[
             {
                 "name": "study_id",
@@ -597,7 +597,7 @@ class PrivateFtpUploadInfo(Resource):
     
 class SyncFromStudyFolder(Resource):
     @swagger.operation(
-        summary="Copy files from study folder to private FTP  folder",
+        summary="[Deprecated] Copy files from study folder to private FTP  folder",
         nickname="Copy from study folder",
         parameters=[
             {
@@ -672,7 +672,7 @@ class SyncFromStudyFolder(Resource):
         if sync_type not in ("data", "metadata"):
             UserService.get_instance().validate_user_has_write_access(user_token, study_id)
             study = StudyService.get_instance().get_study_by_acc(study_id)
-            if StudyStatus(study.status) != StudyStatus.SUBMITTED:
+            if StudyStatus(study.status) != StudyStatus.PROVISIONAL:
                 UserService.get_instance().validate_user_has_curator_role(user_token)
         else:
             UserService.get_instance().validate_user_has_curator_role(user_token)

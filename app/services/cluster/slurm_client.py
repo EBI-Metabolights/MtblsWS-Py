@@ -39,7 +39,7 @@ class SlurmClient(HpcClient):
         return "SLURM_JOB_NAME"
     
     
-    def submit_hpc_job(self, script_path: str, job_name: str, output_file=None, error_file=None, account=None, queue: Union[None, str] = None, timeout: Union[None, float]=30.0, runtime_limit: Union[None, str] = None, cpu: int=1, mem: str="") -> SubmittedJobResult:
+    def submit_hpc_job(self, script_path: str, job_name: str, output_file=None, error_file=None, account=None, queue: Union[None, str] = None, timeout: Union[None, float]=30.0, runtime_limit: Union[None, str] = None, cpu: int=1, mem: str="", mail_type="START,END,FAIL") -> SubmittedJobResult:
         logger.info("===Submit HPC job request received===")      
         if not queue:
             queue = self.settings.default_queue
@@ -51,7 +51,9 @@ class SlurmClient(HpcClient):
                                                account=account, 
                                                runtime_limit=runtime_limit,
                                                cpu=cpu,
-                                               mem=mem)
+                                               mem=mem,
+                                               mail_type=mail_type
+                                               )
         result: CapturedBashExecutionResult = BashClient.execute_command(hpc_command, timeout=timeout)
         stdout = result.stdout
         status_line = result.stdout[0] if result.stdout else ""
@@ -68,7 +70,7 @@ class SlurmClient(HpcClient):
 
             message = f"Script was sumbitted: Job name: {job_name}, queue: {queue}, job id: {match_result[0]}"
             logger.info(message) 
-            logger.error(result) 
+            logger.info(result) 
         else:
             logger.error(result) 
             raise MetabolightsException(message=f"output does not have a job id. {result.stdout}\n {result.stderr}")
@@ -151,7 +153,7 @@ class SlurmClient(HpcClient):
         command = f'squeue -h --format=%i::%P::%T::%u::%l::%A::%j::%V | grep "{self.settings.job_prefix}{name_delimeter}"'
         return  self._get_hpc_ssh_command(command)
     
-    def _get_submit_command(self, script_path: str, job_name: str, queue=None, output_file=None, error_file=None, account=None, runtime_limit: Union[None, str] = None, cpu:int = 1, mem: str = "") -> int:
+    def _get_submit_command(self, script_path: str, job_name: str, queue=None, output_file=None, error_file=None, account=None, runtime_limit: Union[None, str] = None, cpu:int = 1, mem: str = "", mail_type: str = "START,END,FAIL") -> int:
         script_file_path = self._prepare_script_to_submit_on_hpc(
                                                 script_path=script_path, 
                                                 queue=queue, 
@@ -161,12 +163,14 @@ class SlurmClient(HpcClient):
                                                 account=account, 
                                                 runtime_limit=runtime_limit,
                                                 cpu=cpu,
-                                                mem=mem)
+                                                mem=mem,
+                                                mail_type=mail_type
+                                                )
         print(pathlib.Path(script_file_path).read_text())
         submission_command = f"sbatch < {script_file_path}"
         return self._get_hpc_ssh_command(submission_command)
   
-    def _prepare_script_to_submit_on_hpc(self, script_path: str, job_name: str, queue=None, output_file=None, error_file=None, account=None, runtime_limit: Union[None, str] = None, cpu:int = 1, mem: str = ""):
+    def _prepare_script_to_submit_on_hpc(self, script_path: str, job_name: str, queue=None, output_file=None, error_file=None, account=None, runtime_limit: Union[None, str] = None, cpu:int = 1, mem: str = "" , mail_type: str = "START,END,FAIL"):
         if not os.path.exists(script_path):
             raise MetabolightsException(message=f"Script path {script_path} does not exist.")
         lines = []
@@ -188,7 +192,7 @@ class SlurmClient(HpcClient):
             hpc_comments.append(f"-p {queue}")
         if account:
             hpc_comments.append(f"--mail-user={account}")
-            hpc_comments.append("--mail-type=START,END,FAIL")
+            hpc_comments.append(f"--mail-type={mail_type}")
         if output_file:
             hpc_comments.append(f"-o {output_file}")
         if error_file:

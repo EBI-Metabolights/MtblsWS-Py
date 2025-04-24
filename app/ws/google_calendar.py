@@ -76,7 +76,7 @@ def get_google_calendar_events():
 
 
 def add_calendar_event(events, service, study_id=None, study_status=None, due_date=None):
-    if study_status.lower() == 'in curation':
+    if study_status.lower() == 'private':
         add_google_calendar_event(events, service, event_text=study_id, event_date=due_date, delete_only=False)
     else:
         add_google_calendar_event(events, service, event_text=study_id, event_date=due_date, delete_only=True)

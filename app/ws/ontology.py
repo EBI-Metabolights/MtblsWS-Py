@@ -1006,15 +1006,15 @@ class Cellosaurus(Resource):
 
         for link in links:
             ID, term, synoyms = getSynonyms(link)
-            l = [term] + synoyms
-            if query.lower() in [x.lower() for x in l]:
-                result = l
+            item = [term] + synoyms
+            if query.lower() in [x.lower() for x in item]:
+                result = item
                 break
 
         if len(result) == 0:
             return []
         else:
-            return jsonify({"CellosaurusTerm": [{'ID': ID, 'synoyms': l}]})
+            return jsonify({"CellosaurusTerm": [{'ID': ID, 'synoyms': item}]})
 
 
 def get_metainfo(query):

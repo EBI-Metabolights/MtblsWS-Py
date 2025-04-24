@@ -16,6 +16,7 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 import datetime
+import fnmatch
 import glob
 import json
 import logging
@@ -24,7 +25,7 @@ import pathlib
 import re
 import shutil
 import time
-from typing import Dict, List, Set
+from typing import Dict, List, OrderedDict, Set
 
 from flask import request
 from flask.json import jsonify
@@ -37,6 +38,7 @@ from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
 
 from app.services.storage_service.storage_service import StorageService
+from app.study_folder_utils import FileDescriptor, FileDifference
 from app.tasks.datamover_tasks.basic_tasks.file_management import list_directory
 from app.tasks.datamover_tasks.curation_tasks import data_file_operations
 from app.utils import MetabolightsException, metabolights_exception_handler
@@ -418,7 +420,7 @@ class StudyRawAndDerivedDataFiles(Resource):
             },
             {
                 "name": "search_pattern",
-                "description": "search pattern (FILES/*.mzML, FILES/*.zip, FILES/**/*.d etc.). Default is FILES/*",
+                "description": "search pattern (*.mzML, *.zip, *.d etc.). Default is FILES/*",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -507,72 +509,94 @@ class StudyRawAndDerivedDataFiles(Resource):
                 )
             search_pattern_prefix = f"{data_files_subfolder}/"
             if not search_pattern.startswith(search_pattern_prefix):
-                raise MetabolightsException(
-                    http_code=401,
-                    message=f"Search pattern should start with {f'{data_files_subfolder}/'}",
-                )
+                search_pattern = f"FILES/{search_pattern}"
 
         UserService.get_instance().validate_user_has_read_access(
             user_token, study_id, None
         )
         StudyService.get_instance().get_study_by_acc(study_id)
-
-        study_folder = os.path.join(
-            settings.mounted_paths.study_metadata_files_root_path, study_id
+        study_data_file_index_path = os.path.join(
+            settings.mounted_paths.study_internal_files_root_path, 
+            study_id, "DATA_FILES", "data_file_index.json"
         )
-        search_subfolder = os.path.join(
-            settings.mounted_paths.study_metadata_files_root_path,
-            study_id,
-            data_files_subfolder,
-        )
-        search_path = os.path.join(
-            settings.mounted_paths.study_metadata_files_root_path,
-            study_id,
-            search_pattern,
-        )
-        ignore_list = self.get_ignore_list(study_folder)
+        if not os.path.exists(study_data_file_index_path):
+            return {"files": []}
+        
+        data_files = json.loads(pathlib.Path(study_data_file_index_path).read_text())
+        private_selected = fnmatch.filter(data_files["private_data_files"].keys(), search_pattern)
+        # public_selected = fnmatch.filter(data_files["public_data_files"].keys(), search_pattern)
+        result = set()
+        
+        if file_match and folder_match:
+            result.update(private_selected)
+            # result.update(public_selected)
+        elif file_match:
+            # result.update([x for x in public_selected if not data_files["public_data_files"][x]["is_dir"]])
+            result.update([x for x in private_selected if not data_files["private_data_files"][x]["is_dir"]])
+        else:
+            # result.update([x for x in public_selected if data_files["public_data_files"][x]["is_dir"]])
+            result.update([x for x in private_selected if data_files["private_data_files"][x]["is_dir"]])
+        final_result = [ {"name": x} for x in result]
+        final_result.sort(key=lambda x: x["name"])
+        return {"files": final_result}
 
-        glob_search_result = glob.glob(search_path, recursive=True)
-        search_results = [
-            os.path.abspath(file)
-            for file in glob_search_result
-            if (file_match and os.path.isfile(file))
-            or (folder_match and os.path.isdir(file))
-        ]
-        excluded_folders = get_settings().file_filters.folder_exclusion_list
+        # study_folder = os.path.join(
+        #     settings.mounted_paths.study_metadata_files_root_path, study_id
+        # )
+        # search_subfolder = os.path.join(
+        #     settings.mounted_paths.study_metadata_files_root_path,
+        #     study_id,
+        #     data_files_subfolder,
+        # )
+        # search_path = os.path.join(
+        #     settings.mounted_paths.study_metadata_files_root_path,
+        #     study_id,
+        #     search_pattern,
+        # )
+        # ignore_list = self.get_ignore_list(study_folder)
 
-        excluded_folder_set = set(
-            [
-                os.path.basename(os.path.abspath(os.path.join(study_folder, file)))
-                for file in excluded_folders
-            ]
-        )
-        filtered_result = []
-        warning_occurred = False
-        for item in search_results:
-            is_in_study_folder = (
-                item.startswith(search_subfolder + os.path.sep)
-                and ".." + os.path.sep not in item
-            )
-            if is_in_study_folder:
-                relative_path = item.replace(
-                    search_subfolder + os.path.sep, f"{search_pattern_prefix}"
-                )
-                sub_path = relative_path.split(os.path.sep)
-                if sub_path and sub_path[0] not in excluded_folder_set:
-                    filtered_result.append(relative_path)
-            else:
-                if not warning_occurred:
-                    message = f"{search_pattern} pattern results for {study_id} are not allowed: {item}"
-                    logger.warning(message)
-                    warning_occurred = True
+        
+        # glob_search_result = glob.glob(search_path, recursive=True)
+        # search_results = [
+        #     os.path.abspath(file)
+        #     for file in glob_search_result
+        #     if (file_match and os.path.isfile(file))
+        #     or (folder_match and os.path.isdir(file))
+        # ]
+        # excluded_folders = get_settings().file_filters.folder_exclusion_list
 
-        files = [file for file in filtered_result if file not in ignore_list]
-        files.sort()
+        # excluded_folder_set = set(
+        #     [
+        #         os.path.basename(os.path.abspath(os.path.join(study_folder, file)))
+        #         for file in excluded_folders
+        #     ]
+        # )
+        # filtered_result = []
+        # warning_occurred = False
+        # for item in search_results:
+        #     is_in_study_folder = (
+        #         item.startswith(search_subfolder + os.path.sep)
+        #         and ".." + os.path.sep not in item
+        #     )
+        #     if is_in_study_folder:
+        #         relative_path = item.replace(
+        #             search_subfolder + os.path.sep, f"{search_pattern_prefix}"
+        #         )
+        #         sub_path = relative_path.split(os.path.sep)
+        #         if sub_path and sub_path[0] not in excluded_folder_set:
+        #             filtered_result.append(relative_path)
+        #     else:
+        #         if not warning_occurred:
+        #             message = f"{search_pattern} pattern results for {study_id} are not allowed: {item}"
+        #             logger.warning(message)
+        #             warning_occurred = True
 
-        result = [{"name": file.replace(search_path + "/", "")} for file in files]
+        # files = [file for file in filtered_result if file not in ignore_list]
+        # files.sort()
 
-        return jsonify({"files": result})
+        # result = [{"name": file.replace(search_path + "/", "")} for file in files]
+
+        # return jsonify({"files": result})
 
     def get_ignore_list(self, search_path):
         ignore_list = []
@@ -1245,12 +1269,14 @@ class StudyFilesReuse(Resource):
         # exclude_list = set(get_settings().file_filters.internal_mapping_list)
 
         exclude_list = set()
-        for item in get_settings().file_filters.rsync_exclude_list:
+        settings = get_settings()
+        for item in settings.file_filters.rsync_exclude_list:
             exclude_list.add(
                 os.path.join(
-                    get_settings().study.readonly_files_symbolic_link_name, item
+                    settings.study.readonly_files_symbolic_link_name, item
                 )
             )
+        exclude_list.add(settings.study.readonly_files_symbolic_link_name)
         # exclude_list = extended_exclude_list.union(exclude_list)
         # if force_write:
         directory_files = get_directory_files(
@@ -1260,6 +1286,8 @@ class StudyFilesReuse(Resource):
             recursive=False,
             exclude_list=exclude_list,
         )
+        directory_files[settings.study.readonly_files_symbolic_link_name] = FileDescriptor(name=settings.study.readonly_files_symbolic_link_name, 
+                                                                                           relative_path=settings.study.readonly_files_symbolic_link_name, is_dir=True)
         # metadata_files = get_all_metadata_files()
         # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
         # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
@@ -2154,20 +2182,61 @@ class StudyFilesTree(Resource):
             include_metadata_files = True
             if directory == settings.readonly_files_symbolic_link_name:
                 include_metadata_files = False
-            directory_files = get_directory_files(
-                study_metadata_location,
-                directory,
-                search_pattern="**/*",
-                recursive=include_sub_dir,
-                exclude_list=exclude_list,
-                include_metadata_files=include_metadata_files,
-            )
+            directory_path = study_metadata_location
+            if directory:
+                directory_path: str = os.path.join(study_metadata_location, directory)
+            private_directory_files: Dict[str, FileDescriptor] = {}
+            public_directory_files: Dict[str, FileDescriptor] = {}
+            directory_files = {}
+            files_path = os.path.join(study_metadata_location, "FILES")
+            if directory_path.startswith(files_path):
+                mounted_paths = get_settings().study.mounted_paths
+                target_root_path = os.path.join(mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES")
+                target_path = os.path.join(target_root_path, "data_file_index.json")
+                if os.path.exists(target_path):
+                    with open(target_path) as f:
+                        data_file_index = json.load(f)
+                    private_data_files = data_file_index["private_data_files"]
+                    for x in private_data_files:
+                        item_relative_path = private_data_files[x]["relative_path"]
+                        item_parent_path = private_data_files[x]["parent_relative_path"]
+                        if item_parent_path == directory:
+                            descriptor = FileDescriptor.model_validate(private_data_files[x])
+                            private_directory_files[item_relative_path] = descriptor
+                    if study.first_public_date:
+                        public_data_files = data_file_index.get("public_data_files")
+                        for x in public_data_files:
+                            item_relative_path = public_data_files[x]["relative_path"]
+                            item_parent_path = public_data_files[x]["parent_relative_path"]
+                            if item_parent_path == directory:
+                                descriptor = FileDescriptor.model_validate(public_data_files[x])
+                                public_directory_files[item_relative_path] = descriptor
+                        for relative_path, item in private_directory_files.items():
+                            if relative_path in public_directory_files:
+                                public_item = public_directory_files[relative_path]
+                                if item.file_size != public_item.file_size or item.modified_time != public_item.modified_time:
+                                    item.file_difference = FileDifference.MODIFIED
+                            else:
+                                item.file_difference = FileDifference.NEW
+                        for relative_path, item in public_directory_files.items():
+                            if relative_path not in private_directory_files:
+                                item.file_difference = FileDifference.DELETED
+                                private_directory_files[relative_path] = item
+                    directory_files = OrderedDict(sorted(private_directory_files.items(), key=lambda x: x[0]))
+            else:
+                directory_files = get_directory_files(
+                    study_metadata_location,
+                    directory,
+                    search_pattern="**/*",
+                    recursive=include_sub_dir,
+                    exclude_list=exclude_list,
+                    include_metadata_files=include_metadata_files,
+                )
             # metadata_files = get_all_metadata_files()
             # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
             # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
             search_result = evaluate_files(directory_files, referenced_files)
             sortFileMetadataList(search_result.study)
-
         else:
             try:
                 settings = get_settings()
@@ -2193,12 +2262,12 @@ class StudyFilesTree(Resource):
 
         search_result.uploadPath = upload_path
         search_result.obfuscationCode = study.obfuscationcode
-        return search_result.model_dump()
+        return search_result.model_dump(serialize_as_any=True)
 
 
 class FileList(Resource):
     @swagger.operation(
-        summary="Get a listof all files and directories  for the given location",
+        summary="[Deprecated] Get a listof all files and directories  for the given location",
         parameters=[
             {
                 "name": "study_id",

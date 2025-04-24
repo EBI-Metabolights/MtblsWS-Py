@@ -43,7 +43,7 @@ def update_extension_set(assay, file_indices, file_extensions):
 
 class StudyJsonExporter(Resource):
     @swagger.operation(
-        summary="Export all studies in a folder (Curator only)",
+        summary="[Deprecated] Export all studies in a folder (Curator only)",
         parameters=[
             {
                 "name": "user-token",
@@ -196,7 +196,7 @@ class StudyJsonExporter(Resource):
 
 class PublicStudyJsonExporter(Resource):
     @swagger.operation(
-        summary="Export all public studies in a folder (Curator only)",
+        summary="[Deprecated] Export all public studies in a folder (Curator only)",
         parameters=[
             {
                 "name": "user-token",

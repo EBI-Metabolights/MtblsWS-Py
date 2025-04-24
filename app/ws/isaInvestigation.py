@@ -23,14 +23,17 @@ from flask_restful import Resource, abort, reqparse
 from isatools.model import Investigation
 from marshmallow import ValidationError
 from flask_restful_swagger import swagger
+from app.config import get_settings
 from app.study_folder_utils import get_all_metadata_files
 from app.utils import metabolights_exception_handler
+from app.ws.db.models import StudyRevisionModel
 from app.ws.db.types import CurationRequest
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import IsaInvestigationSchema
 from app.ws.mtblsWSclient import WsClient
 import logging
 
+from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService, identify_study_id
 from app.ws.utils import log_request
 
@@ -156,7 +159,22 @@ class IsaInvestigation(Resource):
                                                          study_location=study_location)
 
         logger.info('Got %s', isa_inv.identifier)
-
+        revision_status = None
+        if study.revision_number > 0:
+            revision: StudyRevisionModel = StudyRevisionService.get_study_revision(study.acc, revision_number=study.revision_number)
+            if revision:
+                revision_status = revision.status.value
+        http_url = None 
+        ftp_url = None
+        globus_url = None
+        aspera_path = None
+        if study_status == "Public":
+            configuration = get_settings().ftp_server.public.configuration
+            http_url = os.path.join(configuration.public_studies_http_base_url, study_id)
+            ftp_url = os.path.join(configuration.public_studies_ftp_base_url, study_id)
+            globus_url = os.path.join(configuration.public_studies_globus_base_url, study_id)
+            aspera_path = os.path.join(configuration.public_studies_aspera_base_path, study_id)
+            
         response = dict(mtblsStudy={},
                         isaInvestigation={},
                         validation={})
@@ -169,6 +187,14 @@ class IsaInvestigation(Resource):
         response['mtblsStudy']['read_access'] = read_access
         response['mtblsStudy']['write_access'] = write_access
         response['mtblsStudy']['is_curator'] = is_curator
+        response['mtblsStudy']['revisionNumber'] = study.revision_number
+        response['mtblsStudy']['revisionDatetime'] = study.revision_datetime.isoformat() if study.revision_datetime else ""
+        response['mtblsStudy']['revisionStatus'] = revision_status
+        response['mtblsStudy']['studyHttpUrl'] = http_url
+        response['mtblsStudy']['studyFtpUrl'] = ftp_url
+        response['mtblsStudy']['studyGlobusUrl'] = globus_url
+        response['mtblsStudy']['studyAsperaPath'] = aspera_path
+        
         # ToDo: Make sure this date is formatted YYYY-MM-DD and update the isa_inv, isa_study before returning
         # response['mtblsStudy']['release_date'] = release_date
         # isa_inv.public_release_date = release_date

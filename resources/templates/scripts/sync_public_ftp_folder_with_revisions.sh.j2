@@ -1,0 +1,140 @@
+#!/bin/bash
+
+
+calculate_sha256() {
+  local file="$1"
+  sha256sum "$file" | awk '{print $1}'
+}
+
+# Function to process files recursively
+calculate_sha256_recursively() {
+  local dir="$1"
+  local json_file="$2"
+  local base_dir="$3"
+  local first_entry=true
+
+  echo "{" > "$json_file"
+  while IFS= read -r -d '' file; do
+      # Skip specified files in the top directory
+      if [[ "$file" =~ ^"$base_dir"/(INTERNAL_FILES|AUDIT_FILES|[asi]_.*\.txt|m_.*\.tsv)$ ]]; then
+          continue
+      fi
+
+      sha256=$(calculate_sha256 "$file")
+      relative_path="${file#$base_dir/}"
+      if [ "$first_entry" = true ]; then
+          first_entry=false
+      else
+          echo "," >> "$json_file"
+      fi
+      echo "\"$relative_path\": \"$sha256\"" >> "$json_file"
+  done < <(find "$dir" -type f -print0)
+  echo "}" >> "$json_file"
+}
+
+
+
+#################################
+#  Configurable Options  #
+#################################
+
+EMAIL_TO={{ EMAIL_TO }}
+STUDY_METADATA_PATH={{ STUDY_METADATA_PATH }}
+STUDY_PUBLIC_FTP_PATH={{ STUDY_PUBLIC_FTP_PATH }}
+STUDY_PRIVATE_FTP_PATH={{ STUDY_PRIVATE_FTP_PATH }}
+UPDATE_URL={{ UPDATE_URL }}
+USER_TOKEN={{ USER_TOKEN }}
+DATA_FILES_HASH_PATH={{ DATA_FILES_HASH_PATH }}
+ROOT_DATA_FILES_HASH_PATH={{ ROOT_DATA_FILES_HASH_PATH }}
+#################################
+#  End of Configurable Options  #
+#################################
+
+
+echo "FTP SYNC TASK STARTED at $CURRENT_TIME" 
+echo "STUDY_METADATA_PATH:  $STUDY_METADATA_PATH" 
+echo "STUDY_PUBLIC_FTP_PATH:  $STUDY_PUBLIC_FTP_PATH" 
+echo "STUDY_PRIVATE_FTP_PATH:  $STUDY_PRIVATE_FTP_PATH" 
+echo "UPDATE_URL:  $UPDATE_URL" 
+echo "DATA_FILES_HASH_PATH:  $DATA_FILES_HASH_PATH" 
+echo "ROOT_DATA_FILES_HASH_PATH:  $ROOT_DATA_FILES_HASH_PATH" 
+
+
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+echo  curl -X PUT --header \"Status: In Progress\" --header \"task-start-at: ${CURRENT_TIME}\" --header \"Task-Message: Public FTP Folder sync task started.\" --header \"User-Token: ${USER_TOKEN:0:3}xxx\" \"${UPDATE_URL}\"
+curl -X PUT --header "Status: In Progress" --header "task-start-at: $CURRENT_TIME" --header "Task-Message: Public FTP Folder sync task started." --header "User-Token: ${USER_TOKEN}" "${UPDATE_URL}"
+RETURN=$?
+echo "$CURRENT_TIME: Metadata sync exit code: $RETURN" 
+if [ $RETURN -eq 0 ];
+then
+  echo "${UPDATE_URL} is used to update revision FTP sync status to 'In Progress'"
+else
+  echo "${UPDATE_URL} : Warning: Failed to update revision FTP sync status to 'In Progress'"
+fi
+
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$CURRENT_TIME: SHA256 Hash calculation started for data files..." 
+calculate_sha256_recursively "${STUDY_PRIVATE_FTP_PATH}" "${DATA_FILES_HASH_PATH}" "${STUDY_PRIVATE_FTP_PATH}"
+cp "${DATA_FILES_HASH_PATH}" "${ROOT_DATA_FILES_HASH_PATH}" 
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$CURRENT_TIME: SHA256 Hash calculation ended for data files." 
+
+echo "----------------------------" 
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$CURRENT_TIME: Syncing Study files to Public" 
+echo "${STUDY_PUBLIC_FTP_PATH} is now being synced." 
+echo "mkdir -p ${STUDY_PUBLIC_FTP_PATH}" 
+mkdir -p ${STUDY_PUBLIC_FTP_PATH}
+
+echo "----------------------------"
+echo "rsync from ${STUDY_METADATA_PATH}/ to ${STUDY_PUBLIC_FTP_PATH}" 
+echo "rsync -a -L --delete-after --exclude 'FILES' --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' ${STUDY_METADATA_PATH}/ ${STUDY_PUBLIC_FTP_PATH}" 
+rsync -a -L --delete-after --exclude 'FILES' --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' ${STUDY_METADATA_PATH}/ ${STUDY_PUBLIC_FTP_PATH}
+RETURN=$?
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$CURRENT_TIME: ENDPOINT CALL sync exit code: $RETURN" 
+
+echo "rsync from ${STUDY_PRIVATE_FTP_PATH}/ to ${STUDY_PUBLIC_FTP_PATH}/FILES" 
+echo "rsync -a -L --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' --exclude '[asi]_*.txt' --exclude 'm_*.tsv' ${STUDY_PRIVATE_FTP_PATH}/ ${STUDY_PUBLIC_FTP_PATH}/FILES" 
+rsync -a -L --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' --exclude '[asi]_*.txt' --exclude 'm_*.tsv' ${STUDY_PRIVATE_FTP_PATH}/ ${STUDY_PUBLIC_FTP_PATH}/FILES
+RETURN=$?
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$CURRENT_TIME: FILES sync exit code: $RETURN" 
+
+echo "----------------------------" 
+echo "Changing permissions" 
+echo "chmod -R 755 ${STUDY_PUBLIC_FTP_PATH}" 
+chmod -R 755 "${STUDY_PUBLIC_FTP_PATH}"
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+echo "UPDATE_URL: ${UPDATE_URL}"
+
+if [ $RETURN -eq 0 ];
+then
+  echo "RSYNC completed successfully."
+  echo  curl -X PUT --header \"Status: Completed\" --header \"task-completed-at: ${CURRENT_TIME}\" --header \"Task-Message: Public FTP Folder sync task completed.\" --header \"User-Token: ${USER_TOKEN:0:3}xxx\" \"${UPDATE_URL}\"
+  curl -X PUT --header "Status: Completed" --header "task-completed-at: ${CURRENT_TIME}" --header "Task-Message: Public FTP Folder sync task completed." --header "User-Token: ${USER_TOKEN}" "${UPDATE_URL}"
+  RETURN_COMPLETED=$?
+  echo "$CURRENT_TIME: ENRevision update endpoint exit code: $RETURN_COMPLETED" 
+  if [ $RETURN_COMPLETED -eq 0 ];
+  then
+    echo "${UPDATE_URL}- Update revision status to 'Completed'"
+  else
+    echo "${UPDATE_URL}- Failed to update revision status to 'Completed'."
+  fi
+  exit $RETURN_COMPLETED
+else
+  echo "RSYNC failed."
+  echo  curl -X PUT --header \"Status: Failed\" --header \"task-completed-at: ${CURRENT_TIME}\" --header \"Task-Message: Public FTP Folder sync task failed.\" --header \"User-Token: ${USER_TOKEN:0:3}xxx \"${UPDATE_URL}\"
+  curl -X PUT --header "Status: Failed" --header "task-completed-at: ${CURRENT_TIME}" --header "Task-Message: FTP Folder Sync Task Failed." --header "User-Token: ${USER_TOKEN}" "${UPDATE_URL}"
+  RETURN_FAILED=$?
+  echo "$CURRENT_TIME: Revision update endpoint call: exit code: $RETURN_FAILED" 
+  if [ $RETURN_FAILED -eq 0 ];
+  then
+    echo "${UPDATE_URL}- Updated revision status: Completed."
+  else
+    echo "${UPDATE_URL}- Failed to update revision status."
+  fi
+  exit $RETURN
+fi

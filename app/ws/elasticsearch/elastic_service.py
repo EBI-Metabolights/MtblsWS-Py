@@ -149,9 +149,7 @@ class ElasticsearchService(object):
             else:
                 body["query"] = {"bool": {"must": { "query_string": {"query": search_text}}}}
             
-            boosters = []
-            for boost in query.boosters:
-                boosters.append({"term": { boost.fieldName: {"value": search_text, "boost": boost.boost}}})
+            boosters = [{"term": { boost.fieldName: {"value": search_text, "boost": boost.boost}}} for boost in query.boosters]
             if boosters:
                 if filtered:
                     body["query"]["filtered"]["query"]["bool"]["should"] = boosters
@@ -246,6 +244,7 @@ class ElasticsearchService(object):
         try:
             self.client.delete(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, id=study_id)
         except Exception as e:
+            logger.error(f"Error while deleting study index: {str(e)}")
             if not ignore_errors:
                 raise e
                 

@@ -553,9 +553,9 @@ def duplicate(my_list, n):
     return new_list
 
 
-def unique_list(l):
+def unique_list(item):
     ulist = []
-    [ulist.append(x) for x in l if x not in ulist and x]
+    [ulist.append(x) for x in item if x not in ulist and x]
     return ulist
 
 
@@ -1410,9 +1410,7 @@ def remove_hs(molfile_str):
         for atom in mol.GetAtoms():
             if atom.GetAtomicNum() == 1 and not atom.GetIsotope():
                 bnd = atom.GetBonds()[0]
-                if not (
-                    bnd.GetBondDir() in (Chem.BondDir.BEGINWEDGE, Chem.BondDir.BEGINDASH)
-                ) and not (
+                if bnd.GetBondDir() not in (Chem.BondDir.BEGINWEDGE, Chem.BondDir.BEGINDASH) and not (
                     bnd.HasProp("_MolFileBondStereo")
                     and bnd.GetUnsignedProp("_MolFileBondStereo") in (1, 6)
                 ):
@@ -1727,8 +1725,7 @@ def get_ancestors(classyfire_file_name, classyfire_df):
     direct_parents = []
     try:
         with open(classyfire_file_name, 'r', encoding="utf-8") as infile:
-            for line in infile:
-                lines.append(line.rstrip('\n'))
+            lines = [line.rstrip('\n') for line in infile]
 
         inchi_key = None
         parent_name = None

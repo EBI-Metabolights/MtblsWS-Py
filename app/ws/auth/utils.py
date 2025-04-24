@@ -36,7 +36,7 @@ def get_study_permission(
         if (
             obfuscation_code
             and obfuscation_code == study["obfuscationcode"]
-            and StudyStatus(study["status"]) in (StudyStatus.INREVIEW, StudyStatus.INCURATION)
+            and StudyStatus(study["status"]) in (StudyStatus.INREVIEW, StudyStatus.PRIVATE)
         ):
             permission.studyStatus = StudyStatus(study["status"]).name
             permission.obfuscationCode = study["obfuscationcode"]

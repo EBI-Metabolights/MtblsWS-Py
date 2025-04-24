@@ -138,9 +138,9 @@ class EmailService(object):
         body = template.render(content)
         return body
 
-    def send_email_for_new_submission(
+    def send_email_for_new_provisional_study(
         self,
-        submission_id,
+        provisional_id,
         ftp_folder,
         user_email,
         submitters_mail_addresses,
@@ -154,11 +154,11 @@ class EmailService(object):
             settings.email.template_email_configuration.ftp_upload_help_doc_url
         )
         host = get_settings().server.service.ws_app_base_link
-        submission_url = os.path.join(host, "editor", "study", submission_id)
+        submission_url = os.path.join(host, "editor", "study", provisional_id)
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
         metabolights_website_url = get_settings().server.service.ws_app_base_link
         content = {
-            "submission_id": submission_id,
+            "provisional_id": provisional_id,
             "submitter_fullname": submitter_fullname,
             "submission_url": submission_url,
             "user_name": user_name,
@@ -170,14 +170,14 @@ class EmailService(object):
         }
 
         body = self.get_rendered_body("new_submission.html", content)
-        subject_name = f"MetaboLights Temporary Submission initiated ({submission_id})"
+        subject_name = f"MetaboLights Temporary Submission initiated ({provisional_id})"
 
         self.send_email(subject_name, body, submitters_mail_addresses, user_email)
 
     def send_email_for_new_accession_number(
         self,
         study_id,
-        submission_id,
+        provisional_id,
         obfuscation_code,
         user_email,
         submitters_mail_addresses,
@@ -190,13 +190,13 @@ class EmailService(object):
     ):
         host = get_settings().server.service.ws_app_base_link
         subject_name = "Submission Complete and Accessioned"
-        if study_id != submission_id:
-            subject_name += f" - from {submission_id} to {study_id}"
+        if study_id != provisional_id:
+            subject_name += f" - from {provisional_id} to {study_id}"
         reviewer_url = os.path.join(host, f"reviewer{obfuscation_code}")
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
         metabolights_website_url = get_settings().server.service.ws_app_base_link
         content = {
-            "submission_id": submission_id,
+            "provisional_id": provisional_id,
             "mtbls_accession": study_id,
             "submitter_fullname": submitter_fullname,
             "study_title": study_title,

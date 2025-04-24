@@ -19,8 +19,8 @@
 
 Dear {{ submitter_fullname }},<br/><br/>
 
-{% if submission_id != mtbls_accession  -%}
-We are happy to inform you that your study "{{ study_title }}" with temporary request ID {{ submission_id }} has been successfully submitted to MetaboLights as <b>{{ mtbls_accession }}</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
+{% if provisional_id != mtbls_accession  -%}
+We are happy to inform you that your study "{{ study_title }}" with provisional ID {{ provisional_id }} has been successfully submitted to MetaboLights as <b>{{ mtbls_accession }}</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
 {% else -%}
 We are happy to inform you that your study "{{ study_title }}" has been successfully submitted to MetaboLights as <b>{{ mtbls_accession }}</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
 {% endif -%}
@@ -32,7 +32,7 @@ MetaboLights study title: <code>{{ study_title }}</code><br/>
 MetaboLights accession: <code>{{ mtbls_accession }}</code><br/>
 
 <br/>
-{% if submission_id != mtbls_accession  -%}
+{% if provisional_id != mtbls_accession  -%}
 The FTP upload folder is now read only and has been renamed from "<code><i>{{ previous_ftp_folder }}</i></code>" to "<code><i>{{ new_ftp_folder }}</i></code>"
 {% endif -%}
 <br/><br/>

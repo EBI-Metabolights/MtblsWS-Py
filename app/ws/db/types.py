@@ -1,4 +1,5 @@
 from enum import Enum
+import enum
 
 
 class UserRole(Enum):
@@ -70,8 +71,8 @@ class UserStatus(Enum):
         return UserStatus.FROZEN
     
 class StudyStatus(Enum):
-    SUBMITTED = 0
-    INCURATION = 1
+    PROVISIONAL = 0
+    PRIVATE = 1
     INREVIEW = 2
     PUBLIC = 3
     DORMANT = 4
@@ -79,13 +80,13 @@ class StudyStatus(Enum):
     @staticmethod
     def from_name(name: str):
         if not name:
-            return StudyStatus.SUBMITTED
-        if name.replace(" ", "").upper() == "SUBMITTED":
-            return StudyStatus.SUBMITTED
-        elif name.replace(" ", "").upper() == "INCURATION":
-            return StudyStatus.INCURATION
+            return StudyStatus.PROVISIONAL
+        if name.replace(" ", "").upper() == "PROVISIONAL":
+            return StudyStatus.PROVISIONAL
+        elif name.replace(" ", "").upper() == "PRIVATE":
+            return StudyStatus.PRIVATE
         elif name.replace(" ", "").upper() == "INREVIEW":
-            return StudyStatus.INCURATION
+            return StudyStatus.INREVIEW
         elif name.replace(" ", "").upper() == "PUBLIC":
             return StudyStatus.PUBLIC
         return StudyStatus.DORMANT
@@ -93,9 +94,9 @@ class StudyStatus(Enum):
     @staticmethod
     def from_int(value: int):
         if value == 0:
-            return StudyStatus.SUBMITTED
+            return StudyStatus.PROVISIONAL
         if value == 1:
-            return StudyStatus.INCURATION
+            return StudyStatus.PRIVATE
         elif value == 2:
             return StudyStatus.INREVIEW
         elif value == 3:
@@ -106,9 +107,9 @@ class StudyStatus(Enum):
 
     def to_camel_case_str(self):
         if self.value == 0:
-            return "Submitted"
+            return "Provisional"
         if self.value == 1:
-            return "In Curation"
+            return "Private"
         elif self.value == 2:
             return "In Review"
         elif self.value == 3:
@@ -128,3 +129,15 @@ class StudyTaskName(str, Enum):
     REINDEX = 'REINDEX'
     SEND_TWEET = 'SEND_TWEET'
     SEND_EMAIL = 'SEND_EMAIL'
+
+class StudyRevisionStatus(enum.IntEnum):
+    INITIATED = 0
+    IN_PROGRESS = 1
+    FAILED = 2
+    COMPLETED = 3
+    
+    def get_as_string(self):
+        name = self.name
+        if name == "IN_PROGRESS":
+            return "In Progress"
+        return name.capitalize()

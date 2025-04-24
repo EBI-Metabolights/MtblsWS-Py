@@ -609,8 +609,7 @@ class ColumnsRows(Resource):
         headers = {}
         try:
             table_df: pd.DataFrame = read_tsv(file_name)
-            for idx, column in enumerate(table_df.columns):
-                headers[idx] = column
+            headers = {idx: column for idx, column in enumerate(table_df.columns)}
         except FileNotFoundError:
             abort(404, message="The file " + file_name + " was not found or not valid")
         other_columns = {}

@@ -209,7 +209,7 @@ class reports(Resource):
 
             {
                 "name": "studyStatus",
-                "description": "Specify the study status, the default is all options: 'Public', 'In Review', 'In Curation', 'Submitted', 'Placeholder', 'Dormant'",
+                "description": "Specify the study status, the default is all options: 'Public', 'In Review', 'Private', 'Provisional', 'Placeholder', 'Dormant'",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -522,9 +522,9 @@ class reports(Resource):
                                   "user_email": str(dt[1]),
                                   "country_code": dt[2],
                                   "total": str(dt[5]),
-                                  "submitted": str(dt[7]),
+                                  "provisional": str(dt[7]),
                                   "review": str(dt[9]),
-                                  "curation": str(dt[8]),
+                                  "private": str(dt[8]),
                                   "public": str(dt[10]),
                                   "dormant": str(dt[11]),
                                   "affiliation": dt[3],
