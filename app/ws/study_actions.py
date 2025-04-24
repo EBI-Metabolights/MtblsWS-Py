@@ -71,6 +71,7 @@ from app.ws.ftp.ftp_utils import (
 )
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 
@@ -379,7 +380,7 @@ class StudyStatus(Resource):
         )
         isa_study: model.Study = isa_study_item
         if status_updated:
-            self.update_license(study, isa_study)
+            StudyRevisionService.update_license(study, isa_study)
         if study_status.lower() in {"public", "in review", "private"}:
             updated_submission_date = (
                 first_private_date_baseline.strftime("%Y-%m-%d")
@@ -568,20 +569,6 @@ class StudyStatus(Resource):
             )
             return response
 
-    def update_license(self, study: schemes.Study, isa_study: model.Study):
-        license_name = study.dataset_license if study.dataset_license else ""            
-        updated_comments = []
-        license_updated = False
-        for comment in isa_study.comments:
-            if comment.name.lower() != 'license':
-                updated_comments.append(comment)
-            elif not license_updated:
-                comment.value = license_name
-                license_updated = True
-        if not license_updated:
-            updated_comments.append(model.Comment(name='License', value=license_name))
-        isa_study.comments = updated_comments
-
 
     def update_status_m2(self, user_token: str, study_id: str, study_status: str, curation_request_str: str):
         if study_status.upper() == "PUBLIC":
@@ -631,7 +618,7 @@ class StudyStatus(Resource):
         )
         isa_study: model.Study = isa_study_item
         if status_updated:
-            self.update_license(study, isa_study)
+            StudyRevisionService.update_license(study, isa_study)
         if study_status.lower() in {"public", "in review", "private"}:
             updated_submission_date = (
                 first_private_date_baseline.strftime("%Y-%m-%d")

@@ -194,7 +194,7 @@ class StudyRevisionService:
         iac.write_isa_study(isa_inv_input, None, std_path, save_investigation_copy=False)
 
     @staticmethod
-    def update_license(self, study: Study, isa_study: model.Study):
+    def update_license(study: Study, isa_study: model.Study):
         license_name = study.dataset_license if study.dataset_license else ""            
         updated_comments = []
         license_updated = False
