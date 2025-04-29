@@ -210,7 +210,7 @@ class StudyCurationType(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance().validate_user_has_curator_role(user_token, study_id)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
 
         # User authentication
         curation_type_str = None
