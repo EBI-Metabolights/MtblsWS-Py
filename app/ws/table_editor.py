@@ -50,6 +50,8 @@ logger = logging.getLogger('wslog')
 
 
 def insert_row(idx, df, df_insert):
+    if isinstance(df_insert, dict):
+        df_insert = pd.DataFrame([df_insert])
     return pd.concat([df.iloc[:idx, ], df_insert, df.iloc[idx:, ]], ignore_index=True).reset_index(drop=True)
 
 def filter_dataframe(filename: str, df: pd.DataFrame, df_data_dict, df_header) -> pd.DataFrame:
