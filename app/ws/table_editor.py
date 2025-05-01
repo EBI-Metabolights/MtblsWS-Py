@@ -331,7 +331,7 @@ class ComplexColumns(Resource):
         # Get an indexed header row
         df_header = get_table_header(table_df)
 
-        for column in new_columns:
+        for column in sorted(new_columns, key=lambda x: x['index']):
             new_column_default_value = column['value']
             new_column_name = column['name']
             new_column_position = column['index']
