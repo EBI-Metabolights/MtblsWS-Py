@@ -50,6 +50,8 @@ logger = logging.getLogger('wslog')
 
 
 def insert_row(idx, df, df_insert):
+    if isinstance(df_insert, dict):
+        df_insert = pd.DataFrame([df_insert])
     return pd.concat([df.iloc[:idx, ], df_insert, df.iloc[idx:, ]], ignore_index=True).reset_index(drop=True)
 
 def filter_dataframe(filename: str, df: pd.DataFrame, df_data_dict, df_header) -> pd.DataFrame:
@@ -329,7 +331,7 @@ class ComplexColumns(Resource):
         # Get an indexed header row
         df_header = get_table_header(table_df)
 
-        for column in new_columns:
+        for column in sorted(new_columns, key=lambda x: x['index']):
             new_column_default_value = column['value']
             new_column_name = column['name']
             new_column_position = column['index']
