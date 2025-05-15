@@ -646,7 +646,16 @@ def read_tsv(file_name, col_names=None, sep="\t", **kwargs):
 
         try:
             if not filter:
-                col_names = pd.read_csv(file_name, sep=sep, nrows=0).columns
+                try:
+                    col_names = pd.read_csv(file_name, sep=sep, nrows=0, dtype=str).columns
+                except Exception as ex:
+                    col_names = pd.read_csv(
+                    file_name,
+                    sep=sep,
+                    nrows=0,
+                    encoding="ISO-8859-1",
+                    dtype=str
+                ).columns  # Excel format
             types_dict = {col: str for col in col_names}
             if os.path.getsize(file_name) == 0:  # Empty file
                 logger.error("Could not read file " + file_name)
@@ -677,7 +686,7 @@ def read_tsv(file_name, col_names=None, sep="\t", **kwargs):
                     sep=sep,
                     header=0,
                     encoding="ISO-8859-1",
-                    dtype=types_dict,
+                    dtype=str,
                     **kwargs,
                 )  # Excel format
                 logger.info(

@@ -1316,7 +1316,7 @@ class GetTsvFile(Resource):
             maf_file = True
         try:
             if maf_file:
-                col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
+                col_names = read_tsv(file_name, nrows=0).columns 
                 col_length = len(col_names)
                 if col_length > 23:
                     selected_columns = []
