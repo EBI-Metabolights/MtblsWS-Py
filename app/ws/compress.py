@@ -10,20 +10,29 @@ from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from app.services.cluster.hpc_client import HpcClient
 from app.services.cluster.hpc_utils import get_new_hpc_datamover_client
-from app.utils import metabolights_exception_handler
+from app.utils import MetabolightsDBException, metabolights_exception_handler
+from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import SimplifiedUserModel
 
+from app.ws.db.schemes import Study
 from app.ws.study.user_service import UserService
 logger = logging.getLogger('wslog')
 
 def compress_raw_data_folders(task_name: str, study_id: str, filename_pattern: str, email: str):
+    with DBManager.get_instance().session_maker() as db_session:
+        study: Study = db_session.query(Study).filter(Study.acc == study_id).first()
+        if not study:
+            raise MetabolightsDBException(f"No study found on db.")
+        folder_name = f"{study.acc.lower()}-{study.obfuscationcode}"
+            
     settings = get_settings()
     client: HpcClient = get_new_hpc_datamover_client()
     messages = []
     inputs = {
-            "ROOT_PATH": settings.hpc_cluster.datamover.mounted_paths.cluster_study_readonly_files_actual_root_path,
+            "ROOT_PATH": settings.hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path,
             "STUDY_ID": study_id,
             "FILE_NAME_PATTERN": filename_pattern,
+            "FTP_PRIVATE_FOLDER": folder_name
         }
         
     hpc_queue_name = settings.hpc_cluster.datamover.default_queue
@@ -128,9 +137,8 @@ class CompressRawDataFolders(Resource):
         filename_pattern = None
         
         if request.args:
+            filename_pattern = request.args.get('filename_pattern') if "filename_pattern" in request.args and request.args.get('filename_pattern') else None
             
-            filename_pattern = request.args.get('filename_pattern') if request.args.get('filename_pattern') else None
-
         if filename_pattern is None:
             logger.info('No filename pattern is not given')
             abort(404, message="invalid filename pattern")
