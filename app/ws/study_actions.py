@@ -54,7 +54,7 @@ from app.utils import (
     metabolights_exception_handler,
 )
 from app.ws.db import schemes, types
-from app.ws.db.types import CurationRequest, UserRole
+from app.ws.db.types import CurationRequest, StudyRevisionStatus, UserRole
 from app.ws.db_connection import (
     reserve_mtbls_accession,
     update_curation_request,
@@ -329,8 +329,15 @@ class StudyStatus(Resource):
                 message="Please provide curation request: 'Manual Curation', 'No Curation' or 'Semi-automated Curation'"
             )
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        
-        return self.update_status_m2(user_token=user_token, study_id = study_id, study_status=study_status, curation_request_str=curation_request_str)
+        study: schemes.Study = StudyService.get_instance().get_study_by_acc(study_id)
+        if study.revision_number > 0:
+            revision = StudyRevisionService.get_study_revision(study_id, study.revision_number)
+            if not revision:
+                raise Exception(f"Study revision {study.revision_number} is not defined. Fix the revision.")
+            if revision.status != StudyRevisionStatus.COMPLETED:
+                raise Exception(f"Latest study revision {study.revision_number} task is still in progress.")
+            
+        return self.update_status_m2(study=study, user_token=user_token, study_id = study_id, study_status=study_status, curation_request_str=curation_request_str)
         # Enable for Milestone 2
         # return self.update_status_m1(user_token=user_token, study_id = study_id, study_status=study_status, curation_request_str=curation_request_str)
 
@@ -570,7 +577,7 @@ class StudyStatus(Resource):
             return response
 
 
-    def update_status_m2(self, user_token: str, study_id: str, study_status: str, curation_request_str: str):
+    def update_status_m2(self, study: schemes.Study, user_token: str, study_id: str, study_status: str, curation_request_str: str):
         if study_status.upper() == "PUBLIC":
             raise MetabolightsException(
                 message="Please use the 'revisions' endpoint to release a study"
@@ -580,7 +587,6 @@ class StudyStatus(Resource):
             if curation_request_str
             else None
         )
-        study = StudyService.get_instance().get_study_by_acc(study_id)
         db_user = UserService.get_instance().get_db_user_by_user_token(user_token)
         is_curator = db_user.role == UserRole.ROLE_SUPER_USER.value
         obfuscation_code = study.obfuscationcode
