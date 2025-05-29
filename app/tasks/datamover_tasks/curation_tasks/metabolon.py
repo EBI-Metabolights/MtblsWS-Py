@@ -16,7 +16,7 @@ iac = IsaApiClient()
 logger = logging.getLogger('wslog')
 
 
-@celery.task(bind=True, base=MetabolightsTask, name="app.tasks.common_tasks.curation_tasks.metabolon.metabolon_confirm")
+@celery.task(bind=True, base=MetabolightsTask, name="app.tasks.datamover_tasks.curation_tasks.metabolon.metabolon_confirm")
 def metabolon_confirm(self, study_id: str, study_location: str, email: str, target_location: str=None):
 
     message = {}

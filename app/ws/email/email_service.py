@@ -106,19 +106,23 @@ class EmailService(object):
             recipients.discard(None)
             recipients.discard("")
         if not recipients:
-            logger.error(f"There is no recipient email address for email: '{subject_name}'")
+            logger.error(
+                f"There is no recipient email address for email: '{subject_name}'"
+            )
             return
-        
+
         if user_email not in recipients:
             if additional_cc_emails:
                 additional_cc_emails.append(user_email)
             else:
                 additional_cc_emails = [user_email]
-            
+
         if additional_cc_emails:
-            additional_cc_emails = [ x for x in additional_cc_emails if x and x not in recipients ]
-        additional_cc_emails = additional_cc_emails if additional_cc_emails else None 
-        
+            additional_cc_emails = [
+                x for x in additional_cc_emails if x and x not in recipients
+            ]
+        additional_cc_emails = additional_cc_emails if additional_cc_emails else None
+
         msg = Message(
             subject=subject_name,
             sender=from_mail_address,
@@ -186,7 +190,7 @@ class EmailService(object):
         release_date,
         previous_ftp_folder,
         new_ftp_folder,
-        additional_cc_emails
+        additional_cc_emails,
     ):
         host = get_settings().server.service.ws_app_base_link
         subject_name = "Submission Complete and Accessioned"
@@ -195,6 +199,10 @@ class EmailService(object):
         reviewer_url = os.path.join(host, f"reviewer{obfuscation_code}")
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
         metabolights_website_url = get_settings().server.service.ws_app_base_link
+        settings = get_settings()
+        user_name = settings.ftp_server.private.connection.username
+        user_password = settings.ftp_server.private.connection.password
+        ftp_server = settings.ftp_server.private.connection.host
         content = {
             "provisional_id": provisional_id,
             "mtbls_accession": study_id,
@@ -206,9 +214,18 @@ class EmailService(object):
             "new_ftp_folder": new_ftp_folder,
             "metabolights_website_url": metabolights_website_url,
             "metabolights_help_email": metabolights_help_email,
+            "user_name": user_name,
+            "user_password": user_password,
+            "ftp_server": ftp_server,
         }
         body = self.get_rendered_body("new_accession_number.html", content)
-        self.send_email(subject_name, body, submitters_mail_addresses, user_email, additional_cc_emails=additional_cc_emails)
+        self.send_email(
+            subject_name,
+            body,
+            submitters_mail_addresses,
+            user_email,
+            additional_cc_emails=additional_cc_emails,
+        )
 
     def send_email_on_public(
         self,
@@ -221,7 +238,7 @@ class EmailService(object):
         study_contacts,
         publication_doi,
         publication_pubmed_id,
-        additional_cc_emails
+        additional_cc_emails,
     ):
         subject_name = f"MetaboLights Study Made Public ({study_id})"
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
@@ -254,7 +271,13 @@ class EmailService(object):
             "study_globus_url": study_globus_url,
         }
         body = self.get_rendered_body("status_is_public.html", content)
-        self.send_email(subject_name, body, submitters_mail_addresses, user_email, additional_cc_emails=additional_cc_emails)
+        self.send_email(
+            subject_name,
+            body,
+            submitters_mail_addresses,
+            user_email,
+            additional_cc_emails=additional_cc_emails,
+        )
 
     def send_email_for_task_completed(self, subject_name, task_id, task_result, to):
         content = {"task_id": task_id, "task_result": task_result}

@@ -37,8 +37,14 @@ The FTP upload folder is now read only and has been renamed from "<code><i>{{ pr
 {% endif -%}
 <br/><br/>
 <b>REVIEWER ACCESS</b><br/>
-You can share the following private link with your study contributors and reviewers to facilitate the peer review process. <br><br>
-Private reviewer link: <code><a href="{{ reviewer_url }}">{{ reviewer_url }}</a></code>
+You can share the following <b><u>private link</u></b> and <b><u>private FTP folder credentials</u></b> with your study contributors and reviewers to facilitate the peer review process. <br><br>
+<i>Private reviewer link:</i> <code><a href="{{ reviewer_url }}">{{ reviewer_url }}</a></code><br/><br/>
+<i>Private FTP folder credentials (to review and download study data files):</i><br/>
+Username : <code> {{ user_name }}</code>  <br/>
+Password : <code> {{ user_password }}</code> </b><br/>
+Server : <code>  {{ ftp_server }}</code> </b><br/>
+Remote folder : <code> {{ new_ftp_folder }}</code> </b><br/>
+
 <br/><br/>
 <b>CITATION</b><br/>
 Please add to your manuscript the following sentence (typically in the "Methods" section or just before/in the Acknowledgements): <br/><br/>
