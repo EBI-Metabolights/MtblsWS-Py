@@ -8,12 +8,9 @@ from app.utils import current_time
 
 from app.ws.db_connection import (
     get_email,
-    get_release_date_of_study,
     query_study_submitters,
 )
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.settings.utils import get_study_settings
-from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.tasks.worker import (
     MetabolightsTask,
@@ -23,7 +20,7 @@ from app.tasks.worker import (
     report_internal_technical_issue,
     send_email,
 )
-from isatools.model import Investigation, Study, Person
+from isatools.model import Study, Person
 
 
 

@@ -27,16 +27,40 @@ import psycopg2
 import psycopg2.extras
 from psycopg2 import pool
 from app.config import get_settings
-from app.utils import MetabolightsDBException, current_time, current_utc_time_without_timezone
+from app.utils import (
+    MetabolightsDBException,
+    current_time,
+    current_utc_time_without_timezone,
+)
+from app.ws.db.models import StudyRevisionModel
 from app.ws.db.types import CurationRequest
 from app.ws.settings.utils import get_study_settings
 from app.ws.study import identifier_service
-from app.ws.utils import get_single_file_information, check_user_token, val_email, fixUserDictKeys
+from app.ws.utils import (
+    get_single_file_information,
+    check_user_token,
+    val_email,
+    fixUserDictKeys,
+)
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 
-stop_words = "insert", "select", "drop", "delete", "from", "into", "studies", "users", "stableid", "study_user", \
-             "curation_log_temp", "ref_", "ebi_reporting", "exists"
+stop_words = (
+    "insert",
+    "select",
+    "drop",
+    "delete",
+    "from",
+    "into",
+    "studies",
+    "users",
+    "stableid",
+    "study_user",
+    "curation_log_temp",
+    "ref_",
+    "ebi_reporting",
+    "exists",
+)
 
 query_curation_log = "select * from curation_log_temp order by acc_short asc;"
 
@@ -190,8 +214,19 @@ study_by_obfuscation_code_query = """
     where obfuscationcode = %(study_obfuscation_code)s and acc= %(study_id)s;
 """
 
-def create_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
-                password_encoded, metaspace_api_key):
+
+def create_user(
+    first_name,
+    last_name,
+    email,
+    affiliation,
+    affiliation_url,
+    address,
+    orcid,
+    api_token,
+    password_encoded,
+    metaspace_api_key,
+):
     email = email.lower()
     insert_user_query = """
         INSERT INTO users (
@@ -213,13 +248,19 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
         );
     """
 
-    input_values = {"address_value": address, "affiliation_value": affiliation,
-            "affiliationurl_value": affiliation_url, "apitoken_value": api_token,
-            "email_value": email, "firstname_value": first_name, "lastname_value": last_name,
-            "password_value": password_encoded, 
-            "orcid_value": orcid, 
-            "metaspace_api_key_value": metaspace_api_key,
-            "current_time": current_utc_time_without_timezone()}
+    input_values = {
+        "address_value": address,
+        "affiliation_value": affiliation,
+        "affiliationurl_value": affiliation_url,
+        "apitoken_value": api_token,
+        "email_value": email,
+        "firstname_value": first_name,
+        "lastname_value": last_name,
+        "password_value": password_encoded,
+        "orcid_value": orcid,
+        "metaspace_api_key_value": metaspace_api_key,
+        "current_time": current_utc_time_without_timezone(),
+    }
 
     query = insert_user_query
 
@@ -234,28 +275,50 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
         return False, str(e)
 
 
-def update_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
-                password_encoded, existing_user_name, is_curator, metaspace_api_key):
+def update_user(
+    first_name,
+    last_name,
+    email,
+    affiliation,
+    affiliation_url,
+    address,
+    orcid,
+    api_token,
+    password_encoded,
+    existing_user_name,
+    is_curator,
+    metaspace_api_key,
+):
     val_email(existing_user_name)
     val_email(email)
 
-    update_user_query = \
-        "update users set address = 'address_value', affiliation = 'affiliation_value', " \
-        "affiliationurl = 'affiliationurl_value', email = 'email_value', " \
-        "firstname = 'firstname_value', lastname = 'lastname_value', username = 'email_value', " \
-        "orcid = 'orcid_value', metaspace_api_key = 'metaspace_api_key_value' " \
+    update_user_query = (
+        "update users set address = 'address_value', affiliation = 'affiliation_value', "
+        "affiliationurl = 'affiliationurl_value', email = 'email_value', "
+        "firstname = 'firstname_value', lastname = 'lastname_value', username = 'email_value', "
+        "orcid = 'orcid_value', metaspace_api_key = 'metaspace_api_key_value' "
         "where username = 'existing_user_name_value'"
+    )
 
     if not is_curator:
         update_user_query = update_user_query + " and apitoken = 'apitoken_value'"
 
     update_user_query = update_user_query + ";"
 
-    subs = {"address_value": address, "affiliation_value": affiliation,
-            "affiliationurl_value": affiliation_url, "apitoken_value": api_token,
-            "email_value": email, "firstname_value": first_name, "lastname_value": last_name,
-            "password_value": password_encoded, "orcid_value": orcid, "username_value": email,
-            "existing_user_name_value": existing_user_name, "metaspace_api_key_value": metaspace_api_key}
+    subs = {
+        "address_value": address,
+        "affiliation_value": affiliation,
+        "affiliationurl_value": affiliation_url,
+        "apitoken_value": api_token,
+        "email_value": email,
+        "firstname_value": first_name,
+        "lastname_value": last_name,
+        "password_value": password_encoded,
+        "orcid_value": orcid,
+        "username_value": email,
+        "existing_user_name_value": existing_user_name,
+        "metaspace_api_key_value": metaspace_api_key,
+    }
 
     for key, value in subs.items():
         val_query_params(str(value))
@@ -271,9 +334,15 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
         release_connection(postgresql_pool, conn)
 
         if number_of_users == 1:
-            return True, "User account '" + existing_user_name + "' updated successfully"
+            return (
+                True,
+                "User account '" + existing_user_name + "' updated successfully",
+            )
         else:
-            return False, "User account '" + existing_user_name + "' could not be updated"
+            return (
+                False,
+                "User account '" + existing_user_name + "' could not be updated",
+            )
 
     except Exception as e:
         return False, str(e)
@@ -296,19 +365,30 @@ def get_user(username):
     data = None
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(get_user_query, {'username': username})
-        data = [dict((cursor.description[i][0], value) for i, value in enumerate(row)) for row in cursor.fetchall()]
+        cursor.execute(get_user_query, {"username": username})
+        data = [
+            dict((cursor.description[i][0], value) for i, value in enumerate(row))
+            for row in cursor.fetchall()
+        ]
     except Exception as e:
-        logger.error('An error occurred while retrieving user {0}: {1}'.format(username, e))
-        raise MetabolightsDBException(exception=e, http_code=500, message=f'An error occurred while retrieving user {username}')
+        logger.error(
+            "An error occurred while retrieving user {0}: {1}".format(username, e)
+        )
+        raise MetabolightsDBException(
+            exception=e,
+            http_code=500,
+            message=f"An error occurred while retrieving user {username}",
+        )
     finally:
         release_connection(postgresql_pool, conn)
 
     if data:
-        return {'user': fixUserDictKeys(data[0])}
+        return {"user": fixUserDictKeys(data[0])}
     else:
         # no user found by that username, fail with 404
-        raise MetabolightsDBException(http_code=404, message=f'username {username} not found.')
+        raise MetabolightsDBException(
+            http_code=404, message=f"username {username} not found."
+        )
 
 
 def get_all_private_studies_for_user(user_token):
@@ -318,13 +398,13 @@ def get_all_private_studies_for_user(user_token):
     settings = get_study_settings()
     study_location = settings.mounted_paths.study_metadata_files_root_path
     file_name = settings.investigation_file_name
-    isa_title = 'Study Title'
-    isa_descr = 'Study Description'
+    isa_title = "Study Title"
+    isa_descr = "Study Description"
 
     complete_list = []
     for i, row in enumerate(study_list):
-        title = 'N/A'
-        description = 'N/A'
+        title = "N/A"
+        description = "N/A"
 
         study_id = row[0]
         release_date = row[1]
@@ -336,35 +416,60 @@ def get_all_private_studies_for_user(user_token):
             complete_study_location = os.path.join(study_location, study_id)
             complete_file_name = os.path.join(complete_study_location, file_name)
 
-            logger.info('Trying to load the investigation file (%s) for Study %s', file_name, study_id)
+            logger.info(
+                "Trying to load the investigation file (%s) for Study %s",
+                file_name,
+                study_id,
+            )
             # Get the Assay table or create a new one if it does not already exist
             try:
-                with open(complete_file_name, encoding='utf-8') as f:
+                with open(complete_file_name, encoding="utf-8") as f:
                     for line in f:
-                        line = re.sub(r'\s+', ' ', line)
+                        line = re.sub(r"\s+", " ", line)
                         if line.startswith(isa_title):
-                            title = line.replace(isa_title, '').replace(' "', '').replace('" ', '')
+                            title = (
+                                line.replace(isa_title, "")
+                                .replace(' "', "")
+                                .replace('" ', "")
+                            )
                         if line.startswith(isa_descr):
-                            description = line.replace(isa_descr, '').replace(' "', '').replace('" ', '')
+                            description = (
+                                line.replace(isa_descr, "")
+                                .replace(' "', "")
+                                .replace('" ', "")
+                            )
             except FileNotFoundError:
                 logger.error("The file %s was not found", complete_file_name)
             revision_status = None
+            revision_task_message = None
+            revision_comment = None
             if row[6] is not None:
-                revision_success, revision = get_study_revision(study_id=study_id, revision_number=row[6])
+                revision_success, revision = get_study_revision(
+                    study_id=study_id, revision_number=row[6]
+                )
                 if revision_success:
+                    revision_comment = revision[3] or ""
                     revision_status = revision[4]
-            complete_list.append({'accession': study_id,
-                                  'updated': get_single_file_information(complete_file_name),
-                                  'releaseDate': release_date,
-                                  'createdDate': submission_date,
-                                  'status': status,
-                                  'title': title.strip(),
-                                  'description': description.strip(),
-                                  'curationRequest': curation_request.strip(),
-                                  'revisionNumber': row[6],
-                                  'revisionDatetime': row[7],
-                                  'revisionStatus': revision_status
-                                  })
+                    revision_task_message = revision[5] or ""
+
+
+            complete_list.append(
+                {
+                    "accession": study_id,
+                    "updated": get_single_file_information(complete_file_name),
+                    "releaseDate": release_date,
+                    "createdDate": submission_date,
+                    "status": status,
+                    "title": title.strip(),
+                    "description": description.strip(),
+                    "curationRequest": curation_request.strip(),
+                    "revisionNumber": row[6],
+                    "revisionDatetime": row[7],
+                    "revisionStatus": revision_status,
+                    "revisionComment": revision_comment,
+                    "revisionTaskMessage": revision_task_message,
+                }
+            )
 
     return complete_list
 
@@ -376,14 +481,14 @@ def get_all_studies_for_user(user_token):
     if not study_list:
         return []
     study_location = get_settings().study.mounted_paths.study_metadata_files_root_path
-    file_name = 'i_Investigation.txt'
-    isa_title = 'Study Title'
-    isa_descr = 'Study Description'
+    file_name = "i_Investigation.txt"
+    isa_title = "Study Title"
+    isa_descr = "Study Description"
 
     complete_list = []
     for i, row in enumerate(study_list):
-        title = 'N/A'
-        description = 'N/A'
+        title = "N/A"
+        description = "N/A"
 
         study_id = row[0]
         release_date = row[1]
@@ -391,67 +496,107 @@ def get_all_studies_for_user(user_token):
         status = row[3]
         curation_request = row[4]
         table_id = row[5]
-        
+
         if not study_id:
             logger.error(f"Study ID is empty for id {table_id}")
             continue
         complete_study_location = os.path.join(study_location, study_id)
         complete_file_name = os.path.join(complete_study_location, file_name)
 
-        logger.info('Trying to load the investigation file (%s) for Study %s', file_name, study_id)
+        logger.info(
+            "Trying to load the investigation file (%s) for Study %s",
+            file_name,
+            study_id,
+        )
         # Get the Assay table or create a new one if it does not already exist
         try:
-            with open(complete_file_name, encoding='utf-8') as f:
+            with open(complete_file_name, encoding="utf-8") as f:
                 for line in f:
-                    line = re.sub(r'\s+', ' ', line)
+                    line = re.sub(r"\s+", " ", line)
                     if line.startswith(isa_title):
-                        title = line.replace(isa_title, '').replace(' "', '').replace('" ', '')
+                        title = (
+                            line.replace(isa_title, "")
+                            .replace(' "', "")
+                            .replace('" ', "")
+                        )
                     if line.startswith(isa_descr):
-                        description = line.replace(isa_descr, '').replace(' "', '').replace('" ', '')
+                        description = (
+                            line.replace(isa_descr, "")
+                            .replace(' "', "")
+                            .replace('" ', "")
+                        )
         except FileNotFoundError:
             logger.error("The file %s was not found", complete_file_name)
         except:
             logger.error("An exception occurred while parsing ISA")
             logger.info("Retrying with another encoding ")
-            with open(complete_file_name, encoding='latin-1') as f:
+            with open(complete_file_name, encoding="latin-1") as f:
                 for line in f:
-                    line = re.sub(r'\s+', ' ', line)
+                    line = re.sub(r"\s+", " ", line)
                     if line.startswith(isa_title):
-                        title = line.replace(isa_title, '').replace(' "', '').replace('" ', '')
+                        title = (
+                            line.replace(isa_title, "")
+                            .replace(' "', "")
+                            .replace('" ', "")
+                        )
                     if line.startswith(isa_descr):
-                        description = line.replace(isa_descr, '').replace(' "', '').replace('" ', '')
-        http_url = None 
+                        description = (
+                            line.replace(isa_descr, "")
+                            .replace(' "', "")
+                            .replace('" ', "")
+                        )
+        http_url = None
         ftp_url = None
         globus_url = None
         aspera_path = None
         if status == "Public":
             configuration = get_settings().ftp_server.public.configuration
-            http_url = os.path.join(configuration.public_studies_http_base_url, study_id)
+            http_url = os.path.join(
+                configuration.public_studies_http_base_url, study_id
+            )
             ftp_url = os.path.join(configuration.public_studies_ftp_base_url, study_id)
-            globus_url = os.path.join(configuration.public_studies_globus_base_url, study_id)
-            aspera_path = os.path.join(configuration.public_studies_aspera_base_path, study_id)
+            globus_url = os.path.join(
+                configuration.public_studies_globus_base_url, study_id
+            )
+            aspera_path = os.path.join(
+                configuration.public_studies_aspera_base_path, study_id
+            )
+
+        revision_number = row[6]
         revision_status = None
-        if row[6] is not None:
-            fetch_status, revision = get_study_revision(study_id=study_id, revision_number=row[6])
-            if fetch_status:
+        revision_task_message = None
+        revision_comment = None
+        if revision_number > 0:
+            revision_success, revision = get_study_revision(
+                study_id=study_id, revision_number=row[6]
+            )
+            if revision_success:
+                revision_comment = revision[3] or ""
                 revision_status = revision[4]
+                revision_task_message = revision[5] or ""
+                    
         revision_datetime = row[7].isoformat() if row[7] else None
-        complete_list.append({'accession': study_id,
-                            'updated': get_single_file_information(complete_file_name),
-                            'releaseDate': release_date,
-                            'createdDate': submission_date,
-                            'status': status.strip(),
-                            'title': title.strip(),
-                            'description': description.strip(),
-                            'curationRequest': curation_request.strip(),
-                            'revisionNumber': row[6],
-                            'revisionDatetime': revision_datetime,
-                            'revisionStatus': revision_status,
-                            "studyHttpUrl": http_url,
-                            "studyFtpUrl": ftp_url,
-                            "studyGlobusUrl": globus_url,
-                            "studyAsperaPath": aspera_path
-                            })
+        complete_list.append(
+            {
+                "accession": study_id,
+                "updated": get_single_file_information(complete_file_name),
+                "releaseDate": release_date,
+                "createdDate": submission_date,
+                "status": status.strip(),
+                "title": title.strip(),
+                "description": description.strip(),
+                "curationRequest": curation_request.strip(),
+                "revisionNumber": row[6],
+                "revisionDatetime": revision_datetime,
+                "revisionStatus": revision_status,
+                "revisionComment": revision_comment,
+                "revisionTaskMessage": revision_task_message,
+                "studyHttpUrl": http_url,
+                "studyFtpUrl": ftp_url,
+                "studyGlobusUrl": globus_url,
+                "studyAsperaPath": aspera_path,
+            }
+        )
 
     return complete_list
 
@@ -503,13 +648,13 @@ def get_all_non_public_studies():
 
 
 def get_study_by_type(sType, publicStudy=True):
-    q2 = ' '
+    q2 = " "
     if publicStudy:
-        q2 = ' status in (2, 3) and '
+        q2 = " status in (2, 3) and "
     input_data = {}
     if type(sType) is str:
         q3 = "studytype = %(study_type)s"
-        input_data['study_type'] =  sType
+        input_data["study_type"] = sType
     # fuzzy search
     elif type(sType) is list:
         db_query = []
@@ -517,10 +662,10 @@ def get_study_by_type(sType, publicStudy=True):
         for type_item in sType:
             counter = counter + 1
             input = "study_type_" + str(counter)
-            query = "studytype like %("+ input +")s"
+            query = "studytype like %(" + input + ")s"
             input_data[input] = "%" + type_item + "%"
             db_query.append(query)
-        q3 = ' and '.join(db_query)
+        q3 = " and ".join(db_query)
 
     else:
         return None
@@ -536,10 +681,15 @@ def get_study_by_type(sType, publicStudy=True):
 
 def update_release_date(study_id, release_date):
     val_acc(study_id)
-    query_update_release_date = "update studies set releasedate = %(releasedate)s where acc = %(study_id)s;"
+    query_update_release_date = (
+        "update studies set releasedate = %(releasedate)s where acc = %(study_id)s;"
+    )
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query_update_release_date, {'releasedate': release_date, 'study_id': study_id})
+        cursor.execute(
+            query_update_release_date,
+            {"releasedate": release_date, "study_id": study_id},
+        )
         conn.commit()
         release_connection(postgresql_pool, conn)
         return True, "Date updated for study " + study_id
@@ -550,13 +700,15 @@ def update_release_date(study_id, release_date):
 
 def add_placeholder_flag(study_id):
     val_acc(study_id)
-    query_update = "update studies set placeholder = 1, status = 0 where acc = %(study_id)s;"
+    query_update = (
+        "update studies set placeholder = 1, status = 0 where acc = %(study_id)s;"
+    )
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query_update, {'study_id': study_id})
+        cursor.execute(query_update, {"study_id": study_id})
         conn.commit()
         release_connection(postgresql_pool, conn)
-        return True, "Placeholder flag updated for study %s" % (study_id, )
+        return True, "Placeholder flag updated for study %s" % (study_id,)
 
     except Exception as e:
         return False, str(e)
@@ -566,10 +718,11 @@ def get_obfuscation_code(study_id):
     val_acc(study_id)
     query = "select obfuscationcode from studies where acc = %(study_id)s;"
     postgresql_pool, conn, cursor = get_connection()
-    cursor.execute(query, {'study_id': study_id})
+    cursor.execute(query, {"study_id": study_id})
     data = cursor.fetchall()
     release_connection(postgresql_pool, conn)
     return data
+
 
 def get_id_list_by_req_id(req_id: Union[None, str]):
     identifier = identifier_service.default_provisional_identifier
@@ -579,44 +732,56 @@ def get_id_list_by_req_id(req_id: Union[None, str]):
 
     query = "select id from studies where reserved_submission_id = %(val)s or id = %(unique_id)s;"
     postgresql_pool, conn, cursor = get_connection()
-    cursor.execute(query, {'val': req_id, 'unique_id': parts[1]})
+    cursor.execute(query, {"val": req_id, "unique_id": parts[1]})
     data = cursor.fetchall()
     release_connection(postgresql_pool, conn)
     data = [x for x in data if x[0] == int(parts[1])]
-    
+
     return data
+
 
 def reserve_mtbls_accession(study_id):
     val_acc(study_id)
     query = "select id from studies where acc = %(study_id)s;"
     postgresql_pool, conn, cursor = get_connection()
     try:
-        cursor.execute(query, {'study_id': study_id})
+        cursor.execute(query, {"study_id": study_id})
         data = cursor.fetchall()
         if data:
-            cursor.execute(reserve_mtbls_accession_sql, {'stable_id_prefix': "MTBLS", "table_id": data[0][0]})
+            cursor.execute(
+                reserve_mtbls_accession_sql,
+                {"stable_id_prefix": "MTBLS", "table_id": data[0][0]},
+            )
             conn.commit()
-            get_reserved_acc_query = "select id, reserved_accession from studies where id = %(table_id)s;"
+            get_reserved_acc_query = (
+                "select id, reserved_accession from studies where id = %(table_id)s;"
+            )
             cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
             data = cursor.fetchall()
             if data:
                 return data[0][1]
-    finally:    
+    finally:
         release_connection(postgresql_pool, conn)
     return None
+
 
 def update_study_id_from_mtbls_accession(study_id):
     val_acc(study_id)
     query = "select id, reserved_accession from studies where acc = %(study_id)s;"
     postgresql_pool, conn, cursor = get_connection()
     try:
-        cursor.execute(query, {'study_id': study_id})
+        cursor.execute(query, {"study_id": study_id})
         data = cursor.fetchall()
         if data:
             set_reserved_acc_query = "update studies set acc = %(reserved_accession)s where id = %(table_id)s;"
-            cursor.execute(set_reserved_acc_query, {"table_id": data[0][0], "reserved_accession": data[0][1]})
+            cursor.execute(
+                set_reserved_acc_query,
+                {"table_id": data[0][0], "reserved_accession": data[0][1]},
+            )
             conn.commit()
-            get_reserved_acc_query = "select id, acc from studies where id = %(table_id)s;"
+            get_reserved_acc_query = (
+                "select id, acc from studies where id = %(table_id)s;"
+            )
             cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
             data = cursor.fetchall()
             if data:
@@ -624,7 +789,7 @@ def update_study_id_from_mtbls_accession(study_id):
     except Exception as e:
         conn.rollback()
         logger.error(str(e))
-    finally:    
+    finally:
         release_connection(postgresql_pool, conn)
     return None
 
@@ -634,28 +799,36 @@ def update_study_id_from_provisional_id(study_id):
     query = "select id, reserved_submission_id from studies where acc = %(study_id)s;"
     postgresql_pool, conn, cursor = get_connection()
     try:
-        cursor.execute(query, {'study_id': study_id})
+        cursor.execute(query, {"study_id": study_id})
         data = cursor.fetchall()
         if data:
-            set_reserved_acc_query = "update studies set acc = %(provisional_id)s where id = %(table_id)s;"
-            cursor.execute(set_reserved_acc_query, {"table_id": data[0][0], "provisional_id": data[0][1]})
+            set_reserved_acc_query = (
+                "update studies set acc = %(provisional_id)s where id = %(table_id)s;"
+            )
+            cursor.execute(
+                set_reserved_acc_query,
+                {"table_id": data[0][0], "provisional_id": data[0][1]},
+            )
             conn.commit()
-            get_reserved_acc_query = "select id, acc from studies where id = %(table_id)s;"
+            get_reserved_acc_query = (
+                "select id, acc from studies where id = %(table_id)s;"
+            )
             cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
             data = cursor.fetchall()
             if data:
                 return data[0][1]
-            
+
     except Exception as e:
         conn.rollback()
         logger.error(str(e))
-    finally:    
+    finally:
         release_connection(postgresql_pool, conn)
     return None
 
+
 def get_study(study_id):
     val_acc(study_id)
-    query = '''
+    query = """
     select 
        case
            when s.placeholder = '1' then 'Placeholder'
@@ -690,12 +863,10 @@ def get_study(study_id):
         group by su.studyid
     ) as su on s.id = su.studyid
     where s.acc = %(study_id)s;
-'''
-
-
+"""
 
     postgresql_pool, conn, cursor = get_connection2()
-    cursor.execute(query, {'study_id': study_id})
+    cursor.execute(query, {"study_id": study_id})
     data = cursor.fetchall()
     result = [dict(row) for row in data]
 
@@ -713,13 +884,15 @@ def biostudies_acc_to_mtbls(biostudies_id):
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {'biostudies_id': biostudies_id})
+        cursor.execute(query, {"biostudies_id": biostudies_id})
         data = cursor.fetchall()
         # conn.close()
         release_connection(postgresql_pool, conn)
         return data[0] if data else None
     except Exception as e:
-        logger.error(f"Error while searching def biostudies_acc_to_mtbls(biostudies_id): {str(e)}")
+        logger.error(
+            f"Error while searching def biostudies_acc_to_mtbls(biostudies_id): {str(e)}"
+        )
         return None
 
 
@@ -732,21 +905,21 @@ def biostudies_accession(study_id, biostudies_id, method):
     # Default query to get the biosd accession
     s_query = "SELECT biostudies_acc from studies where acc = %(study_id)s;"
     query = None
-    if method == 'add':
+    if method == "add":
         query = "update studies set biostudies_acc = %(biostudies_id)s where acc = %(study_id)s;"
-    elif method == 'query':
+    elif method == "query":
         query = s_query
-    elif method == 'delete':
+    elif method == "delete":
         query = "update studies set biostudies_acc = '' where acc = %(study_id)s;"
     if not query:
         return False, "Not a valid method for adding the biostudies accession"
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {'study_id': study_id, 'biostudies_id': biostudies_id})
+        cursor.execute(query, {"study_id": study_id, "biostudies_id": biostudies_id})
 
-        if method == 'add' or method == 'delete':
+        if method == "add" or method == "delete":
             conn.commit()
-            cursor.execute(s_query, {'study_id': study_id})
+            cursor.execute(s_query, {"study_id": study_id})
 
         data = cursor.fetchall()
         # conn.close()
@@ -756,11 +929,14 @@ def biostudies_accession(study_id, biostudies_id, method):
     except Exception as e:
         return False, "BioStudies accession was not added to the study"
 
+
 def get_study_revision(study_id, revision_number):
-    query = "select accession_number, revision_datetime, revision_number, revision_comment, status from study_revisions where accession_number=%(study_id)s and revision_number=%(revision_number)s;"
+    query = "select accession_number, revision_datetime, revision_number, revision_comment, status, task_message from study_revisions where accession_number=%(study_id)s and revision_number=%(revision_number)s;"
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {'study_id': study_id, 'revision_number': revision_number})
+        cursor.execute(
+            query, {"study_id": study_id, "revision_number": revision_number}
+        )
         data = cursor.fetchall()
         release_connection(postgresql_pool, conn)
         if data:
@@ -769,20 +945,24 @@ def get_study_revision(study_id, revision_number):
 
     except IndexError:
         return False, "No metabolite was found for this ChEBI id"
-     
+
+
 def mtblc_on_chebi_accession(chebi_id):
     if not chebi_id:
         return None
 
-    if not chebi_id.startswith('CHEBI'):
+    if not chebi_id.startswith("CHEBI"):
         logger.error("Incorrect ChEBI accession number string pattern")
-        raise MetabolightsDBException(message=f"{chebi_id} is incorrect ChEBI accession number string pattern", http_code=406)
+        raise MetabolightsDBException(
+            message=f"{chebi_id} is incorrect ChEBI accession number string pattern",
+            http_code=406,
+        )
 
     # Default query to get the biosd accession
     query = "select acc from ref_metabolite where temp_id = %(chebi_id)s;"
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {'chebi_id': chebi_id})
+        cursor.execute(query, {"chebi_id": chebi_id})
         data = cursor.fetchall()
         release_connection(postgresql_pool, conn)
         return True, data[0]
@@ -798,13 +978,17 @@ def check_access_rights(user_token, study_id, study_obfuscation_code=None):
 
     study_list = None
     try:
-        study_list = execute_query(query=query_user_access_rights, user_token=user_token, study_id=study_id,
-                                   study_obfuscation_code=study_obfuscation_code)
+        study_list = execute_query(
+            query=query_user_access_rights,
+            user_token=user_token,
+            study_id=study_id,
+            study_obfuscation_code=study_obfuscation_code,
+        )
     except Exception as e:
         logger.error("Could not query the database " + str(e))
 
     if study_list is None or not check_user_token(user_token):
-        return False, False, False, 'ERROR', 'ERROR', 'ERROR', 'ERROR', 'ERROR', 'ERROR'
+        return False, False, False, "ERROR", "ERROR", "ERROR", "ERROR", "ERROR", "ERROR"
     settings = get_study_settings()
     study_location = settings.mounted_paths.study_metadata_files_root_path
     investigation_file_name = settings.investigation_file_name
@@ -823,13 +1007,13 @@ def check_access_rights(user_token, study_id, study_obfuscation_code=None):
     for i, row in enumerate(study_list):
         role = row[0]
         read_access = row[1]
-        if read_access == 'True':
+        if read_access == "True":
             read_access = True
         else:
             read_access = False
 
         write_access = row[2]
-        if write_access == 'True':
+        if write_access == "True":
             write_access = True
         else:
             write_access = False
@@ -846,12 +1030,21 @@ def check_access_rights(user_token, study_id, study_obfuscation_code=None):
 
         updated_date = get_single_file_information(complete_file_name)
 
-        if role == 'curator':
+        if role == "curator":
             is_curator = True
             break  # The api-code gives you 100% access rights, so no need to check any further
 
-    return is_curator, read_access, write_access, obfuscation_code, complete_study_location, release_date, \
-           submission_date, updated_date, study_status
+    return (
+        is_curator,
+        read_access,
+        write_access,
+        obfuscation_code,
+        complete_study_location,
+        release_date,
+        submission_date,
+        updated_date,
+        study_status,
+    )
 
 
 def get_email(user_token) -> Union[None, str]:
@@ -872,22 +1065,21 @@ def study_submitters(study_id, user_email, method):
     val_email(user_email)
     user_email = user_email.lower()
     query = None
-    if method == 'add':
+    if method == "add":
         query = """
             insert into study_user(userid, studyid)
             select u.id, s.id from users u, studies s where lower(u.email) = %(email)s and acc=%(study_id)s;    
         """
-    elif method == 'delete':
+    elif method == "delete":
         query = """
             delete from study_user su where exists(
             select u.id, s.id from users u, studies s
             where su.userid = u.id and su.studyid = s.id and lower(u.email) = %(email)s and acc=%(study_id)s); 
         """
 
-
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {'email': user_email, 'study_id': study_id})
+        cursor.execute(query, {"email": user_email, "study_id": study_id})
         conn.commit()
         release_connection(postgresql_pool, conn)
         return True
@@ -909,12 +1101,11 @@ def get_all_study_acc():
 
 
 def get_user_email(user_token):
-
     input = "select lower(email) from users where apitoken = %(apitoken)s;"
     try:
         postgresql_pool, conn, cursor = get_connection()
         if cursor:
-            cursor.execute(input, {'apitoken': user_token}) 
+            cursor.execute(input, {"apitoken": user_token})
             data = cursor.fetchone()[0]
             release_connection(postgresql_pool, conn)
             return data
@@ -927,10 +1118,13 @@ def get_user_email(user_token):
 def get_provisional_study_ids_for_user(user_token):
     val_query_params(user_token)
 
-    study_id_list = execute_select_with_params(query_provisional_study_ids_for_user, {"user_token": user_token})
+    study_id_list = execute_select_with_params(
+        query_provisional_study_ids_for_user, {"user_token": user_token}
+    )
     complete_list = [row[0] for row in study_id_list]
 
     return complete_list
+
 
 def create_empty_study(user_token, study_id=None, obfuscationcode=None):
     email = get_email(user_token)
@@ -940,13 +1134,15 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
     postgresql_pool = None
     req_id = study_id
     current_time = current_utc_time_without_timezone()
-    releasedate = (current_time + datetime.timedelta(days=365))
+    releasedate = current_time + datetime.timedelta(days=365)
     if not obfuscationcode:
         obfuscationcode = str(uuid.uuid4())
     try:
         postgresql_pool, conn, cursor = get_connection()
         if not cursor:
-            raise MetabolightsDBException(http_code=503, message="There is no database connection")
+            raise MetabolightsDBException(
+                http_code=503, message="There is no database connection"
+            )
 
         user_id = None
         cursor.execute(get_user_id_sql, {"username": email})
@@ -958,36 +1154,44 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
             message = f"User detail for {email} is not fetched."
             logger.error(message)
             raise MetabolightsDBException(http_code=501, message=message)
-        
+
         cursor.execute(f"SELECT nextval('hibernate_sequence')")
         new_unique_id = cursor.fetchone()[0]
         conn.commit()
         if not req_id:
-            req_id = identifier_service.default_provisional_identifier.get_id(new_unique_id, current_time)
-        
-        content = {"req_id": req_id,
-                    "obfuscationcode": obfuscationcode,
-                   "releasedate": releasedate,
-                   "email": email,
-                   "new_unique_id": new_unique_id,
-                   "userid": user_id,
-                   "current_time": current_time
-                   }
+            req_id = identifier_service.default_provisional_identifier.get_id(
+                new_unique_id, current_time
+            )
+
+        content = {
+            "req_id": req_id,
+            "obfuscationcode": obfuscationcode,
+            "releasedate": releasedate,
+            "email": email,
+            "new_unique_id": new_unique_id,
+            "userid": user_id,
+            "current_time": current_time,
+        }
         cursor.execute(insert_study_with_provisional_id, content)
         conn.commit()
         cursor.execute(get_study_id_sql, {"unique_id": new_unique_id})
         fetched_study = cursor.fetchone()
         return fetched_study[0]
-        
+
     except Exception as ex:
         if conn:
             conn.rollback()
         if isinstance(ex, MetabolightsDBException):
             raise ex
-        raise MetabolightsDBException(http_code=501, message="Error while creating study. Try later.", exception=ex)
+        raise MetabolightsDBException(
+            http_code=501,
+            message="Error while creating study. Try later.",
+            exception=ex,
+        )
     finally:
         if postgresql_pool and conn:
             release_connection(postgresql_pool, conn)
+
 
 def execute_select_with_params(query, params):
     conn = None
@@ -1047,7 +1251,7 @@ def query_study_submitters(study_id):
     """
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {'study_id': study_id})
+        cursor.execute(query, {"study_id": study_id})
         data = cursor.fetchall()
         release_connection(postgresql_pool, conn)
         return data
@@ -1059,7 +1263,7 @@ def get_username_by_token(token):
     query = "select concat(firstname,' ',lastname) from users where apitoken = %(apitoken)s;"
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {'apitoken': token})
+        cursor.execute(query, {"apitoken": token})
         data = cursor.fetchone()[0]
         release_connection(postgresql_pool, conn)
         return data
@@ -1073,25 +1277,25 @@ def override_validations(study_id, method, override=""):
     if not study_id:
         return None
 
-    if method == 'query':
+    if method == "query":
         query = "select override from studies where acc = '#study_id#';"
-    elif method == 'update':
+    elif method == "update":
         query = "update studies set override = '#override#' where acc = '#study_id#';"
 
     try:
         postgresql_pool, conn, cursor = get_connection()
 
-        if method == 'query':
+        if method == "query":
             query = query.replace("#study_id#", study_id.upper())
-            query = query.replace('\\', '')
+            query = query.replace("\\", "")
             cursor.execute(query)
             data = cursor.fetchall()
             release_connection(postgresql_pool, conn)
             return data[0]
-        elif method == 'update' and override:
+        elif method == "update" and override:
             query = query.replace("#study_id#", study_id.upper())
             query = query.replace("#override#", override)
-            query = query.replace('\\', '')
+            query = query.replace("\\", "")
             cursor.execute(query)
             conn.commit()
             # conn.close()
@@ -1116,7 +1320,7 @@ def query_comments(study_id):
 
     postgresql_pool, conn, cursor = get_connection()
     query = query.replace("#study_id#", study_id.upper())
-    query = query.replace('\\', '')
+    query = query.replace("\\", "")
     cursor.execute(query)
     data = cursor.fetchall()
     release_connection(postgresql_pool, conn)
@@ -1140,7 +1344,7 @@ def update_comments(study_id, comments=None):
     postgresql_pool, conn, cursor = get_connection()
     query = query.replace("#study_id#", study_id.upper())
     query = query.replace("#comments#", comments)
-    query = query.replace('\\', '')
+    query = query.replace("\\", "")
     cursor.execute(query)
     conn.commit()
     release_connection(postgresql_pool, conn)
@@ -1151,8 +1355,19 @@ def update_validation_status(study_id, validation_status):
     val_acc(study_id)
 
     if study_id and validation_status:
-        logger.info('Updating database validation status to ' + validation_status + ' for study ' + study_id)
-        query = "update studies set validation_status = '" + validation_status + "' where acc = '" + study_id + "';"
+        logger.info(
+            "Updating database validation status to "
+            + validation_status
+            + " for study "
+            + study_id
+        )
+        query = (
+            "update studies set validation_status = '"
+            + validation_status
+            + "' where acc = '"
+            + study_id
+            + "';"
+        )
         try:
             postgresql_pool, conn, cursor = get_connection()
             cursor.execute(query)
@@ -1160,31 +1375,43 @@ def update_validation_status(study_id, validation_status):
             release_connection(postgresql_pool, conn)
             return True
         except Exception as e:
-            logger.error('Database update of validation status failed with error ' + str(e))
+            logger.error(
+                "Database update of validation status failed with error " + str(e)
+            )
             return False
     else:
         return False
 
 
-def update_study_status_change_date(study_id, change_time: Union[None, datetime.datetime] = None):
+def update_study_status_change_date(
+    study_id, change_time: Union[None, datetime.datetime] = None
+):
     val_acc(study_id)
     if not change_time:
         change_time = current_time()
-    query = "update studies set status_date = %(current_time)s where acc = %(study_id)s;"
-    status, msg = insert_update_data(query, {'study_id': study_id, "current_time": change_time})
+    query = (
+        "update studies set status_date = %(current_time)s where acc = %(study_id)s;"
+    )
+    status, msg = insert_update_data(
+        query, {"study_id": study_id, "current_time": change_time}
+    )
     if not status:
-        logger.error('Database update of study status date failed with error ' + msg)
+        logger.error("Database update of study status date failed with error " + msg)
         return False
     return True
+
 
 def update_study_sample_type(study_id, sample_type):
     val_acc(study_id)
     query = "update studies set sample_type = %(sample_type)s where acc = %(study_id)s;"
-    status, msg = insert_update_data(query, {'study_id': study_id, "sample_type": sample_type})
+    status, msg = insert_update_data(
+        query, {"study_id": study_id, "sample_type": sample_type}
+    )
     if not status:
-        logger.error('Database update of study sample type failed with error ' + msg)
+        logger.error("Database update of study sample type failed with error " + msg)
         return False
     return True
+
 
 def insert_update_data(query, inputs=None):
     try:
@@ -1197,69 +1424,95 @@ def insert_update_data(query, inputs=None):
         release_connection(postgresql_pool, conn)
         return True, "Database command success " + query
     except Exception as e:
-        msg = 'Database command ' + query + 'failed with error ' + str(e)
+        msg = "Database command " + query + "failed with error " + str(e)
         logger.error(msg)
         return False, msg
 
 
-def update_study_status(study_id, study_status, is_curator=False, first_public_date=None, first_private_date=None):
+def update_study_status(
+    study_id,
+    study_status,
+    is_curator=False,
+    first_public_date=None,
+    first_private_date=None,
+):
     val_acc(study_id)
 
-    status = '0'
+    status = "0"
     study_status = study_status.lower()
-    if study_status == 'provisional':
-        status = '0'
-    elif study_status == 'private':
-        status = '1'
-    elif study_status == 'in review':
-        status = '2'
-    elif study_status == 'public':
-        status = '3'
-    elif study_status == 'dormant':
-        status = '4'
+    if study_status == "provisional":
+        status = "0"
+    elif study_status == "private":
+        status = "1"
+    elif study_status == "in review":
+        status = "2"
+    elif study_status == "public":
+        status = "3"
+    elif study_status == "dormant":
+        status = "4"
 
     query = "UPDATE studies SET status = %(status)s"
-    if not is_curator:  # Add 28 days to the database release date when a submitter change the status
-        query = query + ", updatedate = CURRENT_DATE, releasedate = CURRENT_DATE + integer '28'"
-    if study_status == 'public' and is_curator:
+    if (
+        not is_curator
+    ):  # Add 28 days to the database release date when a submitter change the status
+        query = (
+            query
+            + ", updatedate = CURRENT_DATE, releasedate = CURRENT_DATE + integer '28'"
+        )
+    if study_status == "public" and is_curator:
         query = query + ", updatedate = CURRENT_DATE, releasedate = CURRENT_DATE"
-    if study_status == 'public' and first_public_date is None:
+    if study_status == "public" and first_public_date is None:
         query = query + ", first_public_date = CURRENT_DATE"
-    elif study_status in {'private', 'in review'} and first_private_date is None:
+    elif study_status in {"private", "in review"} and first_private_date is None:
         query = query + ", first_private_date = CURRENT_DATE"
-        
+
     query = query + " WHERE acc = %(study_id)s;"
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {'study_id': study_id, 'status': status})
+        cursor.execute(query, {"study_id": study_id, "status": status})
         conn.commit()
         release_connection(postgresql_pool, conn)
         return True
     except Exception as e:
-        logger.error('Database update of study status failed with error ' + str(e))
+        logger.error("Database update of study status failed with error " + str(e))
         return False
 
-def update_curation_request(study_id, curation_request: Union[CurationRequest, None] = None):
+
+def update_curation_request(
+    study_id, curation_request: Union[CurationRequest, None] = None
+):
     val_acc(study_id)
     if curation_request is None:
         return False
     current = current_time()
     query = "UPDATE studies SET curation_request = %(curation_request)s"
-    query +=  ", updatedate = %(current)s, status_date = %(current)s"
+    query += ", updatedate = %(current)s, status_date = %(current)s"
     query += " WHERE acc = %(study_id)s;"
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {'study_id': study_id, 'curation_request': curation_request.value, "current": current})
+        cursor.execute(
+            query,
+            {
+                "study_id": study_id,
+                "curation_request": curation_request.value,
+                "current": current,
+            },
+        )
         conn.commit()
         release_connection(postgresql_pool, conn)
         return True
     except Exception as e:
-        logger.error('Database update of study curation_request failed with error ' + str(e))
+        logger.error(
+            "Database update of study curation_request failed with error " + str(e)
+        )
         return False
-    
-def update_modification_time(study_id, update_time: Union[datetime.datetime, None] = None):
+
+
+def update_modification_time(
+    study_id, update_time: Union[datetime.datetime, None] = None
+):
     val_acc(study_id)
     if not update_time:
         update_time = "CURRENT_TIME"
@@ -1268,21 +1521,23 @@ def update_modification_time(study_id, update_time: Union[datetime.datetime, Non
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {'study_id': study_id, "date_time": update_time})
+        cursor.execute(query, {"study_id": study_id, "date_time": update_time})
         conn.commit()
         release_connection(postgresql_pool, conn)
         return True
     except Exception as e:
-        logger.error('Database update of study modification time failed with error ' + str(e))
+        logger.error(
+            "Database update of study modification time failed with error " + str(e)
+        )
         return False
-    
-    
+
+
 def execute_select_query(query, user_token):
     if not user_token:
         return None
     val_query_params(user_token)
 
-    input_data = {'apitoken': user_token}
+    input_data = {"apitoken": user_token}
 
     try:
         postgresql_pool, conn, cursor = get_connection()
@@ -1301,14 +1556,17 @@ def execute_select_query(query, user_token):
     return None
 
 
-def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_code=None):
+def execute_query(
+    query=None, user_token=None, study_id=None, study_obfuscation_code=None
+):
     if not user_token and study_obfuscation_code:
         return None
 
-    input_data = {'apitoken': user_token,
-                  'study_id': study_id,
-                  'study_obfuscation_code': study_obfuscation_code
-     }
+    input_data = {
+        "apitoken": user_token,
+        "study_id": study_id,
+        "study_obfuscation_code": study_obfuscation_code,
+    }
 
     if not study_obfuscation_code:
         obfuscation_code = ""
@@ -1358,7 +1616,9 @@ def get_connection():
     conn_pool_min = settings.database.configuration.conn_pool_min
     conn_pool_max = settings.database.configuration.conn_pool_max
     try:
-        postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
+        postgresql_pool = psycopg2.pool.SimpleConnectionPool(
+            conn_pool_min, conn_pool_max, **params
+        )
         conn = postgresql_pool.getconn()
         cursor = conn.cursor()
     # TODO: Actual exception handling, this is crap
@@ -1381,7 +1641,9 @@ def get_connection2():
         params = settings.database.connection.model_dump()
         conn_pool_min = settings.database.configuration.conn_pool_min
         conn_pool_max = settings.database.configuration.conn_pool_max
-        postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
+        postgresql_pool = psycopg2.pool.SimpleConnectionPool(
+            conn_pool_min, conn_pool_max, **params
+        )
         conn = postgresql_pool.getconn()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     except Exception as e:
@@ -1401,10 +1663,11 @@ def release_connection(postgresql_pool, ps_connection):
 
 def database_maf_info_table_actions(study_id=None):
     if study_id:
-
         val_acc(study_id)
 
-        status, msg = insert_update_data("delete from maf_info where acc = %(study_id)s;", {'study_id': study_id})
+        status, msg = insert_update_data(
+            "delete from maf_info where acc = %(study_id)s;", {"study_id": study_id}
+        )
     else:
         try:
             sql_trunc = "truncate table maf_info;"
@@ -1424,7 +1687,13 @@ def database_maf_info_table_actions(study_id=None):
             logger.warning("Database table maf_info error " + str(e))
 
 
-def add_maf_info_data(acc, database_identifier, metabolite_identification, database_found, metabolite_found):
+def add_maf_info_data(
+    acc,
+    database_identifier,
+    metabolite_identification,
+    database_found,
+    metabolite_found,
+):
     val_acc(acc)
     status = False
     msg = None
@@ -1437,16 +1706,19 @@ def add_maf_info_data(acc, database_identifier, metabolite_identification, datab
                                 %(metabolite_found)s
                                 );
     """
-    input_data = {'acc': acc,
-                  'database_identifier': database_identifier,
-                  "metabolite_identification": metabolite_identification,
-                  "database_found": database_found,
-                  'metabolite_found': metabolite_found}
+    input_data = {
+        "acc": acc,
+        "database_identifier": database_identifier,
+        "metabolite_identification": metabolite_identification,
+        "database_found": database_found,
+        "metabolite_found": metabolite_found,
+    }
     try:
         status, msg = insert_update_data(sql, input_data)
     except Exception as e:
         return False, str(e)
     return status, msg
+
 
 def add_metabolights_data(content_name, data_format, content):
     status = False
@@ -1458,9 +1730,11 @@ def add_metabolights_data(content_name, data_format, content):
                                 %(content)s
                                 );
     """
-    input_data = {'content_name': content_name,
-                  'data_format': data_format,
-                  "content": content}
+    input_data = {
+        "content_name": content_name,
+        "data_format": data_format,
+        "content": content,
+    }
     try:
         status, msg = insert_update_data(sql, input_data)
     except Exception as e:
@@ -1470,15 +1744,21 @@ def add_metabolights_data(content_name, data_format, content):
 
 def val_acc(study_id=None):
     if study_id:
-        if not (study_id.startswith("MTBLS") or study_id.startswith("REQ")) or study_id.lower() in stop_words:
+        if (
+            not (study_id.startswith("MTBLS") or study_id.startswith("REQ"))
+            or study_id.lower() in stop_words
+        ):
             logger.error("Incorrect accession number string pattern")
-            raise MetabolightsDBException(message=f"{study_id} is incorrect accession number string pattern", http_code=406)
-
+            raise MetabolightsDBException(
+                message=f"{study_id} is incorrect accession number string pattern",
+                http_code=406,
+            )
 
 
 def val_query_params(text_to_val):
     if text_to_val:
         for word in str(text_to_val).split():
             if word.lower() in stop_words:
-                raise MetabolightsDBException(message=f"{text_to_val} not allowed.", http_code=406)
-
+                raise MetabolightsDBException(
+                    message=f"{text_to_val} not allowed.", http_code=406
+                )

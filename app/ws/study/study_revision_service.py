@@ -5,7 +5,6 @@ import logging
 from pathlib import Path
 import shutil
 
-from app.config import get_settings
 from app.tasks.common_tasks.basic_tasks.send_email import send_email_on_public
 from app.tasks.datamover_tasks.basic_tasks.ftp_operations import sync_private_ftp_data_files
 from app.ws.db.models import StudyRevisionModel

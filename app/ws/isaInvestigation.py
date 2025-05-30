@@ -160,10 +160,14 @@ class IsaInvestigation(Resource):
 
         logger.info('Got %s', isa_inv.identifier)
         revision_status = None
+        revision_comment = None
+        revision_task_message = None
         if study.revision_number > 0:
             revision: StudyRevisionModel = StudyRevisionService.get_study_revision(study.acc, revision_number=study.revision_number)
             if revision:
                 revision_status = revision.status.value
+                revision_comment = revision.revision_comment or ""
+                revision_task_message = revision.task_message or ""
         http_url = None 
         ftp_url = None
         globus_url = None
@@ -190,6 +194,9 @@ class IsaInvestigation(Resource):
         response['mtblsStudy']['revisionNumber'] = study.revision_number
         response['mtblsStudy']['revisionDatetime'] = study.revision_datetime.isoformat() if study.revision_datetime else ""
         response['mtblsStudy']['revisionStatus'] = revision_status
+        response['mtblsStudy']['revisionComment'] = revision_comment
+        response['mtblsStudy']['revisionTaskMessage'] = revision_task_message
+
         response['mtblsStudy']['studyHttpUrl'] = http_url
         response['mtblsStudy']['studyFtpUrl'] = ftp_url
         response['mtblsStudy']['studyGlobusUrl'] = globus_url
