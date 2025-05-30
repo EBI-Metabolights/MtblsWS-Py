@@ -9,5 +9,5 @@ class FileResources(BaseModel):
 
     study_default_template_path: str
     study_partner_metabolon_template_path: str
-    study_mass_spectrometry_maf_file_template_path: str
-    study_nmr_spectroscopy_maf_file_template_path: str
+    study_mass_spectrometry_maf_file_template_path: str = ".resources/m_metabolite_profiling_mass_spectrometry_v2_maf.tsv"
+    study_nmr_spectroscopy_maf_file_template_path: str = ".resources/m_metabolite_profiling_NMR_spectrometry_v2_maf.tsv"

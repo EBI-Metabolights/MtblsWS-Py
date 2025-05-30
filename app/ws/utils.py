@@ -1147,23 +1147,24 @@ def create_maf(
     assay_file_name = os.path.join(study_metadata_location, assay_file_name)
 
     # Get the MAF table or create a new one if it does not already exist
-    try:
-        maf_df = read_tsv(full_annotation_file_name)
-    except FileNotFoundError:
+    if os.path.exists(full_annotation_file_name):
+        try:
+            maf_df = read_tsv(full_annotation_file_name)
+        except Exception as e:
+            if os.path.getsize(full_annotation_file_name) > 0:
+                logger.info(
+                    "Trying to open as Excel tsv file 'ISO-8859-1' file "
+                    + full_annotation_file_name
+                    + ". "
+                    + str(e)
+                )
+                maf_df = read_tsv(
+                    full_annotation_file_name, sep="\t", header=0, encoding="ISO-8859-1"
+                )  # Excel format
+    else:
         update_maf = True
         maf_df = read_tsv(annotation_file_template, encoding="utf-8")
-        logger.info("Updating new MAF: " + full_annotation_file_name)
-    except Exception as e:
-        if os.path.getsize(full_annotation_file_name) > 0:
-            logger.info(
-                "Trying to open as Excel tsv file 'ISO-8859-1' file "
-                + full_annotation_file_name
-                + ". "
-                + str(e)
-            )
-            maf_df = read_tsv(
-                full_annotation_file_name, sep="\t", header=0, encoding="ISO-8859-1"
-            )  # Excel format
+        logger.info("Creating new MAF: " + full_annotation_file_name)
 
     # Read NMR or MS Assay Name first, if that is empty, use Sample Name
     assay_df = read_tsv(assay_file_name)
@@ -1215,9 +1216,7 @@ def create_maf(
 
     # Write the new empty columns back in the file
     if update_maf:
-        maf_df.to_csv(
-            full_annotation_file_name, sep="\t", encoding="utf-8", index=False
-        )
+        write_tsv(maf_df, full_annotation_file_name)
 
     return maf_df, annotation_file_name, new_column_counter
 
