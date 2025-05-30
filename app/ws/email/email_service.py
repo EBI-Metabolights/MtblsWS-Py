@@ -245,14 +245,17 @@ class EmailService(object):
         metabolights_website_url = get_settings().server.service.ws_app_base_link
         mtbls_accession_url = os.path.join(metabolights_website_url, study_id)
         public_ftp_server = "ftp.ebi.ac.uk"
-        public_ftp_remote_folder = "/pub/databases/metabolights/studies/public"
-        public_ftp_base_url = f"http://{public_ftp_server}{public_ftp_remote_folder}"
-        study_ftp_download_url = os.path.join(public_ftp_base_url, study_id)
+        download_settings = get_settings().ftp_server.public.configuration
+        public_ftp_base_url = download_settings.public_studies_ftp_base_url
+
+        public_ftp_remote_folder = ""
+        if public_ftp_server in public_ftp_base_url:
+            public_ftp_remote_folder = public_ftp_base_url.split(public_ftp_server)[-1]
+        
+        study_ftp_download_url = os.path.join(download_settings.public_studies_http_base_url, study_id)
         globus_collection_name = "EMBL-EBI Public Data"
         study_path = os.path.join(public_ftp_remote_folder, study_id)
-        origin_path = urllib.parse.quote(study_path)
-        origin_id = "47772002-3e5b-4fd3-b97c-18cee38d6df2"
-        study_globus_url = f"https://app.globus.org/file-manager?origin_id={origin_id}&origin_path={origin_path}%2F"
+        study_globus_url = f"{download_settings.public_studies_globus_base_url}/{study_id}%2F"
         content = {
             "mtbls_accession": study_id,
             "submitter_fullname": submitter_fullname,

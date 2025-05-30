@@ -190,5 +190,5 @@ def sync_private_ftp_data_files(study_id: str, obfuscation_code: str) -> SyncTas
     task = index_study_data_files.apply_async(kwargs=inputs)
     task_id = task.id
     redis.set_value(f"{study_id}:index_private_ftp_storage:task_id", task.id, ex=30*60)
-    return SyncTaskResult(task_id=task_id, dry_run=False, description="Private FTP Sync started", status=SyncTaskStatus.PENDING, 
+    return SyncTaskResult(task_id=task_id, dry_run=False, description="Private FTP Data File Index task started", status=SyncTaskStatus.PENDING, 
                                         last_update_time=now_str, last_update_timestamp=now_time)
