@@ -647,15 +647,13 @@ def read_tsv(file_name, col_names=None, sep="\t", **kwargs):
         try:
             if not filter:
                 try:
-                    col_names = pd.read_csv(file_name, sep=sep, nrows=0, dtype=str).columns
+                    col_names = pd.read_csv(
+                        file_name, sep=sep, nrows=0, dtype=str
+                    ).columns
                 except Exception as ex:
                     col_names = pd.read_csv(
-                    file_name,
-                    sep=sep,
-                    nrows=0,
-                    encoding="ISO-8859-1",
-                    dtype=str
-                ).columns  # Excel format
+                        file_name, sep=sep, nrows=0, encoding="ISO-8859-1", dtype=str
+                    ).columns  # Excel format
             types_dict = {col: str for col in col_names}
             if os.path.getsize(file_name) == 0:  # Empty file
                 logger.error("Could not read file " + file_name)
@@ -1067,7 +1065,9 @@ def update_ontolgies_in_isa_tab_sheets(
             prefix = "Characteristics["
 
         file_names = [os.path.join(study_location, isa_study.filename)]
-        file_names.extend([os.path.join(study_location, assay.filename) for assay in isa_study.assays])
+        file_names.extend(
+            [os.path.join(study_location, assay.filename) for assay in isa_study.assays]
+        )
 
         if file_names:
             for file in file_names:
@@ -1148,16 +1148,12 @@ def create_maf(
 
     # Get the MAF table or create a new one if it does not already exist
     try:
-        maf_df = pd.read_csv(
-            full_annotation_file_name, sep="\t", header=0, encoding="utf-8"
-        )
+        maf_df = read_tsv(full_annotation_file_name)
     except FileNotFoundError:
         update_maf = True
-        maf_df = pd.read_csv(
-            annotation_file_template, sep="\t", header=0, encoding="utf-8"
-        )
-        logger.info("Creating new MAF: " + full_annotation_file_name)
-    except UnicodeDecodeError as e:
+        maf_df = read_tsv(annotation_file_template, encoding="utf-8")
+        logger.info("Updating new MAF: " + full_annotation_file_name)
+    except Exception as e:
         if os.path.getsize(full_annotation_file_name) > 0:
             logger.info(
                 "Trying to open as Excel tsv file 'ISO-8859-1' file "
@@ -1165,12 +1161,9 @@ def create_maf(
                 + ". "
                 + str(e)
             )
-            maf_df = pd.read_csv(
+            maf_df = read_tsv(
                 full_annotation_file_name, sep="\t", header=0, encoding="ISO-8859-1"
             )  # Excel format
-
-    # Get rid of empty numerical values
-    maf_df = maf_df.replace(np.nan, "", regex=True)
 
     # Read NMR or MS Assay Name first, if that is empty, use Sample Name
     assay_df = read_tsv(assay_file_name)
@@ -1200,7 +1193,8 @@ def create_maf(
             + assay_file_name
             + " does not have "
             + sample_name
-            + " defined! " + str(ex) 
+            + " defined! "
+            + str(ex)
         )
 
     if len(assay_names) == 0:
@@ -1900,7 +1894,7 @@ def get_instrument(studyID, assay_name):
         ins_df = df.loc[:, df.columns.str.contains("Instrument")]
         for col in ins_df.columns:
             item = list(df[col].unique())
-            instrument_names .append(item)
+            instrument_names.append(item)
 
         if len(instrument_names) > 0:
             return {

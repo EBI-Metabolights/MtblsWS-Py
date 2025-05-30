@@ -125,7 +125,7 @@ class MtblsMAFSearch(Resource):
 
 class MetaboliteAnnotationFile(Resource):
     @swagger.operation(
-        summary="[Deprecated] Read, and add missing samples for a MAF",
+        summary="Read, and add missing samples for a MAF",
         nickname="Get MAF for a given MTBLS Assay",
         notes='''Create or update a Metabolite Annotation File for an assay.
 <pre><code> 
