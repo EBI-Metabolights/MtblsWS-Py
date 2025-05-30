@@ -878,11 +878,22 @@ def add_new_protocols_from_assay(
         if prot_type not in assay_type:  # Is this protocol for MS or NMR?
             continue
 
-        # check for protocol added already
+        # check for existing protocol
         obj = isa_study.get_prot(prot_name)
+
         if obj:
+            # Add new parameters to existing protocol if not already present
+            existing_terms = {param.parameter_name.term for param in obj.parameters}
+            for param in prot_params.split(";"):
+                param = param.strip()
+                if param and param not in existing_terms:
+                    protocol_parameter = ProtocolParameter(
+                        parameter_name=OntologyAnnotation(term=param)
+                    )
+                    obj.parameters.append(protocol_parameter)
             continue
 
+        # Create a new protocol
         protocol = Protocol(
             name=prot_name,
             protocol_type=OntologyAnnotation(term=prot_name),
@@ -890,12 +901,14 @@ def add_new_protocols_from_assay(
         )
 
         for param in prot_params.split(";"):
-            protocol_parameter = ProtocolParameter(
-                parameter_name=OntologyAnnotation(term=param)
-            )
-            protocol.parameters.append(protocol_parameter)
+            param = param.strip()
+            if param:
+                protocol_parameter = ProtocolParameter(
+                    parameter_name=OntologyAnnotation(term=param)
+                )
+                protocol.parameters.append(protocol_parameter)
 
-        # Add the protocol to the protocols list
+        # Add the new protocol to the protocols list
         protocols.append(protocol)
 
     return isa_study
