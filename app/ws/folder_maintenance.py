@@ -937,18 +937,18 @@ class StudyFolderMaintenanceTask(object):
             )
             self.update_permission(private_ftp_root_path, permission)
 
-            sub_folder = os.path.join(
-                private_ftp_root_path,
-                get_settings().study.internal_files_symbolic_link_name,
-            )
-            self._create_folder_future_actions(
-                sub_folder,
-                0o770,
-                cluster_private_ftp_recycle_bin_root_path,
-                created_folders,
-                deleted_folders,
-            )
-            self.update_permission(sub_folder, Acl.AUTHORIZED_READ_WRITE.value)
+            # sub_folder = os.path.join(
+            #     private_ftp_root_path,
+            #     get_settings().study.internal_files_symbolic_link_name,
+            # )
+            # self._create_folder_future_actions(
+            #     sub_folder,
+            #     0o770,
+            #     cluster_private_ftp_recycle_bin_root_path,
+            #     created_folders,
+            #     deleted_folders,
+            # )
+            # self.update_permission(sub_folder, Acl.AUTHORIZED_READ_WRITE.value)
 
             # sub_folder = os.path.join(
             #     private_ftp_root_path,
@@ -957,7 +957,7 @@ class StudyFolderMaintenanceTask(object):
             # )
             # self._create_folder_future_actions(
             #     sub_folder,
-            #     0o770,
+            #     0o770, 
             #     cluster_private_ftp_recycle_bin_root_path,
             #     created_folders,
             #     deleted_folders,
