@@ -1150,20 +1150,31 @@ def create_maf(
     if os.path.exists(full_annotation_file_name):
         try:
             maf_df = read_tsv(full_annotation_file_name)
+            if maf_df.empty or len(maf_df.columns) == 0:
+                update_maf = True
+                maf_df = read_tsv(annotation_file_template)
+                logger.info(
+                    "MAF is empty. Copy columnsfrom template MAF: %s",
+                    full_annotation_file_name,
+                )
         except Exception as e:
             if os.path.getsize(full_annotation_file_name) > 0:
                 logger.info(
-                    "Trying to open as Excel tsv file 'ISO-8859-1' file "
-                    + full_annotation_file_name
-                    + ". "
-                    + str(e)
+                    "Trying to open as Excel tsv file 'ISO-8859-1' file %s. %s", full_annotation_file_name, str(e)
                 )
                 maf_df = read_tsv(
                     full_annotation_file_name, sep="\t", header=0, encoding="ISO-8859-1"
                 )  # Excel format
+                if maf_df.empty or len(maf_df.columns) == 0:
+                    update_maf = True
+                    maf_df = read_tsv(annotation_file_template)
+                    logger.info(
+                        "MAF is empty. Copy columnsfrom template MAF: %s", full_annotation_file_name
+                    )
+
     else:
         update_maf = True
-        maf_df = read_tsv(annotation_file_template, encoding="utf-8")
+        maf_df = read_tsv(annotation_file_template)
         logger.info("Creating new MAF: " + full_annotation_file_name)
 
     # Read NMR or MS Assay Name first, if that is empty, use Sample Name
