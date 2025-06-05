@@ -138,11 +138,14 @@ class StudyFiles(Resource):
         directory = None
 
         if request.args:
-            
             include_raw_data = (
-                False if request.args.get("include_raw_data").lower() != "true" else True
+                False
+                if request.args.get("include_raw_data").lower() != "true"
+                else True
             )
-            directory = request.args.get("directory") if request.args.get("directory") else None
+            directory = (
+                request.args.get("directory") if request.args.get("directory") else None
+            )
 
         if directory and directory.startswith(os.sep):
             abort(
@@ -280,17 +283,22 @@ without setting the "force" parameter to True""",
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # query validation        
+        # query validation
         file_location = "study"
         files = None
         always_remove = False
 
         # If false, only sync ISA-Tab metadata files
         if request.args:
-            
             files = request.args.get("files") if request.args.get("files") else None
-            file_location = request.args.get("location") if request.args.get("location") else "study"
-            always_remove = False if request.args.get("force").lower() != "true" else True
+            file_location = (
+                request.args.get("location")
+                if request.args.get("location")
+                else "study"
+            )
+            always_remove = (
+                False if request.args.get("force").lower() != "true" else True
+            )
 
         if file_location not in ["study", "upload"]:
             abort(400, message="Location is invalid")
@@ -481,7 +489,7 @@ class StudyRawAndDerivedDataFiles(Resource):
             user_token = request.headers["user_token"]
 
         # If false, only sync ISA-Tab metadata files
-        # query validation        
+        # query validation
         settings = get_study_settings()
 
         data_files_subfolder = settings.readonly_files_symbolic_link_name
@@ -489,15 +497,22 @@ class StudyRawAndDerivedDataFiles(Resource):
         file_match = False
         folder_match = False
         if request.args:
-            
-            file_match = True if request.args.get("file_match").lower() == "true" else False
-            folder_match = True if request.args.get("folder_match").lower() == "true" else False
+            file_match = (
+                True if request.args.get("file_match").lower() == "true" else False
+            )
+            folder_match = (
+                True if request.args.get("folder_match").lower() == "true" else False
+            )
             if not folder_match and not file_match:
                 raise MetabolightsException(
                     http_code=401,
                     message="At least one of them should be True: file_match, folder_match",
                 )
-            search_pattern = request.args.get('search_pattern') if request.args.get("search_pattern") else search_pattern
+            search_pattern = (
+                request.args.get("search_pattern")
+                if request.args.get("search_pattern")
+                else search_pattern
+            )
 
             if (
                 ".." + os.path.sep in search_pattern
@@ -516,27 +531,43 @@ class StudyRawAndDerivedDataFiles(Resource):
         )
         StudyService.get_instance().get_study_by_acc(study_id)
         study_data_file_index_path = os.path.join(
-            settings.mounted_paths.study_internal_files_root_path, 
-            study_id, "DATA_FILES", "data_file_index.json"
+            settings.mounted_paths.study_internal_files_root_path,
+            study_id,
+            "DATA_FILES",
+            "data_file_index.json",
         )
         if not os.path.exists(study_data_file_index_path):
             return {"files": []}
-        
+
         data_files = json.loads(pathlib.Path(study_data_file_index_path).read_text())
-        private_selected = fnmatch.filter(data_files["private_data_files"].keys(), search_pattern)
+        private_selected = fnmatch.filter(
+            data_files["private_data_files"].keys(), search_pattern
+        )
         # public_selected = fnmatch.filter(data_files["public_data_files"].keys(), search_pattern)
         result = set()
-        
+
         if file_match and folder_match:
             result.update(private_selected)
             # result.update(public_selected)
         elif file_match:
             # result.update([x for x in public_selected if not data_files["public_data_files"][x]["is_dir"]])
-            result.update([x for x in private_selected if not data_files["private_data_files"][x]["is_dir"]])
+            result.update(
+                [
+                    x
+                    for x in private_selected
+                    if not data_files["private_data_files"][x]["is_dir"]
+                ]
+            )
         else:
             # result.update([x for x in public_selected if data_files["public_data_files"][x]["is_dir"]])
-            result.update([x for x in private_selected if data_files["private_data_files"][x]["is_dir"]])
-        final_result = [ {"name": x} for x in result]
+            result.update(
+                [
+                    x
+                    for x in private_selected
+                    if data_files["private_data_files"][x]["is_dir"]
+                ]
+            )
+        final_result = [{"name": x} for x in result]
         final_result.sort(key=lambda x: x["name"])
         return {"files": final_result}
 
@@ -555,7 +586,6 @@ class StudyRawAndDerivedDataFiles(Resource):
         # )
         # ignore_list = self.get_ignore_list(study_folder)
 
-        
         # glob_search_result = glob.glob(search_path, recursive=True)
         # search_results = [
         #     os.path.abspath(file)
@@ -698,21 +728,23 @@ class StudyRawAndDerivedDataFiles(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # query validation        
+        # query validation
 
         target_location = None
         files = None
         override = False
         # If false, only sync ISA-Tab metadata files
         if request.args:
-            
             files = request.args.get("files") if request.args.get("files") else None
             target_location = (
-                request.args.get("target_location") if request.args.get("target_location") else None
+                request.args.get("target_location")
+                if request.args.get("target_location")
+                else None
             )
             override = (
                 True
-                if request.args.get("override") and request.args.get("override").lower() == "true"
+                if request.args.get("override")
+                and request.args.get("override").lower() == "true"
                 else False
             )
 
@@ -822,8 +854,11 @@ class StudyRawAndDerivedDataFolder(Resource):
         # query validation        search_pattern = "*"
 
         if request.args:
-            
-            search_pattern = request.args.get("search_pattern") if request.args.get("search_pattern") else "*"
+            search_pattern = (
+                request.args.get("search_pattern")
+                if request.args.get("search_pattern")
+                else "*"
+            )
             if (
                 ".." + os.path.sep in search_pattern
                 or "." + os.path.sep in search_pattern
@@ -984,21 +1019,25 @@ class StudyRawAndDerivedDataFolder(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # query validation        
+        # query validation
 
         target_location = None
         folders = None
         override = False
         # If false, only sync ISA-Tab metadata files
         if request.args:
-            
-            folders = request.args.get("folders") if request.args.get("folders") else None
+            folders = (
+                request.args.get("folders") if request.args.get("folders") else None
+            )
             target_location = (
-                request.args.get("target_location") if request.args.get("target_location") else None
+                request.args.get("target_location")
+                if request.args.get("target_location")
+                else None
             )
             override = (
                 True
-                if request.args.get("override") and request.args.get("override").lower() == "true"
+                if request.args.get("override")
+                and request.args.get("override").lower() == "true"
                 else False
             )
 
@@ -1223,22 +1262,27 @@ class StudyFilesReuse(Resource):
         obfuscation_code = None
         if "obfuscation_code" in request.headers:
             obfuscation_code = request.headers["obfuscation_code"]
-        
+
         force_write = False
         include_internal_files = False
         if request.args:
-            
             force_write = (
-                True if request.args.get("force") and request.args.get("force").lower() == "true" else False
+                True
+                if request.args.get("force")
+                and request.args.get("force").lower() == "true"
+                else False
             )
             readonly_mode = (
                 True
-                if not request.args.get("readonlyMode") or request.args.get("readonlyMode").lower() == "true"
+                if not request.args.get("readonlyMode")
+                or request.args.get("readonlyMode").lower() == "true"
                 else False
             )
             if request.args.get("include_internal_files"):
                 include_internal_files = (
-                    False if request.args.get("include_internal_files").lower() != "true" else True
+                    False
+                    if request.args.get("include_internal_files").lower() != "true"
+                    else True
                 )
         settings = get_study_settings()
         study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
@@ -1272,9 +1316,7 @@ class StudyFilesReuse(Resource):
         settings = get_settings()
         for item in settings.file_filters.rsync_exclude_list:
             exclude_list.add(
-                os.path.join(
-                    settings.study.readonly_files_symbolic_link_name, item
-                )
+                os.path.join(settings.study.readonly_files_symbolic_link_name, item)
             )
         exclude_list.add(settings.study.readonly_files_symbolic_link_name)
         # exclude_list = extended_exclude_list.union(exclude_list)
@@ -1286,8 +1328,13 @@ class StudyFilesReuse(Resource):
             recursive=False,
             exclude_list=exclude_list,
         )
-        directory_files[settings.study.readonly_files_symbolic_link_name] = FileDescriptor(name=settings.study.readonly_files_symbolic_link_name, 
-                                                                                           relative_path=settings.study.readonly_files_symbolic_link_name, is_dir=True)
+        directory_files[settings.study.readonly_files_symbolic_link_name] = (
+            FileDescriptor(
+                name=settings.study.readonly_files_symbolic_link_name,
+                relative_path=settings.study.readonly_files_symbolic_link_name,
+                is_dir=True,
+            )
+        )
         # metadata_files = get_all_metadata_files()
         # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
         # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
@@ -1503,15 +1550,15 @@ class CopyFilesFolders(Resource):
     #         user_token = request.headers["user_token"]
     #
     #     # query validation
-    #     
-    #     
-    #     
+    #
+    #
+    #
     #     include_raw_data = False
     #     file_location = None
     #
     #     # If false, only sync ISA-Tab metadata files
     #     if request.args:
-    #         
+    #
     #         include_raw_data = False if request.args.get('include_raw_data').lower() != 'true' else True
     #         file_location = request.args.get('file_location')
     #
@@ -1674,12 +1721,10 @@ class SyncFolder(Resource):
             user_token = request.headers["user_token"]
 
         # query validation
-        
-        
+
         directory_name = ""
         # If false, only sync ISA-Tab metadata files
         if request.args:
-            
             directory_name = request.args.get("directory_name")
 
         # check for access rights
@@ -1947,7 +1992,6 @@ class UnzipFiles(Resource):
 
         # If false, only sync ISA-Tab metadata files
         if request.args:
-            
             files = request.args.get("files") if request.args.get("files") else None
             remove_zip = False if request.args.get("force").lower() != "true" else True
 
@@ -2130,16 +2174,25 @@ class StudyFilesTree(Resource):
         location = "study"
         include_internal_files = True
         if request.args:
-            
             if request.args.get("include_sub_dir"):
                 include_sub_dir = (
-                    False if request.args.get("include_sub_dir").lower() != "true" else True
+                    False
+                    if request.args.get("include_sub_dir").lower() != "true"
+                    else True
                 )
-            location = request.args.get("location") if request.args.get("location") else "study"
-            directory = request.args.get("directory") if request.args.get("directory") else None
+            location = (
+                request.args.get("location")
+                if request.args.get("location")
+                else "study"
+            )
+            directory = (
+                request.args.get("directory") if request.args.get("directory") else None
+            )
             if request.args.get("include_internal_files"):
                 include_internal_files = (
-                    False if request.args.get("include_internal_files").lower() != "true" else True
+                    False
+                    if request.args.get("include_internal_files").lower() != "true"
+                    else True
                 )
         if location not in ["study", "upload"]:
             abort(401, message="Study location is not valid")
@@ -2191,45 +2244,66 @@ class StudyFilesTree(Resource):
             files_path = os.path.join(study_metadata_location, "FILES")
             if directory_path.startswith(files_path):
                 mounted_paths = get_settings().study.mounted_paths
-                target_root_path = os.path.join(mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES")
+                target_root_path = os.path.join(
+                    mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES"
+                )
                 target_path = os.path.join(target_root_path, "data_file_index.json")
                 private_data_files = None
                 public_data_files = None
+                valid_file = False
                 if os.path.exists(target_path):
                     try:
                         with open(target_path) as f:
                             data_file_index = json.load(f)
                         private_data_files = data_file_index["private_data_files"]
                         public_data_files = data_file_index["public_data_files"]
+                        valid_file = True
                     except Exception:
+                        public_data_files = None
+                        private_data_files = None
                         # file is not valid.
                         pass
-                if private_data_files is None or public_data_files is None:
-                    for x in private_data_files:
-                        item_relative_path = private_data_files[x]["relative_path"]
-                        item_parent_path = private_data_files[x]["parent_relative_path"]
+                if not valid_file:
+                    raise Exception(
+                        "The data files are not indexed. Please index them before proceeding."
+                    )
+                for x in private_data_files:
+                    item_relative_path = private_data_files[x]["relative_path"]
+                    item_parent_path = private_data_files[x]["parent_relative_path"]
+                    if item_parent_path == directory:
+                        descriptor = FileDescriptor.model_validate(
+                            private_data_files[x]
+                        )
+                        private_directory_files[item_relative_path] = descriptor
+                if study.first_public_date:
+                    for x in public_data_files:
+                        item_relative_path = public_data_files[x]["relative_path"]
+                        item_parent_path = public_data_files[x][
+                            "parent_relative_path"
+                        ]
                         if item_parent_path == directory:
-                            descriptor = FileDescriptor.model_validate(private_data_files[x])
-                            private_directory_files[item_relative_path] = descriptor
-                    if study.first_public_date:
-                        for x in public_data_files:
-                            item_relative_path = public_data_files[x]["relative_path"]
-                            item_parent_path = public_data_files[x]["parent_relative_path"]
-                            if item_parent_path == directory:
-                                descriptor = FileDescriptor.model_validate(public_data_files[x])
-                                public_directory_files[item_relative_path] = descriptor
-                        for relative_path, item in private_directory_files.items():
-                            if relative_path in public_directory_files:
-                                public_item = public_directory_files[relative_path]
-                                if item.file_size != public_item.file_size or item.modified_time != public_item.modified_time:
-                                    item.file_difference = FileDifference.MODIFIED
-                            else:
-                                item.file_difference = FileDifference.NEW
-                        for relative_path, item in public_directory_files.items():
-                            if relative_path not in private_directory_files:
-                                item.file_difference = FileDifference.DELETED
-                                private_directory_files[relative_path] = item
-                    directory_files = OrderedDict(sorted(private_directory_files.items(), key=lambda x: x[0]))
+                            descriptor = FileDescriptor.model_validate(
+                                public_data_files[x]
+                            )
+                            public_directory_files[item_relative_path] = descriptor
+                    for relative_path, item in private_directory_files.items():
+                        if relative_path in public_directory_files:
+                            public_item = public_directory_files[relative_path]
+                            if (
+                                item.file_size != public_item.file_size
+                                or item.modified_time != public_item.modified_time
+                            ):
+                                item.file_difference = FileDifference.MODIFIED
+                        else:
+                            item.file_difference = FileDifference.NEW
+                    for relative_path, item in public_directory_files.items():
+                        if relative_path not in private_directory_files:
+                            item.file_difference = FileDifference.DELETED
+                            private_directory_files[relative_path] = item
+                directory_files = OrderedDict(
+                    sorted(private_directory_files.items(), key=lambda x: x[0])
+                )
+
             else:
                 directory_files = get_directory_files(
                     study_metadata_location,
@@ -2300,7 +2374,6 @@ class FileList(Resource):
                 "required": False,
                 "allowMultiple": False,
             },
-            
             {
                 "name": "obfuscation-code",
                 "description": "obfuscation code",
@@ -2341,12 +2414,10 @@ class FileList(Resource):
             )
 
         # query validation
-        
-        
+
         directory_name = ""
         # If false, only sync ISA-Tab metadata files
         if request.args:
-            
             directory_name = request.args.get("directory_name")
 
         # check for access rights
