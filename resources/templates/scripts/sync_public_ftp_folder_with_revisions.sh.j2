@@ -1,38 +1,50 @@
 #!/bin/bash
 
+{% raw %}
 
-calculate_sha256() {
-  local file="$1"
-  sha256sum "$file" | awk '{print $1}'
-}
-
-# Function to process files recursively
 calculate_sha256_recursively() {
-  local dir="$1"
-  local json_file="$2"
-  local base_dir="$3"
-  local first_entry=true
+  local json_file="$1"
+  shift
+  local target_dirs=("$@")
 
-  echo "{" > "$json_file"
-  while IFS= read -r -d '' file; do
-      # Skip specified files in the top directory
+  declare -A file_hashes
+
+  for dir_input in "${target_dirs[@]}"; do
+    if [ ! -d "$dir_input" ]; then
+      echo "Directory '$dir_input' does not exist. Skipping."
+      continue
+    fi
+
+    local base_dir
+    base_dir="$(realpath "$dir_input")"
+
+    while IFS= read -r -d '' file; do
+      # Skip excluded files at top level
       if [[ "$file" =~ ^"$base_dir"/(INTERNAL_FILES|AUDIT_FILES|[asi]_.*\.txt|m_.*\.tsv)$ ]]; then
-          continue
+        continue
       fi
 
-      sha256=$(calculate_sha256 "$file")
-      relative_path="${file#$base_dir/}"
-      if [ "$first_entry" = true ]; then
-          first_entry=false
-      else
-          echo "," >> "$json_file"
-      fi
-      echo "\"$relative_path\": \"$sha256\"" >> "$json_file"
-  done < <(find "$dir" -type f -print0)
-  echo "}" >> "$json_file"
+      relative_path="FILES/${file#$base_dir/}"
+      sha256=$(sha256sum "$file" | awk '{print $1}')
+      file_hashes["$relative_path"]="$sha256"
+    done < <(find "$base_dir" -type f -print0)
+  done
+
+  # Sort and write to JSON
+  {
+    echo "{"
+    mapfile -t sorted_keys < <(printf '%s\n' "${!file_hashes[@]}" | LC_ALL=C sort -f)
+    for i in "${!sorted_keys[@]}"; do
+      key="${sorted_keys[$i]}"
+      value="${file_hashes[$key]}"
+      printf '  "%s": "%s"' "$(printf "%s" "$key" | sed 's/"/\\"/g')" "$(printf "%s" "$value")"
+      [[ $i -lt $((${#sorted_keys[@]} - 1)) ]] && echo "," || echo
+    done
+    echo "}"
+  } > "$json_file"
 }
 
-
+{% endraw %}
 
 #################################
 #  Configurable Options  #
@@ -62,79 +74,114 @@ echo "ROOT_DATA_FILES_HASH_PATH:  $ROOT_DATA_FILES_HASH_PATH"
 
 CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-echo  curl -X PUT --header \"Status: In Progress\" --header \"task-start-at: ${CURRENT_TIME}\" --header \"Task-Message: Public FTP Folder sync task started.\" --header \"User-Token: ${USER_TOKEN:0:3}xxx\" \"${UPDATE_URL}\"
-curl -X PUT --header "Status: In Progress" --header "task-start-at: $CURRENT_TIME" --header "Task-Message: Public FTP Folder sync task started." --header "User-Token: ${USER_TOKEN}" "${UPDATE_URL}"
+echo  curl -X PUT --header \"Status: In Progress\" --header \"task-started-at: ${CURRENT_TIME}\" --header \"Task-Message: Public FTP Folder sync task started.\" --header \"User-Token: ${USER_TOKEN:0:3}xxx\" \"${UPDATE_URL}\"
+STATUS_UPDATE=$(curl -s -w "%{http_code}" -X PUT --header "Status: In Progress" --header "task-started-at: $CURRENT_TIME" --header "Task-Message: Public FTP Folder sync task started." --header "User-Token: ${USER_TOKEN}" "${UPDATE_URL}")
 RETURN=$?
-echo "$CURRENT_TIME: Metadata sync exit code: $RETURN" 
-if [ $RETURN -eq 0 ];
+HTTP_RESPONSE=${STATUS_UPDATE: -3}
+echo "$CURRENT_TIME: Revision task status update is ended. Exit code: $RETURN HTTP response code: $HTTP_RESPONSE" 
+
+if [[ "$HTTP_RESPONSE" == "200" || "$HTTP_RESPONSE" == "201" ]];
 then
   echo "${UPDATE_URL} is used to update revision FTP sync status to 'In Progress'"
 else
-  echo "${UPDATE_URL} : Warning: Failed to update revision FTP sync status to 'In Progress'"
+  echo "${UPDATE_URL} : Failed to update revision FTP sync status to 'In Progress'"
+  exit $RETURN
 fi
 
-CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-echo "$CURRENT_TIME: SHA256 Hash calculation started for data files..." 
-calculate_sha256_recursively "${STUDY_PRIVATE_FTP_PATH}" "${DATA_FILES_HASH_PATH}" "${STUDY_PRIVATE_FTP_PATH}"
-cp "${DATA_FILES_HASH_PATH}" "${ROOT_DATA_FILES_HASH_PATH}" 
-CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-echo "$CURRENT_TIME: SHA256 Hash calculation ended for data files." 
-
 echo "----------------------------" 
+echo "CREATE PUBLIC FOLDER" 
 CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 echo "$CURRENT_TIME: Syncing Study files to Public" 
 echo "${STUDY_PUBLIC_FTP_PATH} is now being synced." 
-echo "mkdir -p ${STUDY_PUBLIC_FTP_PATH}" 
-mkdir -p ${STUDY_PUBLIC_FTP_PATH}
+echo "mkdir -p ${STUDY_PUBLIC_FTP_PATH}/FILES" 
+mkdir -p "${STUDY_PUBLIC_FTP_PATH}/FILES"
 
-echo "----------------------------"
-echo "rsync from ${STUDY_METADATA_PATH}/ to ${STUDY_PUBLIC_FTP_PATH}" 
-echo "rsync -a -L --delete-after --exclude 'FILES' --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' ${STUDY_METADATA_PATH}/ ${STUDY_PUBLIC_FTP_PATH}" 
-rsync -a -L --delete-after --exclude 'FILES' --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' ${STUDY_METADATA_PATH}/ ${STUDY_PUBLIC_FTP_PATH}
-RETURN=$?
-CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-echo "$CURRENT_TIME: ENDPOINT CALL sync exit code: $RETURN" 
 
-echo "rsync from ${STUDY_PRIVATE_FTP_PATH}/ to ${STUDY_PUBLIC_FTP_PATH}/FILES" 
-echo "rsync -a -L --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' --exclude '[asi]_*.txt' --exclude 'm_*.tsv' ${STUDY_PRIVATE_FTP_PATH}/ ${STUDY_PUBLIC_FTP_PATH}/FILES" 
-rsync -a -L --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' --exclude '[asi]_*.txt' --exclude 'm_*.tsv' ${STUDY_PRIVATE_FTP_PATH}/ ${STUDY_PUBLIC_FTP_PATH}/FILES
-RETURN=$?
-CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-echo "$CURRENT_TIME: FILES sync exit code: $RETURN" 
 
 echo "----------------------------" 
-echo "Changing permissions" 
-echo "chmod -R 755 ${STUDY_PUBLIC_FTP_PATH}" 
-chmod -R 755 "${STUDY_PUBLIC_FTP_PATH}"
+echo "ENSURE PRIVATE FTP FOLDER IS ACCESSIBLE" 
+echo "Changing private FTP folder permissions to make it accessible" 
+echo "chmod -R u+rx ${STUDY_PRIVATE_FTP_PATH}" 
+chmod -R u+rx "${STUDY_PRIVATE_FTP_PATH}"
+echo "chmod -R g+rx ${STUDY_PRIVATE_FTP_PATH}" 
+chmod -R g+rx "${STUDY_PRIVATE_FTP_PATH}"
+
+echo "SYNC PUBLIC FTP FOLDER FROM PRIVATE FTP FOLDER" 
 CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$CURRENT_TIME: rsync from ${STUDY_PRIVATE_FTP_PATH}/ to ${STUDY_PUBLIC_FTP_PATH}/FILES" 
+echo "rsync -a -L --itemize-changes --stats --exclude='.*' --exclude 'FILES' --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' --exclude '[asi]_*.txt' --exclude 'm_*.tsv' ${STUDY_PRIVATE_FTP_PATH}/ ${STUDY_PUBLIC_FTP_PATH}/FILES" 
+rsync -a -L  --itemize-changes --stats --exclude='.*' --exclude 'FILES' --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' --exclude '[asi]_*.txt' --exclude 'm_*.tsv' ${STUDY_PRIVATE_FTP_PATH}/ ${STUDY_PUBLIC_FTP_PATH}/FILES
+DATA_RETURN=$?
 
-echo "UPDATE_URL: ${UPDATE_URL}"
-
-if [ $RETURN -eq 0 ];
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$CURRENT_TIME: FILES sync exit code: $DATA_RETURN" 
+if [ $DATA_RETURN -eq 0 ];
 then
-  echo "RSYNC completed successfully."
+  echo "Data syncronization completed successfully."
+  CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  echo "$CURRENT_TIME: SHA256 Hash calculation started for data files..." 
+  calculate_sha256_recursively "${DATA_FILES_HASH_PATH}" "${STUDY_PUBLIC_FTP_PATH}/FILES"
+  echo "$CURRENT_TIME: copy data file hashes to top folder of PUBLIC_METADATA folder" 
+  cp "${DATA_FILES_HASH_PATH}" "${ROOT_DATA_FILES_HASH_PATH}" 
+  CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  echo "$CURRENT_TIME: SHA256 Hash calculation ended for data files." 
+else
+  echo "Data syncronization failed with code $DATA_RETURN."
+fi
+
+if [ $DATA_RETURN -eq 0 ];
+then
+  echo "----------------------------"
+  echo "rsync from ${STUDY_METADATA_PATH}/ to ${STUDY_PUBLIC_FTP_PATH}" 
+  echo "rsync -a -L --delete-after --itemize-changes --stats --exclude='.*' --exclude 'FILES' --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' ${STUDY_METADATA_PATH}/ ${STUDY_PUBLIC_FTP_PATH}" 
+  rsync -a -L --delete-after --itemize-changes --stats --exclude='.*' --exclude 'FILES' --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' ${STUDY_METADATA_PATH}/ ${STUDY_PUBLIC_FTP_PATH}
+  METADATA_RETURN=$?
+  CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  echo "$CURRENT_TIME: ENDPOINT CALL sync exit code: $METADATA_RETURN" 
+fi
+
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$CURRENT_TIME: REVISION STATUS UPDATE_URL: ${UPDATE_URL}"
+
+if [ $((DATA_RETURN + METADATA_RETURN)) -eq 0 ];
+then
+  echo "RSYNC task completed successfully."
+
+  echo "----------------------------" 
+  echo "Change file permissions to remove write permission from group members and others." 
+  echo "Changing Public FTP folder permissions" 
+  echo "chmod -R 755 ${STUDY_PUBLIC_FTP_PATH}" 
+  chmod -R 755 "${STUDY_PUBLIC_FTP_PATH}"
+
+
   echo  curl -X PUT --header \"Status: Completed\" --header \"task-completed-at: ${CURRENT_TIME}\" --header \"Task-Message: Public FTP Folder sync task completed.\" --header \"User-Token: ${USER_TOKEN:0:3}xxx\" \"${UPDATE_URL}\"
-  curl -X PUT --header "Status: Completed" --header "task-completed-at: ${CURRENT_TIME}" --header "Task-Message: Public FTP Folder sync task completed." --header "User-Token: ${USER_TOKEN}" "${UPDATE_URL}"
+  STATUS_UPDATE=$(curl -s -w "%{http_code}" -X PUT --header "Status: Completed" --header "task-completed-at: ${CURRENT_TIME}" --header "Task-Message: Public FTP Folder sync task completed." --header "User-Token: ${USER_TOKEN}" "${UPDATE_URL}")
   RETURN_COMPLETED=$?
-  echo "$CURRENT_TIME: ENRevision update endpoint exit code: $RETURN_COMPLETED" 
-  if [ $RETURN_COMPLETED -eq 0 ];
+  HTTP_RESPONSE=${STATUS_UPDATE: -3}
+  echo "$CURRENT_TIME: Revision update endpoint exit code: $RETURN_COMPLETED" 
+
+  if [[ "$HTTP_RESPONSE" == "200" || "$HTTP_RESPONSE" == "201" ]];
   then
-    echo "${UPDATE_URL}- Update revision status to 'Completed'"
+    echo "${UPDATE_URL}-  Revision status updated to 'Completed'"
   else
     echo "${UPDATE_URL}- Failed to update revision status to 'Completed'."
+    exit 1
   fi
-  exit $RETURN_COMPLETED
+
+  exit 0
 else
   echo "RSYNC failed."
   echo  curl -X PUT --header \"Status: Failed\" --header \"task-completed-at: ${CURRENT_TIME}\" --header \"Task-Message: Public FTP Folder sync task failed.\" --header \"User-Token: ${USER_TOKEN:0:3}xxx \"${UPDATE_URL}\"
-  curl -X PUT --header "Status: Failed" --header "task-completed-at: ${CURRENT_TIME}" --header "Task-Message: FTP Folder Sync Task Failed." --header "User-Token: ${USER_TOKEN}" "${UPDATE_URL}"
+  STATUS_UPDATE=$(curl -s -w "%{http_code}" -X PUT --header "Status: Failed" --header "task-completed-at: ${CURRENT_TIME}" --header "Task-Message: FTP Folder Sync Task Failed." --header "User-Token: ${USER_TOKEN}" "${UPDATE_URL}")
   RETURN_FAILED=$?
+  HTTP_RESPONSE=${STATUS_UPDATE: -3}
   echo "$CURRENT_TIME: Revision update endpoint call: exit code: $RETURN_FAILED" 
-  if [ $RETURN_FAILED -eq 0 ];
+  if [[ "$HTTP_RESPONSE" == "200" || "$HTTP_RESPONSE" == "201" ]];
   then
-    echo "${UPDATE_URL}- Updated revision status: Completed."
+    echo "${UPDATE_URL}- Updated revision status: Failed."
   else
-    echo "${UPDATE_URL}- Failed to update revision status."
+    echo "${UPDATE_URL}- Failed to update revision status to 'Failed'."
   fi
-  exit $RETURN
+
+  exit 1
 fi

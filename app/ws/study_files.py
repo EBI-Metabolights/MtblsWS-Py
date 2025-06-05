@@ -2193,10 +2193,18 @@ class StudyFilesTree(Resource):
                 mounted_paths = get_settings().study.mounted_paths
                 target_root_path = os.path.join(mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES")
                 target_path = os.path.join(target_root_path, "data_file_index.json")
+                private_data_files = None
+                public_data_files = None
                 if os.path.exists(target_path):
-                    with open(target_path) as f:
-                        data_file_index = json.load(f)
-                    private_data_files = data_file_index["private_data_files"]
+                    try:
+                        with open(target_path) as f:
+                            data_file_index = json.load(f)
+                        private_data_files = data_file_index["private_data_files"]
+                        public_data_files = data_file_index["public_data_files"]
+                    except Exception:
+                        # file is not valid.
+                        pass
+                if private_data_files is None or public_data_files is None:
                     for x in private_data_files:
                         item_relative_path = private_data_files[x]["relative_path"]
                         item_parent_path = private_data_files[x]["parent_relative_path"]
@@ -2204,7 +2212,6 @@ class StudyFilesTree(Resource):
                             descriptor = FileDescriptor.model_validate(private_data_files[x])
                             private_directory_files[item_relative_path] = descriptor
                     if study.first_public_date:
-                        public_data_files = data_file_index.get("public_data_files")
                         for x in public_data_files:
                             item_relative_path = public_data_files[x]["relative_path"]
                             item_parent_path = public_data_files[x]["parent_relative_path"]
