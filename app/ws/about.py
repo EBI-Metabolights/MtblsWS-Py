@@ -18,6 +18,7 @@
 
 import logging
 import os
+import sys
 
 from flask import request
 from flask_restful import Resource, fields, marshal_with
@@ -101,5 +102,5 @@ class AboutServer(Resource):
         log_request(request)
 
         hostname = os.uname().nodename
-        about = {'server_name': hostname}
+        about = {'server_name': hostname, "python_version": sys.version.split()[0]}
         return about
