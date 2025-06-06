@@ -243,7 +243,8 @@ class EmailService(object):
         subject_name = f"MetaboLights Study Made Public ({study_id})"
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
         metabolights_website_url = get_settings().server.service.ws_app_base_link
-        mtbls_accession_url = os.path.join(metabolights_website_url, study_id)
+        # mtbls_accession_url = os.path.join(metabolights_website_url, study_id)
+        mtbls_accession_url = os.path.join("https://www.ebi.ac.uk/metabolights", study_id)
         public_ftp_server = "ftp.ebi.ac.uk"
         download_settings = get_settings().ftp_server.public.configuration
         public_ftp_base_url = download_settings.public_studies_ftp_base_url
