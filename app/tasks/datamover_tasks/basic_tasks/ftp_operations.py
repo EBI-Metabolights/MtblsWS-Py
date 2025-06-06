@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+from app.services.storage_service.acl import Acl
 from app.services.storage_service.models import SyncTaskResult, SyncTaskStatus
 from app.study_folder_utils import FileDescriptor
 from app.tasks.worker import MetabolightsTask, celery
@@ -48,14 +49,21 @@ def index_study_data_files(
     study_private_ftp_path_item = pathlib.Path(private_data_files_path)
     ordered_private_data_files = OrderedDict()
     if study_private_ftp_path_item.exists():
-        file_descriptors = get_ftp_data_files(
-            root_path=private_data_files_path,
-            file_descriptors=file_descriptors,
-            root=study_private_ftp_path_item,
-            recursive=recursive,
-            ignore_files=ignore_files,
-        )
-
+        current = oct(os.stat(private_data_files_path).st_mode & 0o777)
+        try:
+            if current != Acl.READ_ONLY.value:
+                os.chmod(private_data_files_path, mode=Acl.READ_ONLY.value)
+            file_descriptors = get_ftp_data_files(
+                root_path=private_data_files_path,
+                file_descriptors=file_descriptors,
+                root=study_private_ftp_path_item,
+                recursive=recursive,
+                ignore_files=ignore_files,
+            )
+        finally:
+            if current != Acl.READ_ONLY.value:
+                os.chmod(private_data_files_path, mode=current)
+            
         data_files = {}
         for item, descriptor in file_descriptors.items():
             if descriptor.name.endswith(".tsv") and descriptor.name.startswith("m_"):
