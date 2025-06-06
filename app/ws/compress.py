@@ -49,7 +49,7 @@ def compress_raw_data_folders(task_name: str, study_id: str, filename_pattern: s
         submission_result = client.submit_hpc_job(
                     script_path, task_name, output_file=out_log_path, error_file=err_log_path, queue=hpc_queue_name, account=email
                 )
-        job_id = submission_result.job_ids[0] if submission_result and submission_result[0] else  None
+        job_id = submission_result.job_ids[0] if submission_result and submission_result.job_ids else  None
         
         messages.append(f"New job was submitted with job id {job_id} for {task_name}")
         return job_id, messages
