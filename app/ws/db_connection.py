@@ -452,7 +452,6 @@ def get_all_private_studies_for_user(user_token):
                     revision_status = revision[4]
                     revision_task_message = revision[5] or ""
 
-
             complete_list.append(
                 {
                     "accession": study_id,
@@ -574,7 +573,7 @@ def get_all_studies_for_user(user_token):
                 revision_comment = revision[3] or ""
                 revision_status = revision[4]
                 revision_task_message = revision[5] or ""
-                    
+
         revision_datetime = row[7].isoformat() if row[7] else None
         complete_list.append(
             {
@@ -1432,7 +1431,6 @@ def insert_update_data(query, inputs=None):
 def update_study_status(
     study_id,
     study_status,
-    is_curator=False,
     first_public_date=None,
     first_private_date=None,
 ):
@@ -1451,19 +1449,11 @@ def update_study_status(
     elif study_status == "dormant":
         status = "4"
 
-    query = "UPDATE studies SET status = %(status)s"
-    if (
-        not is_curator
-    ):  # Add 28 days to the database release date when a submitter change the status
-        query = (
-            query
-            + ", updatedate = CURRENT_DATE, releasedate = CURRENT_DATE + integer '28'"
-        )
-    if study_status == "public" and is_curator:
-        query = query + ", updatedate = CURRENT_DATE, releasedate = CURRENT_DATE"
+    query = "UPDATE studies SET status = %(status)s, status_date = CURRENT_DATE, updatedate = CURRENT_DATE"
+
     if study_status == "public" and first_public_date is None:
         query = query + ", first_public_date = CURRENT_DATE"
-    elif study_status in {"private", "in review"} and first_private_date is None:
+    if study_status in {"private", "in review"} and first_private_date is None:
         query = query + ", first_private_date = CURRENT_DATE"
 
     query = query + " WHERE acc = %(study_id)s;"
