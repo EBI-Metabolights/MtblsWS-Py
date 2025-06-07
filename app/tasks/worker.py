@@ -85,12 +85,14 @@ celery = Celery(
         "app.tasks.common_tasks.curation_tasks.study_revision",
         "app.tasks.common_tasks.basic_tasks.send_email",
         "app.tasks.common_tasks.basic_tasks.elasticsearch",
+        "app.tasks.common_tasks.curation_tasks.submission_pipeline",
         "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",
         "app.tasks.datamover_tasks.basic_tasks.file_management",
         "app.tasks.datamover_tasks.basic_tasks.ftp_operations",
         "app.tasks.datamover_tasks.basic_tasks.execute_commands",
         "app.tasks.datamover_tasks.curation_tasks.data_file_operations",
         "app.tasks.datamover_tasks.curation_tasks.metabolon",
+        "app.tasks.datamover_tasks.curation_tasks.submission_pipeline",
         "app.tasks.system_monitor_tasks.heartbeat",
         "app.tasks.system_monitor_tasks.worker_maintenance",
         "app.tasks.system_monitor_tasks.integration_check",
@@ -107,6 +109,7 @@ filtered_logger_names = [
 for logger_name in filtered_logger_names:
     filtered_logger = get_logger(logger_name)
     filtered_logger.addFilter(logger_filter)
+
 
 @lru_cache(1)
 def get_flask_app():
@@ -167,6 +170,7 @@ def update_task_was_sent_state(sender=None, headers=None, **kwargs):
     backend = task.backend if task else celery.backend
     backend.store_result(headers["id"], None, "INITIATED")
 
+
 service_account_apitoken = get_settings().auth.service_account.api_token
 periodic_task_configuration = get_settings().celery.periodic_task_configuration
 # celery.conf.beat_schedule = {
@@ -191,7 +195,7 @@ periodic_task_configuration = get_settings().celery.periodic_task_configuration
 celery.conf.beat_schedule = {
     "check_integration": {
         "task": "app.tasks.common_tasks.admin_tasks.integration_check.check_integrations",
-        "schedule": periodic_task_configuration.integration_test_period_in_seconds*3,
+        "schedule": periodic_task_configuration.integration_test_period_in_seconds * 3,
         "options": {"expires": 55},
     },
 }
@@ -209,10 +213,12 @@ def send_email(subject_name, body, from_address, to_addresses, cc_addresses):
             cc_mail_addresses=cc_addresses,
         )
 
+
 def report_internal_technical_issue(subject, body):
     email = get_settings().email.email_service.configuration.technical_issue_recipient_email_address
     send_email(subject, body, None, email, None)
-    
+
+
 class MetabolightsTask(celery.Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         flask_app = get_flask_app()
@@ -222,13 +228,14 @@ class MetabolightsTask(celery.Task):
             if "email" in kwargs:
                 username = kwargs["email"]
             if not username and "user_token" in kwargs and kwargs["user_token"]:
-                user = UserService.get_instance().get_simplified_user_by_token(kwargs["user_token"])
+                user = UserService.get_instance().get_simplified_user_by_token(
+                    kwargs["user_token"]
+                )
                 if user:
                     username = user.userName
-                
+
             new_kwargs = {}
             if kwargs:
-
                 for key in kwargs:
                     new_kwargs[key] = ValueMaskUtility.mask_value(key, kwargs[key])
 

@@ -49,7 +49,7 @@ def index_study_data_files(
     study_private_ftp_path_item = pathlib.Path(private_data_files_path)
     ordered_private_data_files = OrderedDict()
     if study_private_ftp_path_item.exists():
-        current = oct(os.stat(private_data_files_path).st_mode & 0o777)
+        current = os.stat(private_data_files_path).st_mode & 0o777
         try:
             if current != Acl.READ_ONLY.value:
                 os.chmod(private_data_files_path, mode=Acl.READ_ONLY.value)
