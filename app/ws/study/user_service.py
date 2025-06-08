@@ -31,8 +31,19 @@ class UserService(object):
                 studies = query.filter(User.apitoken == user_token).all()
                 return studies
         except Exception as e:
-            raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
-                
+            raise MetabolightsAuthorizationException(message="Error while retreiving user from database", exception=e)
+
+    
+    def get_study_submitters(self, study_id):
+        try:
+            with DBManager.get_instance().session_maker() as db_session:
+                base_query = db_session.query(User)
+                query = base_query.join(Study, User.studies)
+                submitters = query.filter(Study.acc == study_id).all()
+                return submitters
+        except Exception as e:
+            raise MetabolightsAuthorizationException(message="Error while retreiving submittes from database", exception=e)
+        
     def validate_user_has_write_access(self, user_token, study_id):
 
         try:
@@ -42,7 +53,7 @@ class UserService(object):
                 user = query.filter(Study.acc == study_id, User.apitoken == user_token,
                                     User.status == UserStatus.ACTIVE.value).first()
         except Exception as e:
-            raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
+            raise MetabolightsAuthorizationException(message="Error while retreiving user from database", exception=e)
 
         if user:
             return user
@@ -50,17 +61,17 @@ class UserService(object):
             study = db_session.query(Study.acc).filter(Study.acc == study_id).first()
             if study:
                 return self.validate_user_has_curator_role(user_token)
-            raise MetabolightsAuthorizationException(message=f"Not a valid study id")
+            raise MetabolightsAuthorizationException(message="Not a valid study id")
 
     def validate_user_has_read_access(self, user_token, study_id, obfuscationcode=None):
         if not study_id:
-            raise MetabolightsAuthorizationException(message=f"Not a valid study id")
+            raise MetabolightsAuthorizationException(message="Not a valid study id")
         try:
             with DBManager.get_instance().session_maker() as db_session:
                 base_query = db_session.query(Study.acc, Study.status, Study.obfuscationcode)
                 study = base_query.filter(Study.acc == study_id).first()
                 if not study:
-                    raise MetabolightsAuthorizationException(message=f"Not a valid study id")
+                    raise MetabolightsAuthorizationException(message="Not a valid study id")
                 else:
                     if study[1] == StudyStatus.PUBLIC.value:
                         return True
@@ -69,10 +80,10 @@ class UserService(object):
                             if study[2] == obfuscationcode and study[1] in (StudyStatus.INREVIEW.value, StudyStatus.PRIVATE.value):
                                 return True
                             if study[2] != obfuscationcode:
-                                raise MetabolightsAuthorizationException(message=f"Not a valid study id or obfuscation code")
+                                raise MetabolightsAuthorizationException(message="Not a valid study id or obfuscation code")
                     
         except Exception as e:
-            raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)        
+            raise MetabolightsAuthorizationException(message="Error while retreiving user from database", exception=e)        
         self.validate_user_has_write_access(user_token, study_id)
         return True
         

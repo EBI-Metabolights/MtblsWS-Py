@@ -41,7 +41,11 @@ from app.services.storage_service.storage_service import StorageService
 from app.study_folder_utils import FileDescriptor, FileDifference
 from app.tasks.datamover_tasks.basic_tasks.file_management import list_directory
 from app.tasks.datamover_tasks.curation_tasks import data_file_operations
-from app.utils import MetabolightsException, metabolights_exception_handler
+from app.utils import (
+    MetabolightsAuthorizationException,
+    MetabolightsException,
+    metabolights_exception_handler,
+)
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
@@ -1263,15 +1267,8 @@ class StudyFilesReuse(Resource):
         if "obfuscation_code" in request.headers:
             obfuscation_code = request.headers["obfuscation_code"]
 
-        force_write = False
-        include_internal_files = False
+        include_internal_files = True
         if request.args:
-            force_write = (
-                True
-                if request.args.get("force")
-                and request.args.get("force").lower() == "true"
-                else False
-            )
             readonly_mode = (
                 True
                 if not request.args.get("readonlyMode")
@@ -1280,114 +1277,28 @@ class StudyFilesReuse(Resource):
             )
             if request.args.get("include_internal_files"):
                 include_internal_files = (
-                    False
-                    if request.args.get("include_internal_files").lower() != "true"
-                    else True
+                    True
+                    if request.args.get("include_internal_files", "true").lower()
+                    == "true"
+                    else False
                 )
-        settings = get_study_settings()
         study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
 
         UserService.get_instance().validate_user_has_read_access(
             user_token=user_token, obfuscationcode=obfuscation_code, study_id=study_id
         )
-        study = StudyService.get_instance().get_study_by_acc(study_id)
-        upload_folder = study_id.lower() + "-" + study.obfuscationcode
-
-        study_metadata_location = os.path.join(
-            settings.mounted_paths.study_metadata_files_root_path, study_id
-        )
-        # files_list_json = settings.files_list_json_file_name
-        # files_list_json_file = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, files_list_json)
-        # indexed_files = None
-        # if os.path.exists(files_list_json_file):
-        #     try:
-        #         with open(files_list_json_file, "r") as fp:
-        #             cached_data = json.load(fp)
-        #             indexed_files = StudyFolderIndex.model_validate(cached_data)
-        #     except Exception as exc:
-        #         logger.warning(f"Error reading {files_list_json} for study {study_id}")
-
-        referenced_files = get_referenced_file_set(
-            study_id=study_id, metadata_path=study_metadata_location
-        )
-        # exclude_list = set(get_settings().file_filters.internal_mapping_list)
-
-        exclude_list = set()
-        settings = get_settings()
-        for item in settings.file_filters.rsync_exclude_list:
-            exclude_list.add(
-                os.path.join(settings.study.readonly_files_symbolic_link_name, item)
-            )
-        exclude_list.add(settings.study.readonly_files_symbolic_link_name)
-        # exclude_list = extended_exclude_list.union(exclude_list)
-        # if force_write:
-        directory_files = get_directory_files(
-            study_metadata_location,
-            None,
-            search_pattern="**/*",
-            recursive=False,
-            exclude_list=exclude_list,
-        )
-        directory_files[settings.study.readonly_files_symbolic_link_name] = (
-            FileDescriptor(
-                name=settings.study.readonly_files_symbolic_link_name,
-                relative_path=settings.study.readonly_files_symbolic_link_name,
-                is_dir=True,
-            )
-        )
-        # metadata_files = get_all_metadata_files()
-        # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
-        # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
-        search_result = evaluate_files(directory_files, referenced_files)
+        location = ["study"]
         if not readonly_mode:
-            try:
-                settings = get_settings()
-                ftp_root_path = settings.hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path
-                ftp_folder_path = os.path.join(
-                    ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}"
-                )
-                inputs = {"path": ftp_folder_path}
-                task = list_directory.apply_async(kwargs=inputs, expires=60 * 5)
-                output = task.get(
-                    timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds
-                    * 2
-                )
-                ftp_files = LiteFileSearchResult.model_validate(output).study
-
-                search_result.latest = ftp_files
-                sortFileMetadataList(ftp_files)
-            except Exception as exc:
-                logger.error(f"Error for study {study.acc}: {str(exc)}")
-                ftp_files = []
-
-        ftp_private_relative_root_path = get_private_ftp_relative_root_path()
-        upload_path = os.path.join(ftp_private_relative_root_path, upload_folder)
-        search_result.uploadPath = upload_path
-        search_result.obfuscationCode = study.obfuscationcode
-        sortFileMetadataList(search_result.study)
-
-        return search_result.model_dump()
-
-        # return update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
-        #                                 files_list_json_file, include_internal_files=include_internal_files)
-        # if os.path.isfile(files_list_json_file):
-        #     logger.info("Files list json found for studyId - %s!", study_id)
-        #     try:
-        #         with open(files_list_json_file, 'r', encoding='utf-8') as f:
-        #             files_list_schema = json.load(f)
-        #             logger.info("Listing files list from files-list json file!")
-        #     except Exception as e:
-        #         logger.error('Error while reading file list schema file: ' + str(e))
-        #         files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
-        #                                                      files_list_json_file,
-        #                                                      include_internal_files=include_internal_files)
-        # else:
-        #     logger.info(" Files list json not found! for studyId - %s!", study_id)
-        #     files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
-        #                                                  files_list_json_file,
-        #                                                  include_internal_files=include_internal_files)
-        #
-        # return files_list_schema
+            location.append("upload")
+        return get_study_metadata_and_data_files(
+            user_token,
+            study_id,
+            obfuscation_code,
+            location,
+            include_internal_files,
+            directory="",
+            include_sub_dir=False,
+        )
 
 
 def update_files_list_schema(
@@ -2190,9 +2101,10 @@ class StudyFilesTree(Resource):
             )
             if request.args.get("include_internal_files"):
                 include_internal_files = (
-                    False
-                    if request.args.get("include_internal_files").lower() != "true"
-                    else True
+                    True
+                    if request.args.get("include_internal_files", "true").lower()
+                    == "true"
+                    else False
                 )
         if location not in ["study", "upload"]:
             abort(401, message="Study location is not valid")
@@ -2200,150 +2112,182 @@ class StudyFilesTree(Resource):
             abort(
                 401, message="You can only specify folders in the current study folder"
             )
-        settings = get_settings()
-        study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
         # check for access rights
         UserService.get_instance().validate_user_has_read_access(
             user_token, study_id=study_id, obfuscationcode=obfuscation_code
         )
+        return get_study_metadata_and_data_files(
+            user_token,
+            study_id,
+            obfuscation_code,
+            [location],
+            include_internal_files,
+            directory,
+            include_sub_dir,
+        )
 
-        study = StudyService.get_instance().get_study_by_acc(study_id)
-        upload_folder = study_id.lower() + "-" + study.obfuscationcode
 
-        ftp_private_relative_root_path = get_private_ftp_relative_root_path()
-        upload_path = os.path.join(ftp_private_relative_root_path, upload_folder)
+def get_study_metadata_and_data_files(
+    user_token,
+    study_id,
+    obfuscation_code,
+    location,
+    include_internal_files,
+    directory,
+    include_sub_dir,
+):
+    settings = get_settings()
+    study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
 
-        settings = get_settings().study
-        if location == "study":
-            study_metadata_location = os.path.join(
-                settings.mounted_paths.study_metadata_files_root_path, study_id
+    rw_authorized_user = False
+    try:
+        if user_token:
+            UserService.get_instance().validate_user_has_write_access(
+                user_token=user_token, study_id=study_id
             )
+            rw_authorized_user = True
+    except (MetabolightsException, MetabolightsAuthorizationException):
+        pass
 
-            # files_list_json_file = os.path.join(study_metadata_location, settings.readonly_files_symbolic_link_name, files_list_json)
-            referenced_files = get_referenced_file_set(
-                study_id=study_id, metadata_path=study_metadata_location
+    study = StudyService.get_instance().get_study_by_acc(study_id)
+    upload_folder = study_id.lower() + "-" + study.obfuscationcode
+
+    ftp_private_relative_root_path = get_private_ftp_relative_root_path()
+    upload_path = os.path.join(ftp_private_relative_root_path, upload_folder)
+
+    settings = get_settings().study
+    search_result = None
+    if "study" in location:
+        study_metadata_location = os.path.join(
+            settings.mounted_paths.study_metadata_files_root_path, study_id
+        )
+
+        # files_list_json_file = os.path.join(study_metadata_location, settings.readonly_files_symbolic_link_name, files_list_json)
+        referenced_files = get_referenced_file_set(
+            study_id=study_id, metadata_path=study_metadata_location
+        )
+        exclude_list = set()
+        for item in get_settings().file_filters.rsync_exclude_list:
+            exclude_list.add(
+                os.path.join(settings.readonly_files_symbolic_link_name, item)
             )
-            exclude_list = set()
-            for item in get_settings().file_filters.rsync_exclude_list:
-                exclude_list.add(
-                    os.path.join(settings.readonly_files_symbolic_link_name, item)
+        if not include_internal_files or not rw_authorized_user:
+            exclude_list.add(settings.internal_files_symbolic_link_name)
+            exclude_list.add(settings.audit_files_symbolic_link_name)
+
+        include_metadata_files = True
+        if directory == settings.readonly_files_symbolic_link_name:
+            include_metadata_files = False
+        directory_path = study_metadata_location
+        if directory:
+            directory_path: str = os.path.join(study_metadata_location, directory)
+        private_directory_files: Dict[str, FileDescriptor] = {}
+        public_directory_files: Dict[str, FileDescriptor] = {}
+        directory_files = {}
+        files_path = os.path.join(study_metadata_location, "FILES")
+        if directory_path.startswith(files_path):
+            mounted_paths = get_settings().study.mounted_paths
+            target_root_path = os.path.join(
+                mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES"
+            )
+            target_path = os.path.join(target_root_path, "data_file_index.json")
+            private_data_files = None
+            public_data_files = None
+            valid_file = False
+            if os.path.exists(target_path):
+                try:
+                    with open(target_path) as f:
+                        data_file_index = json.load(f)
+                    private_data_files = data_file_index["private_data_files"]
+                    public_data_files = data_file_index["public_data_files"]
+                    valid_file = True
+                except Exception:
+                    public_data_files = None
+                    private_data_files = None
+                    # file is not valid.
+                    pass
+            if not valid_file:
+                raise Exception(
+                    "The data files are not indexed. Please index them before proceeding."
                 )
-            if not include_internal_files:
-                exclude_list.add(settings.internal_files_symbolic_link_name)
-                exclude_list.add(settings.audit_files_symbolic_link_name)
-            # if force_write:
-            include_metadata_files = True
-            if directory == settings.readonly_files_symbolic_link_name:
-                include_metadata_files = False
-            directory_path = study_metadata_location
-            if directory:
-                directory_path: str = os.path.join(study_metadata_location, directory)
-            private_directory_files: Dict[str, FileDescriptor] = {}
-            public_directory_files: Dict[str, FileDescriptor] = {}
-            directory_files = {}
-            files_path = os.path.join(study_metadata_location, "FILES")
-            if directory_path.startswith(files_path):
-                mounted_paths = get_settings().study.mounted_paths
-                target_root_path = os.path.join(
-                    mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES"
-                )
-                target_path = os.path.join(target_root_path, "data_file_index.json")
-                private_data_files = None
-                public_data_files = None
-                valid_file = False
-                if os.path.exists(target_path):
-                    try:
-                        with open(target_path) as f:
-                            data_file_index = json.load(f)
-                        private_data_files = data_file_index["private_data_files"]
-                        public_data_files = data_file_index["public_data_files"]
-                        valid_file = True
-                    except Exception:
-                        public_data_files = None
-                        private_data_files = None
-                        # file is not valid.
-                        pass
-                if not valid_file:
-                    raise Exception(
-                        "The data files are not indexed. Please index them before proceeding."
-                    )
-                for x in private_data_files:
-                    item_relative_path = private_data_files[x]["relative_path"]
-                    item_parent_path = private_data_files[x]["parent_relative_path"]
+            for x in private_data_files:
+                item_relative_path = private_data_files[x]["relative_path"]
+                item_parent_path = private_data_files[x]["parent_relative_path"]
+                if item_parent_path == directory:
+                    descriptor = FileDescriptor.model_validate(private_data_files[x])
+                    private_directory_files[item_relative_path] = descriptor
+            if study.first_public_date:
+                for x in public_data_files:
+                    item_relative_path = public_data_files[x]["relative_path"]
+                    item_parent_path = public_data_files[x]["parent_relative_path"]
                     if item_parent_path == directory:
-                        descriptor = FileDescriptor.model_validate(
-                            private_data_files[x]
-                        )
-                        private_directory_files[item_relative_path] = descriptor
-                if study.first_public_date:
-                    for x in public_data_files:
-                        item_relative_path = public_data_files[x]["relative_path"]
-                        item_parent_path = public_data_files[x][
-                            "parent_relative_path"
-                        ]
-                        if item_parent_path == directory:
-                            descriptor = FileDescriptor.model_validate(
-                                public_data_files[x]
-                            )
-                            public_directory_files[item_relative_path] = descriptor
-                    for relative_path, item in private_directory_files.items():
-                        if relative_path in public_directory_files:
-                            public_item = public_directory_files[relative_path]
-                            if (
-                                item.file_size != public_item.file_size
-                                or item.modified_time != public_item.modified_time
-                            ):
-                                item.file_difference = FileDifference.MODIFIED
-                        else:
-                            item.file_difference = FileDifference.NEW
-                    for relative_path, item in public_directory_files.items():
-                        if relative_path not in private_directory_files:
-                            item.file_difference = FileDifference.DELETED
-                            private_directory_files[relative_path] = item
-                directory_files = OrderedDict(
-                    sorted(private_directory_files.items(), key=lambda x: x[0])
-                )
+                        descriptor = FileDescriptor.model_validate(public_data_files[x])
+                        public_directory_files[item_relative_path] = descriptor
+                for relative_path, item in private_directory_files.items():
+                    if relative_path in public_directory_files:
+                        public_item = public_directory_files[relative_path]
+                        if (
+                            item.file_size != public_item.file_size
+                            or item.modified_time != public_item.modified_time
+                        ):
+                            item.file_difference = FileDifference.MODIFIED
+                    else:
+                        item.file_difference = FileDifference.NEW
+                for relative_path, item in public_directory_files.items():
+                    if relative_path not in private_directory_files:
+                        item.file_difference = FileDifference.DELETED
+                        private_directory_files[relative_path] = item
+            directory_files = OrderedDict(
+                sorted(private_directory_files.items(), key=lambda x: x[0])
+            )
 
-            else:
-                directory_files = get_directory_files(
-                    study_metadata_location,
-                    directory,
-                    search_pattern="**/*",
-                    recursive=include_sub_dir,
-                    exclude_list=exclude_list,
-                    include_metadata_files=include_metadata_files,
-                )
-            # metadata_files = get_all_metadata_files()
-            # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
-            # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
-            search_result = evaluate_files(directory_files, referenced_files)
-            sortFileMetadataList(search_result.study)
         else:
+            directory_files = get_directory_files(
+                study_metadata_location,
+                directory,
+                search_pattern="**/*",
+                recursive=include_sub_dir,
+                exclude_list=exclude_list,
+                include_metadata_files=include_metadata_files,
+            )
+        # metadata_files = get_all_metadata_files()
+        # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
+        # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
+        search_result = evaluate_files(directory_files, referenced_files)
+        sortFileMetadataList(search_result.study)
+
+    if "upload" in location:
+        if rw_authorized_user:
             try:
                 settings = get_settings()
                 ftp_root_path = settings.hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path
                 ftp_folder_path = os.path.join(
-                    ftp_root_path,
-                    f"{study.acc.lower()}-{study.obfuscationcode}",
-                    directory,
+                    ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}"
                 )
+                if not directory:
+                    ftp_folder_path = os.path.join(ftp_folder_path, directory)
+
                 inputs = {"path": ftp_folder_path, "recursive": include_sub_dir}
                 task = list_directory.apply_async(kwargs=inputs, expires=60 * 5)
                 output = task.get(
                     timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds
                     * 2
                 )
-                search_result = LiteFileSearchResult.model_validate(output)
+                ftp_search_result = LiteFileSearchResult.model_validate(output)
+                if search_result:
+                    search_result.latest = ftp_search_result.study
+                else:
+                    search_result = ftp_search_result
                 # search_result.latest = search_result.study
                 # search_result.study = []
-                sortFileMetadataList(search_result.study)
+                sortFileMetadataList(search_result.latest)
             except Exception as exc:
                 logger.error(f"Error for study {study.acc}: {str(exc)}")
-                return LiteFileSearchResult().model_dump()
 
+    if rw_authorized_user:
         search_result.uploadPath = upload_path
         search_result.obfuscationCode = study.obfuscationcode
-        return search_result.model_dump(serialize_as_any=True)
+    return search_result.model_dump(serialize_as_any=True)
 
 
 class FileList(Resource):
