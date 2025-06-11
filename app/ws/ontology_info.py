@@ -382,13 +382,14 @@ TERM_PRIORITY_MAP = {
         "http://www.ebi.ac.uk/efo/EFO_0001796"
     ],
     "Study Factor Type": [
-        "http://www.ebi.ac.uk/efo/EFO_0000724",
-        "http://www.ebi.ac.uk/efo/EFO_0000727",
-        "http://www.ebi.ac.uk/efo/EFO_0000513",
-        "http://www.ebi.ac.uk/efo/EFO_0000246",
-        "http://www.ebi.ac.uk/efo/EFO_0002755",
         "http://www.ebi.ac.uk/efo/EFO_0000408",
         "http://www.ebi.ac.uk/efo/EFO_0000410",
+        "http://www.ebi.ac.uk/efo/EFO_0000246",
+        "http://www.ebi.ac.uk/efo/EFO_0000513",
+        "http://www.ebi.ac.uk/efo/EFO_0000324",
+        "http://www.ebi.ac.uk/efo/EFO_0000724",
+        "http://www.ebi.ac.uk/efo/EFO_0000727",
+        "http://www.ebi.ac.uk/efo/EFO_0002755",
         "http://www.ebi.ac.uk/efo/EFO_0000487",
         "http://www.ebi.ac.uk/efo/EFO_0002091",
         "http://www.ebi.ac.uk/efo/EFO_0002090"
@@ -426,9 +427,11 @@ TERM_PRIORITY_MAP = {
         "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000989"
     ],
     "Study Person Role": [
-        "http://purl.obolibrary.org/obo/NCIT_C42781",
+        "http://purl.obolibrary.org/obo/NCIT:C54269",
         "http://purl.obolibrary.org/obo/NCIT_C19924",
-        "http://purl.obolibrary.org/obo/NCIT_C25936"
+        "http://purl.obolibrary.org/obo/NCIT_C42781",
+        "http://purl.obolibrary.org/obo/NCIT_C25936",
+        
     ]
 }
 
