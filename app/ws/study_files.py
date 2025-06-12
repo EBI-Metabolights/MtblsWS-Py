@@ -2264,7 +2264,7 @@ def get_study_metadata_and_data_files(
                 ftp_folder_path = os.path.join(
                     ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}"
                 )
-                if not directory:
+                if directory:
                     ftp_folder_path = os.path.join(ftp_folder_path, directory)
 
                 inputs = {"path": ftp_folder_path, "recursive": include_sub_dir}
