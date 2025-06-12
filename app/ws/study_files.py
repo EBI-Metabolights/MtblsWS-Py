@@ -2250,6 +2250,15 @@ def get_study_metadata_and_data_files(
                 exclude_list=exclude_list,
                 include_metadata_files=include_metadata_files,
             )
+            # EMULATE the FILES directory
+            if not directory and "FILES" not in directory_files:
+                directory_files["FILES"] = FileDescriptor(
+                    name="FILES",
+                    parent_relative_path="",
+                    relative_path="FILES",
+                    is_dir=True,
+                    modified_time=int(datetime.datetime.now(datetime.UTC).timestamp()),
+                )
         # metadata_files = get_all_metadata_files()
         # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
         # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
