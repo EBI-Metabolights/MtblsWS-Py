@@ -383,12 +383,18 @@ class StudyRevisionService:
                         study.updatedate = task_completed_at.replace(
                             tzinfo=None
                         ) or current_time().replace(tzinfo=None)
-                        ElasticsearchService.get_instance().reindex_study_with_task(
-                            study_id=study_id,
-                            user_token=user_token,
-                            include_validation_results=False,
-                            sync=False,
-                        )
+                        try:
+                            ElasticsearchService.get_instance().reindex_study(
+                                study_id=study_id,
+                                user_token=user_token,
+                                include_validation_results=False,
+                                sync=True,
+                            )
+                        except Exception as e:
+                            logger.error(
+                                f"Error while reindexing study {study_id}: {str(e)}"
+                            )
+                        
                         sync_private_ftp_data_files(
                             study_id=study_id, obfuscation_code=study.obfuscationcode
                         )
