@@ -325,6 +325,11 @@ class StudyStatus(Resource):
             )
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         study: schemes.Study = StudyService.get_instance().get_study_by_acc(study_id)
+        if study.status == types.StudyStatus.PUBLIC.value and study_status.upper() != "PUBLIC":
+            raise MetabolightsException(
+                message="Public studies can not be updated. Please contact MetaboLights team for any changes."
+            )
+            
         if study.revision_number > 0:
             revision = StudyRevisionService.get_study_revision(
                 study_id, study.revision_number
