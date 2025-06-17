@@ -15,7 +15,7 @@ from app.tasks.worker import MetabolightsTask, celery, send_email
     default_retry_delay=10,
     max_retries=3,
 )
-def reindex_study(user_token, study_id):
+def reindex_study(self, user_token, study_id):
     ElasticsearchService.get_instance().reindex_study(study_id, user_token, False, True)
     return {"study_id": study_id}
 
