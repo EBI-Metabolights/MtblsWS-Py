@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 import shutil
 
+from app.tasks.common_tasks.basic_tasks.elasticsearch import reindex_study
 from app.tasks.common_tasks.basic_tasks.send_email import send_email_on_public
 from app.tasks.datamover_tasks.basic_tasks.ftp_operations import (
     sync_private_ftp_data_files,
@@ -228,11 +229,13 @@ class StudyRevisionService:
         isa_study.identifier = study.acc
         isa_inv_input.identifier = study.acc
         if not study.first_private_date:
-            isa_study.submission_date = study.first_private_date.strftime("%Y-%m-%d")
-            isa_inv_input.submission_date = study.first_private_date.strftime("%Y-%m-%d")
+            submission_date = study.first_private_date.strftime("%Y-%m-%d")
+            isa_study.submission_date = submission_date
+            isa_inv_input.submission_date = submission_date
         else:
-            isa_study.submission_date = study.submissiondate.strftime("%Y-%m-%d")
-            isa_inv_input.submission_date = study.submissiondate.strftime("%Y-%m-%d")
+            submission_date = study.submissiondate.strftime("%Y-%m-%d")
+            isa_study.submission_date = submission_date
+            isa_inv_input.submission_date = submission_date
         isa_study.public_release_date = study.first_public_date.strftime("%Y-%m-%d")
         isa_inv_input.public_release_date = study.first_public_date.strftime("%Y-%m-%d")
         # else:
@@ -383,18 +386,7 @@ class StudyRevisionService:
                         study.updatedate = task_completed_at.replace(
                             tzinfo=None
                         ) or current_time().replace(tzinfo=None)
-                        try:
-                            ElasticsearchService.get_instance().reindex_study(
-                                study_id=study_id,
-                                user_token=user_token,
-                                include_validation_results=False,
-                                sync=True,
-                            )
-                        except Exception as e:
-                            logger.error(
-                                f"Error while reindexing study {study_id}: {str(e)}"
-                            )
-                        
+
                         sync_private_ftp_data_files(
                             study_id=study_id, obfuscation_code=study.obfuscationcode
                         )
@@ -409,6 +401,16 @@ class StudyRevisionService:
                             send_email_on_public.apply_async(kwargs=inputs)
 
                 db_session.commit()
+                try:
+                    inputs = {"user_token": user_token, "study_id": study_id}
+                    reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
+                    logger.info(
+                        "%s study reindex task started with task id %s",
+                        study_id,
+                        reindex_task.id,
+                    )
+                except Exception as e:
+                    logger.error(f"Error while reindexing study {study_id}: {str(e)}")
                 return revision_model
             except Exception as e:
                 db_session.rollback()
