@@ -26,16 +26,17 @@ We are happy to inform you that your study "{{ study_title }}" has been successf
 {% endif -%}
 <br/><br/>
 
-Private studies can be modified at any point simply revert to Provisional, edit the study, and remember to re-index data files, re-run study validation and change back to Private.
+Private studies can be modified at any point. Simply revert to Provisional, edit the study, and remember to re-index data files, re-run study validation and change back to Private.
 
 <br> <br>
 The requested Study Public Release Date is <b>{{ release_date }}</b>. <br> <br>
-For immediate release simply change the status from Private to Public. If you do not extend the release date, the study will be released to the public on the date that was previously selected. MetaboLights will also automatically release datasets to the public upon notification of the corresponding publication (automatically, via e.g. information sent by the journal or available in EuropePMC).<br> <br>
-<br/>
+For immediate release simply change the status from Private to Public. If you do not extend the release date, the study will be released to the public on the date that was previously selected (<b>{{ release_date }}</b>). MetaboLights will also automatically release datasets to the public upon notification of the corresponding publication (automatically, via e.g. information sent by the journal or available in EuropePMC).<br> <br>
+
 <b>SUBMISSION DETAILS</b><br/>
 MetaboLights study title: <code>{{ study_title }}</code><br/>
 MetaboLights accession: <code>{{ mtbls_accession }}</code><br/>
 MetaboLights study contacts: <code>{{ study_contacts }}</code><br/>
+Public release date: <code>{{ release_date }}</code><br/>
 
 <br/>
 <b>REVIEWER ACCESS</b><br/>
@@ -45,11 +46,7 @@ You can share the following <b><u>private link</u></b> and <b><u>private FTP fol
 Username : <code> {{ user_name }}</code>  <br/>
 Password : <code> {{ user_password }}</code> </b><br/>
 Server : <code>  {{ ftp_server }}</code> </b><br/>
-Remote folder : <code> {{ new_ftp_folder }}</code> </b><br/> <br>
-
-{% if provisional_id != mtbls_accession  -%}
-<b>Please note that the FTP upload folder is now read only and has been renamed.</b><br/><br/>
-{% endif -%}
+Remote folder : <code> {{ new_ftp_folder }}</code> {% if provisional_id != mtbls_accession %} (<b>Please note that the FTP upload folder has been renamed and is now read only.)</b> {% else %} <b>Please note that the FTP upload folder now read only. {% endif %} <br/> <br> 
 
 <b>CITATION</b><br/>
 Please add to your manuscript the following sentence (typically in the "Methods" section or just before/in the Acknowledgements): <br/><br/>

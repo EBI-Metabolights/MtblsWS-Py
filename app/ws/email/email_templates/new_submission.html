@@ -27,8 +27,9 @@ Please note that this is a provisional identifier (e.g. REQxxx). It is not a val
 Please use the Online Editor to edit your submission (or provide access and edit rights to others). You can use either FTP or Aspera to upload your data.<br>
 <br/>
 <b>SUBMISSION WORKFLOW</b> <br/>
+Submission checklist and detailed instructions are available at <a href="{{ metabolights_website_url }}/guides">{{ metabolights_website_url }}/guides</a><br>
 Your submission will not be published and made available to the world, until the following conditions have been satisfied:<br/>
-A. Data files are complete and successfully uploaded.<br/>
+A. Data files are complete and successfully uploaded and indexed.<br/> 
 B. Metadata files are updated.<br/>
 C. Validation has successfully passed.<br/>
 D. Public release date has been updated.<br/>
@@ -45,8 +46,8 @@ Remote folder : <code> {{ ftp_folder }}</code> </b><br/>
 
 <br/>
 
-Please, note that the remote folder needs to be entirely typed, as the folder is not browsable.
-So use the following command to access your private folder: <br/>
+Please, note that the remote folder needs to be entirely typed (<code>{{ ftp_folder }}</code>), as the folder is not browsable.
+If you are using the terminal, use the following command to access your private folder: <br/>
 <code>"cd {{ ftp_folder }}"</code>
 
 <br/>
@@ -56,10 +57,6 @@ You can also use the high-speed Aspera client to upload with the same username a
 <br/>
 <code>"ascp -QT -P 33001 -L-  -l 300M <b>[your_local_data_folder]</b> {{ user_name }}@hx-fasp-1.ebi.ac.uk:{{ftp_folder}}"</code>
 
-<br/><br/>
-<b>SUBMISSION GUIDELINE</b><br/>
-
-Detailed instructions on data upload and submission are available at <a href="{{ metabolights_website_url }}/guides">{{ metabolights_website_url }}/guides</a>
 <br/><br/>
 Thank you for choosing MetaboLights for the dissemination of your data. 
 <br/><br/>
