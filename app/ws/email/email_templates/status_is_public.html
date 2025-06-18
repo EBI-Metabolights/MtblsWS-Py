@@ -19,7 +19,7 @@
 
 Dear {{ submitter_fullname }},
 <br/><br/>
-We are happy to inform you that your MetaboLights study "{{ study_title }}" with <b>{{ mtbls_accession }}</b> MetaboLights accession number has been successfully made public.
+We are happy to inform you that your MetaboLights study "{{ study_title }}" with identifier <b>{{ mtbls_accession }}</b> has been successfully made public.
 <br/><br/>
 <b>SUBMISSION DETAILS</b><br/>
 Public release date: <code>{{ release_date }}</code><br/>
@@ -30,11 +30,10 @@ Publication DOI: <code>{{ publication_doi }}</code><br/>
 Publication PubMed ID: <code>{{ publication_pubmed_id }}</code><br/>
 MetaboLights study URL: <code> <a href="{{ mtbls_accession_url }}">{{ mtbls_accession_url }}</a></code><br/><br/>
 
-{% if publication_doi == "-" and publication_pubmed_id == "-"  -%}
-<i>Please note that it is essential that you notify us of the first (online) publication of the corresponding manuscript.</i>
+
+<i>Please note that once Public, it is essential that you notify us of publications where you cite your MetaboLights data or where other edits are required.</i>
 <br/>
 <br/>
-{% endif -%}
 
 <b>ACCESS YOUR PUBLIC DATASET</b><br/>
 <i>Using FTP</i><br/>
@@ -56,7 +55,7 @@ Please note:
   <li><i>You may need to sign up Globus (https://app.globus.org) to explore your dataset.</i></li>
   <li><i>The collection '{{ globus_collection_name}}' on Globus File Manager is only visible if 'Search All Collections' is selected.</i></li>
 </ul>
-<br/>
+
 <b>CITATION</b><br/>
 To cite your MetaboLights data, please use the following format: <br/><br/>
 <i>
@@ -76,7 +75,7 @@ Regards, <br/><br/>
   X/Twitter: <a href="https://x.com/MetaboLights">@MetaboLights</a> <br/>
   Bluesky: <a href="https://bsky.app/profile/metabolights.bsky.social">@metabolights.bsky.social</a> <br/>
   <br/>
-MetaboLights <a href="https://www.ebi.ac.uk/about/terms-of-use">data policy</a><br/>
+MetaboLights <a href="https://www.ebi.ac.uk/metabolights/editor/datapolicy">data policy</a><br/>
 <br/>
 EMBL-EBI, Wellcome Trust Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK<br>
 </body>

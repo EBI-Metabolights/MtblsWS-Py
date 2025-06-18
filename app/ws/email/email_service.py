@@ -111,24 +111,18 @@ class EmailService(object):
             )
             return
 
-        if user_email not in recipients:
-            if additional_cc_emails:
-                additional_cc_emails.append(user_email)
-            else:
-                additional_cc_emails = [user_email]
-
         if additional_cc_emails:
             additional_cc_emails = [
                 x for x in additional_cc_emails if x and x not in recipients
             ]
         additional_cc_emails = additional_cc_emails if additional_cc_emails else None
-
+        bcc = [dev_email] if user_email == dev_email else [dev_email, user_email]
         msg = Message(
             subject=subject_name,
             sender=from_mail_address,
             recipients=list(recipients),
             cc=additional_cc_emails,
-            bcc=[dev_email],
+            bcc=bcc,
             html=body,
         )
         try:
@@ -191,6 +185,7 @@ class EmailService(object):
         previous_ftp_folder,
         new_ftp_folder,
         additional_cc_emails,
+        study_contacts,
     ):
         host = get_settings().server.service.ws_app_base_link
         subject_name = "Submission Complete and Accessioned"
@@ -217,6 +212,7 @@ class EmailService(object):
             "user_name": user_name,
             "user_password": user_password,
             "ftp_server": ftp_server,
+            "study_contacts": study_contacts,
         }
         body = self.get_rendered_body("new_accession_number.html", content)
         self.send_email(
@@ -244,7 +240,9 @@ class EmailService(object):
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
         metabolights_website_url = get_settings().server.service.ws_app_base_link
         # mtbls_accession_url = os.path.join(metabolights_website_url, study_id)
-        mtbls_accession_url = os.path.join("https://www.ebi.ac.uk/metabolights", study_id)
+        mtbls_accession_url = os.path.join(
+            "https://www.ebi.ac.uk/metabolights", study_id
+        )
         public_ftp_server = "ftp.ebi.ac.uk"
         download_settings = get_settings().ftp_server.public.configuration
         public_ftp_base_url = download_settings.public_studies_ftp_base_url
@@ -252,11 +250,15 @@ class EmailService(object):
         public_ftp_remote_folder = ""
         if public_ftp_server in public_ftp_base_url:
             public_ftp_remote_folder = public_ftp_base_url.split(public_ftp_server)[-1]
-        
-        study_ftp_download_url = os.path.join(download_settings.public_studies_http_base_url, study_id)
+
+        study_ftp_download_url = os.path.join(
+            download_settings.public_studies_http_base_url, study_id
+        )
         globus_collection_name = "EMBL-EBI Public Data"
         study_path = os.path.join(public_ftp_remote_folder, study_id)
-        study_globus_url = f"{download_settings.public_studies_globus_base_url}/{study_id}%2F"
+        study_globus_url = (
+            f"{download_settings.public_studies_globus_base_url}/{study_id}%2F"
+        )
         content = {
             "mtbls_accession": study_id,
             "submitter_fullname": submitter_fullname,
