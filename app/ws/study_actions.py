@@ -39,6 +39,8 @@ from app.config.utils import get_private_ftp_relative_root_path
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
 from app.tasks.common_tasks.basic_tasks.send_email import (
+    get_principal_investigator_emails,
+    get_study_contacts,
     send_email_for_new_accession_number,
 )
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import (
@@ -325,6 +327,14 @@ class StudyStatus(Resource):
             )
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         study: schemes.Study = StudyService.get_instance().get_study_by_acc(study_id)
+        if (
+            study.status == types.StudyStatus.PUBLIC.value
+            and study_status.upper() != "PUBLIC"
+        ):
+            raise MetabolightsException(
+                message="Public studies can not be updated. Please contact MetaboLights team for any changes."
+            )
+
         if study.revision_number > 0:
             revision = StudyRevisionService.get_study_revision(
                 study_id, study.revision_number
@@ -518,6 +528,8 @@ class StudyStatus(Resource):
                 get_settings().study.accession_number_prefix
             ):
                 study_title = isa_study.title
+                additional_cc_emails = get_principal_investigator_emails(isa_study)
+                study_contacts = get_study_contacts(isa_study)
                 inputs = {
                     "user_token": user_token,
                     "provisional_id": study_id,
@@ -525,6 +537,8 @@ class StudyStatus(Resource):
                     "obfuscation_code": obfuscation_code,
                     "study_title": study_title,
                     "release_date": release_date,
+                    "additional_cc_emails": additional_cc_emails,
+                    "study_contacts": study_contacts,
                 }
                 send_email_for_new_accession_number.apply_async(kwargs=inputs)
         ElasticsearchService.get_instance()._reindex_study(updated_study_id, user_token)
