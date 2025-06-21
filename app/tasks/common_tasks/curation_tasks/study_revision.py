@@ -45,7 +45,7 @@ def prepare_study_revision(self, study_id: str, user_token: str):
         except Exception as e:
             raise MetabolightsException(str(e))
 
-    StudyRevisionService.update_investigation_file_for_revision(study_id)
+    StudyRevisionService.update_investigation_file_from_db(study_id)
 
     folder_status, source_path, created_path = (
         StudyRevisionService.create_revision_folder(study)
@@ -336,8 +336,12 @@ if __name__ == "__main__":
             # db_session.query(StudyRevision).delete()
             # db_session.commit()
             result = db_session.query(
-                Study.acc, Study.revision_number, Study.revision_datetime, Study.status, Study.studysize
-            ). all()
+                Study.acc,
+                Study.revision_number,
+                Study.revision_datetime,
+                Study.status,
+                Study.studysize,
+            ).all()
             if result:
                 studies = list(result)
                 studies.sort(
@@ -351,11 +355,9 @@ if __name__ == "__main__":
         (x["acc"], x["studysize"])
         for x in studies
         if x["revision_number"] == 1
-        # if int(x["acc"].replace("MTBLS", "").replace("REQ", "")) >= 10000 
     ]
     selected_studies.sort(key=lambda x: x[1])
-    studies = [ x[0] for x in selected_studies ]
-    
+    studies = [x[0] for x in selected_studies]
     # studies = ["MTBLS8"]
     for study_id in studies:
         study: Study = StudyService.get_instance().get_study_by_acc(study_id)

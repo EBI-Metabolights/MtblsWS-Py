@@ -95,6 +95,7 @@ from app.ws.settings.utils import get_study_settings
 from app.ws.species import SpeciesTree
 from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
 from app.ws.stats import StudyStats
+from app.ws.status_update import PrivateStudy
 from app.ws.study_actions import StudyCurationType, StudyStatus, ToggleAccess, ToggleAccessGet, StudyModificationTime
 from app.ws.study_files import (CopyFilesFolders, DeleteAsperaFiles, FileList,
                                 SampleStudyFiles, StudyFiles, StudyFilesReuse,
@@ -414,6 +415,8 @@ def initialize_app(flask_app):
     api.add_resource(DataFolders, res_path + "/ebi-internal/data-folders")
     
     api.add_resource(ChebiImageProxy, res_path + "/proxy/images/chebi/<chebiIdentifier>")
+     
+    api.add_resource(PrivateStudy, res_path + "/private-studies/<string:study_id>")
     
     api.add_resource(PublicStudyAnnouncement, res_path + "/social-posts/bluesky/<study_id>")
 

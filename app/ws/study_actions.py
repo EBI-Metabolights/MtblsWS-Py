@@ -43,9 +43,11 @@ from app.tasks.common_tasks.basic_tasks.send_email import (
     get_study_contacts,
     send_email_for_new_accession_number,
 )
-from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import (
-    rename_folder_on_private_storage,
+from app.tasks.common_tasks.curation_tasks.submission_model import (
+    RevalidateStudyParameters,
 )
+from app.tasks.common_tasks.curation_tasks.submission_pipeline import make_study_private
+
 from app.utils import (
     MetabolightsException,
     current_time,
@@ -54,24 +56,22 @@ from app.utils import (
 from app.ws.db import schemes, types
 from app.ws.db.types import CurationRequest, StudyRevisionStatus, UserRole
 from app.ws.db_connection import (
-    reserve_mtbls_accession,
     update_curation_request,
     update_modification_time,
-    update_study_id_from_mtbls_accession,
-    update_study_status,
     update_study_status_change_date,
 )
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
-from app.ws.folder_maintenance import StudyFolderMaintenanceTask
 from app.ws.ftp.ftp_utils import (
     get_ftp_folder_access_status,
     toogle_ftp_folder_permission,
 )
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.redis.redis import get_redis_server
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
+from app.ws.study_status_utils import StudyStatusHelper
 
 logger = logging.getLogger("wslog")
 
@@ -327,11 +327,14 @@ class StudyStatus(Resource):
             )
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         study: schemes.Study = StudyService.get_instance().get_study_by_acc(study_id)
-        if study.status == types.StudyStatus.PUBLIC.value and study_status.upper() != "PUBLIC":
+        if (
+            study.status == types.StudyStatus.PUBLIC.value
+            and study_status.lower() != "public"
+        ):
             raise MetabolightsException(
                 message="Public studies can not be updated. Please contact MetaboLights team for any changes."
             )
-            
+
         if study.revision_number > 0:
             revision = StudyRevisionService.get_study_revision(
                 study_id, study.revision_number
@@ -361,7 +364,7 @@ class StudyStatus(Resource):
         study_status: str,
         curation_request_str: str,
     ):
-        if study_status.upper() == "PUBLIC":
+        if not study_status or study_status.lower() == "public":
             raise MetabolightsException(
                 message="Please use the 'revisions' endpoint to release a study"
             )
@@ -373,7 +376,65 @@ class StudyStatus(Resource):
         db_user = UserService.get_instance().get_db_user_by_user_token(user_token)
         is_curator = db_user.role == UserRole.ROLE_SUPER_USER.value
         obfuscation_code = study.obfuscationcode
+        status_levels = {
+            "dormant": 0,
+            "provisional": 0,
+            "private": 1,
+            "in review": 1,
+            "public": 2,
+        }
+
         db_study_status = types.StudyStatus.from_int(study.status).name
+
+        if (
+            status_levels.get(db_study_status.lower(), 0) == 0
+            and study_status.lower() == "private"
+        ):
+            redis = get_redis_server()
+            key = f"make-study-private:{study.acc}"
+            value = redis.get_value(key)
+            if value and value.decode():
+                raise MetabolightsException(
+                    "There is still a running task to make study private."
+                )
+
+            study = StudyService.get_instance().get_study_by_acc(study_id)
+
+            params = RevalidateStudyParameters(
+                study_id=study_id,
+                obfuscation_code=study.obfuscationcode,
+                api_token=user_token,
+            )
+            # inputs = {"root_path": root_path, "folder_paths": absolute_folder_path, }
+            task_id = make_study_private(params.model_dump())
+            redis.set_value(key=key, value=task_id, ex=3 * 60)
+            current_curation_request = CurationRequest(study.curation_request)
+            current_status = types.StudyStatus(study.status)
+            ftp_private_relative_root_path = get_private_ftp_relative_root_path()
+            ftp_private_study_folder = study.acc.lower() + "-" + obfuscation_code
+            ftp_private_folder_path = os.path.join(
+                ftp_private_relative_root_path, ftp_private_study_folder
+            )
+
+            release_date = (
+                study.first_public_date.strftime("%Y-%m-%d")
+                if study.first_public_date
+                else study.releasedate.strftime("%Y-%m-%d")
+            )
+            response = {
+                "release-date": release_date,
+                "curation_request": current_curation_request.to_camel_case_str(),
+                "assigned_study_id": study.acc,
+                "assigned_status": types.StudyStatus(study.status).to_camel_case_str(),
+                "assigned_status_code": types.StudyStatus(study.status).value,
+                "curation_request_code": current_curation_request,
+                "ftp_folder_path": ftp_private_folder_path,
+                "obfuscation_code": obfuscation_code,
+                "study_table_id": study.id,
+                "task_id": task_id,
+            }
+            return response
+
         release_date = study.releasedate.strftime("%Y-%m-%d")
         first_public_date_baseline: datetime.datetime = study.first_public_date
         first_private_date_baseline: datetime.datetime = study.first_private_date
@@ -458,13 +519,6 @@ class StudyStatus(Resource):
             logger.debug(
                 f"Current status: {db_study_status.lower()}, Requested status: {study_status.lower()}"
             )
-            status_levels = {
-                "dormant": 0,
-                "provisional": 0,
-                "private": 1,
-                "in review": 1,
-                "public": 2,
-            }
             if (
                 status_levels[study_status.lower()]
                 > status_levels[db_study_status.lower()]
@@ -487,7 +541,7 @@ class StudyStatus(Resource):
                             message="There are validation errors in the latest validation report. Please fix any issues before attempting to change study status.",
                         )
 
-            self.update_status(
+            StudyStatusHelper.update_status(
                 study_id,
                 study_status,
                 first_public_date=first_public_date_baseline,
@@ -496,7 +550,7 @@ class StudyStatus(Resource):
         current_study_status = types.StudyStatus.from_int(study.status)
         requested_study_status = types.StudyStatus.from_name(study_status.upper())
 
-        updated_study_id = self.update_db_study_id(
+        updated_study_id = StudyStatusHelper.update_db_study_id(
             study_id,
             current_study_status,
             requested_study_status,
@@ -513,7 +567,7 @@ class StudyStatus(Resource):
                 save_samples_copy=True,
             )
 
-            self.refactor_study_folder(
+            StudyStatusHelper.refactor_study_folder(
                 study, study_location, user_token, study_id, updated_study_id
             )
             ElasticsearchService.get_instance()._delete_study_index(
@@ -735,174 +789,6 @@ class StudyStatus(Resource):
                 return False, message
         else:
             return False, "Validation report is not ready. Run validation."
-
-    def refactor_study_folder(
-        self,
-        study: schemes.Study,
-        study_location: str,
-        user_token,
-        study_id: str,
-        updated_study_id: str,
-    ):
-        if study_id == updated_study_id:
-            return
-        task_name = "ASSIGN_ACCESSION_NUMBER"
-        maintenance_task = StudyFolderMaintenanceTask(
-            updated_study_id,
-            types.StudyStatus(study.status),
-            study.releasedate,
-            study.submissiondate,
-            task_name=task_name,
-            obfuscationcode=study.obfuscationcode,
-            delete_unreferenced_metadata_files=False,
-            settings=get_settings().study,
-            apply_future_actions=True,
-        )
-        date_format = "%Y-%m-%d_%H-%M-%S"
-        folder_name = time.strftime(date_format) + "_" + task_name
-        maintenance_task.create_audit_folder(folder_name=folder_name, stage=None)
-
-        isa_study_item, isa_inv, _ = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
-        )
-        # update investigation file
-        isa_inv.identifier = updated_study_id
-        if isa_inv:
-            isa_study: model.Study = isa_study_item
-            isa_study.identifier = updated_study_id
-            isa_inv.identifier = updated_study_id
-            study_filename: str = isa_study.filename
-            isa_study.filename = study_filename.replace(study_id, updated_study_id, 1)
-            for assay_item in isa_study.assays:
-                assay: model.Assay = assay_item
-                assay.filename = assay.filename.replace(study_id, updated_study_id, 1)
-            iac.write_isa_study(
-                isa_inv,
-                user_token,
-                study_location,
-                save_investigation_copy=False,
-                save_assays_copy=False,
-                save_samples_copy=False,
-            )
-        else:
-            logger.error(
-                f"i_Investigation.txt file on {study_location} does not exist."
-            )
-
-        # update assay file (maf file references) and rename all metadata files
-        metadata_files_result = glob.iglob(os.path.join(study_location, "?_*.t??"))
-        metadata_files = [x for x in metadata_files_result]
-        for metadata_file in metadata_files:
-            base_name = os.path.basename(metadata_file)
-            if base_name.startswith("a_"):
-                assay_df = maintenance_task.read_tsv_file(metadata_file)
-                for column in assay_df.columns:
-                    if "Metabolite Assignment File" in column:
-                        assay_df[column] = assay_df[column].apply(
-                            lambda x: x.replace(study_id, updated_study_id, 1)
-                            if x
-                            else ""
-                        )
-                        maintenance_task.write_tsv_file(assay_df, metadata_file)
-            new_name = os.path.basename(metadata_file).replace(
-                study_id, updated_study_id, 1
-            )
-            target_metadata_path = os.path.join(
-                os.path.dirname(metadata_file), new_name
-            )
-            if metadata_file != target_metadata_path:
-                shutil.move(metadata_file, target_metadata_path)
-
-        # create symbolic links on rw storage
-        mounted_paths = get_settings().study.mounted_paths
-        managed_paths = [
-            mounted_paths.study_metadata_files_root_path,
-            mounted_paths.study_audit_files_root_path,
-            mounted_paths.study_internal_files_root_path,
-        ]
-
-        for root_path in managed_paths:
-            new_path = os.path.join(root_path, updated_study_id)
-            current_path = os.path.join(root_path, study_id)
-            shutil.move(current_path, new_path)
-
-        maintenance_task.maintain_rw_storage_folders()
-        # if not os.path.exists(new_path):
-        #     maintenance_task.maintain_study_symlinks(current_path, new_path)
-
-        # create symbolic links on services storage
-        # inputs = {"updated_study_id": updated_study_id, "study_id": study_id}
-        # create_links_on_data_storage.apply_async(kwargs=inputs)
-
-        # create symbolic links on private ftp storage
-        inputs = {
-            "updated_study_id": updated_study_id,
-            "study_id": study_id,
-            "obfuscation_code": study.obfuscationcode,
-        }
-        rename_folder_on_private_storage.apply_async(kwargs=inputs)
-
-    def update_db_study_id(
-        self,
-        current_study_id: str,
-        current_study_status: types.StudyStatus,
-        requested_study_status: types.StudyStatus,
-        reserved_accession: str,
-    ):
-        mtbls_accession_states = (
-            types.StudyStatus.PRIVATE,
-            types.StudyStatus.INREVIEW,
-            types.StudyStatus.PUBLIC,
-        )
-        provisional_id_states = (
-            types.StudyStatus.PROVISIONAL,
-            types.StudyStatus.DORMANT,
-        )
-        mtbls_prefix = get_settings().study.accession_number_prefix
-        target_study_id = current_study_id
-        if (
-            requested_study_status in mtbls_accession_states
-            and current_study_status in provisional_id_states
-            and not current_study_id.startswith(mtbls_prefix)
-        ):
-            if not reserved_accession:
-                reserve_mtbls_accession(current_study_id)
-            target_study_id = update_study_id_from_mtbls_accession(current_study_id)
-            if not target_study_id:
-                raise MetabolightsException(
-                    http_code=403,
-                    message=f"Error while assigning MetaboLights accession number for {current_study_id}",
-                )
-        if not target_study_id:
-            raise MetabolightsException(message="Could not update the study id")
-        return target_study_id
-
-    @staticmethod
-    def update_status(
-        study_id,
-        study_status,
-        first_public_date=None,
-        first_private_date=None,
-    ):
-        study_status = study_status.lower()
-        # Update database
-        update_study_status(
-            study_id,
-            study_status,
-            first_public_date=first_public_date,
-            first_private_date=first_private_date,
-        )
-
-    # @staticmethod
-    # def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
-    #     validates = validate_study(study_id, study_location, user_token, obfuscation_code, log_category='error')
-    #     validations = validates['validation']
-    #     status = validations['status']
-
-    #     if status != 'error':
-    #         return True
-
-    #     return False
 
 
 class ToggleAccess(Resource):

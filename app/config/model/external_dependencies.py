@@ -7,6 +7,7 @@ class ApiConfiguration(BaseModel):
     zooma_api_url: str
     marine_species_api_url: str
     europe_pmc_api_url: str = "https://www.ebi.ac.uk/europepmc/webservices/rest"
+    validation_service_url: str = "https://www.ebi.ac.uk/metabolights/ws3"
 
 
 class ExternalDependenciesSettings(BaseModel):

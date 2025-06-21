@@ -208,7 +208,7 @@ class StudyRevisionService:
         )
 
     @staticmethod
-    def update_investigation_file_for_revision(study_id: str):
+    def update_investigation_file_from_db(study_id: str):
         study = StudyService.get_instance().get_study_by_acc(study_id)
         revision = StudyRevisionService.get_study_revision(
             study_id=study.acc, revision_number=study.revision_number
@@ -225,9 +225,10 @@ class StudyRevisionService:
             study_location=study_metadata_location,
         )
         isa_study: model.Study = isa_study_input
-        # if study.revision_number > 0:
         isa_study.identifier = study.acc
         isa_inv_input.identifier = study.acc
+        isa_inv_input.title = isa_study.title
+        
         if not study.first_private_date:
             submission_date = study.first_private_date.strftime("%Y-%m-%d")
             isa_study.submission_date = submission_date
@@ -236,13 +237,14 @@ class StudyRevisionService:
             submission_date = study.submissiondate.strftime("%Y-%m-%d")
             isa_study.submission_date = submission_date
             isa_inv_input.submission_date = submission_date
-        isa_study.public_release_date = study.first_public_date.strftime("%Y-%m-%d")
-        isa_inv_input.public_release_date = study.first_public_date.strftime("%Y-%m-%d")
-        # else:
-        #     isa_study.submission_date = study.submissiondate.strftime("%Y-%m-%d")
-        #     isa_study.public_release_date = study.releasedate.strftime("%Y-%m-%d")
-        #     isa_inv_input.submission_date = study.submissiondate.strftime("%Y-%m-%d")
-        #     isa_inv_input.public_release_date = study.releasedate.strftime("%Y-%m-%d")
+        if study.first_public_date:
+            public_release_date = study.first_public_date.strftime("%Y-%m-%d")
+            isa_study.public_release_date = public_release_date
+            isa_inv_input.public_release_date = public_release_date
+        else:
+            public_release_date = study.releasedate.strftime("%Y-%m-%d")
+            isa_study.public_release_date = public_release_date
+            isa_inv_input.public_release_date = public_release_date
 
         revision_comments = [
             c
@@ -714,7 +716,7 @@ class StudyRevisionService:
                         study.revision_number -= 1
 
                 db_session.commit()
-                StudyRevisionService.update_investigation_file_for_revision(study_id)
+                StudyRevisionService.update_investigation_file_from_db(study_id)
                 logger.info(
                     f"Study {study_id} revision ({study.revision_number + 1}) is deleted."
                 )
@@ -732,7 +734,7 @@ class StudyRevisionService:
 #     revision  = StudyRevisionService.increment_study_revision(study_id, revision_comment="Test revision", created_by="Test User")
 #     study: Study = StudyService.get_instance().get_study_by_acc(study_id)
 #     user_token = get_settings().auth.service_account.api_token
-#     StudyRevisionService.update_investigation_file_for_revision(study_id)
+#     StudyRevisionService.update_investigation_file_from_db(study_id)
 
 #     status, source_path, created_path = StudyRevisionService.create_revision_folder(study)
 

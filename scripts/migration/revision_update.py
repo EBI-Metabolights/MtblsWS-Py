@@ -89,9 +89,7 @@ def prepare_revisions():
                     db_session.refresh(db_study)
                     db_study.revision_datetime = revision.revision_datetime
                     latest_revision = db_study.revision_number
-                    StudyRevisionService.update_investigation_file_for_revision(
-                        study_id
-                    )
+                    StudyRevisionService.update_investigation_file_from_db(study_id)
                     folder_status, source_path, created_path = (
                         StudyRevisionService.create_revision_folder(db_study)
                     )
