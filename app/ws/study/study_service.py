@@ -189,7 +189,7 @@ class StudyService(object):
             with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(StudyTask)
                 if task_name:
-                    filtered = query.filter(StudyTask.study_acc == study_id and StudyTask.task_name == task_name)
+                    filtered = query.filter(StudyTask.study_acc == study_id, StudyTask.task_name == task_name)
                 else:
                     filtered = query.filter(StudyTask.study_acc == study_id)
                 result = filtered.all()

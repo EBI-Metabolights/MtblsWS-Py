@@ -85,6 +85,7 @@ celery = Celery(
         "app.tasks.common_tasks.curation_tasks.study_revision",
         "app.tasks.common_tasks.basic_tasks.send_email",
         "app.tasks.common_tasks.basic_tasks.elasticsearch",
+        "app.tasks.common_tasks.basic_tasks.bluesky",
         "app.tasks.common_tasks.curation_tasks.submission_pipeline",
         "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",
         "app.tasks.datamover_tasks.basic_tasks.file_management",

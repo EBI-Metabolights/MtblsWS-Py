@@ -127,7 +127,7 @@ class StudyTaskStatus(str, Enum):
 
 class StudyTaskName(str, Enum):
     REINDEX = 'REINDEX'
-    SEND_TWEET = 'SEND_TWEET'
+    SEND_SOCIAL_POST = 'SEND_SOCIAL_POST'
     SEND_EMAIL = 'SEND_EMAIL'
 
 class StudyRevisionStatus(enum.IntEnum):

@@ -22,7 +22,7 @@ from app.config.model.redis_cache import RedisSettings
 from app.config.model.report import ReportSettings
 from app.config.model.server import ServerSettings
 from app.config.model.study import StudySettings
-from app.config.model.twitter import TwitterSettings
+from app.config.model.bluesky import BlueSkySettings
 from app.config.base import ApplicationBaseSettings
 from app.config.model.worker import WorkerSettings
 
@@ -47,7 +47,7 @@ class ApplicationSettings(ApplicationBaseSettings):
     report: ReportSettings
 
     jira: JiraSettings
-    twitter: TwitterSettings
+    bluesky: BlueSkySettings
     metaspace: MetaspaceSettings
     google: GoogleSettings
     bioportal: BioportalSettings

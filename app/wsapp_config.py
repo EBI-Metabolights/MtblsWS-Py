@@ -105,9 +105,8 @@ from app.ws.system import SystemTestEmail
 from app.ws.table_editor import (AddRows, ColumnsRows, ComplexColumns,
                                  GetAssayMaf, GetTsvFile, SimpleColumns, TsvFileRows)
 # from app.ws.tasks.study_file_encoding import FileEncodingChecker
-from app.ws.tasks.create_json_files import (PublicStudyJsonExporter,
-                                            StudyJsonExporter)
-from app.ws.tasks.twitter import PublicStudyTweet
+from app.ws.tasks.bluesky import PublicStudyAnnouncement
+from app.ws.tasks.create_json_files import PublicStudyJsonExporter, StudyJsonExporter
 from app.ws.user_management import UserManagement
 from app.ws.v1.studies import V1StudyDetail
 from app.ws.validation import (NewValidation, OverrideValidation, StudyValidationTask,
@@ -381,7 +380,6 @@ def initialize_app(flask_app):
     api.add_resource(FTPRemoteFileManager, res_path + "/ebi-internal/ftp-filemanager-testing")
     api.add_resource(keggid, res_path + "/ebi-internal/keggid")
     api.add_resource(fellaPathway, res_path + "/ebi-internal/fella-pathway")
-    api.add_resource(PublicStudyTweet, res_path + "/ebi-internal/public-study-tweet")
 
     api.add_resource(MtblsOntologyTerms, res_path + "/mtbls-ontology/terms")
     api.add_resource(MtblsOntologyTerm, res_path + "/mtbls-ontology/terms/<string:term_id>")  
@@ -416,5 +414,8 @@ def initialize_app(flask_app):
     api.add_resource(DataFolders, res_path + "/ebi-internal/data-folders")
     
     api.add_resource(ChebiImageProxy, res_path + "/proxy/images/chebi/<chebiIdentifier>")
-     
+    
+    api.add_resource(PublicStudyAnnouncement, res_path + "/social-posts/bluesky/<study_id>")
+
+    
     
