@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -11,22 +12,33 @@ from app.tasks.common_tasks.basic_tasks.send_email import (
     get_principal_investigator_emails,
     get_study_contacts,
     send_email_for_new_accession_number,
+    send_generic_email,
+)
+from app.tasks.common_tasks.curation_tasks.study_revision import (
+    prepare_study_revision,
+    sync_study_revision,
 )
 from app.tasks.common_tasks.curation_tasks.submission_model import (
     MakeStudyPrivateParameters,
-    RevalidateStudyParameters,
+    MakeStudyPublicParameters,
     StudySubmissionError,
 )
 
 from app.tasks.datamover_tasks.curation_tasks.submission_pipeline import (
     index_study_data_files_task,
     make_ftp_folder_readonly_task,
-    make_ftp_folder_writable_task,
+    revert_ftp_folder_permission_task,
     rsync_metadata_files,
 )
-from app.tasks.worker import MetabolightsTask, celery, report_internal_technical_issue
+from app.tasks.worker import (
+    MetabolightsTask,
+    celery,
+    report_internal_technical_issue,
+    send_email,
+)
+from app.utils import MetabolightsException
 from app.ws.db.types import StudyStatus
-from app.ws.db_connection import update_study_status
+from app.ws.db_connection import query_study_submitters, update_study_status
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.study.study_revision_service import StudyRevisionService
@@ -48,8 +60,15 @@ iac = IsaApiClient()
 )
 def validate_study_task(self, params: dict[str, Any]):
     try:
-        model = RevalidateStudyParameters.model_validate(params)
-        logger.info(f"{model.study_id} validate_study_task is running...")
+        # model = RevalidateStudyParameters.model_validate(params)
+        study_id = params.get("study_id")
+
+        if not study_id:
+            raise MetabolightsException("validate_study task: Study id is valid")
+        logger.info(f"{study_id} validate_study_task is running...")
+
+        if params.get("test"):
+            return params
         user_token = get_settings().auth.service_account.api_token
         validation_endpoint = (
             get_settings().external_dependencies.api.validation_service_url
@@ -76,7 +95,7 @@ def validate_study_task(self, params: dict[str, Any]):
                 f"Validation token request failed. {response.text or ''}"
             )
 
-        url = f"{validation_endpoint}/validations/{model.study_id}"
+        url = f"{validation_endpoint}/validations/{study_id}"
         validation_params = {"run_metadata_modifiers": True}
         headers = {
             "Authorization": f"Bearer {token}",
@@ -98,10 +117,11 @@ def validate_study_task(self, params: dict[str, Any]):
         sleep_period = 10
         max_retry = 60
         retry = 0
-        poll_url = f"{validation_endpoint}/validations/{model.study_id}/result"
+        poll_url = f"{validation_endpoint}/validations/{study_id}/result"
         poll_params = {"summary_messages": False}
         validation_status = None
         latest_response = {}
+        task_result = {}
         while retry < max_retry:
             response = requests.get(url=poll_url, params=poll_params, headers=headers)
 
@@ -145,19 +165,36 @@ def validate_study_task(self, params: dict[str, Any]):
             )
 
         if validation_status in {"error"}:
-            if not model.test:
+            if not params.get("test"):
+                email_settings = get_settings().email.email_service.configuration
+                no_reply = email_settings.no_reply_email_address
+                technical_email = email_settings.technical_issue_recipient_email_address
+
+                submitter_emails = query_study_submitters(study_id)
+                submitters_email_list = [
+                    submitter[0] for submitter in submitter_emails if submitter
+                ]
+                # to_addresses = submitters_email_list
+                to_addresses = [technical_email]
+                kwargs = {
+                    "subject_name": f"{study_id} Validation Failed",
+                    "body": f"Validation result:\n\n {json.dumps(task_result, indent=2)}",
+                    "from_address": no_reply,
+                    "to_addresses": to_addresses,
+                }
+                send_generic_email.apply_async(kwargs=kwargs)
                 raise StudySubmissionError(
                     f"Study validation failed. {str(latest_response)}"
                 )
 
-        model.validate_study_task_status = True
-        return model.model_dump()
+        params["validate_study_task_status"] = True
+        return params
     except Exception as ex:
-        model.validate_study_task_status = False
-        make_ftp_folder_writable_task.apply_async(kwargs={"params": params})
+        params["validate_study_task_status"] = False
+        revert_ftp_folder_permission_task.apply_async(kwargs={"params": params})
         report_internal_technical_issue(
-            f"Validate {model.study_id} task failed.",
-            f"Validate {model.study_id} task failed. {str(ex)}.",
+            f"Validate {study_id} task failed.",
+            f"Validate {study_id} task failed. {str(ex)}.",
         )
         raise ex
 
@@ -170,32 +207,39 @@ def validate_study_task(self, params: dict[str, Any]):
     name="app.tasks.common_tasks.curation_tasks.submission_pipeline.from_provisional_to_private",
 )
 def from_provisional_to_private(self, params: dict[str, Any]):
-    model = MakeStudyPrivateParameters.model_validate(params)
-    base_study_id = None
-    base_first_private_date = None
-    base_first_public_date = None
-    base_release_date  = None 
-    base_status = None
-    base_update_time = None
+    study_id = params.get("study_id")
+
+    if not study_id:
+        raise MetabolightsException("validate_study task: Study id is not valid")
+
+    api_token = params.get("api_token")
+    if not api_token:
+        raise MetabolightsException("validate_study task: api_token id isnot valid")
+
+    if params.get("test"):
+        return params
+    # model = MakeStudyPrivateParameters.model_validate(params)
+    # base_study_id = None
+    # base_first_private_date = None
+    # base_first_public_date = None
+    # base_release_date  = None
+    # base_status = None
+    # base_update_time = None
     current_study_status = None
     try:
-        study = StudyService.get_instance().get_study_by_acc(model.study_id)
-        base_study_id = study.acc
-        base_first_private_date = study.first_private_date
-        base_first_public_date = study.first_public_date
-        base_release_date = study.releasedate
-        base_status = study.status
-        base_update_time = study.updatedate
+        study = StudyService.get_instance().get_study_by_acc(study_id)
+        # base_study_id = study.acc
+        # base_first_private_date = study.first_private_date
+        # base_first_public_date = study.first_public_date
+        # base_release_date = study.releasedate
+        # base_status = study.status
+        # base_update_time = study.updatedate
         current_study_status = StudyStatus.from_int(study.status)
     except Exception as e:
         raise e
-    
+
     try:
-        logger.info(
-            f"{model.study_id} from_provisional_to_private_in_db task is running..."
-        )
-        if model.test:
-            return params
+        logger.info(f"{study_id} from_provisional_to_private_in_db task is running...")
         status = update_study_status(
             study.acc,
             study_status="private",
@@ -220,14 +264,13 @@ def from_provisional_to_private(self, params: dict[str, Any]):
             study.reserved_accession,
         )
 
-
         if study_id != updated_study_id:
             StudyStatusHelper.refactor_study_folder(
                 study, study_location, None, study_id, updated_study_id
             )
             isa_study_input, isa_inv, std_path = iac.get_isa_study(
                 study_id=updated_study_id,
-                api_key=model.api_token,
+                api_key=api_token,
                 skip_load_tables=True,
                 study_location=study_location,
             )
@@ -251,7 +294,7 @@ def from_provisional_to_private(self, params: dict[str, Any]):
                     else study.releasedate.strftime("%Y-%m-%d")
                 )
                 inputs = {
-                    "user_token": model.api_token,
+                    "user_token": api_token,
                     "provisional_id": study_id,
                     "study_id": updated_study_id,
                     "obfuscation_code": obfuscation_code,
@@ -262,12 +305,13 @@ def from_provisional_to_private(self, params: dict[str, Any]):
                 }
                 send_email_for_new_accession_number.apply_async(kwargs=inputs)
         StudyRevisionService.update_investigation_file_from_db(updated_study_id)
-        return model.model_dump()
+        params["from_provisional_to_private"] = True
+        return params
     except Exception as ex:
-        make_ftp_folder_writable_task.apply_async(kwargs={"params": params})
+        revert_ftp_folder_permission_task.apply_async(kwargs={"params": params})
         report_internal_technical_issue(
-            f"{model.study_id} status update to private task failed.",
-            f"{model.study_id} status update to private task failed. {str(ex)}.",
+            f"{study_id} status update to private task failed.",
+            f"{study_id} status update to private task failed. {str(ex)}.",
         )
         raise ex
 
@@ -281,22 +325,27 @@ def from_provisional_to_private(self, params: dict[str, Any]):
 )
 def reindex_study(self, params: dict[str, Any]):
     try:
-        model = MakeStudyPrivateParameters.model_validate(params)
+        study_id = params.get("study_id")
+        if not study_id:
+            raise MetabolightsException("reindex_study task: Study id is valid")
+
+        if params.get("test"):
+            return params
         es_service = ElasticsearchService.get_instance()
         es_service.reindex_study_with_task(
-            study_id=model.study_id,
+            study_id=study_id,
             user_token=None,
             include_validation_results=False,
             sync=False,
         )
-        logger.info(f"Reindex {model.study_id} task completed")
-        model.reindex_study_task_status = True
-        return model.model_dump()
+        logger.info(f"Reindex {study_id} task completed")
+        params["reindex_study_task_status"] = True
+        return params
     except Exception as ex:
-        model.reindex_study_task_status = False
+        params["reindex_study_task_status"] = False
         report_internal_technical_issue(
-            f"{model.study_id} reindex task failed.",
-            f"{model.study_id} reindex task failed. {str(ex)}.",
+            f"{study_id} reindex task failed.",
+            f"{study_id} reindex task failed. {str(ex)}.",
         )
         raise ex
 
@@ -331,7 +380,7 @@ def make_study_private_on_failure_callback(self, task_id: str, *args, **kwargs):
     name="app.tasks.common_tasks.curation_tasks.submission_pipeline.make_study_private",
 )
 def make_study_private(self, params: dict[str, Any]):
-    model = RevalidateStudyParameters.model_validate(params)
+    model = MakeStudyPrivateParameters.model_validate(params)
     pipeline = chain(
         make_ftp_folder_readonly_task.s(),
         rsync_metadata_files.s(),
@@ -347,4 +396,53 @@ def make_study_private(self, params: dict[str, Any]):
         kwargs={"params": params},
     )
     logger.info(f"{model.study_id} make_study_private {task.task_id} is running...")
+    return task.task_id
+
+
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    default_retry_delay=10,
+    max_retries=1,
+    name="app.tasks.common_tasks.curation_tasks.submission_pipeline.make_study_public_on_success_callback",
+)
+def make_study_public_on_success_callback(self, params: dict[str, Any]):
+    model = MakeStudyPrivateParameters.model_validate(params)
+    logger.info(f"{model.study_id} make_study_public task is successfull")
+
+
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    default_retry_delay=10,
+    max_retries=1,
+    name="app.tasks.common_tasks.curation_tasks.submission_pipeline.make_study_public_on_failure_callback",
+)
+def make_study_public_on_failure_callback(self, task_id: str, *args, **kwargs):
+    logger.info(f"make_study_public task '{task_id}' failed")
+
+
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    max_retries=1,
+    name="app.tasks.common_tasks.curation_tasks.submission_pipeline.make_study_public",
+)
+def make_study_public(self, params: dict[str, Any]):
+    model = MakeStudyPublicParameters.model_validate(params)
+    pipeline = chain(
+        make_ftp_folder_readonly_task.s(),
+        rsync_metadata_files.s(),
+        index_study_data_files_task.s(),
+        validate_study_task.s(),
+        prepare_study_revision.s(),
+        sync_study_revision.s(),
+    )
+    params = model.model_dump()
+    task = pipeline.apply_async(
+        link=make_study_public_on_success_callback.s(),
+        link_error=make_study_public_on_failure_callback.s(),
+        kwargs={"params": params},
+    )
+    logger.info(f"{model.study_id} make_study_public {task.task_id} is running...")
     return task.task_id

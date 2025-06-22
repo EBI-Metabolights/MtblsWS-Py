@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 import shutil
 
+from app.tasks.common_tasks.basic_tasks.bluesky import create_bluesky_post_for_public_study
 from app.tasks.common_tasks.basic_tasks.elasticsearch import reindex_study
 from app.tasks.common_tasks.basic_tasks.send_email import send_email_on_public
 from app.tasks.datamover_tasks.basic_tasks.ftp_operations import (
@@ -401,6 +402,11 @@ class StudyRevisionService:
                                 ),
                             }
                             send_email_on_public.apply_async(kwargs=inputs)
+                            kwargs = {
+                                "study_id": study_id,
+                                "user_token": user_token
+                            }
+                            create_bluesky_post_for_public_study.apply_async(kwargs=kwargs)
 
                 db_session.commit()
                 try:

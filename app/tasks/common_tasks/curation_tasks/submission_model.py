@@ -6,6 +6,7 @@ class StudySubmissionError(Exception): ...
 
 class RevalidateStudyParameters(BaseModel):
     study_id: str
+    current_status: int
     obfuscation_code: str
     test: bool = False
     api_token: str = ""
@@ -16,5 +17,13 @@ class RevalidateStudyParameters(BaseModel):
     validate_study_task_status: None | bool = None
     reindex_study_task_status: None | bool = None
 
+
 class MakeStudyPrivateParameters(RevalidateStudyParameters):
     make_study_private_task_status: None | bool = None
+
+
+class MakeStudyPublicParameters(RevalidateStudyParameters):
+    revision_comment: None | str = None
+    created_by: None | str = None
+    prepare_revision_task_status: None | bool = None
+    sync_public_revision_task_status: None | bool = None

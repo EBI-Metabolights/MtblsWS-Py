@@ -38,12 +38,10 @@ def create_bluesky_post_for_public_study(self, user_token, study_id):
             m_study, study_folders, title_and_description_only=True
         )
     except Exception as e:
-        logger.error(
-            f"Error while reading title of study for {m_study.studyIdentifier}"
-        )
+        logger.error(f"Error while reading title of study for {study_id}")
         raise e
     if not m_study.title:
-        logger.error(f"Title is not read or valid for {m_study.studyIdentifier}")
+        logger.error(f"Title is not read or valid for {study_id}")
         raise MetabolightsException("Study title is not found")
     url = "https://www.ebi.ac.uk/metabolights"
 
@@ -81,7 +79,9 @@ def create_bluesky_post_for_public_study(self, user_token, study_id):
         client.login(bluesky_connection.handle, bluesky_connection.app_password)
 
         task_name = StudyTaskName.SEND_SOCIAL_POST
-        tasks = StudyService.get_instance().get_study_tasks(study_id=study_id, task_name=task_name.value)
+        tasks = StudyService.get_instance().get_study_tasks(
+            study_id=study_id, task_name=task_name.value
+        )
         post = None
         with DBManager.get_instance().session_maker() as db_session:
             try:
@@ -96,15 +96,22 @@ def create_bluesky_post_for_public_study(self, user_token, study_id):
                     task.last_execution_time = now
                     task.last_request_executed = now
                     task.last_execution_status = StudyTaskStatus.NOT_EXECUTED
-                    task.last_execution_message = 'Task is initiated to create a social post.'
-                if task.last_execution_status == StudyTaskStatus.EXECUTION_SUCCESSFUL.value:
+                    task.last_execution_message = (
+                        "Task is initiated to create a social post."
+                    )
+                if (
+                    task.last_execution_status
+                    == StudyTaskStatus.EXECUTION_SUCCESSFUL.value
+                ):
                     logger.error(f"Post is already created for {study_id}")
-                    raise MetabolightsException(f"Post is already created for {study_id}")
+                    raise MetabolightsException(
+                        f"Post is already created for {study_id}"
+                    )
                 task.last_execution_status = StudyTaskStatus.EXECUTING
                 task.last_execution_time = now
                 db_session.add(task)
                 db_session.commit()
-                logger.info(f'Creating social post for {study_id}')
+                logger.info(f"Creating social post for {study_id}")
                 post = client.send_post(text=text, facets=facets)
                 parts = post.uri.replace("at://", "").split("/")
                 post_id = parts[-1]
@@ -113,7 +120,7 @@ def create_bluesky_post_for_public_study(self, user_token, study_id):
                 task.last_execution_status = StudyTaskStatus.EXECUTION_SUCCESSFUL
                 task.last_execution_time = task.last_request_time
                 task.last_execution_message = post_url
-                
+
                 db_session.add(task)
                 db_session.commit()
             except Exception as e:

@@ -404,6 +404,7 @@ class StudyStatus(Resource):
                 study_id=study_id,
                 obfuscation_code=study.obfuscationcode,
                 api_token=user_token,
+                current_status=study.status
             )
             # inputs = {"root_path": root_path, "folder_paths": absolute_folder_path, }
             task_id = make_study_private(params.model_dump())

@@ -68,7 +68,7 @@ class PrivateStudy(Resource):
         study = StudyService.get_instance().get_study_by_acc(study_id)
 
         params = RevalidateStudyParameters(
-            study_id=study_id, obfuscation_code=study.obfuscationcode
+            study_id=study_id, obfuscation_code=study.obfuscationcode, current_status=study.status
         )
         # inputs = {"root_path": root_path, "folder_paths": absolute_folder_path, }
         task_id = make_study_private(params.model_dump())

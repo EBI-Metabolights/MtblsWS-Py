@@ -11,10 +11,18 @@ from flask_restful_swagger import swagger
 from flask_restful import Resource
 
 from app.config import get_settings
-from app.tasks.common_tasks.curation_tasks.study_revision import delete_study_revision, prepare_study_revision, sync_study_revision, sync_study_metadata_folder
+from app.tasks.common_tasks.curation_tasks.study_revision import (
+    delete_study_revision,
+    prepare_study_revision,
+    sync_study_revision,
+    sync_study_metadata_folder,
+)
+from app.tasks.common_tasks.curation_tasks.submission_model import (
+    MakeStudyPublicParameters,
+)
+from app.tasks.common_tasks.curation_tasks.submission_pipeline import make_study_public
 from app.utils import MetabolightsException, metabolights_exception_handler
-from app.ws.db.models import StudyRevisionModel
-from app.ws.db.schemes import  User, Study
+from app.ws.db.schemes import User, Study
 from app.ws.db.types import StudyRevisionStatus, StudyStatus, UserRole
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
@@ -22,6 +30,7 @@ from app.ws.study.user_service import UserService
 from app.ws.study_actions import ValidationResultFile
 
 logger = logging.getLogger("wslog")
+
 
 class StudyRevisions(Resource):
     @swagger.operation(
@@ -77,33 +86,52 @@ class StudyRevisions(Resource):
     def post(self, study_id: str):
         user_token = request.headers.get("user-token", None)
         revision_comment = request.headers.get("revision-comment", None)
-        
-        user: User = UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+
+        user = UserService.get_instance().validate_user_has_write_access(
+            user_token, study_id
+        )
         study: Study = StudyService.get_instance().get_study_by_acc(study_id)
         if study.revision_number > 0:
-            revision = StudyRevisionService.get_study_revision(study_id, study.revision_number)
+            revision = StudyRevisionService.get_study_revision(
+                study_id, study.revision_number
+            )
             if not revision:
-                raise Exception(f"Study revision {study.revision_number} is not defined. Fix the revision.")
+                raise Exception(
+                    f"Study revision {study.revision_number} is not defined. Fix the revision."
+                )
             if revision.status != StudyRevisionStatus.COMPLETED:
-                raise Exception(f"Study revision {study.revision_number} is still in progress.")
+                raise Exception(
+                    f"Study revision {study.revision_number} is still in progress."
+                )
 
         study_status = StudyStatus(study.status)
         user_role = UserRole(user.role)
         if user_role in {UserRole.ANONYMOUS, UserRole.REVIEWER}:
             raise Exception("User is not allowed to create a new revision")
-        
-        if user_role == UserRole.ROLE_SUBMITTER and study_status not in {StudyStatus.PRIVATE, StudyStatus.INREVIEW}:
-            raise Exception("User is not allowed to create a new revision for this study.")
-        
-        if study_status not in {StudyStatus.PRIVATE, StudyStatus.INREVIEW, StudyStatus.PUBLIC}:
-            raise Exception(f"User is not allowed to create a new revision for study {study.acc}.")
+
+        if user_role == UserRole.ROLE_SUBMITTER and study_status not in {
+            StudyStatus.PRIVATE,
+            StudyStatus.INREVIEW,
+        }:
+            raise Exception(
+                "User is not allowed to create a new revision for this study."
+            )
+
+        if study_status not in {
+            StudyStatus.PRIVATE,
+            StudyStatus.INREVIEW,
+            StudyStatus.PUBLIC,
+        }:
+            raise Exception(
+                f"User is not allowed to create a new revision for study {study.acc}."
+            )
         if user_role == UserRole.ROLE_SUBMITTER:
             if study.revision_number > 0:
                 raise MetabolightsException(
-                        http_code=403,
-                        message="Submitter can only create first public revision of studies.",
-                    )
-            
+                    http_code=403,
+                    message="Submitter can only create first public revision of studies.",
+                )
+
             validated, message = self.has_validated(study_id)
             if not validated:
                 if "not ready" in message:
@@ -121,14 +149,24 @@ class StudyRevisions(Resource):
                         http_code=403,
                         message="There are validation errors in the latest validation report. Please fix any issues before attempting to change study status.",
                     )
-                    
-        revision: StudyRevisionModel = StudyRevisionService.increment_study_revision(study_id, revision_comment=revision_comment, created_by=user.username)
+
         service_user_token = get_settings().auth.service_account.api_token
-        prepare_study_revision.apply_async(kwargs={"study_id": study_id, "user_token": service_user_token})
+        inputs = MakeStudyPublicParameters(
+            study_id=study_id,
+            obfuscation_code=study.obfuscationcode,
+            api_token=service_user_token,
+            revision_comment=revision_comment,
+            current_status=study.status,
+            created_by=user[1],
+        )
 
+        task = make_study_public.apply_async(kwargs={"params": inputs.model_dump()})
+        # task = prepare_study_revision.apply_async(kwargs={"study_id": study_id, "user_token": service_user_token})
+        task_id = task.id
 
-        revision_model = StudyRevisionModel.model_validate(revision, from_attributes=True)
-        return revision_model.model_dump()
+        # revision_model = StudyRevisionModel.model_validate(revision, from_attributes=True)
+        # return revision_model.model_dump()
+        return {"task_id": task_id, "async_task": True}
 
     def get_all_metadata_files(self, study_metadata_files_path: str):
         metadata_files = []
@@ -142,7 +180,7 @@ class StudyRevisions(Resource):
                 )
             )
         return metadata_files
-    
+
     def get_validation_summary_result_files_from_history(
         self, study_id: str
     ) -> Dict[str, Tuple[str, ValidationResultFile]]:
@@ -166,7 +204,7 @@ class StudyRevisions(Resource):
                 )
                 files[groups[2]] = (item, definition)
         return files
-    
+
     def has_validated(self, study_id: str) -> Tuple[bool, str]:
         if not study_id:
             return None, "study_id is not valid."
@@ -204,7 +242,7 @@ class StudyRevisions(Resource):
                 start_time = datetime.datetime.fromisoformat(
                     content["start_time"]
                 ).timestamp()
-                # 1 sec threshold 
+                # 1 sec threshold
                 if start_time < last_modified:
                     return (
                         False,
@@ -228,7 +266,6 @@ class StudyRevisions(Resource):
                 return False, message
         else:
             return False, "Validation report is not ready. Run validation."
-
 
     @swagger.operation(
         summary="Get all study revisions",
@@ -376,7 +413,7 @@ class StudyRevision(Resource):
     def put(self, study_id: str, revision_number: int):
         user_token = request.headers.get("user-token", None)
         status_str = request.headers.get("status", None)
-        mapping = {"initiated": 0,  "in progress": 1, "failed": 2, "completed": 3}
+        mapping = {"initiated": 0, "in progress": 1, "failed": 2, "completed": 3}
         status_item = status_str.lower().replace("_", " ")
         if status_item not in mapping:
             raise Exception("Invalid status")
@@ -385,22 +422,30 @@ class StudyRevision(Resource):
         task_started_at = request.headers.get("task-started-at", None)
         task_message = request.headers.get("task-message", None)
         revision_comment = request.headers.get("revision-comment", None)
-        
-        task_completed_at = datetime.datetime.fromisoformat(task_completed_at) if task_completed_at else None
-        task_started_at = datetime.datetime.fromisoformat(task_started_at) if task_started_at else None
+
+        task_completed_at = (
+            datetime.datetime.fromisoformat(task_completed_at)
+            if task_completed_at
+            else None
+        )
+        task_started_at = (
+            datetime.datetime.fromisoformat(task_started_at)
+            if task_started_at
+            else None
+        )
 
         UserService.get_instance().validate_user_has_curator_role(user_token)
-        revision  = StudyRevisionService.update_study_revision_task_status(study_id=study_id, 
-                                                                           revision_number=revision_number, 
-                                                                           status=status,
-                                                                           user_token=user_token,
-                                                                           task_completed_at=task_completed_at,
-                                                                           task_started_at=task_started_at,
-                                                                           task_message=task_message,
-                                                                           revision_comment=revision_comment,
-                                                                           )        
+        revision = StudyRevisionService.update_study_revision_task_status(
+            study_id=study_id,
+            revision_number=revision_number,
+            status=status,
+            user_token=user_token,
+            task_completed_at=task_completed_at,
+            task_started_at=task_started_at,
+            task_message=task_message,
+            revision_comment=revision_comment,
+        )
         return revision.model_dump()
-
 
     @swagger.operation(
         summary="Get study revision information",
@@ -455,11 +500,12 @@ class StudyRevision(Resource):
     def get(self, study_id: str, revision_number: str):
         user_token = request.headers.get("user-token", None)
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        revision = StudyRevisionService.get_study_revision(study_id, int(revision_number))
+        revision = StudyRevisionService.get_study_revision(
+            study_id, int(revision_number)
+        )
         if not revision:
             raise ("Revision not found")
         return revision.model_dump()
-    
 
     @swagger.operation(
         summary="Delete a study revision (Curator only)",
@@ -514,9 +560,10 @@ class StudyRevision(Resource):
     def delete(self, study_id: str, revision_number: str):
         user_token = request.headers.get("user-token", None)
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        task = delete_study_revision.apply_async(kwargs={"study_id": study_id, "revision_number": revision_number})
+        task = delete_study_revision.apply_async(
+            kwargs={"study_id": study_id, "revision_number": revision_number}
+        )
         return {"message": "Revision delete task started", "task_id": task.id}
-
 
 
 class StudyRevisionSyncTask(Resource):
@@ -564,16 +611,27 @@ class StudyRevisionSyncTask(Resource):
     @metabolights_exception_handler
     def post(self, study_id: str):
         user_token = request.headers.get("user-token", None)
-        
+
         UserService.get_instance().validate_user_has_curator_role(user_token)
-        
+
         study: Study = StudyService.get_instance().get_study_by_acc(study_id)
         study_status = StudyStatus(study.status)
-        if study_status not in {StudyStatus.PRIVATE, StudyStatus.INREVIEW, StudyStatus.PUBLIC}:
-            raise Exception(f"User is not allowed to sync FTP folder for study {study.acc}.")
-        
+        if study_status not in {
+            StudyStatus.PRIVATE,
+            StudyStatus.INREVIEW,
+            StudyStatus.PUBLIC,
+        }:
+            raise Exception(
+                f"User is not allowed to sync FTP folder for study {study.acc}."
+            )
 
-        task = sync_study_revision.apply_async(kwargs={"study_id": study_id, "user_token": user_token, "latest_revision": study.revision_number})
+        task = sync_study_revision.apply_async(
+            kwargs={
+                "study_id": study_id,
+                "user_token": user_token,
+                "latest_revision": study.revision_number,
+            }
+        )
         # task = sync_study_revision.apply_async(kwargs={"study_id": study_id, "user_token": user_token})
 
         return {"task": task.id, "message": "Task started."}
