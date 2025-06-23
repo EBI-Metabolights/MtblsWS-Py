@@ -220,7 +220,7 @@ def index_study_data_files_task(self, params: dict[str, Any]):
         result = index_study_data_files(study_id, obfuscation_code)
 
         if result and result.get("target_path"):
-            params["index_data_files_task_status"] = False
+            params["index_data_files_task_status"] = True
             return params
         raise MetabolightsException(
             "index_study_data_files_task task failed", str(result)

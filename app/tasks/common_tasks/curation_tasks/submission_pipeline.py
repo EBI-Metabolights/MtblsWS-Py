@@ -177,7 +177,7 @@ def validate_study_task(self, params: dict[str, Any]):
                 # to_addresses = submitters_email_list
                 to_addresses = [technical_email]
                 kwargs = {
-                    "subject_name": f"{study_id} Validation Failed",
+                    "subject": f"{study_id} Validation Failed",
                     "body": f"Validation result:\n\n {json.dumps(task_result, indent=2)}",
                     "from_address": no_reply,
                     "to_addresses": to_addresses,

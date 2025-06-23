@@ -50,7 +50,7 @@ class EmailService(object):
 
     def send_generic_email(
         self,
-        subject_name,
+        subject,
         body,
         from_mail_address,
         to_mail_addresses,
@@ -69,7 +69,7 @@ class EmailService(object):
         else:
             recipients = to_mail_addresses
         msg = Message(
-            subject=subject_name,
+            subject=subject,
             sender=from_mail_address,
             recipients=recipients,
             cc=cc_mail_addresses,
@@ -78,12 +78,12 @@ class EmailService(object):
         try:
             self.mail.send(msg)
         except Exception as exc:
-            message = f"Sending email failed: subject= {subject_name} recipients:{str(recipients)} body={str(body)}\nError {str(exc)}"
+            message = f"Sending email failed: subject= {subject} recipients:{str(recipients)} body={str(body)}\nError {str(exc)}"
             logger.error(message)
 
     def send_email(
         self,
-        subject_name,
+        subject,
         body,
         submitters_mail_addresses,
         user_email,
@@ -107,7 +107,7 @@ class EmailService(object):
             recipients.discard("")
         if not recipients:
             logger.error(
-                f"There is no recipient email address for email: '{subject_name}'"
+                f"There is no recipient email address for email: '{subject}'"
             )
             return
 
@@ -118,7 +118,7 @@ class EmailService(object):
         additional_cc_emails = additional_cc_emails if additional_cc_emails else None
         bcc = [dev_email] if user_email == dev_email else [dev_email, user_email]
         msg = Message(
-            subject=subject_name,
+            subject=subject,
             sender=from_mail_address,
             recipients=list(recipients),
             cc=additional_cc_emails,
@@ -128,7 +128,7 @@ class EmailService(object):
         try:
             self.mail.send(msg)
         except Exception as e:
-            message = f"Sending email failed: subject= {subject_name} recipients:{str(recipients)} body={str(body)}\nError {str(e)}"
+            message = f"Sending email failed: subject= {subject} recipients:{str(recipients)} body={str(body)}\nError {str(e)}"
             logger.error(message)
 
     def get_rendered_body(self, template_name: str, content):
@@ -168,9 +168,9 @@ class EmailService(object):
         }
 
         body = self.get_rendered_body("new_submission.html", content)
-        subject_name = f"MetaboLights Temporary Submission initiated ({provisional_id})"
+        subject = f"MetaboLights Temporary Submission initiated ({provisional_id})"
 
-        self.send_email(subject_name, body, submitters_mail_addresses, user_email)
+        self.send_email(subject, body, submitters_mail_addresses, user_email)
 
     def send_email_for_new_accession_number(
         self,
@@ -188,9 +188,9 @@ class EmailService(object):
         study_contacts,
     ):
         host = get_settings().server.service.ws_app_base_link
-        subject_name = "Submission Complete and Accessioned"
+        subject = "Submission Complete and Accessioned"
         if study_id != provisional_id:
-            subject_name += f" - from {provisional_id} to {study_id}"
+            subject += f" - from {provisional_id} to {study_id}"
         reviewer_url = os.path.join(host, f"reviewer{obfuscation_code}")
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
         metabolights_website_url = get_settings().server.service.ws_app_base_link
@@ -216,7 +216,7 @@ class EmailService(object):
         }
         body = self.get_rendered_body("new_accession_number.html", content)
         self.send_email(
-            subject_name,
+            subject,
             body,
             submitters_mail_addresses,
             user_email,
@@ -236,7 +236,7 @@ class EmailService(object):
         publication_pubmed_id,
         additional_cc_emails,
     ):
-        subject_name = f"MetaboLights Study Made Public ({study_id})"
+        subject = f"MetaboLights Study Made Public ({study_id})"
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
         metabolights_website_url = get_settings().server.service.ws_app_base_link
         # mtbls_accession_url = os.path.join(metabolights_website_url, study_id)
@@ -278,19 +278,19 @@ class EmailService(object):
         }
         body = self.get_rendered_body("status_is_public.html", content)
         self.send_email(
-            subject_name,
+            subject,
             body,
             submitters_mail_addresses,
             user_email,
             additional_cc_emails=additional_cc_emails,
         )
 
-    def send_email_for_task_completed(self, subject_name, task_id, task_result, to):
+    def send_email_for_task_completed(self, subject, task_id, task_result, to):
         content = {"task_id": task_id, "task_result": task_result}
         body = self.get_rendered_body(
             "curation_tasks/worker_task_completed.html", content
         )
 
         self.send_generic_email(
-            subject_name, body, from_mail_address=None, to_mail_addresses=to
+            subject, body, from_mail_address=None, to_mail_addresses=to
         )

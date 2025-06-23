@@ -202,12 +202,12 @@ celery.conf.beat_schedule = {
 }
 
 
-def send_email(subject_name, body, from_address, to_addresses, cc_addresses):
+def send_email(subject, body, from_address, to_addresses, cc_addresses):
     flask_app = get_flask_app()
     with flask_app.app_context():
         email_service = get_email_service(flask_app)
         email_service.send_generic_email(
-            subject_name,
+            subject,
             body,
             from_address,
             to_addresses,
@@ -224,7 +224,7 @@ class MetabolightsTask(celery.Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         flask_app = get_flask_app()
         with flask_app.app_context():
-            subject_name = f"Task {self.name} with {task_id} failed"
+            subject = f"Task {self.name} with {task_id} failed"
             username = ""
             if "email" in kwargs:
                 username = kwargs["email"]
@@ -250,4 +250,4 @@ class MetabolightsTask(celery.Task):
                 traceback = str(einfo.traceback).replace("\n", "<p>")
                 args_str = str(args) if args else ""
                 body = f"Task <b>{self.name}</b> with <b>{str(task_id)}</b> failed. <p>Submitter: {username} <p> Executed on: {os.uname().nodename} <p>  {str(exc)}<p>Args: {args_str}<p>kwargs: {kwargs_str}<p>{traceback}"
-                report_internal_technical_issue(subject_name, body)
+                report_internal_technical_issue(subject, body)
