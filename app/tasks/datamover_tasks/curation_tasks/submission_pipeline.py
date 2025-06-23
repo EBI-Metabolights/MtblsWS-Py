@@ -82,14 +82,14 @@ def rsync_metadata_files(self, params: dict[str, Any]):
         if result.returncode == 0:
             params["sync_metadata_files_task_status"] = True
             return params
-        message = ", ".join(result.stderr or [])
+        message = result.model_dump_json(indent=2)
     except Exception as ex:
         message = str(ex)
         logger.error(message)
     revert_ftp_folder_permission_task.apply_async(kwargs={"params": params})
     report_internal_technical_issue(
         f"Sync metadata files on {study_id} Private FTP folder task failed.",
-        f"Sync metadata files on {study_id} Private FTP folder task result: {message}.",
+        f"Sync metadata files on {study_id} Private FTP folder task result: \n {message}.",
     )
     raise StudySubmissionError("FTP folder metadtata file synchronization failed")
 
@@ -160,7 +160,7 @@ def revert_ftp_folder_permission_task(self, params: dict[str, Any]):
         if status:
             params["revert_ftp_folder_permission_task"] = True
             return params
-        
+
     except Exception as ex:
         message = str(ex)
         logger.error(message)

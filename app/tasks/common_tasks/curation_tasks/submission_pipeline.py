@@ -328,7 +328,7 @@ def reindex_study(self, params: dict[str, Any]):
     try:
         study_id = params.get("study_id")
         if not study_id:
-            raise MetabolightsException("reindex_study task: Study id is valid")
+            raise MetabolightsException("reindex_study task: Study id is not valid")
 
         if params.get("test"):
             return params

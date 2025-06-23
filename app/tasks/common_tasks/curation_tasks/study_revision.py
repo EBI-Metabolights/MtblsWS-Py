@@ -30,20 +30,31 @@ logger = logging.getLogger("wslog")
     name="app.tasks.common_tasks.curation_tasks.study_revision.prepare_study_revision",
 )
 def prepare_study_revision(self, params: dict[str, Any]):
-    model = MakeStudyPublicParameters.model_validate(params)
-    logger.info(f"{model.study_id} prepare_study_revision task is successfull")
+    study_id = params.get("study_id")
+    if not study_id:
+        raise MetabolightsException("reindex_study task: Study id is not valid.")
+    revision_comment = params.get("revision_comment")
+    if not revision_comment:
+        raise MetabolightsException(
+            "reindex_study task: revision_comment id is not valid."
+        )
+    created_by = params.get("created_by")
+    if not created_by:
+        raise MetabolightsException("reindex_study task: created_by id is not valid.")
+
+    logger.info(f"{study_id} prepare_study_revision task is running")
     if params.get("test"):
         return params
     try:
         StudyRevisionService.increment_study_revision(
             study_id,
-            revision_comment=model.revision_comment,
-            created_by=model.created_by,
+            revision_comment=revision_comment,
+            created_by=created_by,
         )
         StudyRevisionService.update_investigation_file_from_db(study_id)
         StudyRevisionService.create_revision_folder(study)
-        model.prepare_revision_task_status = True
-        return model.model_dump(by_alias=True)
+        params["prepare_revision_task_status"] = True
+        return params
     except Exception as ex:
         params["prepare_study_revision"] = False
         logger.error("prepare_study_revision task failed")
