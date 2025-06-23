@@ -264,7 +264,7 @@ class ElasticsearchService(object):
             self.reindex_study_with_task(study_id, user_token, include_validation_results, sync)
             return study_id
         except Exception as e:
-            raise MetabolightsException(f"Error while reindexing.", exception=e, http_code=500)
+            raise MetabolightsException("Error while reindexing.", exception=e, http_code=500)
         
     def reindex_compound(self, user_token, compound_id):
         UserService.get_instance().validate_user_has_curator_role(user_token)

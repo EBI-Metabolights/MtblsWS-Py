@@ -51,6 +51,7 @@ def prepare_study_revision(self, params: dict[str, Any]):
             revision_comment=revision_comment,
             created_by=created_by,
         )
+        study = StudyService.get_instance().get_study_by_acc(study_id)
         StudyRevisionService.update_investigation_file_from_db(study_id)
         StudyRevisionService.create_revision_folder(study)
         params["prepare_revision_task_status"] = True
