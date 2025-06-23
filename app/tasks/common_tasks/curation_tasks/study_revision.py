@@ -201,7 +201,12 @@ def sync_study_revision(self, params: dict[str, Any]):
     study_id = params.get("study_id")
 
     if not study_id:
-        raise MetabolightsException("validate_study task: Study id is valid")
+        raise MetabolightsException("validate_study task: api_token is not valid")
+    api_token = params.get("api_token")
+
+    if not api_token:
+        raise MetabolightsException("validate_study task: api_token is not valid")
+    
 
     logger.info(f"{study_id} rsync_metadata_files is running...")
     if params.get("test"):
@@ -245,7 +250,7 @@ def sync_study_revision(self, params: dict[str, Any]):
             revision_number=study.revision_number,
             source_path=revisions_root_path,
             target_path=public_study_path,
-            user_token=user_token,
+            user_token=api_token,
             email=email,
             task_name=f"{study_id}_{study.revision_number:02}_PUBLIC_FTP_SYNC_{current}",
             study_private_ftp_path=study_private_ftp_path,

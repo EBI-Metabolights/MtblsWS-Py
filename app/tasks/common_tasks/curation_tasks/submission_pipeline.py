@@ -64,7 +64,7 @@ def validate_study_task(self, params: dict[str, Any]):
         study_id = params.get("study_id")
 
         if not study_id:
-            raise MetabolightsException("validate_study task: Study id is valid")
+            raise MetabolightsException("validate_study task: Study id is not valid")
         logger.info(f"{study_id} validate_study_task is running...")
 
         if params.get("test"):
