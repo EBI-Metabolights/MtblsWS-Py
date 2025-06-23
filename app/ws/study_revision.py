@@ -13,14 +13,12 @@ from flask_restful import Resource
 from app.config import get_settings
 from app.tasks.common_tasks.curation_tasks.study_revision import (
     delete_study_revision,
-    prepare_study_revision,
     sync_study_revision,
-    sync_study_metadata_folder,
 )
 from app.tasks.common_tasks.curation_tasks.submission_model import (
     MakeStudyPublicParameters,
 )
-from app.tasks.common_tasks.curation_tasks.submission_pipeline import make_study_public
+from app.tasks.common_tasks.curation_tasks.submission_pipeline import start_new_public_revision_pipeline
 from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.db.schemes import User, Study
 from app.ws.db.types import StudyRevisionStatus, StudyStatus, UserRole
@@ -160,7 +158,7 @@ class StudyRevisions(Resource):
             created_by=user[1],
         )
 
-        task = make_study_public.apply_async(kwargs={"params": inputs.model_dump()})
+        task = start_new_public_revision_pipeline.apply_async(kwargs={"params": inputs.model_dump()})
         # task = prepare_study_revision.apply_async(kwargs={"study_id": study_id, "user_token": service_user_token})
         task_id = task.id
 

@@ -181,6 +181,7 @@ def validate_study_task(self, params: dict[str, Any]):
                     "body": f"Validation result:\n\n {json.dumps(task_result, indent=2)}",
                     "from_address": no_reply,
                     "to_addresses": to_addresses,
+                    "cc_addresses": None,
                 }
                 send_generic_email.apply_async(kwargs=kwargs)
                 raise StudySubmissionError(
@@ -377,9 +378,9 @@ def make_study_private_on_failure_callback(self, task_id: str, *args, **kwargs):
     bind=True,
     base=MetabolightsTask,
     max_retries=1,
-    name="app.tasks.common_tasks.curation_tasks.submission_pipeline.make_study_private",
+    name="app.tasks.common_tasks.curation_tasks.submission_pipeline.start_make_study_private_pipeline",
 )
-def make_study_private(self, params: dict[str, Any]):
+def start_make_study_private_pipeline(self, params: dict[str, Any]):
     model = MakeStudyPrivateParameters.model_validate(params)
     pipeline = chain(
         make_ftp_folder_readonly_task.s(),
@@ -395,7 +396,9 @@ def make_study_private(self, params: dict[str, Any]):
         link_error=make_study_private_on_failure_callback.s(),
         kwargs={"params": params},
     )
-    logger.info(f"{model.study_id} make_study_private {task.task_id} is running...")
+    logger.info(
+        f"{model.study_id} start_make_study_private_pipeline {task.task_id} is running..."
+    )
     return task.task_id
 
 
@@ -426,9 +429,9 @@ def make_study_public_on_failure_callback(self, task_id: str, *args, **kwargs):
     bind=True,
     base=MetabolightsTask,
     max_retries=1,
-    name="app.tasks.common_tasks.curation_tasks.submission_pipeline.make_study_public",
+    name="app.tasks.common_tasks.curation_tasks.submission_pipeline.start_new_public_revision_pipeline",
 )
-def make_study_public(self, params: dict[str, Any]):
+def start_new_public_revision_pipeline(self, params: dict[str, Any]):
     model = MakeStudyPublicParameters.model_validate(params)
     pipeline = chain(
         make_ftp_folder_readonly_task.s(),
@@ -444,5 +447,7 @@ def make_study_public(self, params: dict[str, Any]):
         link_error=make_study_public_on_failure_callback.s(),
         kwargs={"params": params},
     )
-    logger.info(f"{model.study_id} make_study_public {task.task_id} is running...")
+    logger.info(
+        f"{model.study_id} start_new_public_revision_pipeline {task.task_id} is running..."
+    )
     return task.task_id

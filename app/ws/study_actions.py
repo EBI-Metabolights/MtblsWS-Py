@@ -46,7 +46,7 @@ from app.tasks.common_tasks.basic_tasks.send_email import (
 from app.tasks.common_tasks.curation_tasks.submission_model import (
     RevalidateStudyParameters,
 )
-from app.tasks.common_tasks.curation_tasks.submission_pipeline import make_study_private
+from app.tasks.common_tasks.curation_tasks.submission_pipeline import start_make_study_private_pipeline
 
 from app.utils import (
     MetabolightsException,
@@ -407,7 +407,7 @@ class StudyStatus(Resource):
                 current_status=study.status
             )
             # inputs = {"root_path": root_path, "folder_paths": absolute_folder_path, }
-            task_id = make_study_private(params.model_dump())
+            task_id = start_make_study_private_pipeline(params.model_dump())
             redis.set_value(key=key, value=task_id, ex=3 * 60)
             current_curation_request = CurationRequest(study.curation_request)
             current_status = types.StudyStatus(study.status)

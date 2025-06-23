@@ -2,7 +2,7 @@ from flask import request
 from app.tasks.common_tasks.curation_tasks.submission_model import (
     RevalidateStudyParameters,
 )
-from app.tasks.common_tasks.curation_tasks.submission_pipeline import make_study_private
+from app.tasks.common_tasks.curation_tasks.submission_pipeline import start_make_study_private_pipeline
 from app.utils import MetabolightsException, metabolights_exception_handler
 from flask_restful import Resource
 from flask_restful_swagger import swagger
@@ -71,7 +71,7 @@ class PrivateStudy(Resource):
             study_id=study_id, obfuscation_code=study.obfuscationcode, current_status=study.status
         )
         # inputs = {"root_path": root_path, "folder_paths": absolute_folder_path, }
-        task_id = make_study_private(params.model_dump())
+        task_id = start_make_study_private_pipeline(params.model_dump())
 
         return {
             "task_name": "make study private",
