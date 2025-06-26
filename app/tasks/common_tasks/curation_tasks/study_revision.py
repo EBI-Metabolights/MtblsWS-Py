@@ -257,7 +257,7 @@ def sync_study_revision(self, params: dict[str, Any]):
             data_files_hash_path=data_files_hash_path,
             root_data_files_hash_path=root_data_files_hash_path,
         )
-        return {"job_id": job_id, "messages": messages}
+        return params
     except Exception as e:
         raise e
 

@@ -410,7 +410,7 @@ def start_make_study_private_pipeline(self, params: dict[str, Any]):
     name="app.tasks.common_tasks.curation_tasks.submission_pipeline.make_study_public_on_success_callback",
 )
 def make_study_public_on_success_callback(self, params: dict[str, Any]):
-    model = MakeStudyPrivateParameters.model_validate(params)
+    model = MakeStudyPublicParameters.model_validate(params)
     logger.info(f"{model.study_id} make_study_public task is successfull")
 
 
