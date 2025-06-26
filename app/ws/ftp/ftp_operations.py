@@ -15,7 +15,11 @@ from app.tasks.hpc_study_rsync_client import (
     StudyFolderType,
     StudyRsyncClient,
 )
-from app.utils import MetabolightsException, metabolights_exception_handler
+from app.utils import (
+    MetabolightsDBException,
+    MetabolightsException,
+    metabolights_exception_handler,
+)
 from app.ws.db.types import StudyStatus
 from app.ws.ftp.ftp_utils import (
     get_ftp_folder_access_status,
@@ -616,9 +620,13 @@ class PrivateFtpUploadInfo(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-        study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
+        study = None
+        try:
+            study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
+        except MetabolightsDBException:
+            pass
         if not study:
-            abort(404, message="identifier is not valid.")
+            raise MetabolightsDBException("identifier is not valid", http_code=404)
         UserService.get_instance().validate_user_has_write_access(user_token, study.acc)
         relative_studies_root_path = get_private_ftp_relative_root_path()
         folder_name = f"{study_id.lower()}-{study.obfuscationcode}"
