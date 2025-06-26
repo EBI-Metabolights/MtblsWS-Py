@@ -1,6 +1,7 @@
 import glob
 import logging
 import os
+from sqlalchemy import or_
 from typing import Union
 from app.config import get_settings
 from app.utils import MetabolightsDBException, MetabolightsFileOperationException, MetabolightsException
@@ -47,6 +48,18 @@ class StudyService(object):
                 raise MetabolightsDBException("DB error while retrieving stable id")
         except Exception as e:
             raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
+
+    def get_study_by_req_or_mtbls_id(self, identifier) -> Study:
+        try:
+            with DBManager.get_instance().session_maker() as db_session:
+                query = db_session.query(Study)
+                result = query.filter( or_(Study.reserved_accession == identifier, Study.reserved_submission_id == identifier)).first()
+                if result:
+                    return result
+                raise MetabolightsDBException("DB error while retrieving stable id")
+        except Exception as e:
+            raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
+
 
     def get_study_by_obfuscation_code(self, obfuscationcode) -> Study:
         try:
