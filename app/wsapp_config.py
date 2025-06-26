@@ -592,13 +592,8 @@ def initialize_app(flask_app):
         ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate-mzml"
     )
     api.add_resource(UserManagement, res_path + "/ebi-internal/users")
-    api.add_resource(
-        ReindexStudy, res_path + "/ebi-internal/<string:study_id>/es-index"
-    )
-    api.add_resource(
-        RetryReindexStudies,
-        res_path + "/ebi-internal/studies/es-indexes/failed-indexes/retry",
-    )
+    api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/es-index")
+    api.add_resource(RetryReindexStudies, res_path + "/ebi-internal/studies/es-indexes/failed-indexes/retry")
 
     api.add_resource(
         UnindexedStudy, res_path + "/ebi-internal/studies/es-indexes/failed-indexes"
