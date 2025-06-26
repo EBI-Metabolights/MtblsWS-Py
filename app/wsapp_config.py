@@ -93,7 +93,7 @@ from app.ws.reports import (CrossReferencePublicationInformation,
 from app.ws.send_files import SendFiles, SendFilesPrivate
 from app.ws.settings.utils import get_study_settings
 from app.ws.species import SpeciesTree
-from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
+from app.ws.spectra import ZipSpectraFiles
 from app.ws.stats import StudyStats
 from app.ws.study_actions import StudyCurationType, StudyStatus, ToggleAccess, ToggleAccessGet, StudyModificationTime
 from app.ws.study_files import (CopyFilesFolders, DeleteAsperaFiles, FileList,
@@ -352,7 +352,6 @@ def initialize_app(flask_app):
     api.add_resource(Convert2ISAtab, res_path + "/ebi-internal/<string:study_id>/mzml2isatab")
     api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate-mzml")
     api.add_resource(UserManagement, res_path + "/ebi-internal/users")
-    api.add_resource(ExtractMSSpectra, res_path + "/ebi-internal/<string:study_id>/extract-peak-list")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/es-index")
     api.add_resource(RetryReindexStudies, res_path + "/ebi-internal/studies/es-indexes/failed-indexes/retry")
 

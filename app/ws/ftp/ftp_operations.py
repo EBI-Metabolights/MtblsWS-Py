@@ -9,16 +9,28 @@ from app.config.utils import get_private_ftp_relative_root_path
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
-from app.tasks.hpc_study_rsync_client import StudyFolder, StudyFolderLocation, StudyFolderType, StudyRsyncClient
-from app.utils import MetabolightsException, metabolights_exception_handler
+from app.tasks.hpc_study_rsync_client import (
+    StudyFolder,
+    StudyFolderLocation,
+    StudyFolderType,
+    StudyRsyncClient,
+)
+from app.utils import (
+    MetabolightsDBException,
+    MetabolightsException,
+    metabolights_exception_handler,
+)
 from app.ws.db.types import StudyStatus
-from app.ws.ftp.ftp_utils import get_ftp_folder_access_status, toogle_ftp_folder_permission
+from app.ws.ftp.ftp_utils import (
+    get_ftp_folder_access_status,
+    toogle_ftp_folder_permission,
+)
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 
 
 class SyncCalculation(Resource):
@@ -31,7 +43,7 @@ class SyncCalculation(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "force",
@@ -42,7 +54,7 @@ class SyncCalculation(Resource):
                 "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": False,
-                "default": False
+                "default": False,
             },
             {
                 "name": "user-token",
@@ -50,42 +62,39 @@ class SyncCalculation(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. Calculated."
-            },
+            {"code": 200, "message": "OK. Calculated."},
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, message='Please provide valid parameter for study identifier')
+            abort(404, message="Please provide valid parameter for study identifier")
         study_id = study_id.upper()
-        
-        
+
         force_recalculate = False
-        
+
         if request.args:
-            
-            force_recalculate = True if request.args.get('force').lower() == 'true' else False
+            force_recalculate = (
+                True if request.args.get("force").lower() == "true" else False
+            )
 
         # User authentication
         user_token = None
@@ -95,15 +104,25 @@ class SyncCalculation(Resource):
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         status_check_only = False if force_recalculate else True
         study = StudyService.get_instance().get_study_by_acc(study_id)
-        client = StudyRsyncClient(study_id=study_id, obfuscation_code=study.obfuscationcode)
-        source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
-        target = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
-        status = client.rsync_dry_run(source, target, status_check_only=status_check_only)
-        return status.model_dump()        
-        
+        client = StudyRsyncClient(
+            study_id=study_id, obfuscation_code=study.obfuscationcode
+        )
+        source = StudyFolder(
+            location=StudyFolderLocation.PRIVATE_FTP_STORAGE,
+            folder_type=StudyFolderType.METADATA,
+        )
+        target = StudyFolder(
+            location=StudyFolderLocation.RW_STUDY_STORAGE,
+            folder_type=StudyFolderType.METADATA,
+        )
+        status = client.rsync_dry_run(
+            source, target, status_check_only=status_check_only
+        )
+        return status.model_dump()
+
         # study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
         # storage = StorageService.get_ftp_private_storage()
-        
+
         # meta_calc_result = storage.calculate_sync_status(study_id, study.obfuscationcode, study_path, force=force_recalculate)
         # # return jsonify({'result':{'meta_calc_result':meta_calc_result.model_dump(),'rdfiles_calc_result': rdfiles_calc_result.model_dump()}})
         # return jsonify(meta_calc_result.model_dump())
@@ -120,7 +139,7 @@ class SyncFromFtpFolder(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "sync-type",
@@ -132,7 +151,7 @@ class SyncFromFtpFolder(Resource):
                 "enum": ["metadata", "data", "internal"],
                 "allowEmptyValue": False,
                 "defaultValue": "metadata",
-                "default": "metadata"
+                "default": "metadata",
             },
             {
                 "name": "user-token",
@@ -140,68 +159,88 @@ class SyncFromFtpFolder(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         # param validation
         if study_id is None:
-            raise MetabolightsException(message='Please provide valid parameter for study identifier')
+            raise MetabolightsException(
+                message="Please provide valid parameter for study identifier"
+            )
         study_id = study_id.upper()
         sync_type = "metadata"
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-        
+
         if "sync_type" in request.headers:
             sync_type = request.headers["sync_type"]
         if sync_type not in ("data", "internal", "metadata"):
             raise MetabolightsException(message="sync_type is not valid")
         study = None
         if sync_type not in ("data", "metadata"):
-            UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+            UserService.get_instance().validate_user_has_write_access(
+                user_token, study_id
+            )
             study = StudyService.get_instance().get_study_by_acc(study_id)
             if StudyStatus(study.status) != StudyStatus.PROVISIONAL:
                 UserService.get_instance().validate_user_has_curator_role(user_token)
         else:
             UserService.get_instance().validate_user_has_curator_role(user_token)
-            
+
         if sync_type == "metadata":
-            source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
-            target = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
+            source = StudyFolder(
+                location=StudyFolderLocation.PRIVATE_FTP_STORAGE,
+                folder_type=StudyFolderType.METADATA,
+            )
+            target = StudyFolder(
+                location=StudyFolderLocation.RW_STUDY_STORAGE,
+                folder_type=StudyFolderType.METADATA,
+            )
         elif sync_type == "data":
-            source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.DATA)
-            target = StudyFolder(location=StudyFolderLocation.READONLY_STUDY_STORAGE, folder_type=StudyFolderType.DATA)
+            source = StudyFolder(
+                location=StudyFolderLocation.PRIVATE_FTP_STORAGE,
+                folder_type=StudyFolderType.DATA,
+            )
+            target = StudyFolder(
+                location=StudyFolderLocation.READONLY_STUDY_STORAGE,
+                folder_type=StudyFolderType.DATA,
+            )
         elif sync_type == "internal":
-            source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.INTERNAL)
-            target = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.INTERNAL)
+            source = StudyFolder(
+                location=StudyFolderLocation.PRIVATE_FTP_STORAGE,
+                folder_type=StudyFolderType.INTERNAL,
+            )
+            target = StudyFolder(
+                location=StudyFolderLocation.RW_STUDY_STORAGE,
+                folder_type=StudyFolderType.INTERNAL,
+            )
         if not study:
             study = StudyService.get_instance().get_study_by_acc(study_id)
-        client = StudyRsyncClient(study_id=study_id, obfuscation_code=study.obfuscationcode)
-        
-        
+        client = StudyRsyncClient(
+            study_id=study_id, obfuscation_code=study.obfuscationcode
+        )
+
         status = client.rsync(source, target, status_check_only=False)
         return status.model_dump()
 
@@ -227,7 +266,7 @@ class FtpFolderSyncStatus(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user-token",
@@ -235,34 +274,31 @@ class FtpFolderSyncStatus(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, message='Please provide valid parameter for study identifier')
+            abort(404, message="Please provide valid parameter for study identifier")
         study_id = study_id.upper()
 
         # User authentication
@@ -273,11 +309,20 @@ class FtpFolderSyncStatus(Resource):
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
         study = StudyService.get_instance().get_study_by_acc(study_id)
-        client = StudyRsyncClient(study_id=study_id, obfuscation_code=study.obfuscationcode)
-        source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
-        target = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
+        client = StudyRsyncClient(
+            study_id=study_id, obfuscation_code=study.obfuscationcode
+        )
+        source = StudyFolder(
+            location=StudyFolderLocation.PRIVATE_FTP_STORAGE,
+            folder_type=StudyFolderType.METADATA,
+        )
+        target = StudyFolder(
+            location=StudyFolderLocation.RW_STUDY_STORAGE,
+            folder_type=StudyFolderType.METADATA,
+        )
         status = client.rsync(source, target, status_check_only=True)
         return status.model_dump()
+
 
 class FtpFolderPermission(Resource):
     @swagger.operation(
@@ -290,7 +335,7 @@ class FtpFolderPermission(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user-token",
@@ -298,34 +343,31 @@ class FtpFolderPermission(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. FTP folder permission returned"
-            },
+            {"code": 200, "message": "OK. FTP folder permission returned"},
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, message='Please provide valid parameter for study identifier')
+            abort(404, message="Please provide valid parameter for study identifier")
 
         # User authentication
         user_token = None
@@ -349,7 +391,7 @@ class FtpFolderPermissionModification(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user-token",
@@ -357,34 +399,31 @@ class FtpFolderPermissionModification(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. FTP folder permission toggled "
-            },
+            {"code": 200, "message": "OK. FTP folder permission toggled "},
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, message='Please provide valid parameter for study identifier')
+            abort(404, message="Please provide valid parameter for study identifier")
 
         # User authentication
         user_token = None
@@ -405,7 +444,7 @@ class PrivateFtpFolder(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "send_email",
@@ -416,7 +455,7 @@ class PrivateFtpFolder(Resource):
                 "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": True,
-                "default": True
+                "default": True,
             },
             {
                 "name": "user-token",
@@ -424,28 +463,25 @@ class PrivateFtpFolder(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 401,
                 "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a study id and a valid user token"
+                "Please provide a study id and a valid user token",
             },
             {
                 "code": 403,
-                "message": "Study does not exist or your do not have access to this study."
+                "message": "Study does not exist or your do not have access to this study.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     @metabolights_exception_handler
     def post(self, study_id):
@@ -459,14 +495,20 @@ class PrivateFtpFolder(Resource):
             abort(401)
         send_email = None
         if request.args:
-            
-            send_email = True if request.args.get('send_email') and request.args.get('send_email').lower() == "true" else False
+            send_email = (
+                True
+                if request.args.get("send_email")
+                and request.args.get("send_email").lower() == "true"
+                else False
+            )
 
         study_id = study_id.upper()
 
-        logger.info('Creating a new study upload folder for study %s', study_id)
+        logger.info("Creating a new study upload folder for study %s", study_id)
         study = StudyService.get_instance().get_study_by_acc(study_id)
-        return WsClient.create_upload_folder(study_id, study.obfuscationcode, user_token, send_email=send_email)
+        return WsClient.create_upload_folder(
+            study_id, study.obfuscationcode, user_token, send_email=send_email
+        )
 
 
 class PrivateFtpFolderPath(Resource):
@@ -480,7 +522,7 @@ class PrivateFtpFolderPath(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user-token",
@@ -488,34 +530,31 @@ class PrivateFtpFolderPath(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. FTP folder permission toggled "
-            },
+            {"code": 200, "message": "OK. FTP folder permission toggled "},
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     @metabolights_exception_handler
     def get(self, study_id: str):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, message='Please provide valid parameter for study identifier')
+            abort(404, message="Please provide valid parameter for study identifier")
 
         # User authentication
         user_token = None
@@ -525,8 +564,10 @@ class PrivateFtpFolderPath(Resource):
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         study = StudyService.get_instance().get_study_by_acc(study_id)
         relative_studies_root_path = get_private_ftp_relative_root_path()
-        folder_name = f'{study_id.lower()}-{study.obfuscationcode}'
-        relative_ftp_study_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
+        folder_name = f"{study_id.lower()}-{study.obfuscationcode}"
+        relative_ftp_study_path = os.path.join(
+            os.sep, relative_studies_root_path.lstrip(os.sep), folder_name
+        )
         return relative_ftp_study_path
 
 
@@ -537,11 +578,11 @@ class PrivateFtpUploadInfo(Resource):
         parameters=[
             {
                 "name": "study_id",
-                "description": "MTBLS Identifier",
+                "description": "MTBLS or REQ Identifier",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user-token",
@@ -549,52 +590,62 @@ class PrivateFtpUploadInfo(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. FTP folder permission toggled "
-            },
+            {"code": 200, "message": "OK. FTP folder permission toggled "},
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     @metabolights_exception_handler
     def get(self, study_id: str):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, message='Please provide valid parameter for study identifier')
+            abort(404, message="Please provide valid parameter for study identifier")
 
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        study = StudyService.get_instance().get_study_by_acc(study_id)
+        study = None
+        try:
+            study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
+        except MetabolightsDBException:
+            pass
+        if not study:
+            raise MetabolightsDBException("identifier is not valid", http_code=404)
+        UserService.get_instance().validate_user_has_write_access(user_token, study.acc)
         relative_studies_root_path = get_private_ftp_relative_root_path()
-        folder_name = f'{study_id.lower()}-{study.obfuscationcode}'
-        relative_ftp_study_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
+        folder_name = f"{study_id.lower()}-{study.obfuscationcode}"
+        relative_ftp_study_path = os.path.join(
+            os.sep, relative_studies_root_path.lstrip(os.sep), folder_name
+        )
         ftp_connection = get_settings().ftp_server.private.connection
-        return {"study_id": study_id, 
-                "ftp_folder": relative_ftp_study_path, 
-                "ftp_host": ftp_connection.host, 
-                "ftp_user": ftp_connection.username, 
-                "ftp_password": ftp_connection.password }
-    
+        return {
+            "study_id": study.acc,
+            "ftp_folder": relative_ftp_study_path,
+            "ftp_host": ftp_connection.host,
+            "ftp_user": ftp_connection.username,
+            "ftp_password": ftp_connection.password,
+            "obfuscation_code": study.obfuscationcode,
+            "reserved_accession": study.reserved_accession,
+            "reserved_submission_id": study.reserved_submission_id,
+        }
+
+
 class SyncFromStudyFolder(Resource):
     @swagger.operation(
         summary="[Deprecated] Copy files from study folder to private FTP  folder",
@@ -606,7 +657,7 @@ class SyncFromStudyFolder(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "sync-type",
@@ -618,7 +669,7 @@ class SyncFromStudyFolder(Resource):
                 "enum": ["metadata", "data", "internal"],
                 "allowEmptyValue": False,
                 "defaultValue": "metadata",
-                "default": "metadata"
+                "default": "metadata",
             },
             {
                 "name": "user-token",
@@ -626,74 +677,93 @@ class SyncFromStudyFolder(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. Files/Folders were copied across."
-            },
+            {"code": 200, "message": "OK. Files/Folders were copied across."},
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         # param validation
         if study_id is None:
-            raise MetabolightsException(message='Please provide valid parameter for study identifier')
+            raise MetabolightsException(
+                message="Please provide valid parameter for study identifier"
+            )
         study_id = study_id.upper()
         sync_type = "metadata"
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-        
+
         if "sync_type" in request.headers:
             sync_type = request.headers["sync_type"]
-            
+
         if sync_type not in ("data", "internal", "metadata"):
             raise MetabolightsException(message="sync_type is not valid")
-        
-        
+
         study = None
         if sync_type not in ("data", "metadata"):
-            UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+            UserService.get_instance().validate_user_has_write_access(
+                user_token, study_id
+            )
             study = StudyService.get_instance().get_study_by_acc(study_id)
             if StudyStatus(study.status) != StudyStatus.PROVISIONAL:
                 UserService.get_instance().validate_user_has_curator_role(user_token)
         else:
             UserService.get_instance().validate_user_has_curator_role(user_token)
-            
+
         if sync_type == "metadata":
-            target = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
-            source = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
+            target = StudyFolder(
+                location=StudyFolderLocation.PRIVATE_FTP_STORAGE,
+                folder_type=StudyFolderType.METADATA,
+            )
+            source = StudyFolder(
+                location=StudyFolderLocation.RW_STUDY_STORAGE,
+                folder_type=StudyFolderType.METADATA,
+            )
         elif sync_type == "data":
-            target = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.DATA)
-            source = StudyFolder(location=StudyFolderLocation.READONLY_STUDY_STORAGE, folder_type=StudyFolderType.DATA)
+            target = StudyFolder(
+                location=StudyFolderLocation.PRIVATE_FTP_STORAGE,
+                folder_type=StudyFolderType.DATA,
+            )
+            source = StudyFolder(
+                location=StudyFolderLocation.READONLY_STUDY_STORAGE,
+                folder_type=StudyFolderType.DATA,
+            )
         elif sync_type == "internal":
-            target = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.INTERNAL)
-            source = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.INTERNAL)
+            target = StudyFolder(
+                location=StudyFolderLocation.PRIVATE_FTP_STORAGE,
+                folder_type=StudyFolderType.INTERNAL,
+            )
+            source = StudyFolder(
+                location=StudyFolderLocation.RW_STUDY_STORAGE,
+                folder_type=StudyFolderType.INTERNAL,
+            )
         if not study:
             study = StudyService.get_instance().get_study_by_acc(study_id)
-        client = StudyRsyncClient(study_id=study_id, obfuscation_code=study.obfuscationcode)
-        
-        
+        client = StudyRsyncClient(
+            study_id=study_id, obfuscation_code=study.obfuscationcode
+        )
+
         status = client.rsync(source, target, status_check_only=False)
         return status.model_dump()
-    
+
         # log_request(request)
         # # param validation
         # if study_id is None:
@@ -705,11 +775,11 @@ class SyncFromStudyFolder(Resource):
         # if "user_token" in request.headers:
         #     user_token = request.headers["user_token"]
 
-        # 
-        # 
+        #
+        #
         # sync_only_chebi_results = True
         # if request.args:
-        #     
+        #
         #     sync_only_chebi_results = False if request.args.get('sync_only_chebi_pipeline_results').lower() == 'false' else True
 
         # UserService.get_instance().validate_user_has_write_access(user_token, study_id)
@@ -725,6 +795,7 @@ class SyncFromStudyFolder(Resource):
         # logger.info('Copying file %s to FTP %s', study_id, destination)
         # return {'meta_sync_status': meta_sync_status, 'files_sync_status':files_sync_status, 'chebi_sync_status':chebi_sync_status}
 
+
 class SyncPublicStudyToFTP(Resource):
     @swagger.operation(
         summary="Sync study files from public study folder to public FTP",
@@ -736,7 +807,7 @@ class SyncPublicStudyToFTP(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user-token",
@@ -744,34 +815,31 @@ class SyncPublicStudyToFTP(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. Files/Folders were copied across."
-            },
+            {"code": 200, "message": "OK. Files/Folders were copied across."},
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, message='Please provide valid parameter for study identifier')
+            abort(404, message="Please provide valid parameter for study identifier")
         study_id = study_id.upper()
 
         # User authentication
@@ -782,10 +850,21 @@ class SyncPublicStudyToFTP(Resource):
         UserService.get_instance().validate_user_has_curator_role(user_token)
         study = StudyService.get_instance().get_study_by_acc(study_id)
         if study.status != 0:
-           return {'Error': 'Given study is not public yet!'} 
-        study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
+            return {"Error": "Given study is not public yet!"}
+        study_path = os.path.join(
+            get_settings().study.mounted_paths.study_metadata_files_root_path, study_id
+        )
 
         ftp_public_storage = StorageService.get_ftp_public_storage()
-        logger.info(f"Syncing files from public study folder to FTP folder for {study_id}")
-        meta_public_sync_status,files_public_sync_status = ftp_public_storage.sync_to_public_ftp(source_local_folder=study_path, target_folder=study_id, ignore_list=None)
-        return {'meta_sync_status': meta_public_sync_status, 'files_sync_status':files_public_sync_status}
+        logger.info(
+            f"Syncing files from public study folder to FTP folder for {study_id}"
+        )
+        meta_public_sync_status, files_public_sync_status = (
+            ftp_public_storage.sync_to_public_ftp(
+                source_local_folder=study_path, target_folder=study_id, ignore_list=None
+            )
+        )
+        return {
+            "meta_sync_status": meta_public_sync_status,
+            "files_sync_status": files_public_sync_status,
+        }
