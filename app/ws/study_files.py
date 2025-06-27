@@ -2263,7 +2263,6 @@ def get_study_metadata_and_data_files(
         # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
         # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
         search_result = evaluate_files(directory_files, referenced_files)
-        sortFileMetadataList(search_result.study)
 
     if "upload" in location:
         if rw_authorized_user:
@@ -2289,10 +2288,17 @@ def get_study_metadata_and_data_files(
                     search_result = ftp_search_result
                 # search_result.latest = search_result.study
                 # search_result.study = []
-                sortFileMetadataList(search_result.latest)
             except Exception as exc:
                 logger.error(f"Error for study {study.acc}: {str(exc)}")
-
+                raise MetabolightsException(
+                    "Search failed.", exception=exc, http_code=500
+                )
+    if not search_result:
+        raise MetabolightsException("Search failed.", http_code=500)
+    if search_result.study:
+        sortFileMetadataList(search_result.study)
+    if search_result.latest:
+        sortFileMetadataList(search_result.latest)
     if rw_authorized_user:
         search_result.uploadPath = upload_path
         search_result.obfuscationCode = study.obfuscationcode
