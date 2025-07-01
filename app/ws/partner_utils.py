@@ -29,6 +29,7 @@ from app.utils import MetabolightsException
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
+from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 
 wsc = WsClient()
@@ -103,7 +104,12 @@ class Metabolon(Resource):
         user = UserService.get_instance().validate_user_has_curator_role(user_token)
         email = user['username']
         settings = get_study_settings()
-        study_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
+        study = StudyService.get_instance().get_study_by_acc(study_id)
+        private_ftp_root_path = settings.mounted_paths.private_ftp_root_path
+        study_location = os.path.join(
+            private_ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}"
+        )
+        # study_location = os.path.join(settings.mounted_paths.private_ftp_root_path, study_id)
         
         try:
             inputs = {"study_id": study_id, "study_location": study_location, "email": email}
