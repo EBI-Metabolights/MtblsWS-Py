@@ -2,7 +2,7 @@ import glob
 import logging
 import os
 from sqlalchemy import or_
-from typing import Union
+from typing import List, Union
 from app.config import get_settings
 from app.utils import MetabolightsDBException, MetabolightsFileOperationException, MetabolightsException
 from app.ws.db.dbmanager import DBManager
@@ -187,7 +187,7 @@ class StudyService(object):
 
         return []
 
-    def get_all_study_ids(self):
+    def get_all_study_ids(self) ->List[str]:
         with DBManager.get_instance().session_maker() as db_session:
             study_id_list = db_session.query(Study.acc).all()
             return study_id_list
