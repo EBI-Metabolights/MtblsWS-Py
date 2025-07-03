@@ -54,10 +54,15 @@ if __name__ == "__main__":
                     ]
                 )
                 submitter_fullname += " and " + study.submitters[-1].full_name
+            
             inputs = {
                 "submitter_fullname": submitter_fullname,
                 "metabolights_website_url": "https://www.ebi.ac.uk/metabolights",
-                "study_id": study.study_id
+                "study_id": study.study_id,
+                "title": study.title,
+                "previous_status": "SUBMITTED",
+                "current_status": study.status.upper(),
+                "metabolights_help_email": "metabolights-help@ebi.ac.uk"
                 ## more keys in template
             }
             body = template.render(inputs)
@@ -76,7 +81,7 @@ if __name__ == "__main__":
                 subject_name=subject_name,
                 body=body,
                 from_mail_address=from_mail_address,
-                to_mail_addresses="ozgury@ebi.ac.uk",
+                to_mail_addresses="jhunter@ebi.ac.uk",
                 cc_mail_addresses="ozgur.yurekten@gmail.com",
                 reply_to="metabolights-help@ebi.ac.uk",
             )
