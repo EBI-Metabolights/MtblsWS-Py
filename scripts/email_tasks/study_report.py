@@ -23,7 +23,7 @@ from metabolights_utils.models.isa import investigation_file as inv_model
 logger = logging.getLogger(__name__)
 
 
-def create_study_report(study_report_path: str, exclue_emails: set[str]):
+def create_study_report(study_report_path: str):
     loaded_studies = {}
     failed_studies = {}
     target_path = pathlib.Path(study_report_path)
@@ -177,9 +177,5 @@ if __name__ == "__main__":
     )
     logger.setLevel(logging.DEBUG)
     study_report_path =  "study_report.json"
-    exclue_emails = set()
-    exclue_emails.update([
-        "placeholder@ebi.ac.uk",
-    ])
     study_report = create_study_report(study_report_path=study_report_path)
     

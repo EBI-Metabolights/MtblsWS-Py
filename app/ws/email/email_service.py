@@ -55,6 +55,8 @@ class EmailService(object):
         from_mail_address,
         to_mail_addresses,
         cc_mail_addresses=None,
+        reply_to=None,
+        fail_silently: bool = True
     ):
         if not from_mail_address:
             from_mail_address = (
@@ -68,18 +70,23 @@ class EmailService(object):
             recipients = to_mail_addresses.split(",")
         else:
             recipients = to_mail_addresses
+        if not reply_to:
+            reply_to = from_mail_address
         msg = Message(
             subject=subject_name,
             sender=from_mail_address,
             recipients=recipients,
             cc=cc_mail_addresses,
             html=body,
+            reply_to=reply_to
         )
         try:
             self.mail.send(msg)
         except Exception as exc:
             message = f"Sending email failed: subject= {subject_name} recipients:{str(recipients)} body={str(body)}\nError {str(exc)}"
             logger.error(message)
+            if not fail_silently:
+                raise exc
 
     def send_email(
         self,

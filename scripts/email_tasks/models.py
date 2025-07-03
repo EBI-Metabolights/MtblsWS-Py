@@ -36,14 +36,25 @@ class MetaboLightsStudyReport(BaseModel):
     studies: list[StudyOverview] = []
 
     def filter_study_report(
-        self, status: str, exclude_emails: set[str]
+        self,
+        status: str,
+        exclude_submitter_emails: None | set[str] = None,
+        min_created_at: None | datetime = None,
+        max_created_at: None | datetime = None,
     ) -> list[StudyOverview]:
         filtered_studies: list[StudyOverview] = []
         for item in self.studies:
-            for submitter in item.submitters:
-                for email in submitter.emails:
-                    if email in exclude_emails:
-                        continue
+            if min_created_at and item.created_at < min_created_at:
+                continue
+            if max_created_at and item.created_at > max_created_at:
+                continue
+            
+                    
+            if exclude_submitter_emails:
+                for submitter in item.submitters:
+                    for email in submitter.emails:
+                        if email in exclude_submitter_emails:
+                            continue
             if item.status.lower() == status.lower():
                 filtered_studies.append(item)
         return filtered_studies
