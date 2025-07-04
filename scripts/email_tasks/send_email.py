@@ -27,9 +27,10 @@ if __name__ == "__main__":
             "metabolights-help@ebi.ac.uk",
         ]
     )
-    max_created_at = datetime.datetime.fromisoformat("2025-06-13 09:00:00.00000")
-
-    min_created_at = datetime.datetime.fromisoformat("2025-01-01 00:00:00.00000")
+    #max_created_at = datetime.datetime.fromisoformat("2025-06-13 09:00:00.00000")
+    #min_created_at = datetime.datetime.fromisoformat("2025-01-01 00:00:00.00000")
+    max_created_at = datetime.datetime.fromisoformat("2025-01-01 00:00:00.00000")
+    min_created_at = datetime.datetime.fromisoformat("2024-01-01 00:00:00.00000")
     studies = report.filter_study_report(
         status="private",
         exclude_submitter_emails=exclue_submitter_emails,
@@ -42,7 +43,7 @@ if __name__ == "__main__":
 
     for idx, study in enumerate(studies, start=1):
         try:
-            subject_name = f"MetaboLights Study Status Update - {study.study_id}"
+            subject_name = f"MetaboLights {study.study_id} New Status Labels & Submitter Led Data Publication"
             if len(study.submitters) == 1:
                 submitter_fullname = ", ".join([x.full_name for x in study.submitters])
             else:
@@ -86,6 +87,7 @@ if __name__ == "__main__":
                 bcc_mail_addresses="metabolights-dev@ebi.ac.uk",
                 reply_to="metabolights-help@ebi.ac.uk",
             )
+            print(idx, len(studies), study.study_id, "Email sent successfully")
             # if idx > 1:
             #     break
         except Exception as ex:
