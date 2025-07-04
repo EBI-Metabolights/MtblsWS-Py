@@ -93,7 +93,7 @@ if __name__ == "__main__":
                 bcc_mail_addresses="metabolights-dev@ebi.ac.uk",
                 reply_to="metabolights-help@ebi.ac.uk",
             )
-            print(idx, len(studies), study.study_id, "Email sent successfully")
+            print(idx, len(studies), study.study_id, study.created_at, "Email sent successfully")
             if idx > 1:
                 break
         except Exception as ex:

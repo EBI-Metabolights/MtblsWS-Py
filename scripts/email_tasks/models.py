@@ -1,6 +1,10 @@
 from datetime import datetime
+import logging
 import pathlib
 from pydantic import BaseModel, EmailStr
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class StudyContact(BaseModel):
@@ -46,18 +50,34 @@ class MetaboLightsStudyReport(BaseModel):
         filtered_studies: list[StudyOverview] = []
         for item in self.studies:
             if item.curation_status == "Metabolights":
+                logger.info(
+                    "%s is excluded. It is MetaboLights curated study.",
+                    item.study_id,
+                )
                 continue
             if min_created_at and item.created_at < min_created_at:
                 continue
             if max_created_at and item.created_at > max_created_at:
                 continue
+            exclude = False
             if exclude_submitter_emails:
                 for submitter in item.submitters:
                     for email in submitter.emails:
                         if email in exclude_submitter_emails:
-                            continue
-            if item.status.lower() == status.lower():
-                filtered_studies.append(item)
+                            exclude = True
+                            break
+                    if exclude:
+                        break
+            if exclude:
+                logger.info(
+                    "%s is excluded. Submitters: %s",
+                    item.study_id,
+                    ", ".join([x.full_name for x in item.submitters if x]),
+                )
+                continue
+            if item.submitters:
+                if item.status.lower() == status.lower():
+                    filtered_studies.append(item)
         filtered_studies.sort(key=lambda x: x.created_at, reverse=True)
         return filtered_studies
 
