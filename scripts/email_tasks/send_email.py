@@ -75,17 +75,17 @@ if __name__ == "__main__":
             for x in study.contacts:
                 cc_mail_addresses.extend(x.emails)
 
-            # send_task_email(
-            #     study_id=study.study_id,
-            #     task_name=task_name,
-            #     subject_name=subject_name,
-            #     body=body,
-            #     from_mail_address=from_mail_address,
-            #     to_mail_addresses="jhunter@ebi.ac.uk",
-            #     cc_mail_addresses="ozgur.yurekten@gmail.com",
-            #     reply_to="metabolights-help@ebi.ac.uk",
-            # )
-            if idx > 1:
-                break
+            send_task_email(
+                study_id=study.study_id,
+                task_name=task_name,
+                subject_name=subject_name,
+                body=body,
+                from_mail_address=from_mail_address,
+                to_mail_addresses=to_mail_addresses,
+                cc_mail_addresses=cc_mail_addresses,
+                reply_to="metabolights-help@ebi.ac.uk",
+            )
+            # if idx > 1:
+            #     break
         except Exception as ex:
             raise ex
