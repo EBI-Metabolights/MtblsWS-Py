@@ -27,12 +27,14 @@ if __name__ == "__main__":
             "metabolights-help@ebi.ac.uk",
         ]
     )
-    #max_created_at = datetime.datetime.fromisoformat("2025-06-13 09:00:00.00000")
-    #min_created_at = datetime.datetime.fromisoformat("2025-01-01 00:00:00.00000")
-    # max_created_at = datetime.datetime.fromisoformat("2025-01-01 00:00:00.00000")
+    # max_created_at = datetime.datetime.fromisoformat("2025-06-13 09:00:00.00000")
+    # min_created_at = datetime.datetime.fromisoformat("2025-01-01 00:00:00.00000")
+    # max_created_at = datetime.datetime.fromisoformat("2025-01-01 09:00:00.00000")
     # min_created_at = datetime.datetime.fromisoformat("2024-01-01 00:00:00.00000")
     # max_created_at = datetime.datetime.fromisoformat("2024-01-01 00:00:00.00000")
-    # min_created_at = datetime.datetime.fromisoformat("2022-01-01 00:00:00.00000")
+    # min_created_at = datetime.datetime.fromisoformat("2023-01-01 00:00:00.00000")    
+    # max_created_at = datetime.datetime.fromisoformat("2023-01-01 00:00:00.00000")
+    # min_created_at = datetime.datetime.fromisoformat("2022-01-01 00:00:00.00000") 
     max_created_at = datetime.datetime.fromisoformat("2022-01-01 00:00:00.00000")
     min_created_at = None
     studies = report.filter_study_report(
@@ -86,15 +88,15 @@ if __name__ == "__main__":
                 subject_name=subject_name,
                 body=body,
                 from_mail_address=from_mail_address,
-                # to_mail_addresses=to_mail_addresses,
-                # cc_mail_addresses=cc_mail_addresses,
-                to_mail_addresses="jhunter@ebi.ac.uk",
-                cc_mail_addresses="ozgury@ebi.ac.uk",
+                to_mail_addresses=to_mail_addresses,
+                cc_mail_addresses=cc_mail_addresses,
+                # to_mail_addresses="jhunter@ebi.ac.uk",
+                # cc_mail_addresses="ozgury@ebi.ac.uk",
                 bcc_mail_addresses="metabolights-dev@ebi.ac.uk",
                 reply_to="metabolights-help@ebi.ac.uk",
             )
             print(idx, len(studies), study.study_id, study.created_at, "Email sent successfully")
-            if idx > 1:
-                break
+            # if idx > 1:
+            #     break
         except Exception as ex:
             raise ex
