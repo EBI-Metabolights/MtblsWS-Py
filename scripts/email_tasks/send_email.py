@@ -50,17 +50,19 @@ if __name__ == "__main__":
     for idx, study in enumerate(studies, start=1):
         try:
             subject_name = f"MetaboLights {study.study_id} New Status Labels & Submitter Led Data Publication"
-            if len(study.submitters) == 1:
+            if not study.submitters:
+                continue
+            elif len(study.submitters) == 1:
                 submitter_fullname = ", ".join([x.full_name for x in study.submitters])
             else:
                 submitter_fullname = ", ".join(
                     [
                         x.full_name
-                        for idx, x in enumerate(study.submitters)
-                        if idx < len(study.submitters)
+                        for i, x in enumerate(study.submitters)
+                        if i < len(study.submitters) - 1
                     ]
                 )
-                submitter_fullname += " and " + study.submitters[-1].full_name
+                submitter_fullname += ", and " + study.submitters[-1].full_name
 
             inputs = {
                 "submitter_fullname": submitter_fullname,
