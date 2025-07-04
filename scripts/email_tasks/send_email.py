@@ -29,16 +29,20 @@ if __name__ == "__main__":
     )
     #max_created_at = datetime.datetime.fromisoformat("2025-06-13 09:00:00.00000")
     #min_created_at = datetime.datetime.fromisoformat("2025-01-01 00:00:00.00000")
-    max_created_at = datetime.datetime.fromisoformat("2025-01-01 00:00:00.00000")
-    min_created_at = datetime.datetime.fromisoformat("2024-01-01 00:00:00.00000")
+    # max_created_at = datetime.datetime.fromisoformat("2025-01-01 00:00:00.00000")
+    # min_created_at = datetime.datetime.fromisoformat("2024-01-01 00:00:00.00000")
+    # max_created_at = datetime.datetime.fromisoformat("2024-01-01 00:00:00.00000")
+    # min_created_at = datetime.datetime.fromisoformat("2022-01-01 00:00:00.00000")
+    max_created_at = datetime.datetime.fromisoformat("2022-01-01 00:00:00.00000")
+    min_created_at = None
     studies = report.filter_study_report(
-        status="private",
+        status="provisional",
         exclude_submitter_emails=exclue_submitter_emails,
         min_created_at=min_created_at,
         max_created_at=max_created_at,
     )
 
-    script_template_name = "in_curation_studies.html"
+    script_template_name = "submitted_studies.html"
     template = env.get_template(script_template_name)
 
     for idx, study in enumerate(studies, start=1):
@@ -61,7 +65,7 @@ if __name__ == "__main__":
                 "metabolights_website_url": "https://www.ebi.ac.uk/metabolights",
                 "study_id": study.study_id,
                 "title": study.title,
-                "previous_status": "IN CURATION",
+                "previous_status": "SUBMITTED",
                 "current_status": study.status.upper(),
                 "metabolights_help_email": "metabolights-help@ebi.ac.uk",
                 ## more keys in template
@@ -82,13 +86,15 @@ if __name__ == "__main__":
                 subject_name=subject_name,
                 body=body,
                 from_mail_address=from_mail_address,
-                to_mail_addresses=to_mail_addresses,
-                cc_mail_addresses=cc_mail_addresses,
+                # to_mail_addresses=to_mail_addresses,
+                # cc_mail_addresses=cc_mail_addresses,
+                to_mail_addresses="jhunter@ebi.ac.uk",
+                cc_mail_addresses="ozgury@ebi.ac.uk",
                 bcc_mail_addresses="metabolights-dev@ebi.ac.uk",
                 reply_to="metabolights-help@ebi.ac.uk",
             )
             print(idx, len(studies), study.study_id, "Email sent successfully")
-            # if idx > 1:
-            #     break
+            if idx > 1:
+                break
         except Exception as ex:
             raise ex
