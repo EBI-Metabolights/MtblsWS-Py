@@ -19,6 +19,7 @@ class StudyOverview(BaseModel):
     study_id: str = ""
     title: str = ""
     status: str = ""
+    curation_status: str = ""
     submitters: list[StudyContact] = []
     publications: list[StudyPublication] = []
     contacts: list[StudyContact] = []
@@ -44,6 +45,8 @@ class MetaboLightsStudyReport(BaseModel):
     ) -> list[StudyOverview]:
         filtered_studies: list[StudyOverview] = []
         for item in self.studies:
+            if item.curation_status == "Metabolights":
+                continue
             if min_created_at and item.created_at < min_created_at:
                 continue
             if max_created_at and item.created_at > max_created_at:

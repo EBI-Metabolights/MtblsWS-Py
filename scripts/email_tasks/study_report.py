@@ -6,7 +6,7 @@ import sys
 from app.config import get_settings
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study
-from app.ws.db.types import StudyStatus
+from app.ws.db.types import CurationRequest, StudyStatus
 from scripts.email_tasks.models import (
     MetaboLightsStudyReport,
     StudyContact,
@@ -30,8 +30,9 @@ def update_status():
 
     study_report_items = {x.study_id: x for x in study_report.studies}
     with DBManager.get_instance().session_maker() as db_session:
-        studies: list[str, int] = db_session.query(Study.acc, Study.status).all()
-    updated = False
+        studies: list[str, int, int] = db_session.query(
+            Study.acc, Study.status, Study.curation_request
+        ).all()
     for study in studies:
         study_id = study[0]
         if study_id in study_report_items:
@@ -39,11 +40,13 @@ def update_status():
             new_status_item = StudyStatus(study[1])
             new_status = new_status_item.name.capitalize()
             if current_status != new_status:
-                updated = True
                 study_report_items[study_id].status = new_status
-
-    if updated:
-        save_study_report(report=study_report)
+            curation_request = CurationRequest(study[2])
+            if curation_request == CurationRequest.MANUAL_CURATION:
+                study_report_items[study_id].curation_status = "MetaboLights"
+            else:
+                study_report_items[study_id].curation_status = "Minimum"
+    save_study_report(report=study_report)
 
 
 def create_study_report(study_report_path: str):
