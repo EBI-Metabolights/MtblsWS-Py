@@ -48,8 +48,6 @@ class MetaboLightsStudyReport(BaseModel):
                 continue
             if max_created_at and item.created_at > max_created_at:
                 continue
-            
-                    
             if exclude_submitter_emails:
                 for submitter in item.submitters:
                     for email in submitter.emails:
@@ -57,6 +55,7 @@ class MetaboLightsStudyReport(BaseModel):
                             continue
             if item.status.lower() == status.lower():
                 filtered_studies.append(item)
+        filtered_studies.sort(key=lambda x: x.created_at, reverse=True)
         return filtered_studies
 
 
@@ -72,3 +71,11 @@ def load_study_report(
     json_str = target_path.open().read()
     report = MetaboLightsStudyReport.model_validate_json(json_str)
     return report
+
+
+def save_study_report(
+    report: MetaboLightsStudyReport,
+    study_report_path: str = "study_report.json",
+) -> None:
+    target_path = pathlib.Path(study_report_path)
+    target_path.open("w").write(report.model_dump_json(indent=2))

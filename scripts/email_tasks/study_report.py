@@ -12,6 +12,8 @@ from scripts.email_tasks.models import (
     StudyContact,
     StudyOverview,
     StudyPublication,
+    load_study_report,
+    save_study_report,
 )
 from metabolights_utils.isatab import Reader
 from metabolights_utils.isatab.reader import (
@@ -22,6 +24,25 @@ from metabolights_utils.models.isa import investigation_file as inv_model
 
 logger = logging.getLogger(__name__)
 
+
+def update_status():
+    study_report: MetaboLightsStudyReport = load_study_report()
+    
+    study_report_items = {x.study_id:x for x in study_report.studies}
+    with DBManager.get_instance().session_maker() as db_session:
+        studies: list[str, int] = db_session.query(Study.acc, Study.status).all()
+    for study in studies:
+        study_id = study[0]
+        if study_id in study_report_items:
+            current_status = study_report_items[study_id].status.capitalize()
+            new_status_item = StudyStatus(study[1])
+            new_status = new_status_item.name.capitalize()
+            if current_status != new_status:
+                study_report_items[study_id].status = new_status
+            
+    
+    save_study_report(report=study_report)
+    
 
 def create_study_report(study_report_path: str):
     loaded_studies = {}
@@ -177,5 +198,6 @@ if __name__ == "__main__":
     )
     logger.setLevel(logging.DEBUG)
     study_report_path =  "study_report.json"
-    study_report = create_study_report(study_report_path=study_report_path)
+    # study_report = create_study_report(study_report_path=study_report_path)
     
+    update_status()

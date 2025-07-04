@@ -1,0 +1,45 @@
+<head>
+  <link rel="stylesheet" type="text/css" href='{{ metabolights_website_url }}/css/ml.css' media="screen" />
+</head>
+<body class="level2">
+  
+<div class="ml-header-section-top ml-header clearfix">
+  <div class="col-md-12">
+      <div class="row">
+          <div class="col-md-7 col-sm-6">
+              <div class="alpha logo-title"  id="local-title">
+                  <a id="mlLogo" class="ml-logo" style="text-decoration: none; display: flex; align-items: center;" href="{{ metabolights_website_url }}" title="MetaboLights homepage">
+                      <img src="{{ metabolights_website_url }}/img/MetaboLightsLogo.png" alt="MetaboLights" width="64" height="64" />MetaboLights
+                  </a>
+              </div>
+          </div>
+      </div>
+  </div>
+</div><br/>
+
+Dear {{ submitter_fullname }},
+<br/><br/>
+Following the "New Accessioning and Validation Framework v2" implemented in January 2025, the MetaboLights team are pleased to announce a New Data Submission Workflow is now in effect 
+("<b>PROVISIONAL</b>" -> "<b>PRIVATE</b>" -> "<b>PUBLIC</b>"). Please see <a href="{{ metabolights_website_url }}/newWorkflow">New Workflow</a> for more information.
+<br/><br/>
+Your study <a href="{{ metabolights_website_url }}/editor/study/{{ study_id }}">{{ study_id }}</a>: "{{ title }}", previously <b>{{ previous_status }}</b> is now labelled as <b>{{ current_status }}</b>.
+<br/><br/>
+Note submitters are now able to independently make studies "<b>PRIVATE</b>", then "<b>PUBLIC</b>", provided they pass the automated Validation Framework v2, without the need to contact 
+MetaboLights or undergo MetaboLights curation. A private reviewer link is available for "<b>PRIVATE</b>" studies.
+<br/><br/>
+Please review the latest MetaboLights <a href="https://www.ebi.ac.uk/metabolights/editor/datapolicy">Data Policy</a>, dated 11<sup>th</sup> April 2025.
+<br/><br/>
+Please do not hesitate to contact <a href="mailto:metabolights-help@ebi.ac.uk">metabolights-help@ebi.ac.uk</a> with any questions or feedback.
+<br/><br/>
+Kind Regards, <br/><br/>
+  The MetaboLights Team, EMBL-EBI <br/>
+  <br/>
+  Website: <a href="{{ metabolights_website_url }}">{{ metabolights_website_url }}</a> <br/>
+  Email: <a href="mailto:{{ metabolights_help_email }}">{{ metabolights_help_email }}</a> <br/>
+  X/Twitter: <a href="https://x.com/MetaboLights">@MetaboLights</a> <br/>
+  Bluesky: <a href="https://bsky.app/profile/metabolights.bsky.social">@metabolights.bsky.social</a> <br/>
+  <br/><br/>
+  EMBL-EBI, Wellcome Trust Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK<br>
+
+
+</body>

@@ -11,9 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 if __name__ == "__main__":
-    task_name = "STUDY_SEND_METABOLIGHTS_UPDATES_EMAIL"
+    task_name = "SEND_METABOLIGHTS_UPDATES_EMAIL"
     env = Environment(
-        loader=PackageLoader("scripts.email_tasks.emails_by_status", "submitted"),
+        loader=PackageLoader("scripts.email_tasks", "templates"),
         autoescape=select_autoescape(["html", "xml"]),
     )
 
@@ -28,17 +28,17 @@ if __name__ == "__main__":
         ]
     )
     max_created_at = datetime.datetime.fromisoformat("2025-06-13 09:00:00.00000")
+    
+    min_created_at = datetime.datetime.fromisoformat("2025-01-01 00:00:00.00000")
     studies = report.filter_study_report(
-        status="provisional",
+        status="private",
         exclude_submitter_emails=exclue_submitter_emails,
-        min_created_at=None,
+        min_created_at=min_created_at,
         max_created_at=max_created_at,
     )
 
-    script_template_name = "submitted_studies.html"
+    script_template_name = "in_curation_studies.html"
     template = env.get_template(script_template_name)
-
-    pathlib.Path("submitted_studies_email.txt")
 
     for idx, study in enumerate(studies, start=1): 
         try:
@@ -60,7 +60,7 @@ if __name__ == "__main__":
                 "metabolights_website_url": "https://www.ebi.ac.uk/metabolights",
                 "study_id": study.study_id,
                 "title": study.title,
-                "previous_status": "SUBMITTED",
+                "previous_status": "IN CURATION",
                 "current_status": study.status.upper(),
                 "metabolights_help_email": "metabolights-help@ebi.ac.uk"
                 ## more keys in template
@@ -75,16 +75,16 @@ if __name__ == "__main__":
             for x in study.contacts:
                 cc_mail_addresses.extend(x.emails)
 
-            send_task_email(
-                study_id=study.study_id,
-                task_name=task_name,
-                subject_name=subject_name,
-                body=body,
-                from_mail_address=from_mail_address,
-                to_mail_addresses="jhunter@ebi.ac.uk",
-                cc_mail_addresses="ozgur.yurekten@gmail.com",
-                reply_to="metabolights-help@ebi.ac.uk",
-            )
+            # send_task_email(
+            #     study_id=study.study_id,
+            #     task_name=task_name,
+            #     subject_name=subject_name,
+            #     body=body,
+            #     from_mail_address=from_mail_address,
+            #     to_mail_addresses="jhunter@ebi.ac.uk",
+            #     cc_mail_addresses="ozgur.yurekten@gmail.com",
+            #     reply_to="metabolights-help@ebi.ac.uk",
+            # )
             if idx > 1:
                 break
         except Exception as ex:
