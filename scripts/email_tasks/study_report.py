@@ -27,10 +27,11 @@ logger = logging.getLogger(__name__)
 
 def update_status():
     study_report: MetaboLightsStudyReport = load_study_report()
-    
-    study_report_items = {x.study_id:x for x in study_report.studies}
+
+    study_report_items = {x.study_id: x for x in study_report.studies}
     with DBManager.get_instance().session_maker() as db_session:
         studies: list[str, int] = db_session.query(Study.acc, Study.status).all()
+    updated = False
     for study in studies:
         study_id = study[0]
         if study_id in study_report_items:
@@ -38,11 +39,12 @@ def update_status():
             new_status_item = StudyStatus(study[1])
             new_status = new_status_item.name.capitalize()
             if current_status != new_status:
+                updated = True
                 study_report_items[study_id].status = new_status
-            
-    
-    save_study_report(report=study_report)
-    
+
+    if updated:
+        save_study_report(report=study_report)
+
 
 def create_study_report(study_report_path: str):
     loaded_studies = {}
@@ -72,7 +74,9 @@ def create_study_report(study_report_path: str):
                     logger.info("Task started.")
                 elif idx % 100 == 0:
                     target_path.open("w").write(report.model_dump_json(indent=2))
-                    pathlib.Path("failed_studies.json").open("w").write(str(failed_studies))
+                    pathlib.Path("failed_studies.json").open("w").write(
+                        str(failed_studies)
+                    )
                     logger.info("Current: %s", study.acc)
                 study_overview = StudyOverview(
                     study_id=study.acc,
@@ -163,7 +167,11 @@ def create_study_report(study_report_path: str):
                                 ex,
                             )
 
-                        if new_contact and new_contact.emails and new_contact.emails[0] not in all_emails:
+                        if (
+                            new_contact
+                            and new_contact.emails
+                            and new_contact.emails[0] not in all_emails
+                        ):
                             all_emails[new_contact.emails[0]] = new_contact
                             contacts.append(new_contact)
                     study_overview.contacts = contacts
@@ -183,6 +191,7 @@ def create_study_report(study_report_path: str):
     logger.info("Current: %s", study.acc)
     return study_report_path
 
+
 def split_email_address_text(email_str=str) -> list[str]:
     new_str = email_str.replace("and", " ").replace(",", " ").replace(";", " ")
     emails = [x.strip() for x in new_str.split() if x and x.strip() and "@" in x]
@@ -197,7 +206,7 @@ if __name__ == "__main__":
         stream=sys.stdout,
     )
     logger.setLevel(logging.DEBUG)
-    study_report_path =  "study_report.json"
+    study_report_path = "study_report.json"
     # study_report = create_study_report(study_report_path=study_report_path)
-    
+
     update_status()

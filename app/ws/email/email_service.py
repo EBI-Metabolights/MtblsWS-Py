@@ -55,8 +55,9 @@ class EmailService(object):
         from_mail_address,
         to_mail_addresses,
         cc_mail_addresses=None,
+        bcc_mail_addresses=None,
         reply_to=None,
-        fail_silently: bool = True
+        fail_silently: bool = True,
     ):
         if not from_mail_address:
             from_mail_address = (
@@ -64,8 +65,12 @@ class EmailService(object):
             )
         if not cc_mail_addresses:
             cc_mail_addresses = []
+        if not bcc_mail_addresses:
+            bcc_mail_addresses = []
         if not isinstance(cc_mail_addresses, list):
             cc_mail_addresses = cc_mail_addresses.split(",")
+        if not isinstance(bcc_mail_addresses, list):
+            bcc_mail_addresses = bcc_mail_addresses.split(",")
         if not isinstance(to_mail_addresses, list):
             recipients = to_mail_addresses.split(",")
         else:
@@ -77,8 +82,9 @@ class EmailService(object):
             sender=from_mail_address,
             recipients=recipients,
             cc=cc_mail_addresses,
+            bcc=bcc_mail_addresses,
             html=body,
-            reply_to=reply_to
+            reply_to=reply_to,
         )
         try:
             self.mail.send(msg)

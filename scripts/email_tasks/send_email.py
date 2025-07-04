@@ -28,7 +28,7 @@ if __name__ == "__main__":
         ]
     )
     max_created_at = datetime.datetime.fromisoformat("2025-06-13 09:00:00.00000")
-    
+
     min_created_at = datetime.datetime.fromisoformat("2025-01-01 00:00:00.00000")
     studies = report.filter_study_report(
         status="private",
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     script_template_name = "in_curation_studies.html"
     template = env.get_template(script_template_name)
 
-    for idx, study in enumerate(studies, start=1): 
+    for idx, study in enumerate(studies, start=1):
         try:
             subject_name = f"MetaboLights Study Status Update - {study.study_id}"
             if len(study.submitters) == 1:
@@ -54,7 +54,7 @@ if __name__ == "__main__":
                     ]
                 )
                 submitter_fullname += " and " + study.submitters[-1].full_name
-            
+
             inputs = {
                 "submitter_fullname": submitter_fullname,
                 "metabolights_website_url": "https://www.ebi.ac.uk/metabolights",
@@ -62,7 +62,7 @@ if __name__ == "__main__":
                 "title": study.title,
                 "previous_status": "IN CURATION",
                 "current_status": study.status.upper(),
-                "metabolights_help_email": "metabolights-help@ebi.ac.uk"
+                "metabolights_help_email": "metabolights-help@ebi.ac.uk",
                 ## more keys in template
             }
             body = template.render(inputs)
@@ -83,6 +83,7 @@ if __name__ == "__main__":
                 from_mail_address=from_mail_address,
                 to_mail_addresses=to_mail_addresses,
                 cc_mail_addresses=cc_mail_addresses,
+                bcc_mail_addresses="metabolights-dev@ebi.ac.uk",
                 reply_to="metabolights-help@ebi.ac.uk",
             )
             # if idx > 1:

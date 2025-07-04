@@ -22,6 +22,7 @@ def send_task_email(
     from_mail_address,
     to_mail_addresses,
     cc_mail_addresses=None,
+    bcc_mail_addresses=None,
     reply_to=None,
 ) -> bool:
     task = None
@@ -37,11 +38,16 @@ def send_task_email(
                 raise Exception("From email address is empty")
             if not to_mail_addresses:
                 raise Exception("To email address is empty")
-
+            if not cc_mail_addresses:
+                cc_mail_addresses = []
+            if not bcc_mail_addresses:
+                bcc_mail_addresses = []
             if not isinstance(cc_mail_addresses, list):
                 cc_mail_addresses = cc_mail_addresses.split(",")
             if not isinstance(to_mail_addresses, list):
                 to_mail_addresses = to_mail_addresses.split(",")
+            if not isinstance(bcc_mail_addresses, list):
+                bcc_mail_addresses = bcc_mail_addresses.split(",")
             for emails in (to_mail_addresses, cc_mail_addresses):
                 for email in emails:
                     validate_email(email)
@@ -52,6 +58,7 @@ def send_task_email(
                 from_mail_address=from_mail_address,
                 to_mail_addresses=to_mail_addresses,
                 cc_mail_addresses=cc_mail_addresses if cc_mail_addresses else None,
+                bcc_mail_addresses=bcc_mail_addresses if bcc_mail_addresses else None,
                 reply_to=reply_to,
                 fail_silently=False,
             )
