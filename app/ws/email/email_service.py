@@ -1,6 +1,6 @@
 import logging
 import os.path
-from typing import Set, Union
+from typing import List, Set, Union
 
 from flask_mail import Mail, Message
 from jinja2 import Environment, PackageLoader, select_autoescape
@@ -101,17 +101,17 @@ class EmailService(object):
         submitters_mail_addresses,
         user_email,
         from_mail_address=None,
-        curation_mail_address=None,
+        curation_mail_address: Union[str, List[str]] = None,
         additional_cc_emails=None,
     ):
         if not from_mail_address:
             from_mail_address = (
                 self.email_settings.email_service.configuration.no_reply_email_address
             )
-        if not curation_mail_address:
-            curation_mail_address = (
-                self.email_settings.email_service.configuration.curation_email_address
-            )
+        # if not curation_mail_address:
+        #     curation_mail_address = (
+        #         self.email_settings.email_service.configuration.curation_email_address
+        #     )
         dev_email = get_settings().email.email_service.configuration.technical_issue_recipient_email_address
         recipients: Set[str] = set()
         if submitters_mail_addresses:
@@ -129,7 +129,20 @@ class EmailService(object):
                 x for x in additional_cc_emails if x and x not in recipients
             ]
         additional_cc_emails = additional_cc_emails if additional_cc_emails else None
-        bcc = [dev_email] if user_email == dev_email else [dev_email, user_email]
+        bcc = []
+        if curation_mail_address:
+            if isinstance(curation_mail_address, list):
+                bcc.extend(curation_mail_address)
+            else:
+                bcc.extend(
+                    [x.strip() for x in str(curation_mail_address).split(",") if x]
+                )
+        else:
+            bcc.append(dev_email)
+
+        if user_email != dev_email:
+            bcc.append(user_email)
+
         msg = Message(
             subject=subject_name,
             sender=from_mail_address,
@@ -161,9 +174,6 @@ class EmailService(object):
         user_name = settings.ftp_server.private.connection.username
         user_password = settings.ftp_server.private.connection.password
         ftp_server = settings.ftp_server.private.connection.host
-        ftp_upload_doc_link = (
-            settings.email.template_email_configuration.ftp_upload_help_doc_url
-        )
         host = get_settings().server.service.ws_app_base_link
         submission_url = os.path.join(host, "editor", "study", provisional_id)
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
@@ -182,8 +192,16 @@ class EmailService(object):
 
         body = self.get_rendered_body("new_submission.html", content)
         subject_name = f"MetaboLights Temporary Submission initiated ({provisional_id})"
-
-        self.send_email(subject_name, body, submitters_mail_addresses, user_email)
+        curation_mail_address = (
+            self.email_settings.email_service.configuration.curation_email_address
+        )
+        self.send_email(
+            subject_name,
+            body,
+            submitters_mail_addresses,
+            user_email,
+            curation_mail_address=curation_mail_address,
+        )
 
     def send_email_for_new_accession_number(
         self,
@@ -228,12 +246,16 @@ class EmailService(object):
             "study_contacts": study_contacts,
         }
         body = self.get_rendered_body("new_accession_number.html", content)
+        curation_mail_address = (
+            self.email_settings.email_service.configuration.curation_email_address
+        )
         self.send_email(
             subject_name,
             body,
             submitters_mail_addresses,
             user_email,
             additional_cc_emails=additional_cc_emails,
+            curation_mail_address=curation_mail_address,
         )
 
     def send_email_on_public(
@@ -290,12 +312,16 @@ class EmailService(object):
             "study_globus_url": study_globus_url,
         }
         body = self.get_rendered_body("status_is_public.html", content)
+        curation_mail_address = (
+            self.email_settings.email_service.configuration.curation_email_address
+        )
         self.send_email(
             subject_name,
             body,
             submitters_mail_addresses,
             user_email,
             additional_cc_emails=additional_cc_emails,
+            curation_mail_address=curation_mail_address,
         )
 
     def send_email_for_task_completed(self, subject_name, task_id, task_result, to):
