@@ -108,10 +108,7 @@ class EmailService(object):
             from_mail_address = (
                 self.email_settings.email_service.configuration.no_reply_email_address
             )
-        # if not curation_mail_address:
-        #     curation_mail_address = (
-        #         self.email_settings.email_service.configuration.curation_email_address
-        #     )
+
         dev_email = get_settings().email.email_service.configuration.technical_issue_recipient_email_address
         recipients: Set[str] = set()
         if submitters_mail_addresses:
@@ -125,30 +122,43 @@ class EmailService(object):
             return
 
         if additional_cc_emails:
-            additional_cc_emails = [
-                x for x in additional_cc_emails if x and x not in recipients
-            ]
+            if isinstance(curation_mail_address, list):
+                additional_cc_emails = [
+                    x for x in additional_cc_emails if x and x not in recipients
+                ]
+            else:
+                additional_cc_emails = [
+                    x for x in str(curation_mail_address).split(",") if x and x not in recipients
+                ]
         additional_cc_emails = additional_cc_emails if additional_cc_emails else None
-        bcc = []
+        bcc = { dev_email }
         if curation_mail_address:
             if isinstance(curation_mail_address, list):
-                bcc.extend(curation_mail_address)
+                bcc.add(curation_mail_address)
             else:
-                bcc.extend(
+                bcc.update(
                     [x.strip() for x in str(curation_mail_address).split(",") if x]
                 )
-        else:
-            bcc.append(dev_email)
 
-        if user_email != dev_email:
-            bcc.append(user_email)
+        default_curation_mail_address = (
+            self.email_settings.email_service.configuration.curation_email_address
+        )
+        all_emails = {default_curation_mail_address, dev_email}
+        all_emails.update(recipients)
+        if additional_cc_emails:
+            all_emails.update(additional_cc_emails)
+        if bcc:
+            all_emails.update(bcc)
+        
+        if user_email not in all_emails:
+            bcc.add(user_email)
 
         msg = Message(
             subject=subject_name,
             sender=from_mail_address,
             recipients=list(recipients),
             cc=additional_cc_emails,
-            bcc=bcc,
+            bcc=list(bcc) if bcc else None,
             html=body,
         )
         try:
@@ -192,15 +202,11 @@ class EmailService(object):
 
         body = self.get_rendered_body("new_submission.html", content)
         subject_name = f"MetaboLights Temporary Submission initiated ({provisional_id})"
-        curation_mail_address = (
-            self.email_settings.email_service.configuration.curation_email_address
-        )
         self.send_email(
             subject_name,
             body,
             submitters_mail_addresses,
-            user_email,
-            curation_mail_address=curation_mail_address,
+            user_email
         )
 
     def send_email_for_new_accession_number(
@@ -246,16 +252,13 @@ class EmailService(object):
             "study_contacts": study_contacts,
         }
         body = self.get_rendered_body("new_accession_number.html", content)
-        curation_mail_address = (
-            self.email_settings.email_service.configuration.curation_email_address
-        )
+        
         self.send_email(
             subject_name,
             body,
             submitters_mail_addresses,
             user_email,
             additional_cc_emails=additional_cc_emails,
-            curation_mail_address=curation_mail_address,
         )
 
     def send_email_on_public(
