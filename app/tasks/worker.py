@@ -52,6 +52,7 @@ common_tasks = [
     "app.tasks.common_tasks.curation_tasks.chebi_pipeline",
     "app.tasks.common_tasks.basic_tasks.send_email",
     "app.tasks.common_tasks.basic_tasks.elasticsearch",
+    "app.tasks.common_tasks.report_tasks.europe_pmc"
 ]
 datamover_tasks = [
     "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",

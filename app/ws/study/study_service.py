@@ -108,7 +108,18 @@ class StudyService(object):
             raise MetabolightsFileOperationException(message=f"Error while reading study folder.", exception=e)
 
         return m_study
-
+    
+    def get_study_with_detailed_user(self, study_id) -> StudyModel:
+         with DBManager.get_instance().session_maker() as db_session:
+            query = db_session.query(Study)
+            query = query.filter(Study.acc == study_id)
+            study = query.first()
+            if not study:
+                raise MetabolightsDBException(f"{study_id} does not exist")
+            m_study = create_study_model_from_db_study(study)
+            m_study.users = [get_user_model(x) for x in study.users]
+            return m_study
+        
     def get_public_study_from_db(self, study_id) -> StudyModel:
          with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)

@@ -113,6 +113,7 @@ from app.ws.v1.studies import V1StudyDetail
 from app.ws.validation import (NewValidation, OverrideValidation, StudyValidationTask,
                                ValidationFile, ValidationProcess,
                                ValidationComment, ValidationReport)
+from app.ws.reports import EuropePMCReport
 
 
 def configure_app(flask_app):
@@ -389,6 +390,7 @@ def initialize_app(flask_app):
     # https://www.ebi.ac.uk:443/metabolights/ws/v2
     api.add_resource(reports, res_path + "/v2/reports")
     api.add_resource(CrossReferencePublicationInformation, res_path + "/v2/europe-pmc-report")
+    api.add_resource(EuropePMCReport, res_path + "/v2/europe-pmc-pubs")
     api.add_resource(StudyAssayTypeReports, res_path + "/v2/study-assay-type-reports")
     api.add_resource(ZipSpectraFiles, res_path + "/v2/zip-spectra-files")
     api.add_resource(curation_log, res_path + "/v2/curation_log")
