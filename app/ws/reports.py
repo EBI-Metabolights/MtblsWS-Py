@@ -683,6 +683,15 @@ class EuropePMCReport(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False,
+            },
+            {
+                "name": "google-sheet-id",
+                "description": "Google sheet id to look for",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
             }
             
         ],
@@ -701,11 +710,25 @@ class EuropePMCReport(Resource):
 
         UserService.get_instance().validate_user_has_curator_role(user_token)
         
-        inputs = {"user-token": user_token}
-        #task = europe_pmc_publication_report.apply_async(kwargs=inputs, expires=60*60)
-        return europe_pmc_publication_report(user_token=user_token)
-        #response = {'Task started':f'Task id {task.id}'}       
-        #return response
+        google_sheet_id = None
+        if request.args:
+            option = request.args.get('option')
+            if option:
+                option = option.strip()
+                
+            google_sheet_id = request.args.get('google-sheet-id')
+            if google_sheet_id:
+                google_sheet_id = google_sheet_id.strip()
+        
+        inputs = {"user_token": user_token, "google_sheet_id": google_sheet_id}
+        if google_sheet_id:
+            task = europe_pmc_publication_report.apply_async(kwargs=inputs, expires=60*60)
+            response = {'Task started':f'Task id {task.id}'}       
+            return response
+            #return europe_pmc_publication_report(user_token=user_token, google_sheet_id=google_sheet_id)
+        else:
+            abort(401)
+
 
 class CrossReferencePublicationInformation(Resource):
 

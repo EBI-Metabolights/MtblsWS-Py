@@ -5,9 +5,12 @@ import pathlib
 import datetime
 import time
 from xml.dom.minidom import Document, Element
+
+import pandas as pd
 from app.config import get_settings
 from app.tasks.worker import send_email
 from app.utils import MetabolightsDBException
+from app.ws.cronjob import getGoogleSheet, replaceGoogleSheet
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import ContactModel, MetaboLightsCompoundModel, PublicationModel, StudyModel
 from app.ws.db.schemes import User
@@ -104,32 +107,84 @@ class EbEyeSearchService():
         return {"processed_studies": i, "completed_in": processed_time}
     
     @staticmethod
-    def europe_publication_report(user_token: str):
+    def europe_publication_report(user_token: str, google_sheet_id: str):
         start_time = time.time()
-        study_list = get_public_studies()
+        #study_list = get_public_studies()
         #study_list = ['MTBLS7519', 'MTBLS10757', 'MTBLS3923', 'MTBLS9845', 'MTBLS8577']
+        google_sheet_url = f'https://docs.google.com/spreadsheets/d/{google_sheet_id}/edit'
+        google_sheet_api = get_settings().google.connection.google_sheet_api
+        google_sheet_api_dict = google_sheet_api.__dict__
+        g_sheet = getGoogleSheet(google_sheet_url, 'Study List',
+                             google_sheet_api_dict)
+        studies_list = g_sheet['STUDY_ID'].tolist()
         email = EbEyeSearchService.get_email_by_token(user_token=user_token)
-        study_str = "StudyId,HasPublication,PubMedId,DOI,DoiHit,TitleHit,PublicationStatus,StudyTitle"
+        study_str = "StudyId,HasPublication,PubMedId,DOI,DoiHit,TitleHit,PublicationStatus,StudyTitle,APIoutput"
+        df = pd.DataFrame(columns=['StudyId', 'HasPublication', 'PubMedId', 'DOI', 'DoiHit', 'TitleHit', 'PublicationStatus', 'StudyTitle', 'APIOutPut'])
+        study_id_list = []
+        has_publication_list = []
+        pubmed_id_list = []
+        doi_list = []
+        doi_hit_list = []
+        title_hit_list = []
+        publication_status_list = []
+        study_title_list = []
+        api_output_list = []
         i=0
-        for study in study_list:
-            studyid = study[0]
-            if i == 10:
-                break
-            logger.info(f"Exporting  the study {studyid} for EuropePMC")
+        for studyid in studies_list:
+            #if i == 10:
+                #break
+            study_id_list.append(studyid)
+            logger.info(f"Processing for Study ID  - {studyid}")
             has_publication, pubmed_id, doi, doi_hit, title_hit, publication_status, study_title, api_output = EbEyeSearchService.query_europe_pmc(study_id=studyid)
-            study_str = f"{study_str}\n{studyid},{has_publication},{pubmed_id},{doi},{doi_hit},{title_hit},{publication_status},\"{study_title}\",{api_output}"
+            #study_str = f"{study_str}\n{studyid},{has_publication},{pubmed_id},{doi},{doi_hit},{title_hit},{publication_status},\"{study_title}\",{api_output}"
+            if has_publication:
+                has_publication_list.append(has_publication)
+            else: has_publication_list.append('')
+            if pubmed_id:
+                pubmed_id_list.append(pubmed_id)
+            else: pubmed_id_list.append('')
+            if doi:
+                doi_list.append(doi)
+            else: doi_list.append('')
+            if doi_hit:
+                doi_hit_list.append(doi_hit)
+            else:
+                doi_hit_list.append('')
+            if title_hit:
+                title_hit_list.append(title_hit)
+            else: title_hit_list.append('')
+            if publication_status:
+                publication_status_list.append(publication_status)
+            else: publication_status_list.append('')
+            if study_title:
+                study_title_list.append(study_title)
+            else: study_title_list.append('')
+            if api_output:
+                api_output_list.append(api_output)
+            else: api_output_list.append('')
             i = i+1
         logger.info(f"processing completed for all the studies; Processed count  - {i}")
+        df.StudyId = study_id_list
+        df.HasPublication = has_publication_list
+        df.PubMedId = pubmed_id_list 
+        df.DOI = doi_list
+        df.DoiHit = doi_hit_list
+        df.TitleHit = title_hit_list
+        df.PublicationStatus = publication_status_list
+        df.StudyTitle = study_title_list
+        df.APIOutPut = api_output_list
+        replaceGoogleSheet(df=df, url=google_sheet_url, worksheetName='Result',
+                       googlesheet_key_dict=google_sheet_api_dict)
+        
         #xml_str = doc.toprettyxml(indent="")        
         #add_metabolights_data(content_name=EbEyeSearchService.europe_pmc_study, data_format=EbEyeSearchService.content_type_xml, content=xml_str)
-        #logger.info(f"Data stored to DB")
+        #text_file = open("/nfs/public/rw/metabolomics/test/publication/study-publication.csv", "w")
+        #text_file.write(study_str)
+        #text_file.close()
         processed_time = (time.time() - start_time)/60
         server = os.uname()[1]
         result = f"Processed study count - {i}; Process completed in {processed_time} minutes. \n Processed by {server}"
-        send_email("EuropePMC report processing completed", result, None, email, None)
-        text_file = open("/net/isilonP/public/rw/homes/tc_cm01/test/study-publication.csv", "w")
-        text_file.write(study_str)
-        text_file.close()
+        send_email("Study Publication report process completed", result, None, email, None)
         return {"processed_studies": i, "completed_in": processed_time}
     
     @staticmethod
