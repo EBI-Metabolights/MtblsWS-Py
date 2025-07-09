@@ -26,7 +26,7 @@ from flask_restful_swagger import swagger
 from app.config import get_settings
 
 from app.study_folder_utils import convert_relative_to_real_path
-from app.tasks.common_tasks.report_tasks.europe_pmc import europe_pmc_publication_report
+from app.tasks.common_tasks.report_tasks.europe_pmc import europe_publication_report
 from app.ws.db_connection import get_connection, get_study
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -722,7 +722,7 @@ class EuropePMCReport(Resource):
         
         inputs = {"user_token": user_token, "google_sheet_id": google_sheet_id}
         if google_sheet_id:
-            task = europe_pmc_publication_report.apply_async(kwargs=inputs, expires=60*60)
+            task = europe_publication_report.apply_async(kwargs=inputs, expires=60*60)
             response = {'Task started':f'Task id {task.id}'}       
             return response
             #return europe_pmc_publication_report(user_token=user_token, google_sheet_id=google_sheet_id)

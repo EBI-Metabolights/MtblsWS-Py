@@ -52,7 +52,6 @@ common_tasks = [
     "app.tasks.common_tasks.curation_tasks.chebi_pipeline",
     "app.tasks.common_tasks.basic_tasks.send_email",
     "app.tasks.common_tasks.basic_tasks.elasticsearch",
-    "app.tasks.common_tasks.report_tasks.europe_pmc"
 ]
 datamover_tasks = [
     "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",
@@ -81,6 +80,7 @@ celery = Celery(
         "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
         "app.tasks.common_tasks.admin_tasks.create_jira_tickets",
         "app.tasks.common_tasks.report_tasks.eb_eye_search",
+        "app.tasks.common_tasks.report_tasks.europe_pmc",
         "app.tasks.common_tasks.curation_tasks.validation",
         "app.tasks.common_tasks.curation_tasks.chebi_pipeline",
         "app.tasks.common_tasks.curation_tasks.study_revision",
