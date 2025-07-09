@@ -665,7 +665,7 @@ class EbEyeSearchService():
         for publication in study.publications:
             if publication is not None:
                 publication_elem = doc.createElement('publication')
-                title = publication.title
+                title = EbEyeSearchService.filter_non_printable(publication.title)
                 pubmed = EbEyeSearchService.tidy_pubmed(publication.pubmedId)
                 doi = EbEyeSearchService.tidy_doi(publication.doi)
                 if EbEyeSearchService.check_for_empty(title.strip()):
@@ -686,7 +686,7 @@ class EbEyeSearchService():
         doi = EbEyeSearchService.tidy_doi(publication.doi)
         
         if EbEyeSearchService.check_for_empty(publication.title):
-            complete_publication = publication.title.strip()
+            complete_publication = EbEyeSearchService.filter_non_printable(publication.title.strip())
             if not complete_publication.endswith(sep):
                 complete_publication = complete_publication + sep
         if EbEyeSearchService.check_for_empty(doi):
