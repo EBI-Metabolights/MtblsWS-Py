@@ -38,7 +38,7 @@ class StudyService(object):
             cls.study_settings = get_settings().study
         return cls.instance
 
-    def get_study_by_acc(self, study_id) -> Study:
+    def get_study_by_acc(self, study_id: str) -> Study:
         try:
             with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(Study)

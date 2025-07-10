@@ -60,7 +60,7 @@ _application_settings: Union[None, ApplicationSettings] = None
 _last_update_check_timestamp: int = 0 
 
 
-def get_settings():
+def get_settings() -> ApplicationSettings:
     global _application_settings
     global _last_update_check_timestamp
     
