@@ -74,7 +74,7 @@ deploy_metablsws_py:
   variables:
     CHART_NAME: metablsws-py
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "new-workflow" || $CI_COMMIT_BRANCH == "main-new-workflow" 
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "staging"
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
