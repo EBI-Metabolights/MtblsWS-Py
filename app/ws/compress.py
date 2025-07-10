@@ -146,7 +146,7 @@ class CompressRawDataFolders(Resource):
         user: SimplifiedUserModel = UserService.get_instance().get_simplified_user_by_token(user_token)
         email = user.email
         date_format = "%Y-%m-%d_%H-%M-%S"
-        task_name =  f"COMPRESS_RAW_DATA_FILES_{time.strftime(date_format)}" 
+        task_name =  f"COMPRESS_RAW_DATA_FILES_{study_id}_{time.strftime(date_format)}" 
         job_id, messages = compress_raw_data_folders(task_name=task_name, study_id=study_id, filename_pattern=filename_pattern, email=email)
         if job_id:
             result = {"content": f"Task has been started on codon. Result will be sent by email with task id {job_id}", "message": messages, "err": None}

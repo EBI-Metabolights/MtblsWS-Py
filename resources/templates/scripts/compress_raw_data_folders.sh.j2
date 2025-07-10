@@ -9,10 +9,10 @@ PACKAGE_TOOL="zip"
 
 ZIP_TOOL="zip"
 TAR_TOOL="tar"
-
-SEARCH_RESULT_FILE="/tmp/${STUDY_ID}_folders${PACKAGE_TOOL}.txt"
-rm -rf $SEARCH_RESULT_FILE
-find $ROOT_PATH/$FTP_PRIVATE_FOLDER -type d -iname $FILE_NAME_PATTERN > $SEARCH_RESULT_FILE
+CURRENT_TIME=$(date -u +"%Y-%m-%d_T%H-%M-%SZ")
+SEARCH_RESULT_FILE="/tmp/${STUDY_ID}_folders_${PACKAGE_TOOL}_${CURRENT_TIME}.txt"
+rm -rf "$SEARCH_RESULT_FILE"
+find "$ROOT_PATH/$FTP_PRIVATE_FOLDER" -type d -iname "$FILE_NAME_PATTERN" | sort > $SEARCH_RESULT_FILE
 
 arr=()
 while IFS= read -r line
@@ -20,7 +20,8 @@ do
    arr+=("$line")
 done < "$SEARCH_RESULT_FILE"
 
-cat $SEARCH_RESULT_FILE
+cat "$SEARCH_RESULT_FILE"
+rm -rf "$SEARCH_RESULT_FILE"
 
 file_count=0
 converted_count=0
@@ -80,8 +81,6 @@ for i in "${arr[@]}"; do
       fi
    fi
 done
-
-rm $SEARCH_RESULT_FILE
 
 if [ $file_count -eq 0 ]; then
    echo "RESULT=SKIPPING $STUDY_ID. No folder"
