@@ -3,6 +3,7 @@ import logging
 import os
 import pathlib
 import datetime
+import sys
 import time
 from xml.dom.minidom import Document, Element
 
@@ -23,6 +24,12 @@ from app.ws.settings.utils import get_study_settings
 import urllib
 
 logger = logging.getLogger("wslog")
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s\t%(levelname)s\t%(name)s\t%(message)s")
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+logger.setLevel(logging.DEBUG)
 
 class EbEyeSearchService():
     
@@ -910,3 +917,20 @@ class EbEyeSearchService():
                                                item_name='field', item_value=study_acc, attr_name='name', attr_value='study')
         root.appendChild(additional_fields)
         return doc
+    
+if __name__ == '__main__':
+    args = sys.argv[1]
+    logger.info(f"Process for - {args}")
+    user_token = 'aa0e4e40-5f37-466c-a430-c77ac7a43aaa'
+    eb_eye = EbEyeSearchService()
+    if args == 'ebi':
+        eb_eye.export_public_studies(user_token=user_token)
+    elif args == 'thomson':
+        eb_eye.export_public_studies(user_token=user_token, thomson_reuters=True)
+    elif args == 'europepmc':
+        eb_eye.export_europe_pmc(user_token=user_token)
+    elif args == 'compounds':
+        eb_eye.export_compounds(user_token=user_token)
+    else:
+        logger.info(f"No Args passed so exiting!")
+        
