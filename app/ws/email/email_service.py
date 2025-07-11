@@ -120,18 +120,24 @@ class EmailService(object):
                 f"There is no recipient email address for email: '{subject_name}'"
             )
             return
-
+        default_curation_mail_address = (
+            self.email_settings.email_service.configuration.curation_email_address
+        )
+        system_emails = {dev_email, default_curation_mail_address}
         if additional_cc_emails:
-            if isinstance(curation_mail_address, list):
+            if isinstance(additional_cc_emails, list):
                 additional_cc_emails = [
                     x for x in additional_cc_emails if x and x not in recipients
                 ]
             else:
                 additional_cc_emails = [
-                    x for x in str(curation_mail_address).split(",") if x and x not in recipients
+                    x
+                    for x in str(additional_cc_emails).split(",")
+                    if x and x not in recipients and x not in system_emails
                 ]
+
         additional_cc_emails = additional_cc_emails if additional_cc_emails else None
-        bcc = { dev_email }
+        bcc = {dev_email}
         if curation_mail_address:
             if isinstance(curation_mail_address, list):
                 bcc.add(curation_mail_address)
@@ -140,16 +146,13 @@ class EmailService(object):
                     [x.strip() for x in str(curation_mail_address).split(",") if x]
                 )
 
-        default_curation_mail_address = (
-            self.email_settings.email_service.configuration.curation_email_address
-        )
         all_emails = {default_curation_mail_address, dev_email}
         all_emails.update(recipients)
         if additional_cc_emails:
             all_emails.update(additional_cc_emails)
         if bcc:
             all_emails.update(bcc)
-        
+
         if user_email not in all_emails:
             bcc.add(user_email)
 
@@ -202,12 +205,7 @@ class EmailService(object):
 
         body = self.get_rendered_body("new_submission.html", content)
         subject_name = f"MetaboLights Temporary Submission initiated ({provisional_id})"
-        self.send_email(
-            subject_name,
-            body,
-            submitters_mail_addresses,
-            user_email
-        )
+        self.send_email(subject_name, body, submitters_mail_addresses, user_email)
 
     def send_email_for_new_accession_number(
         self,
@@ -252,7 +250,7 @@ class EmailService(object):
             "study_contacts": study_contacts,
         }
         body = self.get_rendered_body("new_accession_number.html", content)
-        
+
         self.send_email(
             subject_name,
             body,
