@@ -43,6 +43,7 @@ def rsync_metadata_files(self, params: dict[str, Any]):
         )
     logger.info(f"{study_id} rsync_metadata_files is running...")
     if params.get("test"):
+        logger.info(f"{study_id} rsync_metadata_files is in test mode. Skipping...")
         return params
     message = ""
     try:
@@ -111,8 +112,8 @@ def make_ftp_folder_readonly_task(self, params: dict[str, Any]):
     try:
         logger.info(f"{study_id} make_ftp_folder_readonly_task is running...")
         if params.get("test"):
-            _, permissions = get_private_ftp_path(study_id)
-            params["current_private_ftp_permission"] = permissions
+            logger.info(f"{study_id} make_ftp_folder_readonly_task is in test mode. Skipping...")
+            params["current_private_ftp_permission"] = 0o750
             return params
         status, current_private_ftp_permission = update_folder_status(
             study_id, Acl.AUTHORIZED_READ.value
@@ -150,6 +151,7 @@ def revert_ftp_folder_permission_task(self, params: dict[str, Any]):
     message = ""
     try:
         if params.get("test"):
+            logger.info(f"{study_id} revert_ftp_folder_permission_task is in test mode. Skipping...")
             return params
         prev_permission = params.get("current_private_ftp_permission")
         _, permissions = get_private_ftp_path(study_id)
@@ -216,6 +218,7 @@ def index_study_data_files_task(self, params: dict[str, Any]):
     try:
         logger.info(f"{study_id} index_study_data_files_task is running...")
         if params.get("test"):
+            logger.info(f"{study_id} index_study_data_files_task is in test mode. Skipping...")
             return params
         result = index_study_data_files(study_id, obfuscation_code)
 

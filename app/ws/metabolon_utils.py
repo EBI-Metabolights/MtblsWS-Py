@@ -28,7 +28,7 @@ from typing import Dict, List, Set, Tuple
 
 import numpy as np
 import pandas as pd
-from isatools.model import Assay, Investigation, OntologyAnnotation, Study, OntologySource
+from isatools.model import Assay, Investigation, OntologyAnnotation, Study
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
 from pandas import DataFrame
@@ -50,11 +50,26 @@ logger = logging.getLogger("wslog")
 iac = IsaApiClient()
 
 
-def validate_mzml_files(study_id):
+def validate_mzml_files(study_id, study_path):
     status, result = True, "All mzML files validated in both study and upload folder"
+    settings = get_study_settings()
+    parent = os.path.join(
+        settings.mounted_paths.study_internal_files_root_path,
+        study_id,
+        "metabolon_pipeline",
+    )
+    
+    os.makedirs(parent, exist_ok=True)
+    validated_files = os.path.join(parent, "validation_result.json")
+    validation_results = {}
+    try:
+        if os.path.exists(validated_files):
+            json.loads(validation_results)
+    except Exception as ex:
+        logger.error("Error while reading %s: %s", validated_files, str(ex))
+        pass
     settings = get_settings()
-    studies_folder = settings.study.mounted_paths.study_readonly_files_actual_root_path
-    study_folder = os.path.join(studies_folder, study_id)
+    study_folder = study_path
     xsd_path = settings.file_resources.mzml_xsd_schema_file_path
     xmlschema_doc = etree.parse(xsd_path)
     xmlschema = etree.XMLSchema(xmlschema_doc)
@@ -76,17 +91,29 @@ def validate_mzml_files(study_id):
             message = f"No mzML files within study folder: {study_folder}"
             logger.error(message)
             return False, message
-        for file in all_mzml_files:
+        for idx, file in enumerate(all_mzml_files):
+            valid = validation_results.get(file)
+            if valid:
+                logger.info("Skipping mzML file " + file)
+                continue
             try:
                 logger.info("Validating mzML file " + file)
                 status, result = validate_xml(xml=file, xmlschema=xmlschema)
+                logger.info(f"{file}: validated")
+                validation_results[file] = status
                 if not status:
                     invalid_files[file] = result
             except Exception as e:
                 invalid_files[file] = str(e)
-                return False, f"Error while validating file {file}: {str(e)}"
+                logger.error(f"{file}: failed: {invalid_files[file]}")
+                # return False, f"Error while validating file {file}: {str(e)}"
+            finally:
+                with open(validated_files) as f:
+                    json.dump(f, validation_results)
     else:
-        return False, f"Study folder does not exist: {study_folder}"
+        message = f"Study folder does not exist: {study_folder}"
+        logger.error(message)
+        return False, message
     if invalid_files:
         return False, json.dumps(invalid_files)
     return True, ""
@@ -111,7 +138,7 @@ def validate_mzml_file(file_path: str):
     return status, result
 
 
-def validate_xml(xml=None, xmlschema=None):
+def validate_xml(xml=None, xmlschema=None) -> Tuple[bool, dict[str, str]]:
     # parse xml
     try:
         doc = etree.parse(xml)
@@ -130,7 +157,7 @@ def validate_xml(xml=None, xmlschema=None):
         return True, "File " + xml + " is a valid XML file"
     except etree.DocumentInvalid:
         print("Schema validation error. " + xml)
-        return False, "Can not validate the file " + xml
+        return False, {"Error": "Can not validate the file " + xml}
 
 
 def to_isa_tab(study_id, input_folder, output_folder):
@@ -164,7 +191,7 @@ def create_temp_dir_in_study_folder(parent_folder: str) -> str:
     return path
 
 
-def collect_all_mzml_files(study_id):
+def collect_all_mzml_files(study_location: str, study_id: str) -> List[str]:
     settings = get_study_settings()
     temp_folder = os.path.join(
         settings.mounted_paths.study_internal_files_root_path,
@@ -173,9 +200,7 @@ def collect_all_mzml_files(study_id):
     )
     # working_path = create_temp_dir_in_study_folder(parent_folder=temp_folder)
     working_path = temp_folder
-    files_folder = os.path.join(
-        settings.mounted_paths.study_readonly_files_actual_root_path, study_id
-    )
+    files_folder = study_location
     mzml_files = {}
     all_files = []
     if os.path.exists(files_folder) and os.path.isdir(
@@ -198,7 +223,7 @@ def collect_all_mzml_files(study_id):
                 mzml_files[base_name] = file
                 all_files.append(file)
     return split_files_to_subfolders(
-        all_files, files_folder, working_path, max_file_size=100
+        all_files, files_folder, working_path, max_file_size=10
     )
 
 
@@ -206,8 +231,8 @@ def split_files_to_subfolders(
     mzml_files: List[str],
     files_folder,
     working_path: str,
-    min_file_size: int = 100,
-    max_file_size: int = 150,
+    min_file_size: int = 10,
+    max_file_size: int = 10,
 ):
     files = sorted([x for x in mzml_files])
     all_sub_paths: List[Dict[str, List[str]]] = {}
@@ -225,7 +250,7 @@ def split_files_to_subfolders(
         if not sub_folder_items:
             sub_folder_name = f"MZML_{(len(all_sub_paths) + 1):04}"
             sub_folder_path = os.path.join(working_path, sub_folder_name)
-            files_sub_folder_path = os.path.join(sub_folder_path, "FILES")
+            files_sub_folder_path = os.path.join(sub_folder_path)
             if os.path.exists(sub_folder_path):
                 linked_files = list(
                     glob.iglob(os.path.join(files_sub_folder_path, "*.mzML"))
@@ -246,16 +271,17 @@ def split_files_to_subfolders(
         target_path = os.path.join(files_sub_folder_path, file_basename)
         os.symlink(file, target_path, target_is_directory=False)
         sub_folder_items.append(file)
+    logger.info(f"Splitted folders {len(all_sub_paths)}")
     return list(all_sub_paths.keys())
 
 
-def convert_to_isa(study_location, study_id):
+def convert_to_isa(study_location: str, study_id: str) -> Tuple[bool, str]:
     try:
-        subfolders: List[str] = collect_all_mzml_files(study_id)
+        subfolders: List[str] = collect_all_mzml_files(study_location, study_id)
 
         for sub_path in subfolders:
             file_path = os.path.join(sub_path, "i_Investigation.txt")
-            input_files_path = os.path.join(sub_path, "FILES")
+            input_files_path = os.path.join(sub_path)
             if not os.path.exists(file_path):
                 status, message = to_isa_tab("", input_files_path, sub_path)
                 if not status:
@@ -270,9 +296,7 @@ ss_id_pattern = re.compile(r"(.*)SSID Data.*\.csv", re.IGNORECASE)
 
 
 def check_input_files(study_id: str, study_location: str):
-    samples_files_result = glob.iglob(
-        os.path.join(study_location, "FILES", "*SSID Data*.csv")
-    )
+    samples_files_result = glob.iglob(os.path.join(study_location, "*SSID Data*.csv"))
     samples_files = [x for x in samples_files_result]
     samples_files.sort()
     sample_ids: Set[str] = set()
@@ -283,7 +307,7 @@ def check_input_files(study_id: str, study_location: str):
         match_result = match.groups()[0].strip() if match else ""
         if match_result:
             sample_ids.add(match_result)
-
+    logger.info("SSID Files: ", ", ".join(samples_files))
     if len(sample_ids) == 0:
         return False, "There are no *SSID Data*.csv file."
     else:
@@ -291,7 +315,7 @@ def check_input_files(study_id: str, study_location: str):
         for sample_id in sample_ids:
             search_pattern = f"*{sample_id}*Peak Area*.xlsx"
             peak_table_paths = list(
-                glob.iglob(os.path.join(study_location, "FILES", search_pattern))
+                glob.iglob(os.path.join(study_location, search_pattern))
             )
 
             if len(peak_table_paths) > 1:
@@ -305,11 +329,11 @@ def check_input_files(study_id: str, study_location: str):
     for sample_id in sample_ids:
         if len(sample_ids) > 1:
             peak_tables_search = glob.iglob(
-                os.path.join(study_location, "FILES", f"*{sample_id}*Peak Area*.xlsx")
+                os.path.join(study_location, f"*{sample_id}*Peak Area*.xlsx")
             )
         else:
             peak_tables_search = glob.iglob(
-                os.path.join(study_location, "FILES", "*Peak Area*.xlsx")
+                os.path.join(study_location, "*Peak Area*.xlsx")
             )
         peak_table_paths: List[str] = [x for x in peak_tables_search]
         peak_table_paths.sort()
@@ -351,12 +375,10 @@ def create_isa_files(
     assay_file_names: Dict[str, List[str]] = {}
 
     files = glob.iglob(
-        os.path.join(study_location, "FILES", "*.mzML")
+        os.path.join(study_location, "*.mzML")
     )  # Are there mzML files there?
     files_list = [f for f in files]
-    files = glob.iglob(
-        os.path.join(study_location, "FILES", "**/*.mzML"), recursive=True
-    )
+    files = glob.iglob(os.path.join(study_location, "**/*.mzML"), recursive=True)
     files_list.extend([f for f in files])
     file_paths = DataFrame.from_records(
         [
@@ -368,9 +390,7 @@ def create_isa_files(
         ]
     )
 
-    samples_files_result = glob.iglob(
-        os.path.join(study_location, "FILES", "*SSID Data*.csv")
-    )
+    samples_files_result = glob.iglob(os.path.join(study_location, "*SSID Data*.csv"))
     samples_files = [x for x in samples_files_result]
     samples_files.sort()
     sample_csv_map: Dict[str, DataFrame] = {}
@@ -396,8 +416,10 @@ def create_isa_files(
             if sample_id not in sample_id_sample_name_map:
                 sample_id_sample_name_map[sample_id] = rows
             else:
-                sample_id_sample_name_map[sample_id] = pd.concat([sample_id_sample_name_map[sample_id], rows], ignore_index=True)
-                
+                sample_id_sample_name_map[sample_id] = pd.concat(
+                    [sample_id_sample_name_map[sample_id], rows], ignore_index=True
+                )
+
             assay_file_name = create_assay_file(
                 study_id,
                 target_location,
@@ -414,18 +436,21 @@ def create_isa_files(
         if all_sample_names is None:
             all_sample_names = sample_id_sample_name_map[sample_id].copy()
         else:
-            all_sample_names = pd.concat([all_sample_names, sample_id_sample_name_map[sample_id]], ignore_index=True)
+            all_sample_names = pd.concat(
+                [all_sample_names, sample_id_sample_name_map[sample_id]],
+                ignore_index=True,
+            )
 
     sample_name_client_id_df = None
     add_sample_id = True if len(sample_id_sample_name_map) > 1 else False
     for sample_id in sample_id_sample_name_map:
         if len(sample_id_sample_name_map) > 1:
             peak_tables_search = glob.iglob(
-                os.path.join(study_location, "FILES", f"*{sample_id}*Peak Area*.xlsx")
+                os.path.join(study_location, f"*{sample_id}*Peak Area*.xlsx")
             )
         else:
             peak_tables_search = glob.iglob(
-                os.path.join(study_location, "FILES", "*Peak Area*.xlsx")
+                os.path.join(study_location, "*Peak Area*.xlsx")
             )
         peak_table_paths: List[str] = [x for x in peak_tables_search]
         peak_table_paths.sort()
@@ -441,7 +466,9 @@ def create_isa_files(
             if sample_name_client_id_df is None:
                 sample_name_client_id_df = df
             else:
-                sample_name_client_id_df = pd.concat([sample_name_client_id_df, df], ignore_index=True)
+                sample_name_client_id_df = pd.concat(
+                    [sample_name_client_id_df, df], ignore_index=True
+                )
 
     create_sample_file(
         study_id,
@@ -880,6 +907,6 @@ def create_investigation_file(study_id, study_location, assay_file_names: List[s
 #     # convert_to_isa(study_location=str(study_location), study_id=study_id)
 #     # create_isa_files(study_id=study_id, study_location=str(study_location), target_location=target_location)
 #     # target_location = target_root_path / study_id / "metabolon_pipeline/MZML_0015"
-#     # status, message = to_isa_tab("", str(target_location / "FILES"), str(target_location))
+#     # status, message = to_isa_tab("", str(target_location), str(target_location))
 #     status, report = validate_mzml_files(study_id)
 #     print(status)

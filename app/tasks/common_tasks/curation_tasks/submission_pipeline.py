@@ -34,7 +34,6 @@ from app.tasks.worker import (
     MetabolightsTask,
     celery,
     report_internal_technical_issue,
-    send_email,
 )
 from app.utils import MetabolightsException
 from app.ws.db.types import StudyStatus
@@ -68,6 +67,7 @@ def validate_study_task(self, params: dict[str, Any]):
         logger.info(f"{study_id} validate_study_task is running...")
 
         if params.get("test"):
+            logger.info(f"{study_id} validate_study_task is in test mode. Skipping...")
             return params
         user_token = get_settings().auth.service_account.api_token
         validation_endpoint = (
@@ -174,8 +174,8 @@ def validate_study_task(self, params: dict[str, Any]):
                 submitters_email_list = [
                     submitter[0] for submitter in submitter_emails if submitter
                 ]
-                # to_addresses = submitters_email_list
-                to_addresses = [technical_email]
+                to_addresses = submitters_email_list
+                # to_addresses = [technical_email]
                 kwargs = {
                     "subject": f"{study_id} Validation Failed",
                     "body": f"Validation result:\n\n {json.dumps(task_result, indent=2)}",
@@ -211,30 +211,19 @@ def from_provisional_to_private(self, params: dict[str, Any]):
     study_id = params.get("study_id")
 
     if not study_id:
-        raise MetabolightsException("validate_study task: Study id is not valid")
+        raise MetabolightsException("from_provisional_to_private task: Study id is not valid")
 
     api_token = params.get("api_token")
     if not api_token:
-        raise MetabolightsException("validate_study task: api_token id isnot valid")
+        raise MetabolightsException("from_provisional_to_private task: api_token id isnot valid")
 
     if params.get("test"):
+        logger.info(f"{study_id} from_provisional_to_private is in test mode. Skipping...")
         return params
-    # model = MakeStudyPrivateParameters.model_validate(params)
-    # base_study_id = None
-    # base_first_private_date = None
-    # base_first_public_date = None
-    # base_release_date  = None
-    # base_status = None
-    # base_update_time = None
+
     current_study_status = None
     try:
         study = StudyService.get_instance().get_study_by_acc(study_id)
-        # base_study_id = study.acc
-        # base_first_private_date = study.first_private_date
-        # base_first_public_date = study.first_public_date
-        # base_release_date = study.releasedate
-        # base_status = study.status
-        # base_update_time = study.updatedate
         current_study_status = StudyStatus.from_int(study.status)
     except Exception as e:
         raise e
@@ -331,6 +320,7 @@ def reindex_study(self, params: dict[str, Any]):
             raise MetabolightsException("reindex_study task: Study id is not valid")
 
         if params.get("test"):
+            logger.info(f"{study_id} reindex_study task is in test mode. Skipping...")
             return params
         es_service = ElasticsearchService.get_instance()
         es_service.reindex_study_with_task(
@@ -360,7 +350,10 @@ def reindex_study(self, params: dict[str, Any]):
 )
 def make_study_private_on_success_callback(self, params: dict[str, Any]):
     model = MakeStudyPrivateParameters.model_validate(params)
-    logger.info(f"{model.study_id} make_study_private task is successfull")
+    if params.get("test"):
+        logger.info(f"{model.study_id} start_make_study_private_pipeline task executed in test mode successfully")
+    else:
+        logger.info(f"{model.study_id} start_make_study_private_pipeline task ended successfully")
 
 
 @celery.task(
