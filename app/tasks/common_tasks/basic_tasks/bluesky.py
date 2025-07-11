@@ -45,8 +45,6 @@ def create_bluesky_post_for_public_study(self, user_token, study_id):
         raise MetabolightsException("Study title is not found")
     url = "https://www.ebi.ac.uk/metabolights"
 
-    # bluesky_message = f"New MetaboLights public study #{study_id}: {short_title} {url}/{study_id} #MetaboLights"
-
     # bluesky_message_lines = []
     bluesky_connection = get_settings().bluesky.connection
     # total_length = sum([len(x) for x in bluesky_message_lines])
@@ -59,7 +57,7 @@ def create_bluesky_post_for_public_study(self, user_token, study_id):
     title_message = f"🧪 {study_id}: {short_title}"
 
     text_builder = client_utils.TextBuilder()
-    text_builder.text("📢 Update on MetaboLights!\n\n")
+    text_builder.text("📢 New Public Study on MetaboLights!\n\n")
 
     text_builder.text(f"{title_message}\n🔗 ")
     text_builder.link(f"{url}/{study_id}", f"{url}/{study_id}")
