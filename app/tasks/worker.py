@@ -203,7 +203,9 @@ celery.conf.beat_schedule = {
 }
 
 
-def send_email(subject, body, from_address, to_addresses, cc_addresses):
+def send_email(
+    subject, body, from_address, to_addresses, cc_addresses, bcc_addresses=None
+):
     flask_app = get_flask_app()
     with flask_app.app_context():
         email_service = get_email_service(flask_app)
@@ -213,6 +215,7 @@ def send_email(subject, body, from_address, to_addresses, cc_addresses):
             from_address,
             to_addresses,
             cc_mail_addresses=cc_addresses,
+            bcc_mail_addresses=bcc_addresses,
         )
 
 

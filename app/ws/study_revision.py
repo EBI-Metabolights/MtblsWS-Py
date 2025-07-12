@@ -6,11 +6,13 @@ import os
 import pathlib
 import re
 from typing import Dict, Tuple
+import uuid
 from flask import request
 from flask_restful_swagger import swagger
 from flask_restful import Resource
 
 from app.config import get_settings
+from app.config.utils import get_private_ftp_relative_root_path
 from app.tasks.common_tasks.curation_tasks.study_revision import (
     delete_study_revision,
     sync_study_revision,
@@ -18,14 +20,17 @@ from app.tasks.common_tasks.curation_tasks.study_revision import (
 from app.tasks.common_tasks.curation_tasks.submission_model import (
     MakeStudyPublicParameters,
 )
-from app.tasks.common_tasks.curation_tasks.submission_pipeline import start_new_public_revision_pipeline
+from app.tasks.common_tasks.curation_tasks.submission_pipeline import (
+    start_new_public_revision_pipeline,
+)
 from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.db.schemes import User, Study
-from app.ws.db.types import StudyRevisionStatus, StudyStatus, UserRole
+from app.ws.db.types import CurationRequest, StudyRevisionStatus, StudyStatus, UserRole
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.study_actions import ValidationResultFile
+from app.ws.tasks.db_track import create_task, get_task
 
 logger = logging.getLogger("wslog")
 
@@ -121,7 +126,8 @@ class StudyRevisions(Resource):
             StudyStatus.PUBLIC,
         }:
             raise Exception(
-                f"User is not allowed to create a new revision for study {study.acc}."
+                f"User is not allowed to create a new revision for study {study.acc}. "
+                "Make study Private and try again."
             )
         if user_role == UserRole.ROLE_SUBMITTER:
             if study.revision_number > 0:
@@ -147,6 +153,30 @@ class StudyRevisions(Resource):
                         http_code=403,
                         message="There are validation errors in the latest validation report. Please fix any issues before attempting to change study status.",
                     )
+        study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
+        current_task = get_task(
+            study_id=study.reserved_submission_id, task_name="UPDATE_STUDY_STATUS"
+        )
+        if current_task:
+            raise MetabolightsException(
+                f"There is a study status update task running. {current_task.id}"
+            )
+        if study.reserved_accession:
+            current_task = get_task(
+                study_id=study.reserved_accession, task_name="UPDATE_STUDY_STATUS"
+            )
+            raise MetabolightsException(
+                f"There is a study status update task running. {current_task.id}"
+            )
+        task_id = str(uuid.uuid4())
+        try:
+            create_task(
+                study_id=study_id, task_name="UPDATE_STUDY_STATUS", message=task_id
+            )
+        except Exception as ex:
+            raise MetabolightsException(
+                f"Failed to start status update task. {str(ex)}"
+            )
 
         service_user_token = get_settings().auth.service_account.api_token
         inputs = MakeStudyPublicParameters(
@@ -155,16 +185,49 @@ class StudyRevisions(Resource):
             api_token=service_user_token,
             revision_comment=revision_comment,
             current_status=study.status,
+            target_status=StudyStatus.PUBLIC.value,
             created_by=user[1],
         )
 
-        task = start_new_public_revision_pipeline.apply_async(kwargs={"params": inputs.model_dump()})
+        try:
+            start_new_public_revision_pipeline.apply_async(
+                kwargs={"params": inputs.model_dump()}, task_id=task_id
+            )
+        except Exception as ex:
+            raise MetabolightsException(
+                f"Failed to start status update task. {str(ex)}"
+            )
         # task = prepare_study_revision.apply_async(kwargs={"study_id": study_id, "user_token": service_user_token})
-        task_id = task.id
 
         # revision_model = StudyRevisionModel.model_validate(revision, from_attributes=True)
         # return revision_model.model_dump()
-        return {"task_id": task_id, "async_task": True}
+
+        current_curation_request = CurationRequest(study.curation_request)
+        current_status = StudyStatus(study.status)
+        ftp_private_relative_root_path = get_private_ftp_relative_root_path()
+        ftp_private_study_folder = study.acc.lower() + "-" + study.obfuscationcode
+        ftp_private_folder_path = os.path.join(
+            ftp_private_relative_root_path, ftp_private_study_folder
+        )
+
+        release_date = (
+            study.first_public_date.strftime("%Y-%m-%d")
+            if study.first_public_date
+            else study.releasedate.strftime("%Y-%m-%d")
+        )
+        return {
+            "release-date": release_date,
+            "curation_request": current_curation_request.to_camel_case_str(),
+            "assigned_study_id": study.acc,
+            "assigned_status": current_status.to_camel_case_str(),
+            "assigned_status_code": current_status.value,
+            "curation_request_code": current_curation_request,
+            "ftp_folder_path": ftp_private_folder_path,
+            "obfuscation_code": study.obfuscationcode,
+            "study_table_id": study.id,
+            "task_id": task_id,
+            "async_task": True,
+        }
 
     def get_all_metadata_files(self, study_metadata_files_path: str):
         metadata_files = []

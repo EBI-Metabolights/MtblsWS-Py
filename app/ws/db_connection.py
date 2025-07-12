@@ -1245,7 +1245,7 @@ def query_study_submitters(study_id):
         return None
 
     query = """
-        select u.email from users u, studies s, study_user su where
+        select u.email, u.firstname, u.lastname from users u, studies s, study_user su where
         su.userid = u.id and su.studyid = s.id and acc = %(study_id)s; 
     """
     try:

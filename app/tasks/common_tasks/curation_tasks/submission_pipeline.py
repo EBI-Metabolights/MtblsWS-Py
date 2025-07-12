@@ -11,6 +11,7 @@ from app.config import get_settings
 from app.tasks.common_tasks.basic_tasks.send_email import (
     get_principal_investigator_emails,
     get_study_contacts,
+    get_submitters,
     send_email_for_new_accession_number,
     send_generic_email,
 )
@@ -23,12 +24,13 @@ from app.tasks.common_tasks.curation_tasks.submission_model import (
     MakeStudyPublicParameters,
     StudySubmissionError,
 )
+from isatools import model
 
 from app.tasks.datamover_tasks.curation_tasks.submission_pipeline import (
     index_study_data_files_task,
     make_ftp_folder_readonly_task,
     revert_ftp_folder_permission_task,
-    rsync_metadata_files,
+    backup_metadata_files_on_private_ftp,
 )
 from app.tasks.worker import (
     MetabolightsTask,
@@ -39,12 +41,14 @@ from app.utils import MetabolightsException
 from app.ws.db.types import StudyStatus
 from app.ws.db_connection import query_study_submitters, update_study_status
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
+from app.ws.email.email_service import EmailService
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 from isatools import model as isa_model
 
 from app.ws.study_status_utils import StudyStatusHelper
+from app.ws.tasks.db_track import delete_task
 
 logger = logging.getLogger(__name__)
 iac = IsaApiClient()
@@ -61,19 +65,37 @@ def validate_study_task(self, params: dict[str, Any]):
     try:
         # model = RevalidateStudyParameters.model_validate(params)
         study_id = params.get("study_id")
+        current_status = params.get("current_status")
+
+        if current_status is None:
+            raise MetabolightsException(
+                "validate_study task: current_status is not valid"
+            )
+        current_status = StudyStatus(current_status)
 
         if not study_id:
             raise MetabolightsException("validate_study task: Study id is not valid")
         logger.info(f"{study_id} validate_study_task is running...")
 
         if params.get("test"):
-            logger.info(f"{study_id} validate_study_task is in test mode. Skipping...")
+            logger.info(
+                f"{study_id} from_provisional_to_private is in test mode. Skipping..."
+            )
             return params
+
+        target_status = params.get("target_status")
+
+        if target_status is None:
+            target_status = current_status
+
+        target_status = StudyStatus(target_status)
+
         user_token = get_settings().auth.service_account.api_token
+        service_email = get_settings().auth.service_account.email
         validation_endpoint = (
             get_settings().external_dependencies.api.validation_service_url
         )
-        url = f"{validation_endpoint}/auth/token"
+        url = f"{validation_endpoint}/auth/v1/token"
         token_params = {}
         token_headers = {
             "Accept": "application/json",
@@ -95,13 +117,14 @@ def validate_study_task(self, params: dict[str, Any]):
                 f"Validation token request failed. {response.text or ''}"
             )
 
-        url = f"{validation_endpoint}/validations/{study_id}"
+        url = f"{validation_endpoint}/submissions/v2/validations/{study_id}"
         validation_params = {"run_metadata_modifiers": True}
         headers = {
             "Authorization": f"Bearer {token}",
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
+        logger.info(f"Start validation for {study_id}")
         response = requests.post(
             url=url, params=validation_params, headers=headers, data={}
         )
@@ -109,50 +132,63 @@ def validate_study_task(self, params: dict[str, Any]):
         if response.status_code == 200:
             response_json = response.json()
             if response_json and response_json.get("content"):
-                task_id = response_json.get("content").get("task_id")
+                task_id = response_json.get("content", {}).get("task", {}).get("taskId")
         if not task_id:
+            logger.error("Study validation task id not found in response.")
             raise StudySubmissionError(
                 f"Study validation does not start. {response.text or ''}"
             )
         sleep_period = 10
         max_retry = 60
         retry = 0
-        poll_url = f"{validation_endpoint}/validations/{study_id}/result"
-        poll_params = {"summary_messages": False}
+        poll_url = (
+            f"{validation_endpoint}/submissions/v2/validations/{study_id}/{task_id}"
+        )
+
         validation_status = None
         latest_response = {}
         task_result = {}
         while retry < max_retry:
-            response = requests.get(url=poll_url, params=poll_params, headers=headers)
+            logger.info(
+                f"Polling validation result for {study_id} (Attempt {retry + 1}/{max_retry})..."
+            )
+            response = requests.get(url=poll_url, headers=headers)
 
             if response.status_code == 200:
                 response_json = response.json()
                 latest_response = response_json
                 if response_json:
                     if response_json.get("content"):
-                        content = response_json.get("content")
-                        task_status = content.get("task_status", "")
-                        task_result = content.get("task_result", {})
-                        task_message = content.get("errorMessage", "")
-                        if "not ready" not in task_message.lower():
-                            if task_status.lower() not in {"success", "not ready"}:
-                                raise StudySubmissionError(
-                                    "Validation task failed.", response.text
-                                )
-                        if (
-                            task_status
-                            and task_status.lower() == "success"
-                            and task_result
-                        ):
+                        execution_status = response_json.get("status", "")
+                        content: dict[str, Any] = response_json.get("content", {})
+                        task = content.get("task", {})
+                        task_result: dict[str, Any] = content.get("taskResult", {})
+
+                        ready = task.get("ready", False)
+                        successful = task.get("isSuccessful", False)
+
+                        if "success" not in execution_status.lower():
+                            raise StudySubmissionError(
+                                "Validation task failed.", response.text
+                            )
+
+                        if ready and not successful:
+                            raise StudySubmissionError(
+                                "Validation task failed.", response.text
+                            )
+                        if ready and task_result:
+                            task_result_status: str = task_result.get("status", "")
+                            logger.info(
+                                "Validation task ended and validation result: "
+                                f"{task_result_status}"
+                            )
+
                             validation_status = "error"
-                            status = task_result.get("status", "")
-                            if status.lower() in {"success", "warning"}:
-                                validation_status = status.lower()
+                            if task_result_status.lower() in {"success", "warning"}:
+                                validation_status = task_result_status.lower()
                             break
                 else:
                     break
-            elif response.status_code == 409:
-                pass
             else:
                 break
 
@@ -160,34 +196,50 @@ def validate_study_task(self, params: dict[str, Any]):
             time.sleep(sleep_period)
 
         if validation_status is None:
+            logger.error(
+                f"Study validation status polling failed for {study_id}. "
+                f"Latest response: {latest_response}"
+            )
             raise StudySubmissionError(
                 f"Study validation status polling failed. {str(latest_response)}"
             )
 
         if validation_status in {"error"}:
-            if not params.get("test"):
-                email_settings = get_settings().email.email_service.configuration
-                no_reply = email_settings.no_reply_email_address
-                technical_email = email_settings.technical_issue_recipient_email_address
+            if not params.get("test") and current_status != target_status:
+                submitters = get_submitters(study_id=study_id)
+                to_addresses = [x.email for x in submitters]
+                created_by = params.get("created_by")
+                if created_by and created_by not in to_addresses:
+                    to_addresses = [created_by]
 
-                submitter_emails = query_study_submitters(study_id)
-                submitters_email_list = [
-                    submitter[0] for submitter in submitter_emails if submitter
-                ]
-                to_addresses = submitters_email_list
-                # to_addresses = [technical_email]
-                kwargs = {
-                    "subject": f"{study_id} Validation Failed",
-                    "body": f"Validation result:\n\n {json.dumps(task_result, indent=2)}",
-                    "from_address": no_reply,
-                    "to_addresses": to_addresses,
-                    "cc_addresses": None,
-                }
-                send_generic_email.apply_async(kwargs=kwargs)
+                submitter_names = [f"{x.first_name} {x.last_name}" for x in submitters]
+
+                if len(submitter_names) == 1:
+                    submitter_fullname = submitter_names[0]
+                else:
+                    submitter_fullname = ", ".join(
+                        [
+                            x.full_name
+                            for i, x in enumerate(submitter_names)
+                            if i < len(submitter_names) - 1
+                        ]
+                    )
+                    submitter_fullname += " and " + submitter_names[-1]
+                logger.info(
+                    f"Sending validation failed email to {', '.join(to_addresses)}"
+                )
+                EmailService.get_instance().send_email_study_validation_failed(
+                    study_id=study_id,
+                    current_status=current_status,
+                    next_status=target_status,
+                    user_email=service_email,
+                    submitters_mail_addresses=to_addresses,
+                    submitter_fullname=submitter_fullname,
+                )
                 raise StudySubmissionError(
                     f"Study validation failed. {str(latest_response)}"
                 )
-
+        logger.info(f"Validation task for {study_id} completed successfully.")
         params["validate_study_task_status"] = True
         return params
     except Exception as ex:
@@ -211,19 +263,25 @@ def from_provisional_to_private(self, params: dict[str, Any]):
     study_id = params.get("study_id")
 
     if not study_id:
-        raise MetabolightsException("from_provisional_to_private task: Study id is not valid")
+        raise MetabolightsException(
+            "from_provisional_to_private task: Study id is not valid"
+        )
 
     api_token = params.get("api_token")
     if not api_token:
-        raise MetabolightsException("from_provisional_to_private task: api_token id isnot valid")
+        raise MetabolightsException(
+            "from_provisional_to_private task: api_token id isnot valid"
+        )
 
     if params.get("test"):
-        logger.info(f"{study_id} from_provisional_to_private is in test mode. Skipping...")
+        logger.info(
+            f"{study_id} from_provisional_to_private is in test mode. Skipping..."
+        )
         return params
 
     current_study_status = None
     try:
-        study = StudyService.get_instance().get_study_by_acc(study_id)
+        study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
         current_study_status = StudyStatus.from_int(study.status)
     except Exception as e:
         raise e
@@ -247,24 +305,18 @@ def from_provisional_to_private(self, params: dict[str, Any]):
         study_location = os.path.join(
             get_settings().study.mounted_paths.study_metadata_files_root_path, study_id
         )
-        updated_study_id = StudyStatusHelper.update_db_study_id(
+        StudyStatusHelper.update_db_study_id(
             study_id,
             current_study_status,
             requested_study_status,
             study.reserved_accession,
         )
-
+        study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
+        updated_study_id = study.acc
         if study_id != updated_study_id:
-            StudyStatusHelper.refactor_study_folder(
+            isa_study: isa_model.Study = StudyStatusHelper.refactor_study_folder(
                 study, study_location, None, study_id, updated_study_id
             )
-            isa_study_input, isa_inv, std_path = iac.get_isa_study(
-                study_id=updated_study_id,
-                api_key=api_token,
-                skip_load_tables=True,
-                study_location=study_location,
-            )
-            isa_study: isa_model.Study = isa_study_input
             try:
                 ElasticsearchService.get_instance()._delete_study_index(
                     study_id, ignore_errors=True
@@ -272,8 +324,9 @@ def from_provisional_to_private(self, params: dict[str, Any]):
             except Exception as ex:
                 logger.error(str(ex))
 
-            if updated_study_id.startswith(
-                get_settings().study.accession_number_prefix
+            if (
+                study.acc == study.reserved_accession
+                and study.reserved_submission_id == study_id
             ):
                 study_title = isa_study.title
                 additional_cc_emails = get_principal_investigator_emails(isa_study)
@@ -295,6 +348,13 @@ def from_provisional_to_private(self, params: dict[str, Any]):
                 }
                 send_email_for_new_accession_number.apply_async(kwargs=inputs)
         StudyRevisionService.update_investigation_file_from_db(updated_study_id)
+        if study.reserved_accession:
+            delete_task(
+                study_id=study.reserved_accession, task_name="UPDATE_STUDY_STATUS"
+            )
+        delete_task(
+            study_id=study.reserved_submission_id, task_name="UPDATE_STUDY_STATUS"
+        )
         params["from_provisional_to_private"] = True
         return params
     except Exception as ex:
@@ -351,9 +411,13 @@ def reindex_study(self, params: dict[str, Any]):
 def make_study_private_on_success_callback(self, params: dict[str, Any]):
     model = MakeStudyPrivateParameters.model_validate(params)
     if params.get("test"):
-        logger.info(f"{model.study_id} start_make_study_private_pipeline task executed in test mode successfully")
+        logger.info(
+            f"{model.study_id} start_make_study_private_pipeline task executed in test mode successfully"
+        )
     else:
-        logger.info(f"{model.study_id} start_make_study_private_pipeline task ended successfully")
+        logger.info(
+            f"{model.study_id} start_make_study_private_pipeline task ended successfully"
+        )
 
 
 @celery.task(
@@ -377,7 +441,7 @@ def start_make_study_private_pipeline(self, params: dict[str, Any]):
     model = MakeStudyPrivateParameters.model_validate(params)
     pipeline = chain(
         make_ftp_folder_readonly_task.s(),
-        rsync_metadata_files.s(),
+        backup_metadata_files_on_private_ftp.s(),
         index_study_data_files_task.s(),
         validate_study_task.s(),
         from_provisional_to_private.s(),
@@ -428,7 +492,7 @@ def start_new_public_revision_pipeline(self, params: dict[str, Any]):
     model = MakeStudyPublicParameters.model_validate(params)
     pipeline = chain(
         make_ftp_folder_readonly_task.s(),
-        rsync_metadata_files.s(),
+        backup_metadata_files_on_private_ftp.s(),
         index_study_data_files_task.s(),
         validate_study_task.s(),
         prepare_study_revision.s(),

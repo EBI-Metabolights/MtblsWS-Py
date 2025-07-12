@@ -9,8 +9,7 @@ from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus
 from app.ws.db.wrappers import update_study_model_from_directory
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
-from atproto import Client
-from atproto import client_utils
+from atproto import Client, client_utils
 from app.tasks.worker import MetabolightsTask, celery
 
 
@@ -57,7 +56,7 @@ def create_bluesky_post_for_public_study(self, user_token, study_id):
     title_message = f"🧪 {study_id}: {short_title}"
 
     text_builder = client_utils.TextBuilder()
-    text_builder.text("📢 New Public Study on MetaboLights!\n\n")
+    text_builder.text("📢 New Public on MetaboLights!\n\n")
 
     text_builder.text(f"{title_message}\n🔗 ")
     text_builder.link(f"{url}/{study_id}", f"{url}/{study_id}")

@@ -274,7 +274,7 @@ class StudyService(object):
             )
             return study_id_list
 
-    def get_study_tasks(self, study_id, task_name=None):
+    def get_study_tasks(self, study_id, task_name=None) -> None | list[StudyTask]:
         try:
             with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(StudyTask)

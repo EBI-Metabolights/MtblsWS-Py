@@ -1,14 +1,14 @@
+import time
 import logging
 import os
+from pathlib import Path
+import shutil
 from typing import Any
 
 
 from app.config import get_settings
 from app.services.storage_service.acl import Acl
-from app.tasks.common_tasks.curation_tasks.submission_model import (
-    RevalidateStudyParameters,
-    StudySubmissionError,
-)
+from app.tasks.common_tasks.curation_tasks.submission_model import StudySubmissionError
 from app.tasks.datamover_tasks.basic_tasks.ftp_operations import index_study_data_files
 from app.tasks.worker import MetabolightsTask, celery, report_internal_technical_issue
 from app.utils import MetabolightsException
@@ -16,11 +16,73 @@ from app.ws.db.schemes import Study
 from app.tasks.datamover_tasks.basic_tasks import file_management
 from app.ws.study.study_service import StudyService
 
-from app.tasks.bash_client import BashClient, CapturedBashExecutionResult
-from app.tasks.hpc_rsync_worker import HpcRsyncWorker
-from app.ws.study.folder_utils import write_audit_files
 
 logger = logging.getLogger(__name__)
+
+
+def is_hidden(p: Path) -> bool:
+    return any(part.startswith(".") for part in p.parts)
+
+
+def gather_matches(base: Path, patterns, recursive=False):
+    matches = []
+    for pat in patterns:
+        glob_iter = base.rglob(pat) if recursive else base.glob(pat)
+        for p in glob_iter:
+            if not p.is_file():
+                continue
+            if is_hidden(p.relative_to(base).parent):
+                continue
+            matches.append(p)
+    return matches
+
+
+def copy_metadata_files(
+    source_path: str | Path, dest_path: str | Path, recursive: bool = True
+):
+    if isinstance(source_path, str):
+        source_path = Path(source_path)
+    if isinstance(dest_path, str):
+        dest_path = Path(dest_path)
+
+    patterns = ("[asim]_*.txt", "[asim]_*.tsv")
+    if not source_path.exists():
+        logger.error("Source path does not exist: %s", str(source_path))
+        return False
+    files: list[Path] = gather_matches(source_path, patterns, recursive=recursive)
+
+    if not files:
+        logger.info("There is no metadata file on %s.", str(source_path))
+        return True
+
+    logger.info("%s metadata files are found.", len(files))
+    try:
+        dest_path.mkdir(parents=True, exist_ok=True)
+        logger.info("Destination path is created: %s", str(dest_path))
+        for f in files:
+            target = dest_path / f.name
+            # Resolve name clashes by appending a counter
+            counter = 1
+            while target.exists():
+                target = dest_path / f"{f.stem}_{counter}{f.suffix}"
+                counter += 1
+            shutil.copy2(str(f), str(target))
+            logger.info("Metadata file is copied: %s  ->  %s", f, target)
+        logger.info("Metadata files are moved.")
+    except Exception as ex:
+        logger.error("Copy file task failed: %s", str(ex))
+        if dest_path.exists():
+            shutil.rmtree(str(dest_path))
+        return False
+    # try:
+    #     for f in files:
+    #         f.unlink()
+    #         logger.info("Metadata file is deleted: %s", f)
+    #     return True
+    # except Exception as ex:
+    #     logger.error("Delete file task failed: %s", str(ex))
+
+    # return False
 
 
 @celery.task(
@@ -28,10 +90,10 @@ logger = logging.getLogger(__name__)
     base=MetabolightsTask,
     max_retries=1,
     soft_time_limit=60,
-    name="app.tasks.datamover_tasks.curation_tasks.submission_pipeline.rsync_metadata_files",
+    name="app.tasks.datamover_tasks.curation_tasks.submission_pipeline.backup_metadata_files_on_private_ftp",
 )
-def rsync_metadata_files(self, params: dict[str, Any]):
-    study_id = params.get("study_id")
+def backup_metadata_files_on_private_ftp(self, params: dict[str, Any]):
+    study_id: None | str = params.get("study_id")
 
     if not study_id:
         raise MetabolightsException("validate_study task: Study id is not valid")
@@ -46,47 +108,34 @@ def rsync_metadata_files(self, params: dict[str, Any]):
         logger.info(f"{study_id} rsync_metadata_files is in test mode. Skipping...")
         return params
     message = ""
+
     try:
-        rsync_arguments = "-auv"
-        include_list = ["[asi]_*.txt", "m_*.tsv"]
-        exclude_list = ["*"]
         settings = get_settings()
         mounted_paths = settings.hpc_cluster.datamover.mounted_paths
         source_path = os.path.join(
             mounted_paths.cluster_private_ftp_root_path,
             f"{study_id.lower()}-{obfuscation_code}",
         )
-        # source_path = os.path.join(
-        #     mounted_paths.cluster_rw_storage_recycle_bin_root_path, study_id
-        # )
-        target_path = os.path.join(
-            mounted_paths.cluster_study_metadata_files_root_path, study_id
+        date_format = "%Y-%m-%d_%H-%M-%S"
+        folder_name = time.strftime(date_format) + "_PRIVATE_FTP_BACKUP"
+        dest_path = os.path.join(
+            mounted_paths.cluster_study_audit_files_root_path,
+            study_id,
+            settings.study.audit_folder_name,
+            folder_name,
         )
-        command = HpcRsyncWorker.build_rsync_command(
-            source_path,
-            target_path,
-            include_list,
-            exclude_list,
-            rsync_arguments=rsync_arguments,
+        success = copy_metadata_files(
+            source_path=Path(source_path), dest_path=dest_path
         )
 
-        task_name = "rsync:from:private_ftp_metadata:to:rw_metadata"
-
-        write_audit_files(study_id)
-
-        result: CapturedBashExecutionResult = BashClient.execute_command(
-            command=command,
-            email=None,
-            task_name=task_name,
-        )
-
-        if result.returncode == 0:
-            params["sync_metadata_files_task_status"] = True
+        if success:
+            params["backup_metadata_files_on_private_ftp"] = True
             return params
-        message = result.model_dump_json(indent=2)
+        message = "Metadata file copy task failed."
     except Exception as ex:
         message = str(ex)
         logger.error(message)
+
     revert_ftp_folder_permission_task.apply_async(kwargs={"params": params})
     report_internal_technical_issue(
         f"Sync metadata files on {study_id} Private FTP folder task failed.",
@@ -112,7 +161,9 @@ def make_ftp_folder_readonly_task(self, params: dict[str, Any]):
     try:
         logger.info(f"{study_id} make_ftp_folder_readonly_task is running...")
         if params.get("test"):
-            logger.info(f"{study_id} make_ftp_folder_readonly_task is in test mode. Skipping...")
+            logger.info(
+                f"{study_id} make_ftp_folder_readonly_task is in test mode. Skipping..."
+            )
             params["current_private_ftp_permission"] = 0o750
             return params
         status, current_private_ftp_permission = update_folder_status(
@@ -127,8 +178,8 @@ def make_ftp_folder_readonly_task(self, params: dict[str, Any]):
         logger.error(message)
 
     report_internal_technical_issue(
-        f"Make {study_id} Private FTP folder readonly task failed.",
-        f"Check and maintain {study_id} Private FTP folder. {message}",
+        f"Make {study_id} Private FTP folder readonly task failed. <br/>",
+        f"Check and maintain {study_id} Private FTP folder. <br/> {message}",
     )
     raise StudySubmissionError(
         f"Make {study_id} Private FTP folder readonly task failed."
@@ -151,7 +202,9 @@ def revert_ftp_folder_permission_task(self, params: dict[str, Any]):
     message = ""
     try:
         if params.get("test"):
-            logger.info(f"{study_id} revert_ftp_folder_permission_task is in test mode. Skipping...")
+            logger.info(
+                f"{study_id} revert_ftp_folder_permission_task is in test mode. Skipping..."
+            )
             return params
         prev_permission = params.get("current_private_ftp_permission")
         _, permissions = get_private_ftp_path(study_id)
@@ -218,7 +271,9 @@ def index_study_data_files_task(self, params: dict[str, Any]):
     try:
         logger.info(f"{study_id} index_study_data_files_task is running...")
         if params.get("test"):
-            logger.info(f"{study_id} index_study_data_files_task is in test mode. Skipping...")
+            logger.info(
+                f"{study_id} index_study_data_files_task is in test mode. Skipping..."
+            )
             return params
         result = index_study_data_files(study_id, obfuscation_code)
 
@@ -235,3 +290,7 @@ def index_study_data_files_task(self, params: dict[str, Any]):
             f"Index {study_id} data files task failed. {str(ex)}.",
         )
         raise ex
+
+
+if __name__ == "__main__":
+    move_metadata_files(Path("x_backup_folder"), Path("target_move"))

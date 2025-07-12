@@ -147,7 +147,7 @@ from app.ws.settings.utils import get_study_settings
 from app.ws.species import SpeciesTree
 from app.ws.spectra import ZipSpectraFiles
 from app.ws.stats import StudyStats
-from app.ws.status_update import PrivateStudy
+from app.ws.status_update import PrivateStudy, ProvisionalStudy, StudyStatusUpdateTask
 from app.ws.study_actions import (
     StudyCurationType,
     StudyStatus,
@@ -435,9 +435,6 @@ def initialize_app(flask_app):
     api.add_resource(
         PrivateFtpUploadInfo, res_path + "/studies/<string:study_id>/upload-info"
     )
-    api.add_resource(
-        StudyRevisionSyncTask, res_path + "/studies/<string:study_id>/revisions/sync"
-    )
     # api.add_resource(StudyRevisionSyncTask, res_path + "/studies/<string:study_id>/sync-public-ftp")
     api.add_resource(
         StudyCurationType, res_path + "/studies/<string:study_id>/curation-type"
@@ -448,13 +445,6 @@ def initialize_app(flask_app):
 
     # ISA Investigation
     api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")
-    # Enable for Milestone 2
-    api.add_resource(StudyRevisions, res_path + "/studies/<string:study_id>/revisions")
-    api.add_resource(
-        StudyRevision,
-        res_path + "/studies/<string:study_id>/revisions/<int:revision_number>",
-    )
-
     api.add_resource(StudyTitle, res_path + "/studies/<string:study_id>/title")
     api.add_resource(
         StudyReleaseDate, res_path + "/studies/<string:study_id>/release-date"
@@ -593,8 +583,13 @@ def initialize_app(flask_app):
         ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate-mzml"
     )
     api.add_resource(UserManagement, res_path + "/ebi-internal/users")
-    api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/es-index")
-    api.add_resource(RetryReindexStudies, res_path + "/ebi-internal/studies/es-indexes/failed-indexes/retry")
+    api.add_resource(
+        ReindexStudy, res_path + "/ebi-internal/<string:study_id>/es-index"
+    )
+    api.add_resource(
+        RetryReindexStudies,
+        res_path + "/ebi-internal/studies/es-indexes/failed-indexes/retry",
+    )
 
     api.add_resource(
         UnindexedStudy, res_path + "/ebi-internal/studies/es-indexes/failed-indexes"
@@ -659,7 +654,9 @@ def initialize_app(flask_app):
 
     # https://www.ebi.ac.uk:443/metabolights/ws/v2
     api.add_resource(reports, res_path + "/v2/reports")
-    api.add_resource(CrossReferencePublicationInformation, res_path + "/v2/europe-pmc-report")
+    api.add_resource(
+        CrossReferencePublicationInformation, res_path + "/v2/europe-pmc-report"
+    )
     api.add_resource(EuropePMCReport, res_path + "/v2/europe-pmc-pubs")
     api.add_resource(StudyAssayTypeReports, res_path + "/v2/study-assay-type-reports")
     api.add_resource(ZipSpectraFiles, res_path + "/v2/zip-spectra-files")
@@ -697,7 +694,21 @@ def initialize_app(flask_app):
     )
 
     api.add_resource(PrivateStudy, res_path + "/private-studies/<string:study_id>")
-
+    api.add_resource(
+        ProvisionalStudy, res_path + "/provisional-studies/<string:study_id>"
+    )
+    api.add_resource(
+        StudyStatusUpdateTask,
+        res_path + "/studies/<string:study_id>/status-update-tasks",
+    )
+    api.add_resource(StudyRevisions, res_path + "/studies/<string:study_id>/revisions")
+    api.add_resource(
+        StudyRevision,
+        res_path + "/studies/<string:study_id>/revisions/<int:revision_number>",
+    )
+    api.add_resource(
+        StudyRevisionSyncTask, res_path + "/studies/<string:study_id>/revisions/sync"
+    )
     api.add_resource(
         PublicStudyAnnouncement, res_path + "/social-posts/bluesky/<study_id>"
     )

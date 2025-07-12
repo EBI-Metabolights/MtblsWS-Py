@@ -55,7 +55,7 @@ class StudyStatusHelper:
         user_token,
         study_id: str,
         updated_study_id: str,
-    ):
+    ) -> model.Study:
         if study_id == updated_study_id:
             return
         task_name = "ASSIGN_ACCESSION_NUMBER"
@@ -153,6 +153,7 @@ class StudyStatusHelper:
             "obfuscation_code": study.obfuscationcode,
         }
         rename_folder_on_private_storage.apply_async(kwargs=inputs)
+        return isa_study
 
     @staticmethod
     def update_db_study_id(
@@ -198,7 +199,7 @@ class StudyStatusHelper:
     ):
         study_status = study_status.lower()
         # Update database
-        update_study_status(
+        return update_study_status(
             study_id,
             study_status,
             first_public_date=first_public_date,

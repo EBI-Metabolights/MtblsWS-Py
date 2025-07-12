@@ -52,6 +52,7 @@ charset-normalizer = "3.4.1"
 atproto = "^0.0.61"
 email-validator = "^2.2.0"
 metabolights-utils = "^1.4.4"
+python-levenshtein = "^0.27.1"
 
 [tool.poetry.group.dev.dependencies]
 poetry = "^1.8.5"

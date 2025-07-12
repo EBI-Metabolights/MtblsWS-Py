@@ -116,9 +116,7 @@ class EmailService(object):
             recipients.discard(None)
             recipients.discard("")
         if not recipients:
-            logger.error(
-                f"There is no recipient email address for email: '{subject}'"
-            )
+            logger.error(f"There is no recipient email address for email: '{subject}'")
             return
         default_curation_mail_address = (
             self.email_settings.email_service.configuration.curation_email_address
@@ -153,7 +151,7 @@ class EmailService(object):
         if bcc:
             all_emails.update(bcc)
 
-        if user_email not in all_emails:
+        if user_email and user_email not in all_emails:
             bcc.add(user_email)
 
         msg = Message(
@@ -323,6 +321,41 @@ class EmailService(object):
             user_email,
             additional_cc_emails=additional_cc_emails,
             curation_mail_address=curation_mail_address,
+        )
+
+    def send_email_study_validation_failed(
+        self,
+        study_id,
+        current_status,
+        next_status,
+        user_email,
+        submitters_mail_addresses,
+        submitter_fullname,
+        study_title,
+    ):
+        subject = f"MetaboLights Study Validation Failed ({study_id})"
+        metabolights_help_email = "metabolights-help@ebi.ac.uk"
+        # metabolights_website_url = get_settings().server.service.ws_app_base_link
+        metabolights_website_url = "https://www.ebi.ac.uk/metabolights"
+        mtbls_accession_url = os.path.join(metabolights_website_url, study_id)
+
+        content = {
+            "metabolights_website_url": metabolights_website_url,
+            "mtbls_accession_url": mtbls_accession_url,
+            "mtbls_accession": study_id,
+            "submitter_fullname": submitter_fullname,
+            "study_title": study_title,
+            "current_status": current_status,
+            "next_status": next_status,
+            "metabolights_help_email": metabolights_help_email,
+        }
+        body = self.get_rendered_body("validation_failure.html", content)
+
+        self.send_email(
+            subject,
+            body,
+            submitters_mail_addresses,
+            user_email,
         )
 
     def send_email_for_task_completed(self, subject, task_id, task_result, to):

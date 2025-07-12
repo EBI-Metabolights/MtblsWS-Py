@@ -2,6 +2,8 @@ import datetime
 import os
 import re
 from typing import List, Union
+
+from pydantic import BaseModel
 from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
 from app.utils import current_time
@@ -95,7 +97,7 @@ def send_email_for_new_accession_number(
     study_title: str,
     release_date: str,
     additional_cc_emails: Union[None, List[str]] = None,
-    study_contacts: str = ""
+    study_contacts: str = "",
 ):
     flask_app = get_flask_app()
     with flask_app.app_context():
@@ -137,7 +139,7 @@ def send_email_for_new_accession_number(
             previous_ftp_folder=previous_ftp_folder,
             new_ftp_folder=new_ftp_folder,
             additional_cc_emails=additional_cc_emails,
-            study_contacts=study_contacts
+            study_contacts=study_contacts,
         )
 
         return {
@@ -191,7 +193,7 @@ def send_email_on_public(user_token, study_id, release_date):
             publication_doi = "-"
         if not publication_pubmed_id:
             publication_pubmed_id = "-"
-            
+
         additional_cc_emails = get_principal_investigator_emails(study)
         email_service.send_email_on_public(
             study_id,
@@ -227,13 +229,29 @@ def get_study_contacts(study: Study):
                 submitter[0] for submitter in submitter_emails if submitter
             ]
         if not submitters_email_list:
-            return
+            return ""
         users = []
         for submitter_email in submitters_email_list:
             user = UserService.get_instance().get_db_user_by_user_name(submitter_email)
             users.append(user.fullName)
         study_contacts = ", ".join(users)
     return study_contacts
+
+
+class Submitter(BaseModel):
+    email: str
+    first_name: str
+    last_name: str
+
+
+def get_submitters(study_id: str) -> list[Submitter]:
+    submitters = query_study_submitters(study_id)
+    submitters_list = []
+    if submitters:
+        submitters_list = [
+            Submitter(email=s[0], first_name=s[1], last_name=s[2]) for s in submitters
+        ]
+    return submitters_list
 
 
 def get_principal_investigator_emails(study: Study):
@@ -254,8 +272,10 @@ def get_principal_investigator_emails(study: Study):
 
 
 @celery.task(name="app.tasks.common_tasks.basic_tasks.send_email.send_generic_email")
-def send_generic_email(subject, body, from_address, to_addresses, cc_addresses):
-    send_email(subject, body, from_address, to_addresses, cc_addresses)
+def send_generic_email(
+    subject, body, from_address, to_addresses, cc_addresses, bcc_addresses=None
+):
+    send_email(subject, body, from_address, to_addresses, cc_addresses, bcc_addresses)
 
 
 @celery.task(

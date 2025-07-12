@@ -46,7 +46,9 @@ from app.tasks.common_tasks.basic_tasks.send_email import (
 from app.tasks.common_tasks.curation_tasks.submission_model import (
     RevalidateStudyParameters,
 )
-from app.tasks.common_tasks.curation_tasks.submission_pipeline import start_make_study_private_pipeline
+from app.tasks.common_tasks.curation_tasks.submission_pipeline import (
+    start_make_study_private_pipeline,
+)
 
 from app.utils import (
     MetabolightsException,
@@ -237,7 +239,7 @@ class StudyStatus(Resource):
     @swagger.operation(
         summary="Change study status",
         nickname="Change study status",
-        notes="""Change study status from 'Provisional' to 'Private' or 'Private' to 'Provisional'.<br>
+        notes="""Change study status from 'Private' to 'Provisional'.<br>
         Please note a *minimum* of 28 days is required for curation, this will be added to the release date</p>
                 <pre><code>Curators can change status to any of: 'Provisional', 'Private', 'In Review', 'Public' or 'Dormant'. curation_request is optional and can get the values: 'Manual Curation', 'No Curation', 'Semi-automated Curation'
                 <p>Example: { "status": "Private" }   {"status": "Private", "curation_request": "No Curation"}
@@ -290,6 +292,14 @@ class StudyStatus(Resource):
     )
     @metabolights_exception_handler
     def put(self, study_id: str):
+        raise MetabolightsException(
+            message="This endpoint is deprecated. "
+            "Use /provisional-studies/<string:study_id> "
+            "/private-studies/<string:study_id> or "
+            "/studies/<string:study_id>/revisions/<int:revision_number>"
+        )
+
+    def deleted_method(self, study_id: str):
         # param validation
         if study_id is None:
             raise MetabolightsException(
@@ -404,7 +414,7 @@ class StudyStatus(Resource):
                 study_id=study_id,
                 obfuscation_code=study.obfuscationcode,
                 api_token=user_token,
-                current_status=study.status
+                current_status=study.status,
             )
             # inputs = {"root_path": root_path, "folder_paths": absolute_folder_path, }
             task_id = start_make_study_private_pipeline(params.model_dump())
@@ -433,6 +443,7 @@ class StudyStatus(Resource):
                 "obfuscation_code": obfuscation_code,
                 "study_table_id": study.id,
                 "task_id": task_id,
+                "async_task": True,
             }
             return response
 
