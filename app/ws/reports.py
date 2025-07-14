@@ -26,12 +26,14 @@ from flask_restful_swagger import swagger
 from app.config import get_settings
 
 from app.study_folder_utils import convert_relative_to_real_path
+from app.tasks.common_tasks.report_tasks.europe_pmc import europe_publication_report
 from app.ws.db_connection import get_connection, get_study
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.report_builders.analytical_method_builder import AnalyticalMethodBuilder
 from app.ws.report_builders.europe_pmc_builder import EuropePmcReportBuilder
 from app.ws.study.folder_utils import get_all_files
+from app.ws.study.user_service import UserService
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
     get_instruments_organism
 
@@ -668,6 +670,64 @@ class reports(Resource):
         writeDataToFile(os.path.join(reporting_path, file_name), res, True)
 
         return jsonify({"POST " + file_name: True})
+
+class EuropePMCReport(Resource):
+    @swagger.operation(
+        summary="Process studies for EuropePMC Search",
+        notes="Process studies for EuropePMC Search.",
+        parameters=[
+            {
+                "name": "user-token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            },
+            {
+                "name": "google-sheet-id",
+                "description": "Google sheet id to look for",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            }
+            
+        ],
+        responseMessages=[
+            {"code": 200, "message": "OK."},
+            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
+            {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
+            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."}
+        ],
+    )
+    def get(self):
+        log_request(request)
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user-token"]
+
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        
+        google_sheet_id = None
+        if request.args:
+            option = request.args.get('option')
+            if option:
+                option = option.strip()
+                
+            google_sheet_id = request.args.get('google-sheet-id')
+            if google_sheet_id:
+                google_sheet_id = google_sheet_id.strip()
+        
+        inputs = {"user_token": user_token, "google_sheet_id": google_sheet_id}
+        if google_sheet_id:
+            task = europe_publication_report.apply_async(kwargs=inputs, expires=60*60)
+            response = {'Task started':f'Task id {task.id}'}       
+            return response
+            #return europe_pmc_publication_report(user_token=user_token, google_sheet_id=google_sheet_id)
+        else:
+            abort(401)
 
 
 class CrossReferencePublicationInformation(Resource):

@@ -55,7 +55,7 @@ if __name__ == "__main__":
             time.sleep(period)
     except Exception as ex:
         report_internal_technical_issue(
-            f"{str(ex)}: {worker_name} queue will be deleted", "Queue will be deleted"
+            f"Datamover worker health check failed. {str(ex)}: {worker_name} queue will be deleted", "New datamover worker will be submitted."
         )
         project_name = get_settings().hpc_cluster.datamover.job_prefix
         name = f"{project_name}_{worker_name}"

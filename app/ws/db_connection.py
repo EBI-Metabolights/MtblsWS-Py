@@ -130,7 +130,9 @@ query_studies_user = """
            else 'MANUAL_CURATION' end,
     s.id,
     s.revision_number,
-    s.revision_datetime
+    s.revision_datetime,
+    s.reserved_accession,
+    s.reserved_submission_id
     from studies s, users u, study_user su 
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
@@ -451,7 +453,7 @@ def get_all_private_studies_for_user(user_token):
                     revision_comment = revision[3] or ""
                     revision_status = revision[4]
                     revision_task_message = revision[5] or ""
-
+            status, status_update_task = get_study_task(row[8], row[9], "UPDATE_STUDY_STATUS")
             complete_list.append(
                 {
                     "accession": study_id,
@@ -467,6 +469,7 @@ def get_all_private_studies_for_user(user_token):
                     "revisionStatus": revision_status,
                     "revisionComment": revision_comment,
                     "revisionTaskMessage": revision_task_message,
+                    "statusUpdateTaskId": status_update_task[1] if status else None,
                 }
             )
 
@@ -575,6 +578,8 @@ def get_all_studies_for_user(user_token):
                 revision_task_message = revision[5] or ""
 
         revision_datetime = row[7].isoformat() if row[7] else None
+        status, status_update_task = get_study_task(row[8], row[9], "UPDATE_STUDY_STATUS")
+
         complete_list.append(
             {
                 "accession": study_id,
@@ -590,6 +595,7 @@ def get_all_studies_for_user(user_token):
                 "revisionStatus": revision_status,
                 "revisionComment": revision_comment,
                 "revisionTaskMessage": revision_task_message,
+                "statusUpdateTaskId": status_update_task[1] if status else None,
                 "studyHttpUrl": http_url,
                 "studyFtpUrl": ftp_url,
                 "studyGlobusUrl": globus_url,
@@ -946,6 +952,31 @@ def get_study_revision(study_id, revision_number):
         return False, "No metabolite was found for this ChEBI id"
 
 
+def get_study_task(accession, submission_id, task_name: str):
+    query = (
+        "select study_acc, last_execution_message from study_tasks "
+        "where (study_acc=%(accession)s or study_acc=%(submission_id)s) and task_name=%(task_name)s;"
+    )
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(
+            query,
+            {
+                "accession": accession,
+                "submission_id": submission_id,
+                "task_name": task_name,
+            },
+        )
+        data = cursor.fetchall()
+        release_connection(postgresql_pool, conn)
+        if data:
+            return True, data[0]
+        return False, None
+
+    except IndexError:
+        return False, "No metabolite was found for this ChEBI id"
+
+
 def mtblc_on_chebi_accession(chebi_id):
     if not chebi_id:
         return None
@@ -1245,7 +1276,7 @@ def query_study_submitters(study_id):
         return None
 
     query = """
-        select u.email from users u, studies s, study_user su where
+        select u.email, u.firstname, u.lastname from users u, studies s, study_user su where
         su.userid = u.id and su.studyid = s.id and acc = %(study_id)s; 
     """
     try:

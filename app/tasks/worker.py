@@ -80,11 +80,13 @@ celery = Celery(
         "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
         "app.tasks.common_tasks.admin_tasks.create_jira_tickets",
         "app.tasks.common_tasks.report_tasks.eb_eye_search",
+        "app.tasks.common_tasks.report_tasks.europe_pmc",
         "app.tasks.common_tasks.curation_tasks.validation",
         "app.tasks.common_tasks.curation_tasks.chebi_pipeline",
         "app.tasks.common_tasks.curation_tasks.study_revision",
         "app.tasks.common_tasks.basic_tasks.send_email",
         "app.tasks.common_tasks.basic_tasks.elasticsearch",
+        "app.tasks.common_tasks.basic_tasks.bluesky",
         "app.tasks.common_tasks.curation_tasks.submission_pipeline",
         "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",
         "app.tasks.datamover_tasks.basic_tasks.file_management",
@@ -201,16 +203,19 @@ celery.conf.beat_schedule = {
 }
 
 
-def send_email(subject_name, body, from_address, to_addresses, cc_addresses):
+def send_email(
+    subject, body, from_address, to_addresses, cc_addresses, bcc_addresses=None
+):
     flask_app = get_flask_app()
     with flask_app.app_context():
         email_service = get_email_service(flask_app)
         email_service.send_generic_email(
-            subject_name,
+            subject,
             body,
             from_address,
             to_addresses,
             cc_mail_addresses=cc_addresses,
+            bcc_mail_addresses=bcc_addresses,
         )
 
 
@@ -223,7 +228,7 @@ class MetabolightsTask(celery.Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         flask_app = get_flask_app()
         with flask_app.app_context():
-            subject_name = f"Task {self.name} with {task_id} failed"
+            subject = f"Task {self.name} with {task_id} failed"
             username = ""
             if "email" in kwargs:
                 username = kwargs["email"]
@@ -249,4 +254,4 @@ class MetabolightsTask(celery.Task):
                 traceback = str(einfo.traceback).replace("\n", "<p>")
                 args_str = str(args) if args else ""
                 body = f"Task <b>{self.name}</b> with <b>{str(task_id)}</b> failed. <p>Submitter: {username} <p> Executed on: {os.uname().nodename} <p>  {str(exc)}<p>Args: {args_str}<p>kwargs: {kwargs_str}<p>{traceback}"
-                report_internal_technical_issue(subject_name, body)
+                report_internal_technical_issue(subject, body)

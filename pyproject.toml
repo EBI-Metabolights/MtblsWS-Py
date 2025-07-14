@@ -28,7 +28,6 @@ zeep = "^4.3.1"
 elasticsearch = "^1.4.0"
 python-jose = "^3.4.0"
 passlib = "^1.7.4"
-tweepy = "^4.15.0"
 cirpy = "^1.0.2"
 ctfile = "^0.1.12"
 pubchempy = "^1.0.4"
@@ -50,6 +49,10 @@ marshmallow = "2.21.0"
 gunicorn = "^23.0.0"
 isatools = {git = "https://github.com/ISA-tools/isa-api.git", rev = "983fe1538b01ef97de06b61a5e58d73f0eab4bb1"}
 charset-normalizer = "3.4.1"
+atproto = "^0.0.61"
+email-validator = "^2.2.0"
+metabolights-utils = "^1.4.4"
+python-levenshtein = "^0.27.1"
 
 [tool.poetry.group.dev.dependencies]
 poetry = "^1.8.5"

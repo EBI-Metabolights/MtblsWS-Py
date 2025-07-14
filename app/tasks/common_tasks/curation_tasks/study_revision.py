@@ -1,17 +1,20 @@
 import logging
 import os
 from pathlib import Path
+from typing import Any
 from app.config import get_settings
 from app.services.cluster.hpc_client import HpcClient
 from app.services.cluster.hpc_utils import get_new_hpc_datamover_client
 from app.tasks.bash_client import BashClient
-from app.tasks.worker import MetabolightsTask, celery
+from app.tasks.common_tasks.curation_tasks.submission_model import (
+    MakeStudyPublicParameters,
+)
+from app.tasks.worker import MetabolightsTask, celery, report_internal_technical_issue
 from app.utils import MetabolightsException, current_time
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.schemes import Study, StudyRevision
+from app.ws.db.schemes import Study
 
 from app.ws.db.types import StudyRevisionStatus, StudyStatus
-from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 
@@ -26,49 +29,41 @@ logger = logging.getLogger("wslog")
     soft_time_limit=60 * 15,
     name="app.tasks.common_tasks.curation_tasks.study_revision.prepare_study_revision",
 )
-def prepare_study_revision(self, study_id: str, user_token: str):
-    settings = get_study_settings()
-    with DBManager.get_instance().session_maker() as db_session:
-        try:
-            query = db_session.query(Study)
-            study: Study = query.filter(Study.acc == study_id).first()
-            
-            query = db_session.query(StudyRevision)
-            study_revision: StudyRevision = query.filter(
-                StudyRevision.accession_number == study_id,
-                StudyRevision.revision_number == study.revision_number,
-            ).first()
-            if not study_revision:
-                raise Exception(
-                    f"Study revision not found for study {study_id} revision {study.revision_number}"
-                )
-        except Exception as e:
-            raise MetabolightsException(str(e))
+def prepare_study_revision(self, params: dict[str, Any]):
+    study_id = params.get("study_id")
+    if not study_id:
+        raise MetabolightsException("reindex_study task: Study id is not valid.")
+    revision_comment = params.get("revision_comment")
+    if not revision_comment:
+        raise MetabolightsException(
+            "reindex_study task: revision_comment id is not valid."
+        )
+    created_by = params.get("created_by")
+    if not created_by:
+        raise MetabolightsException("reindex_study task: created_by id is not valid.")
 
-    StudyRevisionService.update_investigation_file_for_revision(study_id)
-
-    folder_status, source_path, created_path = (
+    logger.info(f"{study_id} prepare_study_revision task is running")
+    if params.get("test"):
+        return params
+    try:
+        StudyRevisionService.increment_study_revision(
+            study_id,
+            revision_comment=revision_comment,
+            created_by=created_by,
+        )
+        study = StudyService.get_instance().get_study_by_acc(study_id)
+        StudyRevisionService.update_investigation_file_from_db(study_id)
         StudyRevisionService.create_revision_folder(study)
-    )
-    # data_files_root_path = settings.mounted_paths.study_readonly_files_actual_root_path
-    # study_data_files_path = os.path.join(data_files_root_path, study_id)
-
-    # study_internal_files_root_path = settings.mounted_paths.study_internal_files_root_path
-    # revisions_root_hash_path = os.path.join(study_internal_files_root_path, study_id, "PUBLIC_METADATA", "HASHES")
-    # StudyRevisionService.create_data_file_hashes(study, search_path=study_data_files_path, copy_paths=[revisions_root_hash_path])
-
-    # StudyRevisionService.check_dataset_integrity(study_id, metadata_files_path=created_path, data_files_path=study_data_files_path)
-    kwargs = {
-        "study_id": study_id,
-        "user_token": user_token,
-        "latest_revision": study.revision_number,
-    }
-    sync_study_revision.apply_async(kwargs=kwargs)
-    return {
-        "study_id": study_id,
-        "create_folder": folder_status,
-        "revision_folder_path": created_path,
-    }
+        params["prepare_revision_task_status"] = True
+        return params
+    except Exception as ex:
+        params["prepare_study_revision"] = False
+        logger.error("prepare_study_revision task failed")
+        report_internal_technical_issue(
+            f"prepare_study_revision {study_id} task failed.",
+            f"prepare_study_revision {study_id} task failed. {str(ex)}.",
+        )
+        raise ex
 
 
 @celery.task(
@@ -202,9 +197,23 @@ def sync_public_ftp_folder_with_metadata_folder(
     soft_time_limit=60 * 15,
     name="app.tasks.common_tasks.curation_tasks.study_revision.sync_study_revision",
 )
-def sync_study_revision(self, study_id: str, user_token: str, latest_revision: int):
-    study: Study = StudyService.get_instance().get_study_by_acc(study_id)
+def sync_study_revision(self, params: dict[str, Any]):
+    study_id = params.get("study_id")
 
+    if not study_id:
+        raise MetabolightsException("validate_study task: api_token is not valid")
+    api_token = params.get("api_token")
+
+    if not api_token:
+        raise MetabolightsException("validate_study task: api_token is not valid")
+    
+
+    logger.info(f"{study_id} rsync_metadata_files is running...")
+    if params.get("test"):
+        return params
+
+    study: Study = StudyService.get_instance().get_study_by_acc(study_id)
+    latest_revision = study.revision_number
     try:
         # Copy all revisions to Public FTP folder. AUDIT_FILES/PUBLIC_METADATA to <PUBLIC FTP FOLDER>/<STUDY ID> folder (delete folders/files if it is not on the source folder)
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
@@ -241,14 +250,14 @@ def sync_study_revision(self, study_id: str, user_token: str, latest_revision: i
             revision_number=study.revision_number,
             source_path=revisions_root_path,
             target_path=public_study_path,
-            user_token=user_token,
+            user_token=api_token,
             email=email,
             task_name=f"{study_id}_{study.revision_number:02}_PUBLIC_FTP_SYNC_{current}",
             study_private_ftp_path=study_private_ftp_path,
             data_files_hash_path=data_files_hash_path,
             root_data_files_hash_path=root_data_files_hash_path,
         )
-        return {"job_id": job_id, "messages": messages}
+        return params
     except Exception as e:
         raise e
 
@@ -336,8 +345,12 @@ if __name__ == "__main__":
             # db_session.query(StudyRevision).delete()
             # db_session.commit()
             result = db_session.query(
-                Study.acc, Study.revision_number, Study.revision_datetime, Study.status, Study.studysize
-            ). all()
+                Study.acc,
+                Study.revision_number,
+                Study.revision_datetime,
+                Study.status,
+                Study.studysize,
+            ).all()
             if result:
                 studies = list(result)
                 studies.sort(
@@ -348,14 +361,10 @@ if __name__ == "__main__":
             db_session.rollback()
             raise e
     selected_studies = [
-        (x["acc"], x["studysize"])
-        for x in studies
-        if x["revision_number"] == 1
-        # if int(x["acc"].replace("MTBLS", "").replace("REQ", "")) >= 10000 
+        (x["acc"], x["studysize"]) for x in studies if x["revision_number"] == 1
     ]
     selected_studies.sort(key=lambda x: x[1])
-    studies = [ x[0] for x in selected_studies ]
-    
+    studies = [x[0] for x in selected_studies]
     # studies = ["MTBLS8"]
     for study_id in studies:
         study: Study = StudyService.get_instance().get_study_by_acc(study_id)

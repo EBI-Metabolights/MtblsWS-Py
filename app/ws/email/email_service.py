@@ -1,6 +1,6 @@
 import logging
 import os.path
-from typing import Set, Union
+from typing import List, Set, Union
 
 from flask_mail import Mail, Message
 from jinja2 import Environment, PackageLoader, select_autoescape
@@ -50,11 +50,14 @@ class EmailService(object):
 
     def send_generic_email(
         self,
-        subject_name,
+        subject,
         body,
         from_mail_address,
         to_mail_addresses,
         cc_mail_addresses=None,
+        bcc_mail_addresses=None,
+        reply_to=None,
+        fail_silently: bool = True,
     ):
         if not from_mail_address:
             from_mail_address = (
@@ -62,43 +65,50 @@ class EmailService(object):
             )
         if not cc_mail_addresses:
             cc_mail_addresses = []
+        if not bcc_mail_addresses:
+            bcc_mail_addresses = []
         if not isinstance(cc_mail_addresses, list):
             cc_mail_addresses = cc_mail_addresses.split(",")
+        if not isinstance(bcc_mail_addresses, list):
+            bcc_mail_addresses = bcc_mail_addresses.split(",")
         if not isinstance(to_mail_addresses, list):
             recipients = to_mail_addresses.split(",")
         else:
             recipients = to_mail_addresses
+        if not reply_to:
+            reply_to = from_mail_address
         msg = Message(
-            subject=subject_name,
+            subject=subject,
             sender=from_mail_address,
             recipients=recipients,
             cc=cc_mail_addresses,
+            bcc=bcc_mail_addresses,
             html=body,
+            reply_to=reply_to,
         )
         try:
             self.mail.send(msg)
         except Exception as exc:
-            message = f"Sending email failed: subject= {subject_name} recipients:{str(recipients)} body={str(body)}\nError {str(exc)}"
+            message = f"Sending email failed: subject= {subject} recipients:{str(recipients)} body={str(body)}\nError {str(exc)}"
             logger.error(message)
+            if not fail_silently:
+                raise exc
 
     def send_email(
         self,
-        subject_name,
+        subject,
         body,
         submitters_mail_addresses,
         user_email,
         from_mail_address=None,
-        curation_mail_address=None,
+        curation_mail_address: Union[str, List[str]] = None,
         additional_cc_emails=None,
     ):
         if not from_mail_address:
             from_mail_address = (
                 self.email_settings.email_service.configuration.no_reply_email_address
             )
-        if not curation_mail_address:
-            curation_mail_address = (
-                self.email_settings.email_service.configuration.curation_email_address
-            )
+
         dev_email = get_settings().email.email_service.configuration.technical_issue_recipient_email_address
         recipients: Set[str] = set()
         if submitters_mail_addresses:
@@ -106,29 +116,56 @@ class EmailService(object):
             recipients.discard(None)
             recipients.discard("")
         if not recipients:
-            logger.error(
-                f"There is no recipient email address for email: '{subject_name}'"
-            )
+            logger.error(f"There is no recipient email address for email: '{subject}'")
             return
-
+        default_curation_mail_address = (
+            self.email_settings.email_service.configuration.curation_email_address
+        )
+        system_emails = {dev_email, default_curation_mail_address}
         if additional_cc_emails:
-            additional_cc_emails = [
-                x for x in additional_cc_emails if x and x not in recipients
-            ]
+            if isinstance(additional_cc_emails, list):
+                additional_cc_emails = [
+                    x for x in additional_cc_emails if x and x not in recipients
+                ]
+            else:
+                additional_cc_emails = [
+                    x
+                    for x in str(additional_cc_emails).split(",")
+                    if x and x not in recipients and x not in system_emails
+                ]
+
         additional_cc_emails = additional_cc_emails if additional_cc_emails else None
-        bcc = [dev_email] if user_email == dev_email else [dev_email, user_email]
+        bcc = {dev_email}
+        if curation_mail_address:
+            if isinstance(curation_mail_address, list):
+                bcc.add(curation_mail_address)
+            else:
+                bcc.update(
+                    [x.strip() for x in str(curation_mail_address).split(",") if x]
+                )
+
+        all_emails = {default_curation_mail_address, dev_email}
+        all_emails.update(recipients)
+        if additional_cc_emails:
+            all_emails.update(additional_cc_emails)
+        if bcc:
+            all_emails.update(bcc)
+
+        if user_email and user_email not in all_emails:
+            bcc.add(user_email)
+
         msg = Message(
-            subject=subject_name,
+            subject=subject,
             sender=from_mail_address,
             recipients=list(recipients),
             cc=additional_cc_emails,
-            bcc=bcc,
+            bcc=list(bcc) if bcc else None,
             html=body,
         )
         try:
             self.mail.send(msg)
         except Exception as e:
-            message = f"Sending email failed: subject= {subject_name} recipients:{str(recipients)} body={str(body)}\nError {str(e)}"
+            message = f"Sending email failed: subject= {subject} recipients:{str(recipients)} body={str(body)}\nError {str(e)}"
             logger.error(message)
 
     def get_rendered_body(self, template_name: str, content):
@@ -148,9 +185,6 @@ class EmailService(object):
         user_name = settings.ftp_server.private.connection.username
         user_password = settings.ftp_server.private.connection.password
         ftp_server = settings.ftp_server.private.connection.host
-        ftp_upload_doc_link = (
-            settings.email.template_email_configuration.ftp_upload_help_doc_url
-        )
         host = get_settings().server.service.ws_app_base_link
         submission_url = os.path.join(host, "editor", "study", provisional_id)
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
@@ -169,7 +203,6 @@ class EmailService(object):
 
         body = self.get_rendered_body("new_submission.html", content)
         subject_name = f"MetaboLights Temporary Submission initiated ({provisional_id})"
-
         self.send_email(subject_name, body, submitters_mail_addresses, user_email)
 
     def send_email_for_new_accession_number(
@@ -188,9 +221,9 @@ class EmailService(object):
         study_contacts,
     ):
         host = get_settings().server.service.ws_app_base_link
-        subject_name = "Submission Complete and Accessioned"
+        subject = "Submission Complete and Accessioned"
         if study_id != provisional_id:
-            subject_name += f" - from {provisional_id} to {study_id}"
+            subject += f" - from {provisional_id} to {study_id}"
         reviewer_url = os.path.join(host, f"reviewer{obfuscation_code}")
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
         metabolights_website_url = get_settings().server.service.ws_app_base_link
@@ -215,8 +248,9 @@ class EmailService(object):
             "study_contacts": study_contacts,
         }
         body = self.get_rendered_body("new_accession_number.html", content)
+
         self.send_email(
-            subject_name,
+            subject,
             body,
             submitters_mail_addresses,
             user_email,
@@ -236,7 +270,7 @@ class EmailService(object):
         publication_pubmed_id,
         additional_cc_emails,
     ):
-        subject_name = f"MetaboLights Study Made Public ({study_id})"
+        subject = f"MetaboLights Study Made Public ({study_id})"
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
         metabolights_website_url = get_settings().server.service.ws_app_base_link
         # mtbls_accession_url = os.path.join(metabolights_website_url, study_id)
@@ -277,20 +311,60 @@ class EmailService(object):
             "study_globus_url": study_globus_url,
         }
         body = self.get_rendered_body("status_is_public.html", content)
+        curation_mail_address = (
+            self.email_settings.email_service.configuration.curation_email_address
+        )
         self.send_email(
-            subject_name,
+            subject,
             body,
             submitters_mail_addresses,
             user_email,
             additional_cc_emails=additional_cc_emails,
+            curation_mail_address=curation_mail_address,
         )
 
-    def send_email_for_task_completed(self, subject_name, task_id, task_result, to):
+    def send_email_study_validation_failed(
+        self,
+        task_name,
+        study_id,
+        current_status,
+        next_status,
+        user_email,
+        submitters_mail_addresses,
+        submitter_fullname,
+        study_title,
+    ):
+        subject = f"{task_name} failed."
+        metabolights_help_email = "metabolights-help@ebi.ac.uk"
+        # metabolights_website_url = get_settings().server.service.ws_app_base_link
+        metabolights_website_url = "https://www.ebi.ac.uk/metabolights"
+        mtbls_accession_url = os.path.join(metabolights_website_url, study_id)
+
+        content = {
+            "metabolights_website_url": metabolights_website_url,
+            "mtbls_accession_url": mtbls_accession_url,
+            "mtbls_accession": study_id,
+            "submitter_fullname": submitter_fullname,
+            "study_title": study_title,
+            "current_status": current_status,
+            "next_status": next_status,
+            "metabolights_help_email": metabolights_help_email,
+        }
+        body = self.get_rendered_body("validation_failure.html", content)
+
+        self.send_email(
+            subject,
+            body,
+            submitters_mail_addresses,
+            user_email,
+        )
+
+    def send_email_for_task_completed(self, subject, task_id, task_result, to):
         content = {"task_id": task_id, "task_result": task_result}
         body = self.get_rendered_body(
             "curation_tasks/worker_task_completed.html", content
         )
 
         self.send_generic_email(
-            subject_name, body, from_mail_address=None, to_mail_addresses=to
+            subject, body, from_mail_address=None, to_mail_addresses=to
         )

@@ -28,6 +28,7 @@ from app.study_folder_utils import get_all_metadata_files
 from app.utils import metabolights_exception_handler
 from app.ws.db.models import StudyRevisionModel
 from app.ws.db.types import CurationRequest
+from app.ws.db_connection import get_study_task
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import IsaInvestigationSchema
 from app.ws.mtblsWSclient import WsClient
@@ -182,6 +183,8 @@ class IsaInvestigation(Resource):
         response = dict(mtblsStudy={},
                         isaInvestigation={},
                         validation={})
+        success, status_update_task = get_study_task(study.reserved_accession, study.reserved_submission_id, "UPDATE_STUDY_STATUS")
+
         response['mtblsStudy']['studyStatus'] = study_status
         response['mtblsStudy']['curationRequest'] = ""
         if hasattr(study, 'curation_request'):
@@ -194,9 +197,9 @@ class IsaInvestigation(Resource):
         response['mtblsStudy']['revisionNumber'] = study.revision_number
         response['mtblsStudy']['revisionDatetime'] = study.revision_datetime.isoformat() if study.revision_datetime else ""
         response['mtblsStudy']['revisionStatus'] = revision_status
+        response['mtblsStudy']['statusUpdateTaskId'] = status_update_task[1] if success else None
         response['mtblsStudy']['revisionComment'] = revision_comment
         response['mtblsStudy']['revisionTaskMessage'] = revision_task_message
-
         response['mtblsStudy']['studyHttpUrl'] = http_url
         response['mtblsStudy']['studyFtpUrl'] = ftp_url
         response['mtblsStudy']['studyGlobusUrl'] = globus_url
