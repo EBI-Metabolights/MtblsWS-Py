@@ -54,6 +54,24 @@ def delete_task(study_id, task_name: str) -> StudyTask:
     return task
 
 
+def complete_task_with_failure(task_id, task_name: str) -> StudyTask:
+    if not task_id:
+        return None
+    with DBManager.get_instance().session_maker() as db_session:
+        query = db_session.query(StudyTask)
+        filtered = query.filter(
+            StudyTask.last_execution_message == task_id,
+            StudyTask.task_name == task_name,
+        )
+        result = filtered.all()
+        task: StudyTask = result[0] if result else None
+        if task:
+            task.last_execution_status = StudyTaskStatus.EXECUTION_FAILED
+            db_session.add(task)
+            db_session.commit()
+    return task
+
+
 def create_task(study_id, task_name: str, message: str = "") -> StudyTask:
     tasks = StudyService.get_instance().get_study_tasks(
         study_id=study_id, task_name=task_name

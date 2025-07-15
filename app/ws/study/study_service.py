@@ -292,3 +292,20 @@ class StudyService(object):
                 message=f"Error while retreiving study tasks from database: {str(e)}",
                 exception=e,
             )
+
+    def get_study_tasks_by_task_id(self, task_id) -> None | list[StudyTask]:
+        try:
+            with DBManager.get_instance().session_maker() as db_session:
+                query = db_session.query(StudyTask)
+                filtered = query.filter(
+                    StudyTask.last_execution_message == task_id,
+                )
+                result = filtered.all()
+                if result:
+                    return result[0]
+                return None
+        except Exception as e:
+            raise MetabolightsDBException(
+                message=f"Error while retreiving study tasks from database: {str(e)}",
+                exception=e,
+            )

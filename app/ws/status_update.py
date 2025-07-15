@@ -224,7 +224,8 @@ class StudyStatusUpdateTask(Resource):
             return {
                 "currentStudyId": study.acc,
                 "currentStatus": current_status.to_camel_case_str(),
-                "statusUpdateTaskId": current_task[1]
+                "statusUpdateTaskId": current_task.last_execution_message,
+                "statusUpdateTaskResult": current_task.last_execution_status
                 if current_task
                 else None,
             }
@@ -234,6 +235,7 @@ class StudyStatusUpdateTask(Resource):
                 "currentStudyId": study.acc,
                 "currentStatus": current_status.to_camel_case_str(),
                 "statusUpdateTaskId": None,
+                "statusUpdateTaskResult": None,
             }
 
     @swagger.operation(

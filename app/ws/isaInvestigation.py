@@ -198,6 +198,7 @@ class IsaInvestigation(Resource):
         response['mtblsStudy']['revisionDatetime'] = study.revision_datetime.isoformat() if study.revision_datetime else ""
         response['mtblsStudy']['revisionStatus'] = revision_status
         response['mtblsStudy']['statusUpdateTaskId'] = status_update_task[1] if success else None
+        response['mtblsStudy']['statusUpdateTaskResult'] = status_update_task[2] if success else None
         response['mtblsStudy']['revisionComment'] = revision_comment
         response['mtblsStudy']['revisionTaskMessage'] = revision_task_message
         response['mtblsStudy']['studyHttpUrl'] = http_url
@@ -209,7 +210,7 @@ class IsaInvestigation(Resource):
         # response['mtblsStudy']['release_date'] = release_date
         # isa_inv.public_release_date = release_date
         # isa_study.public_release_date = release_date
-        if study_status == "In Review":
+        if study_status in ("In Review", "Private"):
             response['mtblsStudy']['reviewer_link'] = 'reviewer' + obfuscation_code
         response['isaInvestigation'] = IsaInvestigationSchema().dump(isa_inv).data
         response['validation']['errors'] = []

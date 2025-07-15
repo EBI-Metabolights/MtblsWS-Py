@@ -453,7 +453,7 @@ def get_all_private_studies_for_user(user_token):
                     revision_comment = revision[3] or ""
                     revision_status = revision[4]
                     revision_task_message = revision[5] or ""
-            status, status_update_task = get_study_task(row[8], row[9], "UPDATE_STUDY_STATUS")
+            task_status, status_update_task = get_study_task(row[8], row[9], "UPDATE_STUDY_STATUS")
             complete_list.append(
                 {
                     "accession": study_id,
@@ -469,7 +469,8 @@ def get_all_private_studies_for_user(user_token):
                     "revisionStatus": revision_status,
                     "revisionComment": revision_comment,
                     "revisionTaskMessage": revision_task_message,
-                    "statusUpdateTaskId": status_update_task[1] if status else None,
+                    "statusUpdateTaskId": status_update_task[1] if task_status else None,
+                    "statusUpdateTaskResult": status_update_task[2] if task_status else None,
                 }
             )
 
@@ -578,7 +579,7 @@ def get_all_studies_for_user(user_token):
                 revision_task_message = revision[5] or ""
 
         revision_datetime = row[7].isoformat() if row[7] else None
-        status, status_update_task = get_study_task(row[8], row[9], "UPDATE_STUDY_STATUS")
+        task_status, status_update_task = get_study_task(row[8], row[9], "UPDATE_STUDY_STATUS")
 
         complete_list.append(
             {
@@ -595,7 +596,8 @@ def get_all_studies_for_user(user_token):
                 "revisionStatus": revision_status,
                 "revisionComment": revision_comment,
                 "revisionTaskMessage": revision_task_message,
-                "statusUpdateTaskId": status_update_task[1] if status else None,
+                "statusUpdateTaskId": status_update_task[1] if task_status else None,
+                "statusUpdateTaskResult": status_update_task[2] if task_status else None,
                 "studyHttpUrl": http_url,
                 "studyFtpUrl": ftp_url,
                 "studyGlobusUrl": globus_url,
@@ -954,7 +956,7 @@ def get_study_revision(study_id, revision_number):
 
 def get_study_task(accession, submission_id, task_name: str):
     query = (
-        "select study_acc, last_execution_message from study_tasks "
+        "select study_acc, last_execution_message, last_execution_status from study_tasks "
         "where (study_acc=%(accession)s or study_acc=%(submission_id)s) and task_name=%(task_name)s;"
     )
     try:

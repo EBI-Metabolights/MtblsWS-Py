@@ -48,7 +48,7 @@ from app.ws.study.study_service import StudyService
 from isatools import model as isa_model
 
 from app.ws.study_status_utils import StudyStatusHelper
-from app.ws.tasks.db_track import delete_task
+from app.ws.tasks.db_track import complete_task_with_failure, delete_task
 
 logger = logging.getLogger(__name__)
 iac = IsaApiClient()
@@ -472,6 +472,8 @@ def make_study_private_on_success_callback(self, params: dict[str, Any]):
 )
 def make_study_private_on_failure_callback(self, task_id: str, *args, **kwargs):
     logger.info(f"make_study_private task '{task_id}' failed")
+
+    complete_task_with_failure(task_id=task_id, task_name="UPDATE_STUDY_STATUS")
 
 
 @celery.task(
