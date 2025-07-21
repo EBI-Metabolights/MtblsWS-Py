@@ -46,7 +46,7 @@ class About(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK."
+                "message": "OK"
             }
         ]
     )
