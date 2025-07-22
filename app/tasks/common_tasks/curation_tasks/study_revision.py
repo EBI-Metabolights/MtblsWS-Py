@@ -5,6 +5,7 @@ from app.config import get_settings
 from app.services.cluster.hpc_client import HpcClient
 from app.services.cluster.hpc_utils import get_new_hpc_datamover_client
 from app.tasks.bash_client import BashClient
+from app.tasks.common_tasks.basic_tasks.send_email import send_technical_issue_email
 from app.tasks.worker import MetabolightsTask, celery
 from app.utils import MetabolightsException, current_time
 from app.ws.db.dbmanager import DBManager
@@ -32,7 +33,7 @@ def prepare_study_revision(self, study_id: str, user_token: str):
         try:
             query = db_session.query(Study)
             study: Study = query.filter(Study.acc == study_id).first()
-            
+
             query = db_session.query(StudyRevision)
             study_revision: StudyRevision = query.filter(
                 StudyRevision.accession_number == study_id,
@@ -188,6 +189,13 @@ def sync_public_ftp_folder_with_metadata_folder(
         message = f"Exception after job submission. {str(exc)}"
         logger.warning(message)
         messages.append(message)
+        inputs = {
+            "subject": f"Public FTP Synchronization Failed ({study_id})!",
+            "body": f"Rerun the Public FTP synchronization task for study {study_id}. "
+            "Use /studies/<string:study_id>/revisions/sync enpoint to rerun the task. "
+            "<br/> Current Error: <br/> {str(exc)}",
+        }
+        send_technical_issue_email.apply_async(kwargs=inputs)
         return None, messages
     finally:
         if script_path and os.path.exists(script_path):
@@ -336,8 +344,12 @@ if __name__ == "__main__":
             # db_session.query(StudyRevision).delete()
             # db_session.commit()
             result = db_session.query(
-                Study.acc, Study.revision_number, Study.revision_datetime, Study.status, Study.studysize
-            ). all()
+                Study.acc,
+                Study.revision_number,
+                Study.revision_datetime,
+                Study.status,
+                Study.studysize,
+            ).all()
             if result:
                 studies = list(result)
                 studies.sort(
@@ -351,11 +363,11 @@ if __name__ == "__main__":
         (x["acc"], x["studysize"])
         for x in studies
         if x["revision_number"] == 1
-        # if int(x["acc"].replace("MTBLS", "").replace("REQ", "")) >= 10000 
+        # if int(x["acc"].replace("MTBLS", "").replace("REQ", "")) >= 10000
     ]
     selected_studies.sort(key=lambda x: x[1])
-    studies = [ x[0] for x in selected_studies ]
-    
+    studies = [x[0] for x in selected_studies]
+
     # studies = ["MTBLS8"]
     for study_id in studies:
         study: Study = StudyService.get_instance().get_study_by_acc(study_id)

@@ -66,8 +66,8 @@ class SlurmClient(HpcClient):
             mem=mem,
             mail_type=mail_type,
         )
-        max_retries = 3
-        delay_period_in_seconds = 10
+        max_retries = 10
+        delay_period_in_seconds = 20
         for iteration in range(max_retries):
             logger.info("%s. submission attempt...", (iteration + 1))
             result: CapturedBashExecutionResult = BashClient.execute_command(
@@ -157,7 +157,7 @@ class SlurmClient(HpcClient):
                     columns = line.split("::")
                     if len(columns) < 7:
                         raise MetabolightsException(
-                            message=f"Return format is not valid."
+                            message="Return format is not valid."
                         )
                     job_name = ""
                     if (
