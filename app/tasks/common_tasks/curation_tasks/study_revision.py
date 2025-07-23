@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 from pathlib import Path
@@ -5,6 +6,7 @@ from app.config import get_settings
 from app.services.cluster.hpc_client import HpcClient
 from app.services.cluster.hpc_utils import get_new_hpc_datamover_client
 from app.tasks.bash_client import BashClient
+from app.tasks.common_tasks.basic_tasks.send_email import send_technical_issue_email
 from app.tasks.worker import MetabolightsTask, celery
 from app.utils import MetabolightsException, current_time
 from app.ws.db.dbmanager import DBManager
@@ -14,6 +16,7 @@ from app.ws.db.types import StudyRevisionStatus, StudyStatus
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
+from sqlalchemy import select
 
 logger = logging.getLogger("wslog")
 
@@ -32,7 +35,7 @@ def prepare_study_revision(self, study_id: str, user_token: str):
         try:
             query = db_session.query(Study)
             study: Study = query.filter(Study.acc == study_id).first()
-            
+
             query = db_session.query(StudyRevision)
             study_revision: StudyRevision = query.filter(
                 StudyRevision.accession_number == study_id,
@@ -188,6 +191,13 @@ def sync_public_ftp_folder_with_metadata_folder(
         message = f"Exception after job submission. {str(exc)}"
         logger.warning(message)
         messages.append(message)
+        inputs = {
+            "subject": f"Public FTP Synchronization Failed ({study_id})!",
+            "body": f"Rerun the Public FTP synchronization task for study {study_id}. "
+            "Use /studies/<string:study_id>/revisions/sync enpoint to rerun the task. "
+            "<br/> Current Error: <br/> {str(exc)}",
+        }
+        send_technical_issue_email.apply_async(kwargs=inputs)
         return None, messages
     finally:
         if script_path and os.path.exists(script_path):
@@ -326,6 +336,23 @@ def sync_public_ftp_folder_with_revisions(
             os.remove(script_path)
 
 
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    name="app.tasks.common_tasks.curation_tasks.study_revision.check_not_started_study_revisions",
+)
+def check_not_started_study_revisions(self):
+    user_token = get_settings().auth.service_account.api_token
+    unstarted_revisions = StudyRevisionService.get_all_non_started_study_revision_tasks()
+    if not unstarted_revisions or len(unstarted_revisions) == 0:
+        logger.info("No unstarted revisions found.")
+        return
+    logger.info(f"Found {len(unstarted_revisions)} unstarted revisions.")
+    for result in unstarted_revisions:
+        task = sync_study_revision.apply_async(kwargs={"study_id": result.accession_number, "user_token": user_token, "latest_revision": result.revision_number})
+        logger.info(f"Task {task.id} is created for study {result.accession_number} revision {result.revision_number}.")
+
+    
 if __name__ == "__main__":
     user_token = get_settings().auth.service_account.api_token
     # user = UserService.get_instance().get_db_user_by_user_token(user_token)
@@ -336,8 +363,12 @@ if __name__ == "__main__":
             # db_session.query(StudyRevision).delete()
             # db_session.commit()
             result = db_session.query(
-                Study.acc, Study.revision_number, Study.revision_datetime, Study.status, Study.studysize
-            ). all()
+                Study.acc,
+                Study.revision_number,
+                Study.revision_datetime,
+                Study.status,
+                Study.studysize,
+            ).all()
             if result:
                 studies = list(result)
                 studies.sort(
@@ -351,11 +382,11 @@ if __name__ == "__main__":
         (x["acc"], x["studysize"])
         for x in studies
         if x["revision_number"] == 1
-        # if int(x["acc"].replace("MTBLS", "").replace("REQ", "")) >= 10000 
+        # if int(x["acc"].replace("MTBLS", "").replace("REQ", "")) >= 10000
     ]
     selected_studies.sort(key=lambda x: x[1])
-    studies = [ x[0] for x in selected_studies ]
-    
+    studies = [x[0] for x in selected_studies]
+
     # studies = ["MTBLS8"]
     for study_id in studies:
         study: Study = StudyService.get_instance().get_study_by_acc(study_id)

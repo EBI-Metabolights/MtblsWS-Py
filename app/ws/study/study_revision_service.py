@@ -326,6 +326,37 @@ class StudyRevisionService:
                 raise e
 
     @staticmethod
+    def get_all_non_started_study_revision_tasks() -> list[StudyRevisionModel]:
+        with DBManager.get_instance().session_maker() as db_session:
+            try:
+                ten_minutes_ago = datetime.datetime.now(
+                    datetime.timezone.utc
+                ) - datetime.timedelta(minutes=10)
+
+                query = (
+                    db_session.query(StudyRevision)
+                    .join(Study, StudyRevision.accession_number == Study.acc)
+                    .filter(
+                        Study.revision_number == StudyRevision.revision_number,
+                        StudyRevision.status == StudyRevisionStatus.INITIATED.value,
+                        StudyRevision.revision_datetime <= ten_minutes_ago,
+                    )
+                )
+                study_revisions: list[StudyRevision] = query.all()
+                models = [
+                    StudyRevisionModel.model_validate(
+                        x, from_attributes=True
+                    ) for x in study_revisions
+                ]
+                return models
+                    
+            except Exception as e:
+                db_session.rollback()
+                raise e
+            finally:
+                db_session.rollback()
+
+    @staticmethod
     def update_study_revision_task_status(
         study_id: str,
         revision_number: int,
