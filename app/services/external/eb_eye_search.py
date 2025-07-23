@@ -52,13 +52,12 @@ class EbEyeSearchService():
     europe_pmc_provider_id = "1782"
     europe_pmc_pmid_src = "MED"
     content_type_xml = "xml"
+    email = get_settings().email.email_service.configuration.hpc_cluster_job_track_email_address
     
     @staticmethod
-    def export_public_studies(user_token: str, thomson_reuters: bool=False):
+    def export_public_studies(thomson_reuters: bool=False):
         start_time = time.time()
         study_list = get_public_studies()
-        email = EbEyeSearchService.get_email_by_token(user_token=user_token)
-        
         doc = Document()
         root = doc.createElement('database')
         doc.appendChild(root)
@@ -83,15 +82,13 @@ class EbEyeSearchService():
         logger.info("Data stored to DB!")
         processed_time = (time.time() - start_time)/60
         result = f"Processed study count - {i}; Process completed in {processed_time} minutes"
-        send_email("EB EYE public studies export completed", result, None, email, None)
+        send_email("EB EYE public studies export completed", result, None, EbEyeSearchService.email, None)
         return {"processed_studies": i, "completed_in": processed_time}
     
     @staticmethod
-    def export_europe_pmc(user_token: str):
+    def export_europe_pmc():
         start_time = time.time()
         study_list = get_public_studies()
-        email = EbEyeSearchService.get_email_by_token(user_token=user_token)
-        
         doc = Document()
         links = doc.createElement('links')
         doc.appendChild(links)
@@ -110,11 +107,11 @@ class EbEyeSearchService():
         processed_time = (time.time() - start_time)/60
         result = f"Processed study count - {i}; Process completed in {processed_time} minutes. \n  {EbEyeSearchService.linked_studies} Studies linked with EuropePMC. Those studies got {EbEyeSearchService.articles_linked} publications"
         logger.info(f"Processed study count - {i}; Process completed in {processed_time} minutes. \n  {EbEyeSearchService.linked_studies} Metabolights Studies linked with EuropePMC. Those studies got {EbEyeSearchService.articles_linked} publications")
-        send_email("EuropePMC export processing completed", result, None, email, None)
+        send_email("EuropePMC export processing completed", result, None, EbEyeSearchService.email, None)
         return {"processed_studies": i, "completed_in": processed_time}
     
     @staticmethod
-    def europe_publication_report(user_token: str, google_sheet_id: str):
+    def europe_publication_report(google_sheet_id: str):
         start_time = time.time()
         #study_list = get_public_studies()
         #study_list = ['MTBLS7519', 'MTBLS10757', 'MTBLS3923', 'MTBLS9845', 'MTBLS8577']
@@ -124,7 +121,6 @@ class EbEyeSearchService():
         g_sheet = getGoogleSheet(google_sheet_url, 'Study List',
                              google_sheet_api_dict)
         studies_list = g_sheet['STUDY_ID'].tolist()
-        email = EbEyeSearchService.get_email_by_token(user_token=user_token)
         study_str = "StudyId,HasPublication,PubMedId,DOI,DoiHit,TitleHit,PublicationStatus,StudyTitle,APIoutput"
         df = pd.DataFrame(columns=['StudyId', 'HasPublication', 'PubMedId', 'DOI', 'DoiHit', 'TitleHit', 'PublicationStatus', 'StudyTitle', 'APIOutPut'])
         study_id_list = []
@@ -191,7 +187,7 @@ class EbEyeSearchService():
         processed_time = (time.time() - start_time)/60
         server = os.uname()[1]
         result = f"Processed study count - {i}; Process completed in {processed_time} minutes. \n Processed by {server}"
-        send_email("Study Publication report process completed", result, None, email, None)
+        send_email("Study Publication report process completed", result, None, EbEyeSearchService.email, None)
         return {"processed_studies": i, "completed_in": processed_time}
     
     @staticmethod
@@ -771,16 +767,6 @@ class EbEyeSearchService():
             return str
         else:
             return ""
-        
-    @staticmethod
-    def get_email_by_token(user_token: str):
-        with DBManager.get_instance().session_maker() as db_session:
-            user = db_session.query(User.email).filter(User.apitoken == user_token).first()
-            if not user:
-                raise MetabolightsDBException("No user")
-            
-            email = user.email
-        return email
     
     @staticmethod
     def get_compound(compound_acc: str):
@@ -797,9 +783,8 @@ class EbEyeSearchService():
         return doc
     
     @staticmethod
-    def export_compounds(user_token: str):
+    def export_compounds():
         start_time = time.time()
-        email = EbEyeSearchService.get_email_by_token(user_token=user_token)
         compound_list = CompoundService.get_instance().get_all_compounds()
         doc = Document()
         root = doc.createElement('database')
@@ -823,7 +808,7 @@ class EbEyeSearchService():
         logger.info("Data stored to DB!")
         processed_time = (time.time() - start_time)/60
         result = f"Processed compounds count - {i}; Process completed in {processed_time} minutes"
-        send_email("EB EYE Compounds export completed", result, None, email, None)
+        send_email("EB EYE Compounds export completed", result, None, EbEyeSearchService.email, None)
         return {"processed_compounds": i, "completed_in": processed_time}
     
     @staticmethod
@@ -921,16 +906,15 @@ class EbEyeSearchService():
 if __name__ == '__main__':
     args = sys.argv[1]
     logger.info(f"Process for - {args}")
-    user_token = 'aa0e4e40-5f37-466c-a430-c77ac7a43aaa'
     eb_eye = EbEyeSearchService()
     if args == 'ebi':
-        eb_eye.export_public_studies(user_token=user_token)
+        eb_eye.export_public_studies()
     elif args == 'thomson':
-        eb_eye.export_public_studies(user_token=user_token, thomson_reuters=True)
+        eb_eye.export_public_studies(thomson_reuters=True)
     elif args == 'europepmc':
-        eb_eye.export_europe_pmc(user_token=user_token)
+        eb_eye.export_europe_pmc()
     elif args == 'compounds':
-        eb_eye.export_compounds(user_token=user_token)
+        eb_eye.export_compounds()
     else:
         logger.info(f"No Args passed so exiting!")
         
