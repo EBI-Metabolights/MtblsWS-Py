@@ -25,7 +25,7 @@ from app.tasks.common_tasks.curation_tasks.submission_model import (
 )
 from isatools import model
 
-from app.tasks.common_tasks.curation_tasks.submission_pipelin_utils import revert_db_status_task
+from app.tasks.common_tasks.curation_tasks.submission_pipeline_utils import revert_db_status_task
 from app.tasks.datamover_tasks.curation_tasks.submission_pipeline import (
     index_study_data_files_task,
     make_ftp_folder_readonly_task,

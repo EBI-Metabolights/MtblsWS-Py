@@ -11,7 +11,7 @@ from app.config import get_settings
 from app.services.storage_service.acl import Acl
 from app.tasks.common_tasks.curation_tasks.submission_model import StudySubmissionError
 
-from app.tasks.common_tasks.curation_tasks.submission_pipelin_utils import revert_db_status_task
+from app.tasks.common_tasks.curation_tasks.submission_pipeline_utils import revert_db_status_task
 from app.tasks.datamover_tasks.basic_tasks.ftp_operations import index_study_data_files
 from app.tasks.worker import MetabolightsTask, celery, report_internal_technical_issue
 from app.utils import MetabolightsException
