@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
     base=MetabolightsTask,
     default_retry_delay=1,
     max_retries=1,
-    name="app.tasks.common_tasks.curation_tasks.submission_pipeline_utils..revert_db_status_task",
+    name="app.tasks.common_tasks.curation_tasks.submission_pipeline_utils.revert_db_status_task",
 )
 def revert_db_status_task(self, params: dict[str, Any]):
     study_id = params.get("study_id")

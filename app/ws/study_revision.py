@@ -688,11 +688,11 @@ class StudyRevisionSyncTask(Resource):
             )
 
         task = sync_study_revision.apply_async(
-            kwargs={
+            kwargs={"params": {
                 "study_id": study_id,
                 "user_token": user_token,
                 "latest_revision": study.revision_number,
-            }
+            }}
         )
         # task = sync_study_revision.apply_async(kwargs={"study_id": study_id, "user_token": user_token})
 

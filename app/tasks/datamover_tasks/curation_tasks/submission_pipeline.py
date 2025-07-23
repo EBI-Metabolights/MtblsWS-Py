@@ -147,7 +147,7 @@ def backup_metadata_files_on_private_ftp(self, params: dict[str, Any]):
         logger.error(message)
 
     revert_ftp_folder_permission_task.apply_async(kwargs={"params": params})
-    revert_db_status_task.apply_async(kwargs={"params": params})
+    # revert_db_status_task.apply_async(kwargs={"params": params})
     params_str = json.dumps(params, indent=2)
     params_str = params_str.replace("\n", "<br/>")
     logger.error(f"Validate {study_id} task failed. <br/>{params_str}")
@@ -322,7 +322,7 @@ def index_study_data_files_task(self, params: dict[str, Any]):
         )
     except Exception as ex:
         revert_ftp_folder_permission_task.apply_async(kwargs={"params": params})
-        revert_db_status_task.apply_async(kwargs={"params": params})
+        # revert_db_status_task.apply_async(kwargs={"params": params})
         params_str = json.dumps(params, indent=2)
         params_str = params_str.replace("\n", "<br/>")
         logger.error(

@@ -107,7 +107,7 @@ class PrivateStudy(Resource):
                 first_public_date=study.first_public_date,
                 first_private_date=study.first_private_date,
             )
-        elif  current_status == StudyStatus.PROVISIONAL:
+        elif current_status == StudyStatus.PROVISIONAL:
             task_id = str(uuid.uuid4())
             try:
                 create_task(
@@ -118,15 +118,14 @@ class PrivateStudy(Resource):
                     f"Failed to start status update task. {str(ex)}"
                 )
 
+            # if current_status == StudyStatus.PROVISIONAL:
+            #     StudyStatusHelper.update_status(
+            #         study_id,
+            #         StudyStatus.PRIVATE.name.lower(),
+            #         first_public_date=study.first_public_date,
+            #         first_private_date=study.first_private_date,
+            #     )
 
-            if current_status == StudyStatus.PROVISIONAL:
-                StudyStatusHelper.update_status(
-                    study_id,
-                    StudyStatus.PRIVATE.name.lower(),
-                    first_public_date=study.first_public_date,
-                    first_private_date=study.first_private_date,
-                )
-            
             params = RevalidateStudyParameters(
                 task_name=f"Make {study_id} private",
                 study_id=study_id,
@@ -143,9 +142,9 @@ class PrivateStudy(Resource):
                 raise MetabolightsException(
                     f"Failed to start status update task. {str(ex)}"
                 )
-            
+
             task_status = StudyTaskStatus.EXECUTING
-        
+
         ftp_private_relative_root_path = get_private_ftp_relative_root_path()
         ftp_private_study_folder = study.acc.lower() + "-" + study.obfuscationcode
         ftp_private_folder_path = os.path.join(
