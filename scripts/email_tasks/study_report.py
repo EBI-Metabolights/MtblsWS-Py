@@ -204,7 +204,7 @@ def split_email_address_text(email_str=str) -> list[str]:
 if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,
-        format="[%(asctime)s] %(levelname)s [%(moduleName)s] %(message)s",
+        format="[%(asctime)s] %(levelname)s [%(module)s] %(message)s",
         datefmt="%d/%b/%Y %H:%M:%S",
         stream=sys.stdout,
     )
