@@ -25,6 +25,7 @@ from app.tasks.common_tasks.curation_tasks.submission_model import (
 )
 from isatools import model
 
+from app.tasks.common_tasks.curation_tasks.submission_pipelin_utils import revert_db_status_task
 from app.tasks.datamover_tasks.curation_tasks.submission_pipeline import (
     index_study_data_files_task,
     make_ftp_folder_readonly_task,
@@ -37,6 +38,7 @@ from app.tasks.worker import (
     report_internal_technical_issue,
 )
 from app.utils import MetabolightsException
+from app.ws.db.schemes import Study
 from app.ws.db.types import StudyStatus
 from app.ws.db_connection import update_study_status
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
@@ -245,6 +247,7 @@ def validate_study_task(self, params: dict[str, Any]):
                         "Study investigation file can not be found"
                     )
                 inv_study: model.Study = inv_study
+                
                 EmailService.get_instance().send_email_study_validation_failed(
                     task_name=task_name,
                     study_id=study_id,
@@ -265,6 +268,8 @@ def validate_study_task(self, params: dict[str, Any]):
     except Exception as ex:
         params["validate_study_task_status"] = False
         revert_ftp_folder_permission_task.apply_async(kwargs={"params": params})
+        revert_db_status_task.apply_async(kwargs={"params": params})
+ 
         params_str = json.dumps(params, indent=2)
         params_str = params_str.replace("\n", "<br/>")
         logger.error(
@@ -388,6 +393,7 @@ def from_provisional_to_private(self, params: dict[str, Any]):
         return params
     except Exception as ex:
         revert_ftp_folder_permission_task.apply_async(kwargs={"params": params})
+        revert_db_status_task.apply_async(kwargs={"params": params})
         params_str = json.dumps(params, indent=2)
         params_str = params_str.replace("\n", "<br/>")
         logger.error(
@@ -398,7 +404,6 @@ def from_provisional_to_private(self, params: dict[str, Any]):
             f"From provisional to private db status update task failed. <br/>{str(ex)}. <br/>{params_str}",
         )
         raise ex
-
 
 @celery.task(
     bind=True,

@@ -25,7 +25,7 @@ from app.tasks.common_tasks.curation_tasks.submission_pipeline import (
 )
 from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.db.schemes import User, Study
-from app.ws.db.types import CurationRequest, StudyRevisionStatus, StudyStatus, UserRole
+from app.ws.db.types import CurationRequest, StudyRevisionStatus, StudyStatus, StudyTaskStatus, UserRole
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
@@ -226,6 +226,7 @@ class StudyRevisions(Resource):
             "obfuscation_code": study.obfuscationcode,
             "study_table_id": study.id,
             "task_id": task_id,
+            "task_status": StudyTaskStatus.EXECUTING,
             "async_task": True,
         }
 

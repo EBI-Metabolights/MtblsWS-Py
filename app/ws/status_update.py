@@ -13,7 +13,7 @@ from flask_restful import Resource
 from flask_restful_swagger import swagger
 
 from app.ws.db.schemes import StudyTask
-from app.ws.db.types import CurationRequest, StudyStatus
+from app.ws.db.types import CurationRequest, StudyStatus, StudyTaskStatus
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.study_status_utils import StudyStatusHelper
@@ -75,10 +75,14 @@ class PrivateStudy(Resource):
             user_token = request.headers["user_token"]
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
-        study_status = StudyStatus(study.status)
-        if study_status == StudyStatus.PRIVATE:
+        current_curation_request = CurationRequest(study.curation_request)
+        current_status = StudyStatus(study.status)
+        if current_status == StudyStatus.PRIVATE:
             raise MetabolightsException(message="Study status is 'Private'")
-
+        if current_status not in (StudyStatus.PROVISIONAL, StudyStatus.PUBLIC):
+            raise MetabolightsException(
+                message="Only Provisional studies can be updated to 'Private'"
+            )
         current_task = get_task(
             study_id=study.reserved_submission_id, task_name="UPDATE_STUDY_STATUS"
         )
@@ -94,40 +98,54 @@ class PrivateStudy(Resource):
                 raise MetabolightsException(
                     f"There is a study status update task running. {current_task.id}"
                 )
+        task_id = None
+        task_status = None
+        if current_status == StudyStatus.PUBLIC:
+            StudyStatusHelper.update_status(
+                study_id,
+                StudyStatus.PRIVATE.name.lower(),
+                first_public_date=study.first_public_date,
+                first_private_date=study.first_private_date,
+            )
+        elif  current_status == StudyStatus.PROVISIONAL:
+            task_id = str(uuid.uuid4())
+            try:
+                create_task(
+                    study_id=study_id, task_name="UPDATE_STUDY_STATUS", message=task_id
+                )
+            except Exception as ex:
+                raise MetabolightsException(
+                    f"Failed to start status update task. {str(ex)}"
+                )
 
-        task_id = str(uuid.uuid4())
-        try:
-            create_task(
-                study_id=study_id, task_name="UPDATE_STUDY_STATUS", message=task_id
-            )
-        except Exception as ex:
-            raise MetabolightsException(
-                f"Failed to start status update task. {str(ex)}"
-            )
 
-        if study_status != StudyStatus.PROVISIONAL:
-            raise MetabolightsException(
-                message="Only Provisional studies can be updated to 'Private'"
+            if current_status == StudyStatus.PROVISIONAL:
+                StudyStatusHelper.update_status(
+                    study_id,
+                    StudyStatus.PRIVATE.name.lower(),
+                    first_public_date=study.first_public_date,
+                    first_private_date=study.first_private_date,
+                )
+            
+            params = RevalidateStudyParameters(
+                task_name=f"Make {study_id} private",
+                study_id=study_id,
+                obfuscation_code=study.obfuscationcode,
+                current_status=study.status,
+                target_status=StudyStatus.PRIVATE.value,
+                api_token=user_token,
             )
-
-        params = RevalidateStudyParameters(
-            task_name=f"Make {study_id} private",
-            study_id=study_id,
-            obfuscation_code=study.obfuscationcode,
-            current_status=study.status,
-            target_status=StudyStatus.PRIVATE.value,
-            api_token=user_token,
-        )
-        try:
-            start_make_study_private_pipeline.apply_async(
-                kwargs={"params": params.model_dump()}, task_id=task_id
-            )
-        except Exception as ex:
-            raise MetabolightsException(
-                f"Failed to start status update task. {str(ex)}"
-            )
-        current_curation_request = CurationRequest(study.curation_request)
-        current_status = StudyStatus(study.status)
+            try:
+                start_make_study_private_pipeline.apply_async(
+                    kwargs={"params": params.model_dump()}, task_id=task_id
+                )
+            except Exception as ex:
+                raise MetabolightsException(
+                    f"Failed to start status update task. {str(ex)}"
+                )
+            
+            task_status = StudyTaskStatus.EXECUTING
+        
         ftp_private_relative_root_path = get_private_ftp_relative_root_path()
         ftp_private_study_folder = study.acc.lower() + "-" + study.obfuscationcode
         ftp_private_folder_path = os.path.join(
@@ -150,7 +168,8 @@ class PrivateStudy(Resource):
             "obfuscation_code": study.obfuscationcode,
             "study_table_id": study.id,
             "task_id": task_id,
-            "async_task": True,
+            "task_status": task_status,
+            "async_task": True if task_id else False,
         }
 
 
@@ -229,7 +248,7 @@ class StudyStatusUpdateTask(Resource):
                 if current_task
                 else None,
             }
-            
+
         else:
             return {
                 "currentStudyId": study.acc,
@@ -397,7 +416,7 @@ class ProvisionalStudy(Resource):
                 f"{study.acc} status not updated to private in database."
             )
 
-        study = StudyService.get_instance().get_study_by_acc(study_id)
+        study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
         # return {
         #     "task_name": "make study provisional",
         #     "study_id": study_id,
@@ -428,6 +447,7 @@ class ProvisionalStudy(Resource):
             "obfuscation_code": study.obfuscationcode,
             "study_table_id": study.id,
             "task_id": None,
+            "task_status": None,
             "async_task": False,
         }
 

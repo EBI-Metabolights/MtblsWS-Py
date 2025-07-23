@@ -10,12 +10,16 @@ from typing import Any
 from app.config import get_settings
 from app.services.storage_service.acl import Acl
 from app.tasks.common_tasks.curation_tasks.submission_model import StudySubmissionError
+
+from app.tasks.common_tasks.curation_tasks.submission_pipelin_utils import revert_db_status_task
 from app.tasks.datamover_tasks.basic_tasks.ftp_operations import index_study_data_files
 from app.tasks.worker import MetabolightsTask, celery, report_internal_technical_issue
 from app.utils import MetabolightsException
 from app.ws.db.schemes import Study
 from app.tasks.datamover_tasks.basic_tasks import file_management
+from app.ws.db.types import StudyStatus
 from app.ws.study.study_service import StudyService
+from app.ws.study_status_utils import StudyStatusHelper
 
 
 logger = logging.getLogger(__name__)
@@ -143,6 +147,7 @@ def backup_metadata_files_on_private_ftp(self, params: dict[str, Any]):
         logger.error(message)
 
     revert_ftp_folder_permission_task.apply_async(kwargs={"params": params})
+    revert_db_status_task.apply_async(kwargs={"params": params})
     params_str = json.dumps(params, indent=2)
     params_str = params_str.replace("\n", "<br/>")
     logger.error(f"Validate {study_id} task failed. <br/>{params_str}")
@@ -167,7 +172,7 @@ def make_ftp_folder_readonly_task(self, params: dict[str, Any]):
     if task_name is None:
         raise MetabolightsException(
             "make_ftp_folder_readonly_task task: task_name is not valid"
-        )   
+        )
     if not study_id:
         raise MetabolightsException("validate_study task: Study id is not valid")
     message = ""
@@ -192,9 +197,7 @@ def make_ftp_folder_readonly_task(self, params: dict[str, Any]):
 
     params_str = json.dumps(params, indent=2)
     params_str = params_str.replace("\n", "<br/>")
-    logger.error(
-        f"Validate {study_id} task failed. <br/>{str(ex)}. <br/>{params_str}"
-    )
+    logger.error(f"Validate {study_id} task failed. <br/>{str(ex)}. <br/>{params_str}")
     report_internal_technical_issue(
         f"{task_name} task failed.",
         f"Make {study_id} Private FTP folder readonly task failed. <br>"
@@ -247,9 +250,7 @@ def revert_ftp_folder_permission_task(self, params: dict[str, Any]):
 
     params_str = json.dumps(params, indent=2)
     params_str = params_str.replace("\n", "<br/>")
-    logger.error(
-        f"Validate {study_id} task failed. <br/>{str(ex)}. <br/>{params_str}"
-    )
+    logger.error(f"Validate {study_id} task failed. <br/>{str(ex)}. <br/>{params_str}")
     report_internal_technical_issue(
         f"{task_name} task failed.",
         f"Revert {study_id} Private FTP folder permission task failed. <br>"
@@ -321,6 +322,7 @@ def index_study_data_files_task(self, params: dict[str, Any]):
         )
     except Exception as ex:
         revert_ftp_folder_permission_task.apply_async(kwargs={"params": params})
+        revert_db_status_task.apply_async(kwargs={"params": params})
         params_str = json.dumps(params, indent=2)
         params_str = params_str.replace("\n", "<br/>")
         logger.error(

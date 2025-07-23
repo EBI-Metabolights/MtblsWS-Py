@@ -95,6 +95,7 @@ celery = Celery(
         "app.tasks.datamover_tasks.curation_tasks.data_file_operations",
         "app.tasks.datamover_tasks.curation_tasks.metabolon",
         "app.tasks.datamover_tasks.curation_tasks.submission_pipeline",
+        "app.tasks.datamover_tasks.curation_tasks.submission_pipeline_utils",
         "app.tasks.system_monitor_tasks.heartbeat",
         "app.tasks.system_monitor_tasks.worker_maintenance",
         "app.tasks.system_monitor_tasks.integration_check",
