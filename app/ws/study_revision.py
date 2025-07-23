@@ -25,7 +25,13 @@ from app.tasks.common_tasks.curation_tasks.submission_pipeline import (
 )
 from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.db.schemes import User, Study
-from app.ws.db.types import CurationRequest, StudyRevisionStatus, StudyStatus, StudyTaskStatus, UserRole
+from app.ws.db.types import (
+    CurationRequest,
+    StudyRevisionStatus,
+    StudyStatus,
+    StudyTaskStatus,
+    UserRole,
+)
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
@@ -180,6 +186,7 @@ class StudyRevisions(Resource):
 
         service_user_token = get_settings().auth.service_account.api_token
         inputs = MakeStudyPublicParameters(
+            task_name=f"Create {study.acc} revision  {study.revision_number}",
             study_id=study_id,
             obfuscation_code=study.obfuscationcode,
             api_token=service_user_token,
@@ -688,11 +695,13 @@ class StudyRevisionSyncTask(Resource):
             )
 
         task = sync_study_revision.apply_async(
-            kwargs={"params": {
-                "study_id": study_id,
-                "user_token": user_token,
-                "latest_revision": study.revision_number,
-            }}
+            kwargs={
+                "params": {
+                    "study_id": study_id,
+                    "user_token": user_token,
+                    "latest_revision": study.revision_number,
+                }
+            }
         )
         # task = sync_study_revision.apply_async(kwargs={"study_id": study_id, "user_token": user_token})
 
