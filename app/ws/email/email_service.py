@@ -1,6 +1,7 @@
 import logging
 import os.path
 from typing import List, Set, Union
+from typing import List, Set, Union
 
 from flask_mail import Mail, Message
 from jinja2 import Environment, PackageLoader, select_autoescape
@@ -58,6 +59,9 @@ class EmailService(object):
         bcc_mail_addresses=None,
         reply_to=None,
         fail_silently: bool = True,
+        bcc_mail_addresses=None,
+        reply_to=None,
+        fail_silently: bool = True,
     ):
         if not from_mail_address:
             from_mail_address = (
@@ -67,8 +71,12 @@ class EmailService(object):
             cc_mail_addresses = []
         if not bcc_mail_addresses:
             bcc_mail_addresses = []
+        if not bcc_mail_addresses:
+            bcc_mail_addresses = []
         if not isinstance(cc_mail_addresses, list):
             cc_mail_addresses = cc_mail_addresses.split(",")
+        if not isinstance(bcc_mail_addresses, list):
+            bcc_mail_addresses = bcc_mail_addresses.split(",")
         if not isinstance(bcc_mail_addresses, list):
             bcc_mail_addresses = bcc_mail_addresses.split(",")
         if not isinstance(to_mail_addresses, list):
@@ -77,13 +85,17 @@ class EmailService(object):
             recipients = to_mail_addresses
         if not reply_to:
             reply_to = from_mail_address
+        if not reply_to:
+            reply_to = from_mail_address
         msg = Message(
             subject=subject,
             sender=from_mail_address,
             recipients=recipients,
             cc=cc_mail_addresses,
             bcc=bcc_mail_addresses,
+            bcc=bcc_mail_addresses,
             html=body,
+            reply_to=reply_to,
             reply_to=reply_to,
         )
         try:
@@ -91,6 +103,8 @@ class EmailService(object):
         except Exception as exc:
             message = f"Sending email failed: subject= {subject} recipients:{str(recipients)} body={str(body)}\nError {str(exc)}"
             logger.error(message)
+            if not fail_silently:
+                raise exc
             if not fail_silently:
                 raise exc
 
@@ -102,12 +116,14 @@ class EmailService(object):
         user_email,
         from_mail_address=None,
         curation_mail_address: Union[str, List[str]] = None,
+        curation_mail_address: Union[str, List[str]] = None,
         additional_cc_emails=None,
     ):
         if not from_mail_address:
             from_mail_address = (
                 self.email_settings.email_service.configuration.no_reply_email_address
             )
+
 
         dev_email = get_settings().email.email_service.configuration.technical_issue_recipient_email_address
         recipients: Set[str] = set()
@@ -122,7 +138,22 @@ class EmailService(object):
             self.email_settings.email_service.configuration.curation_email_address
         )
         system_emails = {dev_email, default_curation_mail_address}
+        default_curation_mail_address = (
+            self.email_settings.email_service.configuration.curation_email_address
+        )
+        system_emails = {dev_email, default_curation_mail_address}
         if additional_cc_emails:
+            if isinstance(additional_cc_emails, list):
+                additional_cc_emails = [
+                    x for x in additional_cc_emails if x and x not in recipients
+                ]
+            else:
+                additional_cc_emails = [
+                    x
+                    for x in str(additional_cc_emails).split(",")
+                    if x and x not in recipients and x not in system_emails
+                ]
+
             if isinstance(additional_cc_emails, list):
                 additional_cc_emails = [
                     x for x in additional_cc_emails if x and x not in recipients
@@ -159,6 +190,7 @@ class EmailService(object):
             sender=from_mail_address,
             recipients=list(recipients),
             cc=additional_cc_emails,
+            bcc=list(bcc) if bcc else None,
             bcc=list(bcc) if bcc else None,
             html=body,
         )

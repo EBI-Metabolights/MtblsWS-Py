@@ -8,8 +8,6 @@ from app.ws.db.types import StudyTaskStatus
 from app.ws.study.study_service import StudyService
 from email_validator import validate_email
 
-from app.ws.tasks.db_track import complete_task, create_task
-
 logger = logging.getLogger(__name__)
 
 flask_app = get_flask_app()
@@ -80,3 +78,56 @@ def send_task_email(
             )
             return False
 
+
+def complete_task(study_id, task_name: str, status: str, message: str) -> StudyTask:
+    tasks = StudyService.get_instance().get_study_tasks(
+        study_id=study_id, task_name=task_name
+    )
+
+    with DBManager.get_instance().session_maker() as db_session:
+        if tasks:
+            task: StudyTask = tasks[0]
+            task.last_execution_message = message
+            task.last_execution_status = status
+            task.last_request_executed = task.last_request_time
+            db_session.add(task)
+            db_session.commit()
+        else:
+            logger.error("%s %s There is no task", study_id, task_name)
+            # raise Exception(f"{study_id} {task_name}. There is no task")
+
+
+def create_task(study_id, task_name: str) -> StudyTask:
+    tasks = StudyService.get_instance().get_study_tasks(
+        study_id=study_id, task_name=task_name
+    )
+    with DBManager.get_instance().session_maker() as db_session:
+        if tasks:
+            task: StudyTask = tasks[0]
+        else:
+            now = datetime.datetime.now(datetime.UTC)
+            task = StudyTask()
+            task.study_acc = study_id
+            task.task_name = task_name
+            task.last_request_time = now
+            task.last_execution_time = now
+            task.last_request_executed = now
+            task.last_execution_status = StudyTaskStatus.NOT_EXECUTED
+            task.last_execution_message = "Task is initiated."
+
+        if task.last_execution_status in {
+            StudyTaskStatus.NOT_EXECUTED,
+            StudyTaskStatus.EXECUTION_FAILED,
+        }:
+            task.last_execution_status = StudyTaskStatus.EXECUTING
+            task.last_execution_time = task.last_request_time
+            task.last_request_executed = task.last_execution_time
+            task.last_execution_message = "Task is initiated."
+            db_session.add(task)
+            db_session.commit()
+            return task
+        else:
+            raise Exception(
+                f"{study_id} task {task_name} failed. "
+                f"Task status is {task.last_execution_status}."
+            )
