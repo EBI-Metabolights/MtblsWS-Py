@@ -8,6 +8,7 @@ from app.config import get_settings
 from app.config.model.elasticsearch import ElasticsearchSettings
 from app.config.model.study import StudySettings
 
+from app.tasks.common_tasks.basic_tasks.send_email import send_technical_issue_email
 from app.utils import MetabolightsDBException, MetabolightsException, current_time
 from app.ws.db import models
 from app.ws.db.dbmanager import DBManager
@@ -18,6 +19,8 @@ from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app import application_path
 from elasticsearch import Elasticsearch
+
+from app.ws.tasks.db_track import delete_task, get_task, create_task
 
 logger = logging.getLogger('wslog')
 
@@ -329,6 +332,7 @@ class ElasticsearchService(object):
         
 
         def index_study():
+            email_task: StudyTask = get_task(0, "SEND_ELASTICSEARCH_FAIL_ERROR")
             try:
                 validations = include_validation_results
                 m_study = StudyService.get_instance().get_study_from_db_and_folder(study_id, user_token,
@@ -351,6 +355,8 @@ class ElasticsearchService(object):
                         task.last_execution_message = message
                         db_session.add(task)
                         db_session.commit()
+                    if email_task:
+                        delete_task(0, "SEND_ELASTICSEARCH_FAIL_ERROR")
                 logger.info(message)
             except Exception as e:
                 tasks = StudyService.get_instance().get_study_tasks(study_id=study_id, task_name=task_name)
@@ -366,6 +372,14 @@ class ElasticsearchService(object):
                         db_session.add(task)
                         db_session.commit()
                 logger.error(message)
+                
+                if not email_task and "UnavailableShardsException" in str(e):
+                    inputs = {
+                        "subject": "Elasticsearch Shard Error.",
+                        "body": f"Elasticsearch reindex task failed. <p> {str(e)}",
+                    }
+                    send_technical_issue_email.apply_async(kwargs=inputs)
+                    create_task(0, "SEND_ELASTICSEARCH_FAIL_ERROR")
                 if sync:
                     raise e
         if not sync:
