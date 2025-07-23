@@ -97,7 +97,7 @@ def send_email_for_new_accession_number(
     study_title: str,
     release_date: str,
     additional_cc_emails: Union[None, List[str]] = None,
-    study_contacts: str = "",
+    study_contacts: str = ""
 ):
     flask_app = get_flask_app()
     with flask_app.app_context():
@@ -139,7 +139,7 @@ def send_email_for_new_accession_number(
             previous_ftp_folder=previous_ftp_folder,
             new_ftp_folder=new_ftp_folder,
             additional_cc_emails=additional_cc_emails,
-            study_contacts=study_contacts,
+            study_contacts=study_contacts
         )
 
         return {

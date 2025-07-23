@@ -19,7 +19,7 @@
 import json
 import os
 from flask import request
-from flask_restful import Resource, abort, reqparse
+from flask_restful import Resource, abort
 from isatools.model import Investigation
 from marshmallow import ValidationError
 from flask_restful_swagger import swagger

@@ -6,9 +6,6 @@ from app.config import get_settings
 from app.services.cluster.hpc_client import HpcClient
 from app.services.cluster.hpc_utils import get_new_hpc_datamover_client
 from app.tasks.bash_client import BashClient
-from app.tasks.common_tasks.curation_tasks.submission_model import (
-    MakeStudyPublicParameters,
-)
 from app.tasks.worker import MetabolightsTask, celery, report_internal_technical_issue
 from app.utils import MetabolightsException, current_time
 from app.ws.db.dbmanager import DBManager
@@ -206,7 +203,6 @@ def sync_study_revision(self, params: dict[str, Any]):
 
     if not api_token:
         raise MetabolightsException("validate_study task: api_token is not valid")
-    
 
     logger.info(f"{study_id} rsync_metadata_files is running...")
     if params.get("test"):

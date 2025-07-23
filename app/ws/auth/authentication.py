@@ -20,7 +20,7 @@ from app.ws.auth.utils import (
     get_permission_by_study_id,
 )
 from app.ws.db.models import StudyAccessPermission, UserModel
-from app.ws.db.types import StudyStatus, UserRole, UserStatus
+from app.ws.db.types import UserRole
 from app.ws.redis.redis import RedisStorage, get_redis_server
 from app.ws.study.user_service import UserService
 

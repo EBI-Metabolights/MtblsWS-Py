@@ -1,12 +1,10 @@
 import logging
 import os.path
 from typing import List, Set, Union
-from typing import List, Set, Union
 
 from flask_mail import Mail, Message
 from jinja2 import Environment, PackageLoader, select_autoescape
 from app.config import get_settings
-import urllib.parse
 from app.config.model.email import EmailSettings
 
 
@@ -58,10 +56,7 @@ class EmailService(object):
         cc_mail_addresses=None,
         bcc_mail_addresses=None,
         reply_to=None,
-        fail_silently: bool = True,
-        bcc_mail_addresses=None,
-        reply_to=None,
-        fail_silently: bool = True,
+        fail_silently: bool = True
     ):
         if not from_mail_address:
             from_mail_address = (
@@ -93,9 +88,7 @@ class EmailService(object):
             recipients=recipients,
             cc=cc_mail_addresses,
             bcc=bcc_mail_addresses,
-            bcc=bcc_mail_addresses,
             html=body,
-            reply_to=reply_to,
             reply_to=reply_to,
         )
         try:
@@ -116,14 +109,12 @@ class EmailService(object):
         user_email,
         from_mail_address=None,
         curation_mail_address: Union[str, List[str]] = None,
-        curation_mail_address: Union[str, List[str]] = None,
         additional_cc_emails=None,
     ):
         if not from_mail_address:
             from_mail_address = (
                 self.email_settings.email_service.configuration.no_reply_email_address
             )
-
 
         dev_email = get_settings().email.email_service.configuration.technical_issue_recipient_email_address
         recipients: Set[str] = set()
@@ -143,17 +134,6 @@ class EmailService(object):
         )
         system_emails = {dev_email, default_curation_mail_address}
         if additional_cc_emails:
-            if isinstance(additional_cc_emails, list):
-                additional_cc_emails = [
-                    x for x in additional_cc_emails if x and x not in recipients
-                ]
-            else:
-                additional_cc_emails = [
-                    x
-                    for x in str(additional_cc_emails).split(",")
-                    if x and x not in recipients and x not in system_emails
-                ]
-
             if isinstance(additional_cc_emails, list):
                 additional_cc_emails = [
                     x for x in additional_cc_emails if x and x not in recipients
@@ -190,7 +170,6 @@ class EmailService(object):
             sender=from_mail_address,
             recipients=list(recipients),
             cc=additional_cc_emails,
-            bcc=list(bcc) if bcc else None,
             bcc=list(bcc) if bcc else None,
             html=body,
         )

@@ -8,7 +8,6 @@ from app.config import get_settings
 from app.config.model.elasticsearch import ElasticsearchSettings
 from app.config.model.study import StudySettings
 
-from app.study_folder_utils import convert_relative_to_real_path
 from app.utils import MetabolightsDBException, MetabolightsException, current_time
 from app.ws.db import models
 from app.ws.db.dbmanager import DBManager

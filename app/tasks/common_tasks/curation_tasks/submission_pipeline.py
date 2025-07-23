@@ -13,7 +13,6 @@ from app.tasks.common_tasks.basic_tasks.send_email import (
     get_study_contacts,
     get_submitters,
     send_email_for_new_accession_number,
-    send_generic_email,
 )
 from app.tasks.common_tasks.curation_tasks.study_revision import (
     prepare_study_revision,
