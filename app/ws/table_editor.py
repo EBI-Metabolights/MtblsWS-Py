@@ -1312,6 +1312,7 @@ class GetTsvFile(Resource):
         logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
         # Get the Assay table or create a new one if it does not already exist
         maf_file = False
+        col_hidden = False
         if file_basename.startswith("m_") and file_basename.endswith(".tsv"):
             maf_file = True
         try:
@@ -1325,6 +1326,7 @@ class GetTsvFile(Resource):
                         if header in default_maf_columns:
                             selected_columns.append(column)
                     file_df = read_tsv(file_name, selected_columns)
+                    col_hidden = True
                 else:
                     file_df = read_tsv(file_name)
             else:
@@ -1337,7 +1339,7 @@ class GetTsvFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(file_df, study_id, file_name_param)
         df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
-        return {'header': df_header, 'data': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict, 'columns_hidden': col_hidden}
 
 
 class TsvFileRows(Resource):
