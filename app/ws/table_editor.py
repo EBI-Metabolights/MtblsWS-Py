@@ -1336,34 +1336,28 @@ class GetTsvFile(Resource):
                         if non_default_columns_len > 0:
                             first_five_non_default_columns = non_default_columns[:5]
                             data_df = read_tsv(file_name, first_five_non_default_columns,nrows=10)
-                            ff_col_0 = first_five_non_default_columns[0]
-                            ff_col_1 = first_five_non_default_columns[1]
-                            ff_col_2 = first_five_non_default_columns[2]
-                            ff_col_3 = first_five_non_default_columns[3]
-                            ff_col_4 = first_five_non_default_columns[4]
                             for i in range(0, len(data_df)):
-                                if ff_col_0:
-                                    val = data_df.iloc[i][ff_col_0]
+                                val = data_df.iloc[i][first_five_non_default_columns[0]]
+                                if val:
+                                    sample_abundance = True
+                                    break
+                                if non_default_columns_len > 1:
+                                    val = data_df.iloc[i][first_five_non_default_columns[1]]
                                     if val:
                                         sample_abundance = True
                                         break
-                                if ff_col_1:
-                                    val = data_df.iloc[i][ff_col_1]
+                                if non_default_columns_len > 2:
+                                    val = data_df.iloc[i][first_five_non_default_columns[2]]
                                     if val:
                                         sample_abundance = True
                                         break
-                                if ff_col_2:
-                                    val = data_df.iloc[i][ff_col_2]
+                                if non_default_columns_len > 3:
+                                    val = data_df.iloc[i][first_five_non_default_columns[3]]
                                     if val:
                                         sample_abundance = True
                                         break
-                                if ff_col_3:
-                                    val = data_df.iloc[i][ff_col_3]
-                                    if val:
-                                        sample_abundance = True
-                                        break
-                                if ff_col_4:
-                                    val = data_df.iloc[i][ff_col_4]
+                                if non_default_columns_len > 4:
+                                    val = data_df.iloc[i][first_five_non_default_columns[4]]
                                     if val:
                                         sample_abundance = True
                                         break
