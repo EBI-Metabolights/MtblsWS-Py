@@ -58,7 +58,7 @@ def validate_mzml_files(study_id, study_path):
         study_id,
         "metabolon_pipeline",
     )
-    
+
     os.makedirs(parent, exist_ok=True)
     validated_files = os.path.join(parent, "validation_result.json")
     validation_results = {}
@@ -292,11 +292,12 @@ def convert_to_isa(study_location: str, study_id: str) -> Tuple[bool, str]:
         return False, str(exc)
 
 
-ss_id_pattern = re.compile(r"(.*)SSID Data.*\.csv", re.IGNORECASE)
+ss_id_pattern = re.compile(r"(.*)SSID_Data.*\.csv", re.IGNORECASE)
 
 
 def check_input_files(study_id: str, study_location: str):
-    samples_files_result = glob.iglob(os.path.join(study_location, "*SSID Data*.csv"))
+    logger.info("Study file location: %s", study_location)
+    samples_files_result = glob.iglob(os.path.join(study_location, "*SSID_Data*.csv"))
     samples_files = [x for x in samples_files_result]
     samples_files.sort()
     sample_ids: Set[str] = set()
@@ -309,11 +310,11 @@ def check_input_files(study_id: str, study_location: str):
             sample_ids.add(match_result)
     logger.info("SSID Files: ", ", ".join(samples_files))
     if len(sample_ids) == 0:
-        return False, "There are no *SSID Data*.csv file."
+        return False, "There is no *SSID_Data*.csv file."
     else:
-        search_pattern = "*Peak Area*.xlsx"
+        search_pattern = "*Peak_Area*.xlsx"
         for sample_id in sample_ids:
-            search_pattern = f"*{sample_id}*Peak Area*.xlsx"
+            search_pattern = f"*{sample_id}*Peak_Area*.xlsx"
             peak_table_paths = list(
                 glob.iglob(os.path.join(study_location, search_pattern))
             )
@@ -329,11 +330,11 @@ def check_input_files(study_id: str, study_location: str):
     for sample_id in sample_ids:
         if len(sample_ids) > 1:
             peak_tables_search = glob.iglob(
-                os.path.join(study_location, f"*{sample_id}*Peak Area*.xlsx")
+                os.path.join(study_location, f"*{sample_id}*Peak_Area*.xlsx")
             )
         else:
             peak_tables_search = glob.iglob(
-                os.path.join(study_location, "*Peak Area*.xlsx")
+                os.path.join(study_location, "*Peak_Area*.xlsx")
             )
         peak_table_paths: List[str] = [x for x in peak_tables_search]
         peak_table_paths.sort()
@@ -390,7 +391,7 @@ def create_isa_files(
         ]
     )
 
-    samples_files_result = glob.iglob(os.path.join(study_location, "*SSID Data*.csv"))
+    samples_files_result = glob.iglob(os.path.join(study_location, "*SSID_Data*.csv"))
     samples_files = [x for x in samples_files_result]
     samples_files.sort()
     sample_csv_map: Dict[str, DataFrame] = {}
@@ -446,11 +447,11 @@ def create_isa_files(
     for sample_id in sample_id_sample_name_map:
         if len(sample_id_sample_name_map) > 1:
             peak_tables_search = glob.iglob(
-                os.path.join(study_location, f"*{sample_id}*Peak Area*.xlsx")
+                os.path.join(study_location, f"*{sample_id}*Peak_Area*.xlsx")
             )
         else:
             peak_tables_search = glob.iglob(
-                os.path.join(study_location, "*Peak Area*.xlsx")
+                os.path.join(study_location, "*Peak_Area*.xlsx")
             )
         peak_table_paths: List[str] = [x for x in peak_tables_search]
         peak_table_paths.sort()
