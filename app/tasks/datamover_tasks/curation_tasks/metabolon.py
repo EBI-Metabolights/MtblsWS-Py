@@ -73,7 +73,7 @@ def metabolon_confirm(
         validation_message = "Could not validate all the mzML files"
         validation_success = False
         try:
-            validation_success, validation_message = validate_mzml_files(study_location)
+            validation_success, validation_message = validate_mzml_files(study_id, study_location)
             logger.info(
                 "%s on %s validate mzml task is successfull", study_id, study_location
             )
