@@ -102,7 +102,7 @@ class Metabolon(Resource):
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
         study_location = os.path.join(
             mounted_paths.cluster_private_ftp_root_path,
-            f"{study_id.lower()}-{study.acc}",
+            f"{study.acc.lower()}-{study.obfuscationcode}",
         )
 
         try:

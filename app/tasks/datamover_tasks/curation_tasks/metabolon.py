@@ -2,6 +2,8 @@ import datetime
 import json
 import logging
 import os
+import pathlib
+from app.config import get_settings
 from app.tasks.worker import MetabolightsTask, celery, send_email
 
 from app.utils import current_time
@@ -57,6 +59,12 @@ def metabolon_confirm(
         if input_file_check_success:
             message.update({"Input File check": "Successful"})
         else:
+            logger.error(
+                "%s on %s metabolon file check failed: %s",
+                study_id,
+                study_location,
+                input_file_check_message,
+            )
             message.update(
                 {"Input File check": "Failed", "result": input_file_check_message}
             )
@@ -158,10 +166,15 @@ def metabolon_confirm(
         )
 
 
-# if __name__ == '__main__':
-#     study_id = "MTBLS3476"
+# if __name__ == "__main__":
+#     study_id = "MTBLS980"
+
 #     settings = get_settings()
-#     study_root_path = pathlib.Path(settings.study.mounted_paths.study_metadata_files_root_path)
-#     target_root_path = pathlib.Path(settings.study.mounted_paths.study_internal_files_root_path)
+#     study_root_path = pathlib.Path(
+#         settings.study.mounted_paths.study_metadata_files_root_path
+#     )
+#     target_root_path = pathlib.Path(
+#         settings.study.mounted_paths.study_internal_files_root_path
+#     )
 #     study_location = study_root_path / study_id
 #     metabolon_confirm(study_id=study_id, study_location=str(study_location), email="")
