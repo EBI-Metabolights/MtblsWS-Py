@@ -67,6 +67,7 @@ def validate_mzml_files(study_id, study_path):
             validation_results = json.loads(validated_files)
     except Exception as ex:
         logger.error("Error while reading %s: %s", validated_files, str(ex))
+        validation_results = {}
         pass
     settings = get_settings()
     study_folder = study_path
@@ -130,12 +131,10 @@ def validate_mzml_file(file_path: str):
     try:
         logger.info("Validating mzML file " + file_path)
         status, result = validate_xml(xml=file_path, xmlschema=xmlschema)
-        if not status:
-            return status, result
+        return status, result["Error"]
     except Exception as e:
         return False, f"Error while validating file {file_path}: {str(e)}"
 
-    return status, result
 
 
 def validate_xml(xml=None, xmlschema=None) -> Tuple[bool, dict[str, str]]:
@@ -149,7 +148,8 @@ def validate_xml(xml=None, xmlschema=None) -> Tuple[bool, dict[str, str]]:
         print("Schema validation error. Invalid XML, schema validation failed: " + xml)
 
         return False, {"Error": "File " + xml + " is not a valid XML file"}
-
+    except Exception as ex:
+        return False, {"Error": str(ex)} 
     # validate against schema
     try:
         xmlschema.assertValid(doc)
@@ -158,7 +158,6 @@ def validate_xml(xml=None, xmlschema=None) -> Tuple[bool, dict[str, str]]:
     except etree.DocumentInvalid:
         print("Schema validation error. " + xml)
         return False, {"Error": "Can not validate the file " + xml}
-
 
 def to_isa_tab(study_id, input_folder, output_folder):
     try:
