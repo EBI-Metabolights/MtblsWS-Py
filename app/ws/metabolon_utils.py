@@ -68,7 +68,8 @@ def validate_mzml_files(study_id, study_path):
     except Exception as ex:
         logger.error("Error while reading %s: %s", validated_files, str(ex))
         validation_results = {}
-        pass
+    if not validation_results:
+        validation_results = {}
     settings = get_settings()
     study_folder = study_path
     xsd_path = settings.file_resources.mzml_xsd_schema_file_path
@@ -110,7 +111,7 @@ def validate_mzml_files(study_id, study_path):
                 # return False, f"Error while validating file {file}: {str(e)}"
             finally:
                 with open(validated_files, "w") as f:
-                    json.dump(f, validation_results)
+                    json.dump(validation_results, f)
     else:
         message = f"Study folder does not exist: {study_folder}"
         logger.error(message)
