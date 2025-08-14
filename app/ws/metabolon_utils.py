@@ -64,7 +64,7 @@ def validate_mzml_files(study_id, study_path):
     validation_results = {}
     try:
         if os.path.exists(validated_files):
-            json.loads(validation_results)
+            validation_results = json.loads(validated_files)
     except Exception as ex:
         logger.error("Error while reading %s: %s", validated_files, str(ex))
         pass
@@ -108,7 +108,7 @@ def validate_mzml_files(study_id, study_path):
                 logger.error(f"{file}: failed: {invalid_files[file]}")
                 # return False, f"Error while validating file {file}: {str(e)}"
             finally:
-                with open(validated_files) as f:
+                with open(validated_files, "w") as f:
                     json.dump(f, validation_results)
     else:
         message = f"Study folder does not exist: {study_folder}"
