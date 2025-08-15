@@ -64,7 +64,9 @@ def validate_mzml_files(study_id, study_path):
     validation_results = {}
     try:
         if os.path.exists(validated_files):
-            validation_results = json.loads(validated_files)
+            with open(validated_files, "r") as f:
+                validation_results = json.load(f)
+            logger.info("Loading previous mzML file validation result from %s", validated_files)
     except Exception as ex:
         logger.error("Error while reading %s: %s", validated_files, str(ex))
         validation_results = {}
