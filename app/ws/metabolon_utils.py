@@ -38,7 +38,13 @@ from app.utils import current_time
 from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
-from app.ws.utils import copy_file, get_year_plus_one, read_tsv, write_tsv
+from app.ws.utils import (
+    copy_file,
+    get_absolute_path,
+    get_year_plus_one,
+    read_tsv,
+    write_tsv,
+)
 
 """
 Utils
@@ -66,7 +72,9 @@ def validate_mzml_files(study_id, study_path):
         if os.path.exists(validated_files):
             with open(validated_files, "r") as f:
                 validation_results = json.load(f)
-            logger.info("Loading previous mzML file validation result from %s", validated_files)
+            logger.info(
+                "Loading previous mzML file validation result from %s", validated_files
+            )
     except Exception as ex:
         logger.error("Error while reading %s: %s", validated_files, str(ex))
         validation_results = {}
@@ -139,7 +147,6 @@ def validate_mzml_file(file_path: str):
         return False, f"Error while validating file {file_path}: {str(e)}"
 
 
-
 def validate_xml(xml=None, xmlschema=None) -> Tuple[bool, dict[str, str]]:
     # parse xml
     try:
@@ -152,7 +159,7 @@ def validate_xml(xml=None, xmlschema=None) -> Tuple[bool, dict[str, str]]:
 
         return False, {"Error": "File " + xml + " is not a valid XML file"}
     except Exception as ex:
-        return False, {"Error": str(ex)} 
+        return False, {"Error": str(ex)}
     # validate against schema
     try:
         xmlschema.assertValid(doc)
@@ -161,6 +168,7 @@ def validate_xml(xml=None, xmlschema=None) -> Tuple[bool, dict[str, str]]:
     except etree.DocumentInvalid:
         print("Schema validation error. " + xml)
         return False, {"Error": "Can not validate the file " + xml}
+
 
 def to_isa_tab(study_id, input_folder, output_folder):
     try:
@@ -348,8 +356,11 @@ def check_input_files(study_id: str, study_location: str):
     for peak_table_file_path in peak_table_paths:
         try:
             validate_peak_table(peak_table_file_path)
-        except Exception:
-            return False, f"Peak table validation failed for {peak_table_file_path}."
+        except Exception as ex:
+            return (
+                False,
+                f"Peak table validation failed for {peak_table_file_path}: {str(ex)}",
+            )
     return True, ""
 
 
@@ -489,12 +500,12 @@ def validate_peak_table(peak_table_file_path: str):
     metabolon_template_path = (
         get_settings().file_resources.study_partner_metabolon_template_path
     )
-    maf_template: DataFrame = read_tsv(
-        os.path.join(
-            metabolon_template_path,
-            "m_metabolite_profiling_mass_spectrometry_v2_maf.tsv",
-        )
+    annotation_file_template_path = os.path.join(
+        metabolon_template_path,
+        "m_metabolite_profiling_mass_spectrometry_v2_maf.tsv",
     )
+    annotation_file_template = get_absolute_path(annotation_file_template_path)
+    maf_template: DataFrame = read_tsv(annotation_file_template)
 
     maf_template = maf_template[0:0]
     main_table: DataFrame = pd.read_excel(
