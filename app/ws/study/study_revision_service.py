@@ -293,6 +293,7 @@ class StudyRevisionService:
                 updated_comments.append(comment)
             elif not license_updated:
                 comment.value = license_name
+                updated_comments.append(comment)
                 license_updated = True
         if not license_updated:
             updated_comments.append(model.Comment(name="License", value=license_name))
