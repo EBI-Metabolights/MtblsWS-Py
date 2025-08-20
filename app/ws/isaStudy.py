@@ -711,30 +711,36 @@ class StudyContacts(Resource):
     @swagger.operation(
         summary='Add new Study Contact',
         notes='''Add new Contact to a Study. <pre><code>
-{ 
-  "contacts": [
-    {
-      "firstName": "Joe",
-      "lastName": "Blogs",
-      "email": "joe.blogs@cam.ac.uk",
-      "affiliation": "University of Cambridge",
-      "address": "The Department of Biochemistry, The Sanger Building, 80 Tennis Court Road, Cambridge, CB2 1GA, UK.",
-      "fax": "01223123456",
-      "midInitials": "A",
-      "phone": "01223234567",
-      "roles": [
+{
+    "contacts": [
         {
-          "termAccession": "http://purl.obolibrary.org/obo/NCIT_C51826",
-          "annotationValue": "Grant Principal Investigator",
-          "termSource": {
-            "file": "http://data.bioontology.org/ontologies/EFO",
-            "name": "",
-            "version": "132"
-          }
+            "firstName": "Joe",
+            "lastName": "Blogs",
+            "email": "joe.blogs@cam.ac.uk",
+            "affiliation": "University of Cambridge",
+            "address": "The Department of Biochemistry, The Sanger Building, 80 Tennis Court Road, Cambridge, CB2 1GA, UK.",
+            "fax": "01223123456",
+            "midInitials": "A",
+            "phone": "01223234567",
+            "roles": [
+                {
+                    "termAccession": "http://purl.obolibrary.org/obo/NCIT_C51826",
+                    "annotationValue": "Grant Principal Investigator",
+                    "termSource": {
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "",
+                        "version": "132"
+                    }
+                }
+            ],
+            "comments": [
+                {
+                    "name": "Study Person ORCID",
+                    "value": "0000-0011-1163-1497"
+                }
+            ]
         }
-      ]
-    } 
-  ]
+    ]
 }
 
 </code></pre>''',
@@ -1018,30 +1024,36 @@ class StudyContacts(Resource):
         notes='''Update Contact associated with a Study.
               <br>
               <b>Use contact's email or full name as a parameter to update a single contact.</b><pre><code>
-{ 
-  "contacts": [
-      {
-        "firstName": "Joe",
-        "lastName": "Blogs",
-        "email": "joe.blogs@cam.ac.uk",
-        "affiliation": "University of Cambridge",
-        "address": "The Department of Biochemistry, The Sanger Building, 80 Tennis Court Road, Cambridge, CB2 1GA, UK.",
-        "fax": "01223123456",
-        "midInitials": "A",
-        "phone": "01223234567",
-        "roles": [
-          {
-            "termAccession": "http://purl.obolibrary.org/obo/NCIT_C51826",
-            "annotationValue": "Grant Principal Investigator",
-            "termSource": {
-              "file": "http://data.bioontology.org/ontologies/EFO",
-              "name": "",
-              "version": "132"
-            }
-          }
-        ]
-      }
-  ] 
+{
+    "contacts": [
+        {
+            "firstName": "Joe",
+            "lastName": "Blogs",
+            "email": "joe.blogs@cam.ac.uk",
+            "affiliation": "University of Cambridge",
+            "address": "The Department of Biochemistry, The Sanger Building, 80 Tennis Court Road, Cambridge, CB2 1GA, UK.",
+            "fax": "01223123456",
+            "midInitials": "A",
+            "phone": "01223234567",
+            "roles": [
+                {
+                    "termAccession": "http://purl.obolibrary.org/obo/NCIT_C51826",
+                    "annotationValue": "Grant Principal Investigator",
+                    "termSource": {
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "",
+                        "version": "132"
+                    }
+                }
+            ],
+            "comments": [
+                {
+                    "name": "Study Person ORCID",
+                    "value": "0000-0011-1163-1497"
+                }
+            ]
+        }
+    ]
 }
 
 </code></pre>''',
