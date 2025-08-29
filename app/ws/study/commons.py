@@ -138,9 +138,10 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service: Uni
         logger.info('Creating a new study upload folder for Study %s', study_id)
         raw_files_path = os.path.join(new_folder_name, "RAW_FILES")
         derived_files_path = os.path.join(new_folder_name, "DERIVED_FILES")
+        supplementary_files_path = os.path.join(new_folder_name, "SUPPLEMENTARY_FILES")
 
         logger.info(f"Creating folder {new_folder_name}")
-        folders = [new_folder_name, raw_files_path, derived_files_path]
+        folders = [new_folder_name, raw_files_path, derived_files_path, supplementary_files_path]
         private_ftp_sm.remote.create_folder(folders, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
         new_folder = True
 
