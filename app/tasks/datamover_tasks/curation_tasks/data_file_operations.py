@@ -143,6 +143,9 @@ def move_data_files(self, study_id: Union[None, str] = None, obfuscation_code: s
                 elif target_location == 'DERIVED_FILES':
                     new_relative_path = f"DERIVED_FILES/{f_name}"
                     target_path = os.path.join(files_path, new_relative_path)
+                elif target_location == 'SUPPLEMENTARY_FILES':
+                    new_relative_path = f"SUPPLEMENTARY_FILES/{f_name}"
+                    target_path = os.path.join(files_path, new_relative_path)
                 else:
                     target_path = os.path.join(recycle_bin_dir, f_name)
                 parent_directory = os.path.dirname(target_path)
