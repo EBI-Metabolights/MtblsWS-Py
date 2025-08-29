@@ -646,9 +646,9 @@ class StudyRawAndDerivedDataFiles(Resource):
         return ignore_list
 
     @swagger.operation(
-        summary="Move raw and drived data files to RAW_FILES, DERIVED_FILES or RECYCLE_BIN folder",
+        summary="Move raw and drived data files to RAW_FILES, DERIVED_FILES, SUPPLEMENTARY_FILES or RECYCLE_BIN folder",
         nickname="Move files",
-        notes="""Move files to RAW_FILES, DERIVED_FILES, or RECYCLE_BIN folder. <pre><code>
+        notes="""Move files to RAW_FILES, DERIVED_FILES, SUPPLEMENTARY_FILES or RECYCLE_BIN folder. <pre><code>
 {    
     "files": [
         {"name": "FILES/Sample/data.d"},
@@ -682,7 +682,7 @@ class StudyRawAndDerivedDataFiles(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["RAW_FILES", "DERIVED_FILES", "RECYCLE_BIN"],
+                "enum": ["RAW_FILES", "DERIVED_FILES", "SUPPLEMENTARY_FILES", "RECYCLE_BIN"],
             },
             {
                 "name": "override",
@@ -755,10 +755,11 @@ class StudyRawAndDerivedDataFiles(Resource):
         if not target_location or target_location not in (
             "RAW_FILES",
             "DERIVED_FILES",
+            "SUPPLEMENTARY_FILES",
             "RECYCLE_BIN",
         ):
             raise MetabolightsException(
-                http_code=400, message=f"Target location is not valid"
+                http_code=400, message="Target location is not valid"
             )
         # body content validation
         try:
@@ -766,11 +767,11 @@ class StudyRawAndDerivedDataFiles(Resource):
             data = data_dict["files"]
             if data is None:
                 raise MetabolightsException(
-                    http_code=412, message=f"Files are not defined"
+                    http_code=412, message="Files are not defined"
                 )
             files = data
         except (ValidationError, Exception):
-            raise MetabolightsException(http_code=412, message=f"Incorrect JSON")
+            raise MetabolightsException(http_code=412, message="Incorrect JSON")
 
         UserService.get_instance().validate_user_has_curator_role(user_token)
         StudyService.get_instance().get_study_by_acc(study_id)
@@ -938,9 +939,9 @@ class StudyRawAndDerivedDataFolder(Resource):
         return os.path.basename(os.path.abspath(os.path.join(study_folder, file)))
 
     @swagger.operation(
-        summary="Move raw and drived data folders into RAW_FILES, DERIVED_FILES or RECYCLE_BIN folder",
+        summary="Move raw and drived data folders into RAW_FILES, DERIVED_FILES, SUPPLEMENTARY_FILES or RECYCLE_BIN folder",
         nickname="Move folders",
-        notes="""Move folders to RAW_FILES, DERIVED_FILES, or RECYCLE_BIN folder<pre><code>
+        notes="""Move folders to RAW_FILES, DERIVED_FILES, SUPPLEMENTARY_FILES or RECYCLE_BIN folder<pre><code>
 {    
     "folders": [
         {"name": "POS"},
@@ -974,7 +975,7 @@ class StudyRawAndDerivedDataFolder(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["RAW_FILES", "DERIVED_FILES", "RECYCLE_BIN"],
+                "enum": ["RAW_FILES", "DERIVED_FILES", "SUPPLEMENTARY_FILES", "RECYCLE_BIN"],
             },
             {
                 "name": "override",
@@ -1048,6 +1049,7 @@ class StudyRawAndDerivedDataFolder(Resource):
         if not target_location or target_location not in (
             "RAW_FILES",
             "DERIVED_FILES",
+            "SUPPLEMENTARY_FILES"
             "RECYCLE_BIN",
         ):
             abort(400, message="target location is invalid or not defined")
@@ -1089,6 +1091,7 @@ class StudyRawAndDerivedDataFolder(Resource):
 
         raw_data_dir = os.path.abspath(os.path.join(study_path, "RAW_FILES"))
         derived_data_dir = os.path.abspath(os.path.join(study_path, "DERIVED_FILES"))
+        supplementary_data_dir = os.path.abspath(os.path.join(study_path, "SUPPLEMENTARY_FILES"))
         excluded_folder_set.add(raw_data_dir)
         excluded_folder_set.add(derived_data_dir)
 
@@ -1099,6 +1102,8 @@ class StudyRawAndDerivedDataFolder(Resource):
             os.makedirs(raw_data_dir, exist_ok=True)
         elif target_location == "DERIVED_FILES":
             os.makedirs(derived_data_dir, exist_ok=True)
+        if target_location == "SUPPLEMENTARY_FILES":
+            os.makedirs(supplementary_data_dir, exist_ok=True)
         else:
             os.makedirs(recycle_bin_dir, exist_ok=True)
 
@@ -1136,6 +1141,14 @@ class StudyRawAndDerivedDataFolder(Resource):
                     elif target_location == "DERIVED_FILES":
                         target_path = os.path.abspath(
                             os.path.join(derived_data_dir, base_name)
+                        )
+                    elif target_location == "DERIVED_FILES":
+                        target_path = os.path.abspath(
+                            os.path.join(derived_data_dir, base_name)
+                        )
+                    elif target_location == "SUPPLEMENTARY_FILES":
+                        target_path = os.path.abspath(
+                            os.path.join(supplementary_data_dir, base_name)
                         )
                     else:
                         target_path = os.path.abspath(
