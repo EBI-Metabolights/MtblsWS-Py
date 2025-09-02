@@ -25,7 +25,7 @@ import subprocess
 from flask import Flask
 from flask_restful import abort
 from pubchempy import get_compounds
-from zeep import Client
+from zeep import Client, helpers
 from unidecode import unidecode
 from app.config import get_settings
 from app import application_path
@@ -47,6 +47,7 @@ from app.ws.study.study_service import StudyService
 from app.ws.utils import read_tsv, write_tsv, safe_str
 from chembl_structure_pipeline.standardizer import parse_molblock, update_mol_valences
 from rdkit import Chem
+from app.ws.chebi.settings import get_chebi_ws_settings
 
 logger = logging.getLogger('wslog')
 
@@ -1862,6 +1863,62 @@ def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_t
 
     return chebi_id, inchi, inchikey, name, smiles, formula, search_type
 
+
+def direct_chebi_search_v2(search_term=""):
+    chebi_ws2_url = get_chebi_ws_settings().chebi_ws_wsdl
+    chebi_es_search = f'{chebi_ws2_url}/public/es_search/?'
+    try:
+        print_log(f"-- Querying ChEBI web services v2 with term {search_term}")
+        url = f'{chebi_es_search}term={search_term}&page=1&size=15'
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            json_resp = resp.json()
+            result = json_resp['results'][0]
+            if json_resp['results']:
+                result = json_resp['results'][0]
+                chebi_id = result['_source']['chebi_accession']
+            return chebi_id
+    except Exception as e:
+        print_log(' -- Error querying ChEBI ws2. Error ' + str(e), mode='error')
+        return ""
+        
+def get_complete_chebi_entity_v2(chebi_id=""):
+    chebi_ws2_url = get_chebi_ws_settings().chebi_ws_wsdl
+    chebi_compound_api = f'{chebi_ws2_url}/public/compound/'
+    try:
+        print_log(f"-- Querying ChEBI web services v2 with ChebiID {chebi_id}")
+        url = f'{chebi_compound_api}{chebi_id}/?only_ontology_parents=false&only_ontology_children=false'
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data:
+                entity = helpers.serialize_object(data, dict)
+                return entity
+    
+    except Exception as e:
+        print_log(' -- Error querying ChEBI ws2. Error ' + str(e), mode='error')
+        return {}
+
+def get_all_ontology_children_in_path(acid_chebi_id="", relation="is_a", three_star_only="false"):
+    chebi_ws2_url = get_chebi_ws_settings().chebi_ws_wsdl
+    chebi_ontology_api = f'{chebi_ws2_url}/public/ontology/all_children_in_path/'
+    chebi_ids = []
+    try:
+        print_log(f"-- Querying ChEBI web services v2 with ChebiID - {acid_chebi_id} for get_all_ontology_children_in_path ")
+        url = f"{chebi_ontology_api}?relation={relation}&entity={acid_chebi_id}&three_star_only={three_star_only}&page=1&size=15&download=false"
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            json_resp = resp.json()
+            if json_resp['results']:
+                results = json_resp['results']
+                for result in results:
+                    chebi_id = result['_source']['chebi_accession']
+                    chebi_ids.append(chebi_id)
+            return chebi_ids
+    except Exception as e:
+        print_log(' -- Error querying ChEBI ws2. Error ' + str(e), mode='error')
+        return chebi_ids
+
 def check_chemspider_api(inchikey='BSYNRYMUTXBXSQ-UHFFFAOYSA-N'):
     chemspider_search_status = 'Failure'
     csurl_base = 'http://www.chemspider.com/InChI.asmx/InChIKeyToCSID?inchi_key='
@@ -1968,12 +2025,12 @@ def create_pubchem_df(maf_df):
 
     return pubchem_df
 
-def check_chebi_api():
+def check_chebi_api(search_term='BSYNRYMUTXBXSQ-UHFFFAOYSA-N'):
     status = 'Failure'
+    chebi_ws2_url = get_chebi_ws_settings().chebi_ws_wsdl
+    chebi_es_search = f'{chebi_ws2_url}/public/es_search/?'
     try:
-        url = get_settings().chebi.service.connection.chebi_ws_wsdl
-        
-        print_log("Checking CHEBI API...   ", mode='info')
+        url = f'{chebi_es_search}term={search_term}&page=1&size=15'
         resp = requests.get(url, timeout=10)
         if resp.status_code == 200:
             status = 'Success'
