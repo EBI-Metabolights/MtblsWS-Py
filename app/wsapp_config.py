@@ -35,7 +35,7 @@ from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.wsproxy import get_chebi_ws_proxy
 from app.ws.chebi_workflow import ChEBIPipeLine, ChEBIPipeLineLoad, SplitMaf
-from app.ws.chebi_ws import ChebiEntity, ChebiImageProxy, ChebiLiteEntity
+from app.ws.chebi_ws import ChebiEntity, ChebiImageProxy, ChebiLiteEntity, ChebiOntologyChildren
 from app.ws.cluster_jobs import LsfUtils
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.compress import CompressRawDataFolders
@@ -395,8 +395,9 @@ def initialize_app(flask_app):
     api.add_resource(ZipSpectraFiles, res_path + "/v2/zip-spectra-files")
     api.add_resource(curation_log, res_path + "/v2/curation_log")
 
-    api.add_resource(ChebiLiteEntity, res_path + "/chebi/chebi-ids/<string:compound_name>")
-    api.add_resource(ChebiEntity, res_path + "/chebi/entities/<string:chebi_id>")
+    api.add_resource(ChebiLiteEntity, res_path + "/chebi-v2/search")
+    api.add_resource(ChebiEntity, res_path + "/chebi-v2/entities/<string:chebi_id>")
+    api.add_resource(ChebiOntologyChildren, res_path + "/chebi-v2/all-ontology-children/<string:acid_chebi_id>")
 
     api.add_resource(MtblsStudyFolders, res_path + "/ebi-internal/<string:study_id>/study-folders/maintain")
     api.add_resource(CompressRawDataFolders, res_path + "/ebi-internal/<string:study_id>/study-folders/compress-raw-data-folders")
