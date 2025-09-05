@@ -8,9 +8,11 @@ from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from app.config import get_settings
 
+
+from app.ws.chebi.chebi_utils import chebi_search_v2, get_complete_chebi_entity_v2
 from app.ws.chebi.wsproxy import ChebiWsException
 from app.ws.utils import log_request
-from app.ws.chebi_pipeline_utils import direct_chebi_search_v2,get_complete_chebi_entity_v2, get_all_ontology_children_in_path
+from app.ws.chebi_pipeline_utils import get_all_ontology_children_in_path
 
 logger = logging.getLogger(__file__)
 
@@ -73,12 +75,12 @@ class ChebiLiteEntity(Resource):
                 inchi_keys = query['inchi_keys']
                 if inchi_keys:
                     for inchi_key in inchi_keys:
-                        search_result = direct_chebi_search_v2(search_term=inchi_key)
+                        search_result = chebi_search_v2(search_term=inchi_key)
                         inchi_key_result.append({inchi_key:search_result})
                 names = query['names']
                 if names:
                     for name in names:
-                        search_result = direct_chebi_search_v2(search_term=name)
+                        search_result = chebi_search_v2(search_term=name)
                         name_search_result.append({name:search_result})
                 
         except ChebiWsException as e:

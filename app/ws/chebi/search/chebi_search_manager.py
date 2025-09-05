@@ -1,13 +1,18 @@
 import logging
 from urllib import parse
 
+from flask import abort
+
+from app.ws.chebi.chebi_utils import chebi_search_v2, get_complete_chebi_entity_v2
 from app.ws.chebi.models import OntologyDataItem
 from app.ws.chebi.search import commons
 from app.ws.chebi.search import utils
+
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.search.models import CompoundSearchResponseModel, CompoundSearchResultModel, SearchResource
 from app.ws.chebi.types import SearchCategory, StarsCategory
 from app.ws.chebi.wsproxy import ChebiWsException
+
 
 logger = logging.getLogger(__file__)
 
@@ -40,9 +45,21 @@ class ChebiSearchManager(object):
 
         response = CompoundSearchResponseModel()
         if "chebi" in database_id.lower():
-            result_model = commons.fill_with_complete_entity(database_id, self.ws_proxy)
-            if result_model and result_model.databaseId:
-                response.content.append(result_model)
+            try:
+                complete_entity_v2 = get_complete_chebi_entity_v2(chebi_id=database_id)
+                if not complete_entity_v2:
+                    return abort(404, message=f"Entity not found with ChEBI id {database_id}")
+                compound_search_result_v2 = CompoundSearchResultModel(
+                    name=complete_entity_v2["name"],
+                    inchi=complete_entity_v2["default_structure"]["standard_inchi"] or "",
+                    databaseId=database_id,
+                    formula=complete_entity_v2["chemical_data"]["formula"] or "",
+                    smiles=complete_entity_v2["default_structure"]["smiles"] or "",
+                    search_resource="CHEBI"
+                )
+                response.content.append(compound_search_result_v2)
+            except ChebiWsException as e:
+                abort(501, message=f"Remote server error {e.message}")
 
         if not response.content:
             response.message = f"No match found for {database_id}"
@@ -105,27 +122,24 @@ class ChebiSearchManager(object):
         if name_match:
             self._search_and_fill_by_name(compound_name, name_match, response)
         else:
-            ws_proxy = self.ws_proxy
-
+            chebi_id_v2 = chebi_search_v2(search_term=compound_name)
+            if not chebi_id_v2:
+                abort(400, message="Invalid ChEBI id")
             try:
-                result = ws_proxy.get_lite_entity_list(search_text=compound_name,
-                                                       search_category=SearchCategory.ALL_NAMES,
-                                                       maximum_results=200, stars=StarsCategory.ALL)
+                complete_entity_v2 = get_complete_chebi_entity_v2(chebi_id=chebi_id_v2)
+                if not complete_entity_v2:
+                    return abort(404, message=f"Entity not found with ChEBI id {chebi_id_v2}")
+                compound_search_result_v2 = CompoundSearchResultModel(
+                    name=complete_entity_v2["name"],
+                    inchi=complete_entity_v2["default_structure"]["standard_inchi"] or "",
+                    databaseId=chebi_id_v2,
+                    formula=complete_entity_v2["chemical_data"]["formula"] or "",
+                    smiles=complete_entity_v2["default_structure"]["smiles"] or "",
+                    search_resource="CHEBI"
+                )
+                response.content.append(compound_search_result_v2)
             except ChebiWsException as e:
-                logger.error(f"Error while chebi ws call: {compound_name}, {e.message}")
-                response.message = "An error was occurred:"
-                response.err = e.message
-                return
-
-            if result:
-                found_chebi_id = self._search_name_and_synonyms(compound_name, result)
-                if found_chebi_id:
-                    checked_chebi_id = self._check_for_anion_case(compound_name, found_chebi_id)
-                    result_model = commons.fill_with_complete_entity(checked_chebi_id, self.ws_proxy)
-                    if result_model:
-                        response.content.append(result_model)
-            else:
-                logger.error(f"No result after chebi ws call: {compound_name}")
+                abort(501, message=f"Remote server error {e.message}")
 
     def _search_and_fill_by_name(self, compound_name, name_match, response):
         name_match_compound_name = name_match[CuratedMetaboliteTable.COMPOUND_INDEX]

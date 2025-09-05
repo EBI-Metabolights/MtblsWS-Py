@@ -1,4 +1,7 @@
 from typing import Union
+
+from flask import abort
+from app.ws.chebi.chebi_utils import chebi_search_v2, get_complete_chebi_entity_v2
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.search.models import CompoundSearchResultModel, SearchResource, CompoundSearchResponseModel
 from app.ws.chebi.search.utils import get_term_in_source, find_term_index_in_source
@@ -77,18 +80,21 @@ def search_hits_with_search_category(search_name: str,
         fill_from_metabolite_table(index, name_match, result)
         response.content.append(result)
     else:
-        if not ws_proxy:
-            ws_proxy = get_chebi_ws_proxy()
+        chebi_id_v2 = chebi_search_v2(search_term=search_name)
+        if not chebi_id_v2:
+            abort(400, message="Invalid ChEBI id")
         try:
-            result = ws_proxy.get_lite_entity_list(search_text=search_name, search_category=search_category,
-                                                   maximum_results=200, stars=stars)
+            complete_entity_v2 = get_complete_chebi_entity_v2(chebi_id=chebi_id_v2)
+            if not complete_entity_v2:
+                return abort(404, message=f"Entity not found with ChEBI id {chebi_id_v2}")
+            compound_search_result_v2 = CompoundSearchResultModel(
+                name=complete_entity_v2["name"],
+                inchi=complete_entity_v2["default_structure"]["standard_inchi"] or "",
+                databaseId=chebi_id_v2,
+                formula=complete_entity_v2["chemical_data"]["formula"] or "",
+                smiles=complete_entity_v2["default_structure"]["smiles"] or "",
+                search_resource="CHEBI"
+            )
+            response.content.append(compound_search_result_v2)
         except ChebiWsException as e:
-            response.message = "An error was occurred"
-            response.err = e.message
-            return
-
-        if result:
-            entity = result[0]
-            result_model = fill_with_complete_entity(entity.chebiId, ws_proxy)
-            if result_model:
-                response.content.append(result_model)
+            abort(501, message=f"Remote server error {e.message}")
