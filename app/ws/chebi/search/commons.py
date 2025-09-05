@@ -80,19 +80,19 @@ def search_hits_with_search_category(search_name: str,
         fill_from_metabolite_table(index, name_match, result)
         response.content.append(result)
     else:
-        chebi_id_v2 = chebi_search_v2(search_term=search_name)
-        if not chebi_id_v2:
+        chebi_id = chebi_search_v2(search_term=search_name)
+        if not chebi_id:
             abort(400, message="Invalid ChEBI id")
         try:
-            complete_entity_v2 = get_complete_chebi_entity_v2(chebi_id=chebi_id_v2)
-            if not complete_entity_v2:
-                return abort(404, message=f"Entity not found with ChEBI id {chebi_id_v2}")
+            complete_entity = get_complete_chebi_entity_v2(chebi_id=chebi_id)
+            if not complete_entity:
+                return abort(404, message=f"Entity not found with ChEBI id {chebi_id}")
             compound_search_result_v2 = CompoundSearchResultModel(
-                name=complete_entity_v2["name"],
-                inchi=complete_entity_v2["default_structure"]["standard_inchi"] or "",
-                databaseId=chebi_id_v2,
-                formula=complete_entity_v2["chemical_data"]["formula"] or "",
-                smiles=complete_entity_v2["default_structure"]["smiles"] or "",
+                name=complete_entity["name"],
+                inchi=complete_entity["default_structure"]["standard_inchi"] or "",
+                databaseId=chebi_id,
+                formula=complete_entity["chemical_data"]["formula"] or "",
+                smiles=complete_entity["default_structure"]["smiles"] or "",
                 search_resource="CHEBI"
             )
             response.content.append(compound_search_result_v2)
