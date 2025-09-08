@@ -8,7 +8,6 @@ from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from app.config import get_settings
 
-
 from app.ws.chebi.chebi_utils import chebi_search_v2, get_complete_chebi_entity_v2
 from app.ws.chebi.wsproxy import ChebiWsException
 from app.ws.utils import log_request
