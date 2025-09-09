@@ -39,20 +39,21 @@ from app.config import get_settings
 from app.study_folder_utils import convert_relative_to_real_path
 from app.utils import current_time, ttl_cache
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 
 
 class Entity(BaseModel):
     name: str = ""
-    iri: str  = ""
-    onto_name: str  = ""
-    provenance_name: str  = ""
-    zooma_confidence: str  = ""
-    definition: str  = ""
-    provenance_uri: str =""
+    iri: str = ""
+    onto_name: str = ""
+    provenance_name: str = ""
+    zooma_confidence: str = ""
+    definition: str = ""
+    provenance_uri: str = ""
 
     def onto_str(self):
         return f"{self.onto_name}:{self.name}:{self.iri}"
+
 
 class factor(object):
     def __init__(self, studyID, name, type, iri):
@@ -67,81 +68,128 @@ class Descriptor(object):
         self.studyID = studyID
         self.design_type = design_type
         self.iri = iri
-        
+
+
 class MetaboLightsEntity(BaseModel):
     label: str = ""
     iri: str = ""
     description: str = ""
     children: Dict[str, MetaboLightsEntity] = {}
 
+
 MetaboLightsEntity.model_rebuild()
 
+
 class FilterType(int, Enum):
-    EXACT_MATCH=0
-    STARTS_WITH=1
-    CONTAINS=2
+    EXACT_MATCH = 0
+    STARTS_WITH = 1
+    CONTAINS = 2
 
-def filter_term_label(filter_type: FilterType, keyword: str, entity: Entity, case_insensitive: bool=True):
-    return filter_term_by_keyword(filter_type=filter_type, keyword=keyword, current_value=entity.name, case_insensitive=case_insensitive)
 
-def filter_term_definition(filter_type: FilterType, keyword: str, entity: Entity, case_insensitive: bool=True):
-    return filter_term_by_keyword(filter_type=filter_type, keyword=keyword, current_value=entity.definition, case_insensitive=case_insensitive)
-    
-def filter_term_by_keyword(filter_type: FilterType, keyword: str, current_value: str, case_insensitive: bool=True):
+def filter_term_label(
+    filter_type: FilterType, keyword: str, entity: Entity, case_insensitive: bool = True
+):
+    return filter_term_by_keyword(
+        filter_type=filter_type,
+        keyword=keyword,
+        current_value=entity.name,
+        case_insensitive=case_insensitive,
+    )
+
+
+def filter_term_definition(
+    filter_type: FilterType, keyword: str, entity: Entity, case_insensitive: bool = True
+):
+    return filter_term_by_keyword(
+        filter_type=filter_type,
+        keyword=keyword,
+        current_value=entity.definition,
+        case_insensitive=case_insensitive,
+    )
+
+
+def filter_term_by_keyword(
+    filter_type: FilterType,
+    keyword: str,
+    current_value: str,
+    case_insensitive: bool = True,
+):
     if filter_type == FilterType.EXACT_MATCH:
-        return keyword.lower() == current_value.lower() if case_insensitive else keyword == current_value
+        return (
+            keyword.lower() == current_value.lower()
+            if case_insensitive
+            else keyword == current_value
+        )
     elif filter_type == FilterType.STARTS_WITH:
-        return current_value.lower().startswith(keyword.lower()) if case_insensitive else current_value.startswith(keyword)    
+        return (
+            current_value.lower().startswith(keyword.lower())
+            if case_insensitive
+            else current_value.startswith(keyword)
+        )
     elif filter_type == FilterType.CONTAINS:
-        return keyword.lower() in current_value.lower() if case_insensitive else keyword in current_value
+        return (
+            keyword.lower() in current_value.lower()
+            if case_insensitive
+            else keyword in current_value
+        )
     return False
+
 
 class DefaultControlLists(BaseModel):
     control_lists: Dict[str, List[Entity]] = {}
     model_config = ConfigDict(alias_generator=to_camel)
-    
-class MetaboLightsOntology():
-    
+
+
+class MetaboLightsOntology:
     OBO_ONTOLOGY_PREFIX = "http://purl.obolibrary.org/obo"
     DEPRICATED_CLASS_IRI = "http://www.w3.org/2002/07/owl#DeprecatedClass"
+
     def __init__(self, ontology: Ontology) -> None:
         self.ontology = ontology
         self.label_set: Set[str] = set()
-        self.iri_set: Set[str] = set()  
-        self.entities: Dict[str, MetaboLightsEntity]  = {}
-        self.search_entities: Dict[str, Entity]  = {}
+        self.iri_set: Set[str] = set()
+        self.entities: Dict[str, MetaboLightsEntity] = {}
+        self.search_entities: Dict[str, Entity] = {}
         self.label_map: Dict[str, List[MetaboLightsEntity]] = {}
-        self.root_entities: Dict[str, Set[str]]  = {}
-        self.branch_map: Dict[str, List[Entity]]  = {}
+        self.root_entities: Dict[str, Set[str]] = {}
+        self.branch_map: Dict[str, List[Entity]] = {}
         self.sorted_search_entities: List[Entity] = []
         self.initiate()
         default_list: DefaultControlLists = DefaultControlLists()
         default_list.control_lists = self.branch_map
         self.control_lists: DefaultControlLists = default_list
-        self.control_lists_dict: Dict[str, Any] = self.control_lists.model_dump(by_alias=True)
+        self.control_lists_dict: Dict[str, Any] = self.control_lists.model_dump(
+            by_alias=True
+        )
 
-    def get_default_control_lists(self, name: str=''):
+    def get_default_control_lists(self, name: str = ""):
         if name:
             default_list: DefaultControlLists = DefaultControlLists()
-            default_list.control_lists={name: self.branch_map[name]}
-            return default_list.model_dump(by_alias=True) if name in self.branch_map else {}
+            default_list.control_lists = {name: self.branch_map[name]}
+            return (
+                default_list.model_dump(by_alias=True)
+                if name in self.branch_map
+                else {}
+            )
         if not self.control_lists.control_lists:
             self.control_lists.control_lists = self.branch_map
             self.control_lists_dict = self.control_lists.model_dump(by_alias=True)
         return self.control_lists_dict
 
     def get_control_lists_file_path(self):
-        file_path = os.path.join(get_settings().server.log.log_path, f"temp_control_list_{socket.gethostname()}.json")
+        file_path = os.path.join(
+            get_settings().server.log.log_path,
+            f"temp_control_list_{socket.gethostname()}.json",
+        )
         if not os.path.exists(file_path):
             with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(self.control_lists_dict, f, indent=4)
         return file_path
 
-
     def get_branch_entities(self, name: str) -> List[Entity]:
         if not name:
             return self.sorted_search_entities
-        
+
         if name in self.branch_map:
             return self.branch_map[name]
         return []
@@ -153,55 +201,112 @@ class MetaboLightsOntology():
             return [self.search_entities[iri]]
         return []
 
-    def search_ontology_entities(self, label: str="", branch: str="", include_contain_matches: bool = True, include_case_insensitive_matches: bool = True, limit: int=50, filter_method = filter_term_label) -> List[Entity]:
+    def search_ontology_entities(
+        self,
+        label: str = "",
+        branch: str = "",
+        include_contain_matches: bool = True,
+        include_case_insensitive_matches: bool = True,
+        limit: int = 50,
+        filter_method=filter_term_label,
+    ) -> List[Entity]:
         entities = self.get_branch_entities(branch)
-        
+
         result = []
-        included_items: Set[str]= set()
+        included_items: Set[str] = set()
         if not label:
-            result = [x for x in entities if x.iri not in included_items and not included_items.add(x.iri)]
+            result = [
+                x
+                for x in entities
+                if x.iri not in included_items and not included_items.add(x.iri)
+            ]
             return result[0:limit] if len(result) > limit else result
-        result = [x for x in entities if filter_method(FilterType.EXACT_MATCH, label, x, case_insensitive=False) and x.iri not in included_items and not included_items.add(x.iri)]
-        sub_result = [x for x in entities if filter_method(FilterType.STARTS_WITH, label, x, case_insensitive=False) and x.iri not in included_items and not included_items.add(x.iri)]
+        result = [
+            x
+            for x in entities
+            if filter_method(FilterType.EXACT_MATCH, label, x, case_insensitive=False)
+            and x.iri not in included_items
+            and not included_items.add(x.iri)
+        ]
+        sub_result = [
+            x
+            for x in entities
+            if filter_method(FilterType.STARTS_WITH, label, x, case_insensitive=False)
+            and x.iri not in included_items
+            and not included_items.add(x.iri)
+        ]
         sub_result.sort(key=lambda x: x.name)
         result.extend(sub_result)
         if len(result) > limit:
             return result[0:limit]
         if include_case_insensitive_matches:
-            sub_result = [x for x in entities if filter_method(FilterType.EXACT_MATCH, label, x, case_insensitive=True)  and x.iri not in included_items and not included_items.add(x.iri)]
+            sub_result = [
+                x
+                for x in entities
+                if filter_method(
+                    FilterType.EXACT_MATCH, label, x, case_insensitive=True
+                )
+                and x.iri not in included_items
+                and not included_items.add(x.iri)
+            ]
             sub_result.sort(key=lambda x: x.name)
             result.extend(sub_result)
             if len(result) > limit:
                 return result[0:limit]
-            sub_result = [x for x in entities if filter_method(FilterType.STARTS_WITH, label, x, case_insensitive=True) and x.iri not in included_items and not included_items.add(x.iri)]
+            sub_result = [
+                x
+                for x in entities
+                if filter_method(
+                    FilterType.STARTS_WITH, label, x, case_insensitive=True
+                )
+                and x.iri not in included_items
+                and not included_items.add(x.iri)
+            ]
             sub_result.sort(key=lambda x: x.name)
             result.extend(sub_result)
             if len(result) > limit:
                 return result[0:limit]
             if include_contain_matches:
-                sub_result = [x for x in entities if filter_method(FilterType.CONTAINS, label, x, case_insensitive=True) and x.iri not in included_items and not included_items.add(x.iri)]
+                sub_result = [
+                    x
+                    for x in entities
+                    if filter_method(
+                        FilterType.CONTAINS, label, x, case_insensitive=True
+                    )
+                    and x.iri not in included_items
+                    and not included_items.add(x.iri)
+                ]
                 sub_result.sort(key=lambda x: x.name)
                 result.extend(sub_result)
         else:
             if include_contain_matches:
-                sub_result =  [x for x in entities if filter_method(FilterType.CONTAINS, label, x, case_insensitive=False)  and x.iri not in included_items and not included_items.add(x.iri)]
+                sub_result = [
+                    x
+                    for x in entities
+                    if filter_method(
+                        FilterType.CONTAINS, label, x, case_insensitive=False
+                    )
+                    and x.iri not in included_items
+                    and not included_items.add(x.iri)
+                ]
                 sub_result.sort(key=lambda x: x.name)
-                result.extend(sub_result)           
-    
+                result.extend(sub_result)
+
         return result[0:limit] if len(result) > limit else result
-    
-    
+
     def __add_entity(self, entity, children=None):
-        label =  re.sub(r"\s+", " ", str(entity.label[0]))
+        label = re.sub(r"\s+", " ", str(entity.label[0]))
         self.iri_set.add(entity.iri)
         self.label_set.add(label)
         if not children:
             children = {}
-        mtbls_entity = MetaboLightsEntity(label=label, iri=entity.iri, children=children)
+        mtbls_entity = MetaboLightsEntity(
+            label=label, iri=entity.iri, children=children
+        )
         if label not in self.label_map:
             self.label_map[label] = []
         in_list = False
-        
+
         for item in self.label_map[label]:
             if item.iri == mtbls_entity.iri:
                 in_list = True
@@ -209,91 +314,117 @@ class MetaboLightsOntology():
         if not in_list:
             self.label_map[label].append(mtbls_entity)
         if entity.iri not in self.search_entities:
-            self.search_entities[entity.iri] = Entity(name=label, iri=entity.iri, provenance_name='Metabolights', provenance_uri="http://www.ebi.ac.uk/metabolights/ontology")
+            self.search_entities[entity.iri] = Entity(
+                name=label,
+                iri=entity.iri,
+                provenance_name="Metabolights",
+                provenance_uri="http://www.ebi.ac.uk/metabolights/ontology",
+            )
         if entity.isDefinedBy:
             definition = re.sub(r"\s+", " ", " ".join(entity.isDefinedBy))
             self.search_entities[entity.iri].definition = definition
             mtbls_entity.description = definition
-        
-        if 'MTBLS' in entity.iri:
-            self.search_entities[entity.iri].onto_name = 'MTBLS'
+
+        if "MTBLS" in entity.iri:
+            self.search_entities[entity.iri].onto_name = "MTBLS"
         else:
             onto_name = ""
             try:
                 prefix_list = entity.iri.split("/")
                 prefix = ""
                 if len(prefix_list) > 1:
-                    prefix: List[str]  = prefix_list[-1].split("#")
+                    prefix: List[str] = prefix_list[-1].split("#")
                     id_part = prefix[1:] if len(prefix) == 0 else prefix_list[-1]
                     # if prefix == MetaboLightsOntology.OBO_ONTOLOGY_PREFIX:
                     iri_last_part = id_part.split("_")
                     if len(iri_last_part) > 1:
                         onto_name = iri_last_part[0]
-                else:      
+                else:
                     onto_name = get_ontology_name(entity.iri)[0]
             except Exception as ex:
                 logger.debug(f"{ex}")
-                
 
             self.search_entities[entity.iri].onto_name = onto_name
             self.search_entities[entity.iri].provenance_name = "Metabolights"
-            self.search_entities[entity.iri].provenance_uri="http://www.ebi.ac.uk/metabolights/ontology"
+            self.search_entities[
+                entity.iri
+            ].provenance_uri = "http://www.ebi.ac.uk/metabolights/ontology"
         return mtbls_entity
-    
+
     def is_deprecated(self, onto_class) -> bool:
         try:
             if not onto_class or not hasattr(onto_class, "is_a") or not onto_class.is_a:
                 return True
             for ins in onto_class.is_a:
-                if hasattr(ins, "iri") and ins.iri == MetaboLightsOntology.DEPRICATED_CLASS_IRI:
+                if (
+                    hasattr(ins, "iri")
+                    and ins.iri == MetaboLightsOntology.DEPRICATED_CLASS_IRI
+                ):
                     return True
         except Exception as ex:
             raise ex
         return False
-                
+
     def initiate(self):
-        classes = [cls for cls in self.ontology.classes() ]
+        classes = [cls for cls in self.ontology.classes()]
         for onto_class in classes:
             if self.is_deprecated(onto_class):
                 continue
-            if (onto_class.iri and str(onto_class.label[0])) and (onto_class.iri not in self.entities or not self.entities[onto_class.iri].children):
-                children = [x for x in self.ontology.search(subclass_of=onto_class) if x.iri != onto_class.iri and not self.is_deprecated(x)]
-                children_dict: Dict[str, MetaboLightsEntity] = {}            
+            if (onto_class.iri and str(onto_class.label[0])) and (
+                onto_class.iri not in self.entities
+                or not self.entities[onto_class.iri].children
+            ):
+                children = [
+                    x
+                    for x in self.ontology.search(subclass_of=onto_class)
+                    if x.iri != onto_class.iri and not self.is_deprecated(x)
+                ]
+                children_dict: Dict[str, MetaboLightsEntity] = {}
                 for child in children:
                     if child.iri in self.entities:
                         children_dict[child.iri] = self.entities[child.iri]
                     else:
                         children_dict[child.iri] = self.__add_entity(child, None)
-                        
+
                 if onto_class.iri not in self.entities:
-                    self.entities[onto_class.iri] = self.__add_entity(onto_class, children=children_dict)
+                    self.entities[onto_class.iri] = self.__add_entity(
+                        onto_class, children=children_dict
+                    )
                 else:
                     self.entities[onto_class.iri].children = children_dict
-                
 
-        
         for entity in self.entities.values():
-            entity_set: Set[str] =set()
+            entity_set: Set[str] = set()
             self.collect_all_child_entities(entity, entity_set)
             if entity_set:
                 label = str(entity.label)
                 self.root_entities[label] = entity_set
                 self.branch_map[label] = []
                 for item in entity_set:
-                    entity_items= self.label_map[item]
+                    entity_items = self.label_map[item]
                     for sub_item in entity_items:
                         result = self.search_entities[sub_item.iri]
                         self.branch_map[label].append(result)
-                        
+
                 self.branch_map[label].sort(key=lambda x: x.name.lower())
-                
+
                 if label in TERM_PRIORITY_MAP:
                     first_priority_terms = TERM_PRIORITY_MAP[label]
-                    remaining_terms = [x for x in self.branch_map[label] if x.iri not in first_priority_terms]
-                    initial_terms = [x for x in self.branch_map[label] if x.iri in first_priority_terms]
+                    remaining_terms = [
+                        x
+                        for x in self.branch_map[label]
+                        if x.iri not in first_priority_terms
+                    ]
+                    initial_terms = [
+                        x
+                        for x in self.branch_map[label]
+                        if x.iri in first_priority_terms
+                    ]
                     initial_terms.sort(key=lambda x: first_priority_terms.index(x.iri))
                     self.branch_map[label] = initial_terms + remaining_terms
-        self.sorted_search_entities = sorted(self.search_entities.values(), key=lambda x: x.name)
+        self.sorted_search_entities = sorted(
+            self.search_entities.values(), key=lambda x: x.name
+        )
         # map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasExactSynonym']
         # d = []
         # for cls in classes:
@@ -304,32 +435,34 @@ class MetaboLightsOntology():
         #                 d.append(cls)
         #     except Exception as e:
         #         pass
-                
-    
-    def collect_all_child_entities(self, entity:MetaboLightsEntity,  entity_set: Set[str]):
+
+    def collect_all_child_entities(
+        self, entity: MetaboLightsEntity, entity_set: Set[str]
+    ):
         for v in entity.children.values():
             label = str(v.label)
             if label:
                 entity_set.add(label)
             self.collect_all_child_entities(v, entity_set=entity_set)
 
+
 PROTOCOL_REF_ORDER = [
-        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001100",
-        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001105",
-        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001108",
-        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001109",
-        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001110",
-        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001111",
-        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001112",
-        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001106",
-        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001107"
-    ]
+    "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001100",
+    "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001105",
+    "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001108",
+    "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001109",
+    "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001110",
+    "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001111",
+    "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001112",
+    "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001106",
+    "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001107",
+]
 
 TERM_PRIORITY_MAP = {
     "Characteristics": [
         "http://www.ebi.ac.uk/efo/EFO_0000513",
         "http://www.ebi.ac.uk/efo/EFO_0000408",
-        "http://www.ebi.ac.uk/efo/EFO_0000246"
+        "http://www.ebi.ac.uk/efo/EFO_0000246",
     ],
     "Characteristics[Organism]": [
         "http://purl.obolibrary.org/obo/NCBITaxon_9606",
@@ -341,7 +474,7 @@ TERM_PRIORITY_MAP = {
         "http://purl.obolibrary.org/obo/NCBITaxon_5691",
         "http://purl.obolibrary.org/obo/ENVO_00002149",
         "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002304",
-        "http://purl.obolibrary.org/obo/MSIO_0000023"
+        "http://purl.obolibrary.org/obo/MSIO_0000023",
     ],
     "Characteristics[Organism part]": [
         "http://purl.obolibrary.org/obo/BTO_0000131",
@@ -361,7 +494,7 @@ TERM_PRIORITY_MAP = {
         "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000218",
         "http://purl.obolibrary.org/obo/MSIO_0000026",
         "http://purl.obolibrary.org/obo/MSIO_0000025",
-        "http://purl.obolibrary.org/obo/MSIO_0000024"
+        "http://purl.obolibrary.org/obo/MSIO_0000024",
     ],
     "Study Design Type": [
         "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000279",
@@ -379,7 +512,7 @@ TERM_PRIORITY_MAP = {
         "http://www.ebi.ac.uk/efo/EFO_0001795",
         "http://www.ebi.ac.uk/efo/EFO_0001794",
         "http://www.ebi.ac.uk/efo/EFO_0010558",
-        "http://www.ebi.ac.uk/efo/EFO_0001796"
+        "http://www.ebi.ac.uk/efo/EFO_0001796",
     ],
     "Study Factor Type": [
         "http://www.ebi.ac.uk/efo/EFO_0000408",
@@ -392,7 +525,7 @@ TERM_PRIORITY_MAP = {
         "http://www.ebi.ac.uk/efo/EFO_0002755",
         "http://www.ebi.ac.uk/efo/EFO_0000487",
         "http://www.ebi.ac.uk/efo/EFO_0002091",
-        "http://www.ebi.ac.uk/efo/EFO_0002090"
+        "http://www.ebi.ac.uk/efo/EFO_0002090",
     ],
     "LC-MS Protocol REF": PROTOCOL_REF_ORDER,
     "GC-MS Protocol REF": PROTOCOL_REF_ORDER,
@@ -414,26 +547,26 @@ TERM_PRIORITY_MAP = {
     "GC-MS Parameter Value[Ion source]": [
         "http://purl.obolibrary.org/obo/MS_1000389",
         "http://purl.obolibrary.org/obo/MS_1000071",
-        "http://purl.obolibrary.org/obo/MS_1000258"
+        "http://purl.obolibrary.org/obo/MS_1000258",
     ],
     "LC-MS Parameter Value[Column type]": [
         "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000853",
         "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000856",
-        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000855"
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000855",
     ],
     "GC-MS Parameter Value[Column type]": [
         "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000991",
         "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000990",
-        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000989"
+        "http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000989",
     ],
     "Study Person Role": [
         "http://purl.obolibrary.org/obo/NCIT:C54269",
         "http://purl.obolibrary.org/obo/NCIT_C19924",
         "http://purl.obolibrary.org/obo/NCIT_C42781",
         "http://purl.obolibrary.org/obo/NCIT_C25936",
-        
-    ]
+    ],
 }
+
 
 def get_ontology_search_result(term: str, branch, ontologies, mapping, queryFields):
     result = []
@@ -443,16 +576,18 @@ def get_ontology_search_result(term: str, branch, ontologies, mapping, queryFiel
     mtbls_term_prefix = "//www.ebi.ac.uk/metabolights/ontology/"
     if term.startswith(mtbls_term_prefix):
         term = "http:" + term
-        file = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
+        file = convert_relative_to_real_path(
+            get_settings().file_resources.mtbls_ontology_file
+        )
         mtbls_ontology: MetaboLightsOntology = load_ontology_file(file)
         if mtbls_ontology:
             exact_search = mtbls_ontology.get_entity_by_iri(term)
     if exact_search:
         result = exact_search
-    if term.startswith('http://') or term.startswith('http://'):
+    if term.startswith("http://") or term.startswith("http://"):
         result = getOLSTerm(term, mapping, ontologies=ontologies)
     elif ontologies:  # if has ontology searching restriction
-        logger.info('Search ontology %s in', ontologies)
+        logger.info("Search ontology %s in", ontologies)
         # print('Searching ontology  %s' % ontologies)
         try:
             result = getOLSTerm(term, mapping, ontologies=ontologies)
@@ -465,18 +600,19 @@ def get_ontology_search_result(term: str, branch, ontologies, mapping, queryFiel
         if not queryFields:  # if found the term, STOP
             # is_url = term.startswith('http')
             regex = re.compile(
-                r'[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)',
-                re.IGNORECASE)
+                r"[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)",
+                re.IGNORECASE,
+            )
 
             is_url = term is not None and regex.search(term) is not None
 
-            if is_url and not term.startswith('//') and not term.startswith('http'):
-                term = '//' + term
+            if is_url and not term.startswith("//") and not term.startswith("http"):
+                term = "//" + term
 
-            if is_url and not term.startswith('http:'):
-                term = 'http:' + term
-                
-            logger.info('Search %s from resources one by one' % term)
+            if is_url and not term.startswith("http:"):
+                term = "http:" + term
+
+            logger.info("Search %s from resources one by one" % term)
             # print('Search %s from resources one by one' % term)
             result = getMetaboTerm(term, branch, mapping)
 
@@ -488,8 +624,7 @@ def get_ontology_search_result(term: str, branch, ontologies, mapping, queryFiel
             #     branch_mapping = branch_mappings[branch]
             #     search_term = term if term else "*"
             #     result += OLSbranchSearch(search_term, branch_mapping["root_label"], branch_mapping["ontology_name"])
-                
-        
+
             # if not result and not is_url:
             #     # print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
             #     logger.info("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
@@ -527,66 +662,136 @@ def get_ontology_search_result(term: str, branch, ontologies, mapping, queryFiel
                     logger.info(e.args)
 
         else:
-            if 'MTBLS' in queryFields:
+            if "MTBLS" in queryFields:
                 result += getMetaboTerm(term, branch, mapping)
 
-            if 'MTBLS_Zooma' in queryFields:
+            if "MTBLS_Zooma" in queryFields:
                 result += getMetaboZoomaTerm(term, mapping)
 
-            if 'OLS' in queryFields:
+            if "OLS" in queryFields:
                 result += getOLSTerm(term, mapping)
 
-            if 'Zooma' in queryFields:
+            if "Zooma" in queryFields:
                 result += getZoomaTerm(term, mapping)
 
-            if 'Bioportal' in queryFields:
+            if "Bioportal" in queryFields:
                 result += getBioportalTerm(term)
 
     response = []
     # add WoRMs terms as a entity
-    if branch == 'taxonomy' or branch == 'Parameter Value[Organism]':
+    if branch == "taxonomy" or branch == "Parameter Value[Organism]":
         r = getWormsTerm(term)
         result += r
     else:
         pass
-    
+
     term = term if term else ""
     exact = []
     starts_with = []
     rest = result
     if term:
         selected = set()
-        exact = [x for x in result if x.name.lower() == term.lower() and x.name and x.onto_str() not in selected and not selected.add(x.onto_str())]
-        starts_with = [x for x in result if x.name and x.onto_str() not in selected and x.name.lower().startswith(term.lower()) and not selected.add(x.onto_str())]
-        rest = [x for x in result if x.name and x.onto_str() not in selected and not selected.add(x.onto_str())]
+        exact = [
+            x
+            for x in result
+            if x.name.lower() == term.lower()
+            and x.name
+            and x.onto_str() not in selected
+            and not selected.add(x.onto_str())
+        ]
+        starts_with = [
+            x
+            for x in result
+            if x.name
+            and x.onto_str() not in selected
+            and x.name.lower().startswith(term.lower())
+            and not selected.add(x.onto_str())
+        ]
+        rest = [
+            x
+            for x in result
+            if x.name
+            and x.onto_str() not in selected
+            and not selected.add(x.onto_str())
+        ]
 
         # "factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
         #                          "column type", "instruments", "confidence", "sample type"
-        default_priority = {'EFO': 500, 'NCBITAXON': 510, 'UO': 520, 'BTO': 530, 'MTBLS': 540, 
-                        'CHMO': 550, 'NCIT': 560, 'WoRMS': 565, 'PO': 570, 'CHEBI': 580, 
-                        'GO': 590, 'ENVO': 600, 'MSOI': 610, 'MESH': 620  }
-        
-        if branch == 'Study Publication Status':
-            priority = {'EFO': 0, 'MTBLS': 10}
-        elif branch == 'role':
-            priority = {'MTBLS': 0, 'NCIT': 10}
-        elif branch == 'Characteristics[Organism]':
-            priority = {'NCBITAXON': 0, 'MTBLS': 10, 'WoRMS': 20, 'ENVO': 30, 'EFO': 40, 'NCIT': 50, 'MSOI': 60}
-        elif branch == 'Characteristics[Organism part]':
-            priority = {'BTO': 0, 'MTBLS': 10, 'EFO': 20, 'NCIT': 30, 'PO': 40, 'ENVO': 50, 'CHEBI': 60}
-        elif branch == 'Characteristics[Sample type]':
-            priority = {'CHMO': 0, 'MTBLS': 10, 'MSIO': 20}
-        elif branch == 'unit':
-            priority = {'UO': 0, 'MTBLS': 10, "EFO": 30, "NCIT": 40}
-        elif branch == 'factor' or branch == 'Study Factor Type':
-            priority = {'EFO': 0, 'NCIT': 1, 'ENVO': 2, 'MTBLS': 3, 'CHEBI': 4, 'CHMO': 5, 'MESH': 6, 'PO': 7}
-        elif branch == 'design descriptor' or branch == 'Study Design Type':
-            priority = {'EFO': 1, 'NCIT': 2, 'MTBLS': 3, 'CHEBI': 4, 'CHMO': 5, 'GO': 6, 'MESH': 7}
+        default_priority = {
+            "EFO": 500,
+            "NCBITAXON": 510,
+            "UO": 520,
+            "BTO": 530,
+            "MTBLS": 540,
+            "CHMO": 550,
+            "NCIT": 560,
+            "WoRMS": 565,
+            "PO": 570,
+            "CHEBI": 580,
+            "GO": 590,
+            "ENVO": 600,
+            "MSOI": 610,
+            "MESH": 620,
+        }
+
+        if branch == "Study Publication Status":
+            priority = {"EFO": 0, "MTBLS": 10}
+        elif branch == "role":
+            priority = {"MTBLS": 0, "NCIT": 10}
+        elif branch == "Characteristics[Organism]":
+            priority = {
+                "NCBITAXON": 0,
+                "MTBLS": 10,
+                "WoRMS": 20,
+                "ENVO": 30,
+                "EFO": 40,
+                "NCIT": 50,
+                "MSOI": 60,
+            }
+        elif branch == "Characteristics[Organism part]":
+            priority = {
+                "BTO": 0,
+                "MTBLS": 10,
+                "EFO": 20,
+                "NCIT": 30,
+                "PO": 40,
+                "ENVO": 50,
+                "CHEBI": 60,
+            }
+        elif branch == "Characteristics[Sample type]":
+            priority = {"CHMO": 0, "MTBLS": 10, "MSIO": 20}
+        elif branch == "unit":
+            priority = {"UO": 0, "MTBLS": 10, "EFO": 30, "NCIT": 40}
+        elif branch == "factor" or branch == "Study Factor Type":
+            priority = {
+                "EFO": 0,
+                "NCIT": 1,
+                "ENVO": 2,
+                "MTBLS": 3,
+                "CHEBI": 4,
+                "CHMO": 5,
+                "MESH": 6,
+                "PO": 7,
+            }
+        elif branch == "design descriptor" or branch == "Study Design Type":
+            priority = {
+                "EFO": 1,
+                "NCIT": 2,
+                "MTBLS": 3,
+                "CHEBI": 4,
+                "CHMO": 5,
+                "GO": 6,
+                "MESH": 7,
+            }
         else:
             priority = default_priority
 
-        prioritrised_ontology_names = { x.upper():priority[x] for x in priority}
-        not_selected_ontologies = { x.upper():default_priority[x] for x in default_priority if x not in prioritrised_ontology_names }
+        prioritrised_ontology_names = {x.upper(): priority[x] for x in priority}
+        not_selected_ontologies = {
+            x.upper(): default_priority[x]
+            for x in default_priority
+            if x not in prioritrised_ontology_names
+        }
         prioritrised_ontology_names.update(not_selected_ontologies)
         exact = sort_terms_by_priority(exact, prioritrised_ontology_names)
         starts_with = sort_terms_by_priority(starts_with, prioritrised_ontology_names)
@@ -598,7 +803,7 @@ def get_ontology_search_result(term: str, branch, ontologies, mapping, queryFiel
     # result = remove_duplicated_terms(result)
 
     for cls in result:
-        temp = '''    {
+        temp = """    {
                         "comments": [],
                         "annotationValue": "",
                         "annotationDefinition": "", 
@@ -613,37 +818,38 @@ def get_ontology_search_result(term: str, branch, ontologies, mapping, queryFiel
                             "version": "",
                             "description": ""
                         }                            
-                    }'''
+                    }"""
 
         d = json.loads(str(temp))
         try:
-            d['annotationValue'] = cls.name
+            d["annotationValue"] = cls.name
             d["annotationDefinition"] = cls.definition
-            if branch == 'taxonomy':
-                d['wormsID'] = cls.iri.rsplit('id=', 1)[-1]
+            if branch == "taxonomy":
+                d["wormsID"] = cls.iri.rsplit("id=", 1)[-1]
             d["termAccession"] = cls.iri
-            d['termSource']['name'] = cls.onto_name if cls.onto_name else ""
-            d['termSource']['provenanceName'] = cls.provenance_name
-            d['termSource']['file'] = cls.provenance_uri
+            d["termSource"]["name"] = cls.onto_name if cls.onto_name else ""
+            d["termSource"]["provenanceName"] = cls.provenance_name
+            d["termSource"]["file"] = cls.provenance_uri
 
-            if cls.onto_name == 'MTBLS':
-                d['termSource']['file'] = 'https://www.ebi.ac.uk/metabolights/ontology'
-                d['termSource']['provenanceName'] = 'Metabolights'
-                d['termSource']['version'] = '1.0'
-                d['termSource']['description'] = 'Metabolights Ontology'
+            if cls.onto_name == "MTBLS":
+                d["termSource"]["file"] = "https://www.ebi.ac.uk/metabolights/ontology"
+                d["termSource"]["provenanceName"] = "Metabolights"
+                d["termSource"]["version"] = "1.0"
+                d["termSource"]["description"] = "Metabolights Ontology"
         except Exception as e:
             pass
 
-        if cls.provenance_name == 'MTBLS_Zooma':
-            d['termSource']['version'] = str(current_time().date())
+        if cls.provenance_name == "MTBLS_Zooma":
+            d["termSource"]["version"] = str(current_time().date())
         response.append(d)
 
     # response = [{'SubClass': x} for x in res]
     # print('--' * 30)
     return {"OntologyTerm": response}
 
+
 @lru_cache(1)
-def load_ontology_file(filepath)-> MetaboLightsOntology:
+def load_ontology_file(filepath) -> MetaboLightsOntology:
     try:
         ontology = get_ontology(filepath).load()
         if ontology:
@@ -651,19 +857,28 @@ def load_ontology_file(filepath)-> MetaboLightsOntology:
     except Exception as ex:
         print(f"Error loading ontology file. {str(ex)}")
         print(traceback.format_exc())
-        logger.info("Fail to load ontology from {path}. {ex}".format(path=filepath, ex=str(ex)))
-    
+        logger.info(
+            "Fail to load ontology from {path}. {ex}".format(path=filepath, ex=str(ex))
+        )
+
     return None
 
-def initiate_mtbls_model(): 
-    file = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
+
+def initiate_mtbls_model():
+    file = convert_relative_to_real_path(
+        get_settings().file_resources.mtbls_ontology_file
+    )
     load_ontology_file(file)
+
 
 initiate_mtbls_model()
 
+
 @ttl_cache(2048)
-def getMetaboTerm(keyword, branch, mapping='', limit=100):
-    file = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
+def getMetaboTerm(keyword, branch, mapping="", limit=100):
+    file = convert_relative_to_real_path(
+        get_settings().file_resources.mtbls_ontology_file
+    )
     mtbls_ontology: MetaboLightsOntology = load_ontology_file(file)
     if not mtbls_ontology:
         return []
@@ -673,13 +888,19 @@ def getMetaboTerm(keyword, branch, mapping='', limit=100):
     # cls = []
     search_result: List[Entity] = []
     if keyword:
-        include_contain_matches =  mapping != 'exact'
+        include_contain_matches = mapping != "exact"
         search_result = mtbls_ontology.get_entity_by_iri(keyword)
         if not search_result:
-            search_result = mtbls_ontology.search_ontology_entities(keyword, branch=branch, include_case_insensitive_matches=True, include_contain_matches=include_contain_matches, limit=limit)
+            search_result = mtbls_ontology.search_ontology_entities(
+                keyword,
+                branch=branch,
+                include_case_insensitive_matches=True,
+                include_contain_matches=include_contain_matches,
+                limit=limit,
+            )
 
         return search_result
-    
+
         # try:
         #     cls += onto.search(label=keyword, _case_sensitive=False)
         # except:
@@ -691,7 +912,7 @@ def getMetaboTerm(keyword, branch, mapping='', limit=100):
         #     try:
         #         # cls += onto.search(label=keyword + '*', _case_sensitive=False)
         #         cls += onto.search(label='*' + keyword + "*", _case_sensitive=False)
-                
+
         #     except Exception as ex:
         #         logger.info("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
         #         print("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
@@ -729,9 +950,13 @@ def getMetaboTerm(keyword, branch, mapping='', limit=100):
         #     result += cls
 
     else:  # term = None
-        logger.debug("Search Metabolights ontology whole {branch} branch ... ".format(branch=branch))
+        logger.debug(
+            "Search Metabolights ontology whole {branch} branch ... ".format(
+                branch=branch
+            )
+        )
         entities = mtbls_ontology.get_branch_entities(branch)
-        return entities[:limit] if len(entities) > limit else entities        
+        return entities[:limit] if len(entities) > limit else entities
         # if branch:  # term = 0, branch = 1, return whole ontology branch
         #     logger.info("Search Metabolights ontology whole {branch} branch ... ".format(branch=branch))
         #     entities = mtbls_ontology.get_branch_entities(branch)
@@ -745,7 +970,7 @@ def getMetaboTerm(keyword, branch, mapping='', limit=100):
         #     #         pass
 
         #     #     result += sub
-                
+
         #     #     # Change entity priority
         #     #     if branch == 'design descriptor' and not keyword:
 
@@ -792,305 +1017,378 @@ def getMetaboTerm(keyword, branch, mapping='', limit=100):
 
     # return res
 
-@ttl_cache(1024, 60*60)
-def getOLSTerm(keyword, map, ontologies='', limit=50):
-    logger.info('Requesting OLS... for keyword ' + keyword)
+
+@ttl_cache(1024, 60 * 60)
+def getOLSTerm(keyword, map, ontologies="", limit=50):
+    logger.info("Requesting OLS... for keyword " + keyword)
     # print('Requesting OLS...')
     res = []
 
     if not keyword:
         return res
 
-    elif 'http:' in keyword:
+    elif "http:" in keyword:
         label, definition, onto_name = getOLSTermInfo(keyword)
         if len(definition) > 0:
             definition = definition[0]
         else:
-            definition = ''
+            definition = ""
         if len(label) > 1:
             base_url = get_settings().external_dependencies.api.ols_api_url
-            enti = Entity(name=label, iri=keyword, definition=definition, onto_name=onto_name,
-                          provenance_name="OLS", provenance_uri=base_url)
+            enti = Entity(
+                name=label,
+                iri=keyword,
+                definition=definition,
+                onto_name=onto_name,
+                provenance_name="OLS",
+                provenance_uri=base_url,
+            )
             res.append(enti)
         return res
 
     try:
         # https://www.ebi.ac.uk/ols4/api/search?q=lung&queryFields=label,synonym&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix
-        uri = 'search?q=' + keyword.replace(' ', "+") + \
-              '&queryFields=label,synonym,obo_id,short_form' \
-              '&type=class' \
-              '&fieldList=iri,label,short_form,ontology_name,description,ontology_prefix' \
-              '&rows=30'  # &exact=true
+        uri = (
+            "search?q="
+            + keyword.replace(" ", "+")
+            + "&queryFields=label,synonym,obo_id,short_form"
+            "&type=class"
+            "&fieldList=iri,label,short_form,ontology_name,description,ontology_prefix"
+            "&rows=30"
+        )  # &exact=true
         url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
-        if map == 'exact':
-            url += '&exact=true'
+        if map == "exact":
+            url += "&exact=true"
         if not ontologies:
             ontologies = ""
         if ontologies:
             onto_list = ",".join([x.strip() for x in ontologies.split(",")])
-            url += '&ontology=' + onto_list
+            url += "&ontology=" + onto_list
 
         fp = urllib.request.urlopen(url, timeout=5)
-        content = fp.read().decode('utf-8')
+        content = fp.read().decode("utf-8")
         j_content = json.loads(content)
-        responses = j_content["response"]['docs']
+        responses = j_content["response"]["docs"]
         ontologies_uppercase = [x for x in ontologies.upper().split(",") if x]
         for term in responses:
             # name = ' '.join([w.capitalize() if w.islower() else w for w in term['label'].split()])
 
-            name = term['label']
+            name = term["label"]
             try:
-                definition = term['description'][0]
+                definition = term["description"][0]
             except:
-                definition = ''
+                definition = ""
+            try:
+                onto_name = term.get("ontology_prefix", "").upper()
+                if not onto_name:
+                    if term.get("short_form") and "_" in term.get("short_form"):
+                        onto_name = term["short_form"].split("_")[0].upper()
 
-            try:
-                onto_name = term['short_form'].split("_")[0] if term['short_form'] else term['ontology_prefix']
+                    if not onto_name and term.get("ontology_name"):
+                        onto_name = term["ontology_name"].upper()
+                if onto_name:
+                    # if it is not a number, keep it else set to empty
+                    try:
+                        float(onto_name)
+                        onto_name = ""
+                    except:
+                        pass
             except:
-                onto_name = ''
+                onto_name = ""
             if not ontologies_uppercase or onto_name.upper() in ontologies_uppercase:
                 base_url = get_settings().external_dependencies.api.ols_api_url
-                enti = Entity(name=name, iri=term['iri'], definition=definition, onto_name=onto_name,
-                            provenance_name="OLS", provenance_uri=base_url)
+                enti = Entity(
+                    name=name,
+                    iri=term["iri"],
+                    definition=definition,
+                    onto_name=onto_name,
+                    provenance_name="OLS",
+                    provenance_uri=base_url,
+                )
                 res.append(enti)
             if len(res) >= limit:
                 break
 
     except Exception as e:
         print(e.args)
-        logger.error('getOLS' + str(e))
+        logger.error("getOLS" + str(e))
     return res
 
-@ttl_cache(256, 60*60)
+
+@ttl_cache(256, 60 * 60)
 def getStartIRI(start, onto_name):
-    uri = 'search?q=' + start + '&ontology=' + onto_name + '&queryFields=label'
+    uri = "search?q=" + start + "&ontology=" + onto_name + "&queryFields=label"
     url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
     fp = urllib.request.urlopen(url, 5)
-    content = fp.read().decode('utf-8')
+    content = fp.read().decode("utf-8")
     json_str = json.loads(content)
-    res = json_str['response']['docs'][0]['iri']
+    res = json_str["response"]["docs"][0]["iri"]
     return quote_plus(res)
 
-@ttl_cache(1024, 60*60)
+
+@ttl_cache(1024, 60 * 60)
 def OLSbranchSearch(keyword, branch_name, onto_name):
     res = []
     if not keyword:
         return res
-    try: 
+    try:
         branchIRI = getStartIRI(branch_name, onto_name)
-        keyword = keyword.replace(' ', '%20')
-        uri = 'search?q=' + keyword + '&rows=10&ontology=' + onto_name + '&allChildrenOf=' + branchIRI
+        keyword = keyword.replace(" ", "%20")
+        uri = (
+            "search?q="
+            + keyword
+            + "&rows=10&ontology="
+            + onto_name
+            + "&allChildrenOf="
+            + branchIRI
+        )
         base_url = get_settings().external_dependencies.api.ols_api_url
         url = os.path.join(base_url, uri)
         # print(url)
         fp = urllib.request.urlopen(url, timeout=5)
-        content = fp.read().decode('utf-8')
+        content = fp.read().decode("utf-8")
         json_str = json.loads(content)
-        
-        for ele in json_str['response']['docs']:
-            enti = Entity(name=ele['label'], iri=ele['iri'], onto_name=onto_name, provenance_name="OLS", provenance_uri=base_url)
+
+        for ele in json_str["response"]["docs"]:
+            enti = Entity(
+                name=ele["label"],
+                iri=ele["iri"],
+                onto_name=onto_name,
+                provenance_name="OLS",
+                provenance_uri=base_url,
+            )
             res.append(enti)
-            
+
         return res
-    except Exception as ex: 
+    except Exception as ex:
         logger.debug(f"{str(ex)}")
         return []
 
+
 @lru_cache(1)
 def get_metabo_zooma_terms_dataframe() -> pd.DataFrame:
-    fileName = get_settings().file_resources.mtbls_zooma_file # metabolights_zooma.tsv
-    df = pd.read_csv(fileName, sep="\t", header=0, encoding='utf-8')
-    df = df.drop_duplicates(subset='PROPERTY_VALUE', keep="last")
+    fileName = get_settings().file_resources.mtbls_zooma_file  # metabolights_zooma.tsv
+    df = pd.read_csv(fileName, sep="\t", header=0, encoding="utf-8")
+    df = df.drop_duplicates(subset="PROPERTY_VALUE", keep="last")
     return df
+
 
 @ttl_cache(1024)
 def getMetaboZoomaTerm(keyword, mapping):
-    logger.info('Searching Metabolights-zooma.tsv')
+    logger.info("Searching Metabolights-zooma.tsv")
     # print('Searching Metabolights-zooma.tsv')
     res = []
 
-    if keyword in [None, '']:
+    if keyword in [None, ""]:
         return res
 
     try:
         df = get_metabo_zooma_terms_dataframe()
-        if mapping == 'exact':
-            temp = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
+        if mapping == "exact":
+            temp = df.loc[df["PROPERTY_VALUE"].str.lower() == keyword.lower()]
         else:
-            temp1 = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
+            temp1 = df.loc[df["PROPERTY_VALUE"].str.lower() == keyword.lower()]
             reg = "^" + keyword + "+"
-            temp2 = df.loc[df['PROPERTY_VALUE'].str.contains(reg, case=False)]
+            temp2 = df.loc[df["PROPERTY_VALUE"].str.contains(reg, case=False)]
             frame = [temp1, temp2]
             temp = pd.concat(frame).reset_index(drop=True)
 
-        temp = temp.drop_duplicates(subset='PROPERTY_VALUE', keep="last", inplace=False)
+        temp = temp.drop_duplicates(subset="PROPERTY_VALUE", keep="last", inplace=False)
 
         for i in range(len(temp)):
-            iri = temp.iloc[i]['SEMANTIC_TAG']
+            iri = temp.iloc[i]["SEMANTIC_TAG"]
             # name = ' '.join(
             #     [w.capitalize() if w.islower() else w for w in temp.iloc[i]['PROPERTY_VALUE'].split()])
 
-            name = temp.iloc[i]['PROPERTY_VALUE']
-            obo_ID = iri.rsplit('/', 1)[-1]
+            name = temp.iloc[i]["PROPERTY_VALUE"]
+            obo_ID = iri.rsplit("/", 1)[-1]
 
-            enti = Entity(name=name,
-                          iri=iri,
-                          provenance_name='MTBLS_Zooma',
-                          provenance_uri='metabolights_zooma.tsv',
-                          zooma_confidence='High')
+            enti = Entity(
+                name=name,
+                iri=iri,
+                provenance_name="MTBLS_Zooma",
+                provenance_uri="metabolights_zooma.tsv",
+                zooma_confidence="High",
+            )
 
             try:
                 enti.onto_name, enti.definition = get_ontology_name(iri)
             except:
-                enti.onto_name = ''
+                enti.onto_name = ""
 
             res.append(enti)
     except Exception as e:
-        logger.error('Fail to load metabolights-zooma.tsv' + str(e))
+        logger.error("Fail to load metabolights-zooma.tsv" + str(e))
 
     return res
 
-@ttl_cache(1024, ttl=60*60)
-def getZoomaTerm(keyword, mapping='', limit=50):
-    logger.info('Requesting Zooma...')
+
+@ttl_cache(1024, ttl=60 * 60)
+def getZoomaTerm(keyword, mapping="", limit=50):
+    logger.info("Requesting Zooma...")
     # print('Requesting Zooma...')
     res = []
 
-    if keyword in [None, '']:
+    if keyword in [None, ""]:
         return res
 
     try:
         # url = 'http://snarf.ebi.ac.uk:8480/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ',"+")
-        uri = 'services/annotate?propertyValue=' + keyword.replace(' ', "+")
+        uri = "services/annotate?propertyValue=" + keyword.replace(" ", "+")
         base_url = get_settings().external_dependencies.api.zooma_api_url
         url = os.path.join(base_url, uri)
         ssl._create_default_https_context = ssl._create_unverified_context
         fp = urllib.request.urlopen(url, timeout=5)
-        content = fp.read().decode('utf8')
+        content = fp.read().decode("utf8")
         json_str = json.loads(content)
         for term in json_str:
-            iri = term['semanticTags'][0]
+            iri = term["semanticTags"][0]
 
             # name = ' '.join(
             #     [w.capitalize() if w.islower() else w for w in term["annotatedProperty"]['propertyValue'].split()])
 
-            name = term["annotatedProperty"]['propertyValue']
+            name = term["annotatedProperty"]["propertyValue"]
 
-            if mapping == 'exact' and name != keyword:
+            if mapping == "exact" and name != keyword:
                 continue
 
-            enti = Entity(name=name,
-                          iri=iri,
-                          zooma_confidence=term['confidence'])
+            enti = Entity(name=name, iri=iri, zooma_confidence=term["confidence"])
 
-            if enti.onto_name == '':
+            if enti.onto_name == "":
                 enti.onto_name, enti.definition = get_ontology_name(iri)
             if not enti.onto_name:
                 enti.onto_name = ""
             try:
-                enti.provenance_name = term['provenance']['source']['name'].upper()
+                enti.provenance_name = term["provenance"]["source"]["name"].upper()
             except:
                 enti.provenance_name = "ZOOMA"
 
             try:
-                enti.provenance_uri = term['provenance']['source']['uri']
+                enti.provenance_uri = term["provenance"]["source"]["uri"]
             except:
                 enti.provenance_uri = "http://www.ebi.ac.uk/spot/zooma"
-            
+
             res.append(enti)
 
             if len(res) >= limit:
                 break
     except Exception as e:
-        logger.error('getZooma' + str(e))
+        logger.error("getZooma" + str(e))
     return res
 
+
 @ttl_cache(1024)
-def getBioportalTerm(keyword, mapping=False, ontologies='', limit=50):
-    logger.info('Requesting Bioportal...')
+def getBioportalTerm(keyword, mapping=False, ontologies="", limit=50):
+    logger.info("Requesting Bioportal...")
     # print('Requesting Bioportal...')
     res = []
 
-    if keyword in [None, '']:
+    if keyword in [None, ""]:
         return res
 
     try:
-        if 'http:' in keyword:
-            uri = 'search?q=' + keyword.replace(' ', "+") + '&require_exact_match=true'
+        if "http:" in keyword:
+            uri = "search?q=" + keyword.replace(" ", "+") + "&require_exact_match=true"
         else:
-            uri = 'search?q=' + keyword.replace(' ', "+")
+            uri = "search?q=" + keyword.replace(" ", "+")
         base_url = get_settings().external_dependencies.api.bioontology_api_url
         url = os.path.join(base_url, uri)
         if not ontologies:
             ontologies = ""
-        onto_list = ','.join([x.strip().upper() for x in ontologies.split(",") if x])
-        url += '&ontologies=' + onto_list + '&require_exact_match=' + ('true' if mapping == 'exact' else 'false')
-        
+        onto_list = ",".join([x.strip().upper() for x in ontologies.split(",") if x])
+        url += (
+            "&ontologies="
+            + onto_list
+            + "&require_exact_match="
+            + ("true" if mapping == "exact" else "false")
+        )
+
         request = urllib.request.Request(url)
-        request.add_header('Authorization', 'apikey token=' + get_settings().bioportal.api_token)
+        request.add_header(
+            "Authorization", "apikey token=" + get_settings().bioportal.api_token
+        )
         response = urllib.request.urlopen(request, timeout=5)
-        content = response.read().decode('utf-8')
+        content = response.read().decode("utf-8")
         j_content = json.loads(content)
 
         iri_record = set()
 
-        for term in j_content['collection']:
-            iri = term['@id']
+        for term in j_content["collection"]:
+            iri = term["@id"]
             if iri in iri_record:
                 continue
 
             try:
-                onto_name = term['links']['ontology'].split('/')[-1]
+                onto_name = term["links"]["ontology"].split("/")[-1]
             except:
                 onto_name = get_ontology_name(iri)[0]
             try:
-                definition = term['definition'][0] 
+                definition = term["definition"][0]
             except:
                 definition = ""
             try:
-                synonymn = ", ".join(term['definition'])
+                synonymn = ", ".join(term["definition"])
             except:
-                synonymn = ""                
-            
-            enti = Entity(name=term['prefLabel'], iri=iri,
-                          definition=f"{definition}. {synonymn}" if definition else synonymn,
-                          onto_name=onto_name, provenance_name="BioPortal", provenance_uri=base_url)
+                synonymn = ""
+
+            enti = Entity(
+                name=term["prefLabel"],
+                iri=iri,
+                definition=f"{definition}. {synonymn}" if definition else synonymn,
+                onto_name=onto_name,
+                provenance_name="BioPortal",
+                provenance_uri=base_url,
+            )
             res.append(enti)
             iri_record.add(iri)
             if len(res) >= limit:
                 break
     except Exception as e:
-        logger.error('getBioportal' + str(e))
+        logger.error("getBioportal" + str(e))
     return res
+
 
 @ttl_cache(1024)
 def getWormsTerm(keyword, limit=50):
-    logger.info('Requesting WoRMs ...')
-    print('Requesting WoRMs ...')
+    logger.info("Requesting WoRMs ...")
+    print("Requesting WoRMs ...")
 
     res = []
-    if keyword in [None, '']:
+    if keyword in [None, ""]:
         return res
 
     try:
-        uri = 'AphiaRecordsByName/{keyword}?like=true&marine_only=true&offset=1'.format(
-            keyword=keyword.replace(' ', '%20'))
+        uri = "AphiaRecordsByName/{keyword}?like=true&marine_only=true&offset=1".format(
+            keyword=keyword.replace(" ", "%20")
+        )
         base_url = get_settings().external_dependencies.api.marine_species_api_url
         url = os.path.join(base_url, uri)
         fp = urllib.request.urlopen(url, timeout=5)
-        content = fp.read().decode('utf-8')
+        content = fp.read().decode("utf-8")
         j_content = json.loads(content)
 
         for term in j_content:
-            if term and "scientificname" in term and term["scientificname"] and "url" in term and term["url"]:
+            if (
+                term
+                and "scientificname" in term
+                and term["scientificname"]
+                and "url" in term
+                and term["url"]
+            ):
                 name = term["scientificname"]
                 iri = term["url"]
                 definition = term["authority"]
-                onto_name = 'WoRMS'
-                provenance_name = 'WoRMS'
+                onto_name = "WoRMS"
+                provenance_name = "WoRMS"
 
-                enti = Entity(name=name, iri=iri, definition=definition, onto_name=onto_name,
-                              provenance_name=provenance_name, provenance_uri=base_url)
+                enti = Entity(
+                    name=name,
+                    iri=iri,
+                    definition=definition,
+                    onto_name=onto_name,
+                    provenance_name=provenance_name,
+                    provenance_uri=base_url,
+                )
                 res.append(enti)
 
             if len(res) >= limit:
@@ -1100,63 +1398,73 @@ def getWormsTerm(keyword, limit=50):
 
     return res
 
+
 @ttl_cache(512)
 def getWoRMsID(term):
     try:
-        uri = 'AphiaIDByName/' + term.replace(' ', '%20') + "?marine_only=true"
-        url = os.path.join(get_settings().external_dependencies.api.marine_species_api_url, uri)
+        uri = "AphiaIDByName/" + term.replace(" ", "%20") + "?marine_only=true"
+        url = os.path.join(
+            get_settings().external_dependencies.api.marine_species_api_url, uri
+        )
         fp = urllib.request.urlopen(url)
-        AphiaID = fp.read().decode('utf-8')
-        if AphiaID != '-999':
+        AphiaID = fp.read().decode("utf-8")
+        if AphiaID != "-999":
             return AphiaID
-        return ''
+        return ""
     except:
-        return ''
+        return ""
+
 
 @ttl_cache(2048)
 def getOLSTermInfo(iri):
     # enti = Entity(name=name, iri=term['iri'], definition=definition, onto_name=onto_name, provenance_name=provenance_name)
 
     try:
-        uri = 'terms/findByIdAndIsDefiningOntology?iri=' + iri
+        uri = "terms/findByIdAndIsDefiningOntology?iri=" + iri
         base_url = get_settings().external_dependencies.api.ols_api_url
         url = os.path.join(base_url, uri)
         fp = urllib.request.urlopen(url)
-        content = fp.read().decode('utf-8')
+        content = fp.read().decode("utf-8")
         j_content = json.loads(content)
 
-        label = j_content['_embedded']['terms'][0]['label']
-        definition = j_content['_embedded']['terms'][0]["description"]
+        label = j_content["_embedded"]["terms"][0]["label"]
+        definition = j_content["_embedded"]["terms"][0]["description"]
         if definition is None:
-            definition = ''
-        onto_name = j_content['_embedded']['terms'][0]['ontology_prefix']
+            definition = ""
+        onto_name = j_content["_embedded"]["terms"][0]["ontology_prefix"]
 
         return label, definition, onto_name
     except:
-        return '', '', ''
+        return "", "", ""
+
 
 @ttl_cache(512)
 def getOnto_info(pre_fix):
-    '''
-     get ontology information include  "name", "file", "version", "description"
-     :param pre_fix: ontology prefix
-     :return: "ontology iri", "version", "ontology description"
-     '''
+    """
+    get ontology information include  "name", "file", "version", "description"
+    :param pre_fix: ontology prefix
+    :return: "ontology iri", "version", "ontology description"
+    """
     try:
-        uri = 'ontologies/' + pre_fix
+        uri = "ontologies/" + pre_fix
         url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
         fp = urllib.request.urlopen(url)
-        content = fp.read().decode('utf-8')
+        content = fp.read().decode("utf-8")
         j_content = json.loads(content)
 
-        iri = j_content['config']['id']
-        version = j_content['config']['version']
-        description = j_content['config']['title']
+        iri = j_content["config"]["id"]
+        version = j_content["config"]["version"]
+        description = j_content["config"]["title"]
         return iri, version, description
     except:
         if pre_fix == "MTBLS":
-            return 'http://www.ebi.ac.uk/metabolights/ontology', '1.0', 'EBI Metabolights ontology'
-        return '', '', ''
+            return (
+                "http://www.ebi.ac.uk/metabolights/ontology",
+                "1.0",
+                "EBI Metabolights ontology",
+            )
+        return "", "", ""
+
 
 @ttl_cache(1024)
 def get_ontology_name(iri):
@@ -1164,35 +1472,42 @@ def get_ontology_name(iri):
     ontology_name = ""
     description = ""
     try:
-        uri = 'terms/findByIdAndIsDefiningOntology?iri=' + iri
+        uri = "terms/findByIdAndIsDefiningOntology?iri=" + iri
         url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
         fp = urllib.request.urlopen(url, timeout=5)
-        content = fp.read().decode('utf-8')
+        content = fp.read().decode("utf-8")
         j_content = json.loads(content)
-        item = j_content['_embedded']['terms'][0]
+        if not j_content.get("_embedded", {}).get("terms", []):
+            return "", description
+        item = j_content["_embedded"]["terms"][0]
         try:
+            ontology_name = item.get("ontology_prefix", "")
             try:
-                substring = iri.split('/')[-1]
-                ontology_name = substring.split('_')[0]
+                substring = iri.split("/")[-1]
+                if "_" in substring:
+                    ontology_name = substring.split("_")[0]
             except:
                 pass
+
             try:
-                description = item['ontology_name']['description'][0]
+                description = item["ontology_name"]["description"][0]
             except:
                 pass
-            
-            if not ontology_name and item['ontology_name']:
-                ontology_name = item['ontology_name'].upper() 
+
+            if not ontology_name and item["ontology_name"]:
+                ontology_name = item["ontology_name"].upper()
         except:
             pass
     except:
-        if 'BAO' in iri:
-            return 'BAO', description
+        if "BAO" in iri:
+            return "BAO", description
     return ontology_name, description
+
 
 def term_sort_key(term: Entity, ontology_priority_map):
     priority = ontology_priority_map.get(term.onto_name.upper(), 100000)
     return f"{priority:08}:{term.name.lower()}"
+
 
 def sort_terms_by_priority(res_list: List[Entity], ontology_priority_map):
     res = sorted(res_list, key=lambda x: term_sort_key(x, ontology_priority_map))
@@ -1226,7 +1541,7 @@ def reorder(res_list, keyword):
 
 def remove_duplicated_terms(res_list: List[Entity]):
     iri_pool = set()
-    
+
     new_list = []
     for res in res_list:
         if res.iri not in iri_pool:
@@ -1236,18 +1551,20 @@ def remove_duplicated_terms(res_list: List[Entity]):
         res.name = res.name if res.name else ""
         res.provenance_name = res.provenance_name if res.provenance_name else ""
         res.provenance_uri = res.provenance_uri if res.provenance_uri else ""
-            
+
     return new_list
 
 
 def getDescriptionURL(onto_name, iri):
     ir = quote_plus(quote_plus(iri))
-    uri = 'ontologies/' + onto_name + '/terms/' + ir
+    uri = "ontologies/" + onto_name + "/terms/" + ir
     url = os.path.join(get_settings().external_dependencies.api.ols_api_url, uri)
     return url
 
 
 if __name__ == "__main__":
-    filepath = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
+    filepath = convert_relative_to_real_path(
+        get_settings().file_resources.mtbls_ontology_file
+    )
     ontology_input = load_ontology_file(filepath)
     ontology_model = ontology_input
