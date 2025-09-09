@@ -1813,7 +1813,7 @@ def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_t
             if comp_name:
                 print_log(f"    -- Querying ChEBI web services based on compound name {comp_name}")
                 chebi_id = chebi_search_v2(search_term=comp_name)
-        elif search_type == "get_conjugate_acid" or search_type == "is_a"
+        elif search_type == "get_conjugate_acid" or search_type == "is_a":
             if acid_chebi_id:
                 chebi_ids = get_all_ontology_children_in_path(acid_chebi_id=chebi_id, relation="is conjugate acid of")
                 if chebi_ids:
