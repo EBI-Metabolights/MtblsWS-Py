@@ -130,7 +130,9 @@ query_studies_user = """
            else 'MANUAL_CURATION' end,
     s.id,
     s.revision_number,
-    s.revision_datetime
+    s.revision_datetime,
+    s.first_private_date,
+    s.first_public_date
     from studies s, users u, study_user su 
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
@@ -575,6 +577,8 @@ def get_all_studies_for_user(user_token):
                 revision_task_message = revision[5] or ""
 
         revision_datetime = row[7].isoformat() if row[7] else None
+        first_private_date = row[8].isoformat() if row[8] else None
+        first_public_date = row[9].isoformat() if row[9] else None
         complete_list.append(
             {
                 "accession": study_id,
@@ -594,6 +598,8 @@ def get_all_studies_for_user(user_token):
                 "studyFtpUrl": ftp_url,
                 "studyGlobusUrl": globus_url,
                 "studyAsperaPath": aspera_path,
+                "firstPrivateDate": first_private_date,
+                "firstPublicDate": first_public_date,
             }
         )
 
