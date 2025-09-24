@@ -368,7 +368,7 @@ def write_audit_files(study_location_or_study_id):
             if not audit_folder_signature:
                 audit_folder_signature = maintenance_task.read_hash_file(metadata_files_signature_root_path=last_audit_folder)
             if audit_folder_signature == metadata_files_signature:
-                return False, None
+                return False, ""  # No changes, so no new audit folder needed
         dest_path = maintenance_task.create_audit_folder()
         return  True, dest_path
     except Exception as ex:

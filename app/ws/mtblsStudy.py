@@ -23,7 +23,7 @@ import logging
 import os
 from datetime import datetime
 from typing import Union
-
+import re
 from flask import jsonify, request, send_file, make_response
 from app.services.external.eb_eye_search import EbEyeSearchService
 from flask_restful import Resource, abort, reqparse
@@ -82,7 +82,6 @@ from celery.result import AsyncResult
 logger = logging.getLogger("wslog")
 wsc = WsClient()
 iac = IsaApiClient()
-
 
 class MtblsStudies(Resource):
     @swagger.operation(
@@ -2136,5 +2135,105 @@ class StudyFolderSynchronization(Resource):
         status.description = f"{status.description[:100]} ..." if status.description and len(status.description) > 100 else status.description
         return status.model_dump()
     
+class DragAndDropFolder(Resource):
+    @swagger.operation(
+        notes='Upload files via drag-and-drop for a given study (max 50MB per file)',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "ID of the study",
+                "required": True,
+                "allowMultiple": False,
+                "dataType": "string",
+                "paramType": "path"
+            },
+            {
+                "name": "file",
+                "description": "File to upload (max 50MB)",
+                "required": True,
+                "allowMultiple": False,
+                "type": "file",
+                "paramType": "form"
+            },
+            {
+                "name": "user-token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "File uploaded successfully"
+            },
+            {
+                "code": 400,
+                "message": "Invalid request or file too large"
+            }
+        ]
+    )
+    def post(self, study_id):
+        try:
+            user_token = None
+            # User authentication
+            if "user_token" in request.headers:
+                user_token = request.headers["user_token"]
 
-    
+            if user_token is None or study_id is None:
+                abort(404)
+
+            study_id = study_id.upper()
+
+            # param validation
+            (
+                is_curator,
+                read_access,
+                write_access,
+                obfuscation_code,
+                study_location,
+                release_date,
+                submission_date,
+                study_status,
+            ) = wsc.get_permissions(study_id, user_token)
+            if not write_access:
+                abort(
+                    401,
+                    message="Unauthorized. Write access to the resource requires user authentication. "
+                    "Please provide a study id and a valid user token",
+                )
+
+            logger.info("Upload metadata files against study id: %s", study_id)
+            if 'file' not in request.files:
+                return {"error": "No file part in the request"}, 400
+
+            file = request.files['file']
+            if file.filename == '':
+                return {"error": "No selected file"}, 400
+            
+            # Check file type (only allow specific types .txt, .tsv)
+            if not re.match(r'^([asi]_.+\.txt|m_.+\.tsv)$', file.filename):
+                return {"error": "Invalid file type/file pattern. Only .txt and .tsv files allowed."}, 400
+            
+            # Check file size (max 50MB)
+            file.seek(0, os.SEEK_END)
+            file_length = file.tell()
+            file.seek(0)
+            if file_length > 50 * 1024 * 1024:
+                return {"error": "File size exceeds 50MB limit"}, 400
+
+            # Construct the study folder path
+            settings = get_study_settings()
+            study_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
+
+            # Save the file
+            file_path = os.path.join(study_folder, file.filename)
+            file.save(file_path)
+
+            return {"message": f"File '{file.filename}' uploaded successfully to study '{study_id}'"}, 200
+        except Exception as exc:
+            logger.error(f"Error in DragAndDropFolder.post: {str(exc)}")
+            return {"error": f"An unexpected error occurred: {str(exc)}"}, 500
+         

@@ -71,7 +71,7 @@ from app.ws.mtblsCompound import (EbEyeCompounds, EbEyeCompoundsAll, MtblsCompou
                                   MtblsCompoundIndexSync, MtblsCompoundSpectraFile, MtblsCompounds,
                                   MtblsCompoundsDetails)
 from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
-                               CreateUploadFolder, DeleteStudy, EbEyeStudies,
+                               CreateUploadFolder, DeleteStudy, DragAndDropFolder, EbEyeStudies,
                                IsaTabAssayFile, IsaTabInvestigationFile,
                                IsaTabSampleFile, MtblsPrivateStudies,
                                MtblsPublicStudiesIndexAll, MtblsStudies,
@@ -248,6 +248,7 @@ def initialize_app(flask_app):
     api.add_resource(CloneAccession, res_path + "/studies/clone")
     api.add_resource(DeleteStudy, res_path + "/studies/<string:study_id>/delete")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/upload")
+    api.add_resource(DragAndDropFolder, res_path + '/studies/<string:study_id>/drag-drop-upload')
     api.add_resource(StudyStatus, res_path + "/studies/<string:study_id>/status")
     api.add_resource(StudyModificationTime, res_path + "/studies/<string:study_id>/modification-time")
 
