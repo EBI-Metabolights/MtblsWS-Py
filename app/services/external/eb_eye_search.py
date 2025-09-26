@@ -301,12 +301,23 @@ class EbEyeSearchService():
     
     @staticmethod
     def process_result(result: dict):
-        pmid = result['pmid']
-        doi_output = result['doi']
-        title_manuscript = result['title']
-        api_output = f'{pmid};{doi_output};{title_manuscript}'
-        publication_date = result['firstPublicationDate']
-        return api_output, publication_date
+        publication_status = 'None'
+        api_output = ''
+        publication_date = ''
+        if result['source'] == 'PPR':
+            publication_status = 'Preprint'
+            doi_output = result['doi']
+            title_manuscript = result['title']
+            api_output = f'{doi_output};{title_manuscript}'
+            publication_date = result['firstPublicationDate']
+        else:
+            publication_status = 'Published'
+            id = result['id']
+            doi_output = result['doi']
+            title_manuscript = result['title']
+            api_output = f'{id};{doi_output};{title_manuscript}'
+            publication_date = result['firstPublicationDate']
+        return publication_status, api_output, publication_date
     
     @staticmethod
     def process_study_for_europmc(doc: Document, root: Element, study_id: str):
