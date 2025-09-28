@@ -885,7 +885,7 @@ def get_unique_organisms(studyID):
         source = '{context_path}/studies/{study_id}/organisms'.format(context_path=context_path, study_id=studyID)
         url = get_settings().server.service.mtbls_ws_host + ':' + str(get_settings().server.service.rest_api_port) + source
 
-        resp = requests.get(url, headers={'user_token': get_settings().auth.service_account.api_token})
+        resp = requests.get(url, headers={'user-token': get_settings().auth.service_account.api_token})
         data = resp.json()
         org = []
         for organism in data['organisms']:

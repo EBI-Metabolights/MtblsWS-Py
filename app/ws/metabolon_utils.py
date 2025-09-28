@@ -38,7 +38,13 @@ from app.utils import current_time
 from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
-from app.ws.utils import copy_file, get_year_plus_one, read_tsv, write_tsv
+from app.ws.utils import (
+    copy_file,
+    get_absolute_path,
+    get_year_plus_one,
+    read_tsv,
+    write_tsv,
+)
 
 """
 Utils
@@ -58,16 +64,22 @@ def validate_mzml_files(study_id, study_path):
         study_id,
         "metabolon_pipeline",
     )
-    
+
     os.makedirs(parent, exist_ok=True)
     validated_files = os.path.join(parent, "validation_result.json")
     validation_results = {}
     try:
         if os.path.exists(validated_files):
-            json.loads(validation_results)
+            with open(validated_files, "r") as f:
+                validation_results = json.load(f)
+            logger.info(
+                "Loading previous mzML file validation result from %s", validated_files
+            )
     except Exception as ex:
         logger.error("Error while reading %s: %s", validated_files, str(ex))
-        pass
+        validation_results = {}
+    if not validation_results:
+        validation_results = {}
     settings = get_settings()
     study_folder = study_path
     xsd_path = settings.file_resources.mzml_xsd_schema_file_path
@@ -108,8 +120,8 @@ def validate_mzml_files(study_id, study_path):
                 logger.error(f"{file}: failed: {invalid_files[file]}")
                 # return False, f"Error while validating file {file}: {str(e)}"
             finally:
-                with open(validated_files) as f:
-                    json.dump(f, validation_results)
+                with open(validated_files, "w") as f:
+                    json.dump(validation_results, f)
     else:
         message = f"Study folder does not exist: {study_folder}"
         logger.error(message)
@@ -130,12 +142,9 @@ def validate_mzml_file(file_path: str):
     try:
         logger.info("Validating mzML file " + file_path)
         status, result = validate_xml(xml=file_path, xmlschema=xmlschema)
-        if not status:
-            return status, result
+        return status, result["Error"]
     except Exception as e:
         return False, f"Error while validating file {file_path}: {str(e)}"
-
-    return status, result
 
 
 def validate_xml(xml=None, xmlschema=None) -> Tuple[bool, dict[str, str]]:
@@ -149,7 +158,8 @@ def validate_xml(xml=None, xmlschema=None) -> Tuple[bool, dict[str, str]]:
         print("Schema validation error. Invalid XML, schema validation failed: " + xml)
 
         return False, {"Error": "File " + xml + " is not a valid XML file"}
-
+    except Exception as ex:
+        return False, {"Error": str(ex)}
     # validate against schema
     try:
         xmlschema.assertValid(doc)
@@ -292,11 +302,12 @@ def convert_to_isa(study_location: str, study_id: str) -> Tuple[bool, str]:
         return False, str(exc)
 
 
-ss_id_pattern = re.compile(r"(.*)SSID Data.*\.csv", re.IGNORECASE)
+ss_id_pattern = re.compile(r"(.*)SSID_Data.*\.csv", re.IGNORECASE)
 
 
 def check_input_files(study_id: str, study_location: str):
-    samples_files_result = glob.iglob(os.path.join(study_location, "*SSID Data*.csv"))
+    logger.info("Study file location: %s", study_location)
+    samples_files_result = glob.iglob(os.path.join(study_location, "*SSID_Data*.csv"))
     samples_files = [x for x in samples_files_result]
     samples_files.sort()
     sample_ids: Set[str] = set()
@@ -309,11 +320,11 @@ def check_input_files(study_id: str, study_location: str):
             sample_ids.add(match_result)
     logger.info("SSID Files: ", ", ".join(samples_files))
     if len(sample_ids) == 0:
-        return False, "There are no *SSID Data*.csv file."
+        return False, "There is no *SSID_Data*.csv file."
     else:
-        search_pattern = "*Peak Area*.xlsx"
+        search_pattern = "*Peak_Area*.xlsx"
         for sample_id in sample_ids:
-            search_pattern = f"*{sample_id}*Peak Area*.xlsx"
+            search_pattern = f"*{sample_id}*Peak_Area*.xlsx"
             peak_table_paths = list(
                 glob.iglob(os.path.join(study_location, search_pattern))
             )
@@ -329,11 +340,11 @@ def check_input_files(study_id: str, study_location: str):
     for sample_id in sample_ids:
         if len(sample_ids) > 1:
             peak_tables_search = glob.iglob(
-                os.path.join(study_location, f"*{sample_id}*Peak Area*.xlsx")
+                os.path.join(study_location, f"*{sample_id}*Peak_Area*.xlsx")
             )
         else:
             peak_tables_search = glob.iglob(
-                os.path.join(study_location, "*Peak Area*.xlsx")
+                os.path.join(study_location, "*Peak_Area*.xlsx")
             )
         peak_table_paths: List[str] = [x for x in peak_tables_search]
         peak_table_paths.sort()
@@ -345,8 +356,11 @@ def check_input_files(study_id: str, study_location: str):
     for peak_table_file_path in peak_table_paths:
         try:
             validate_peak_table(peak_table_file_path)
-        except Exception:
-            return False, f"Peak table validation failed for {peak_table_file_path}."
+        except Exception as ex:
+            return (
+                False,
+                f"Peak table validation failed for {peak_table_file_path}: {str(ex)}",
+            )
     return True, ""
 
 
@@ -390,7 +404,7 @@ def create_isa_files(
         ]
     )
 
-    samples_files_result = glob.iglob(os.path.join(study_location, "*SSID Data*.csv"))
+    samples_files_result = glob.iglob(os.path.join(study_location, "*SSID_Data*.csv"))
     samples_files = [x for x in samples_files_result]
     samples_files.sort()
     sample_csv_map: Dict[str, DataFrame] = {}
@@ -446,11 +460,11 @@ def create_isa_files(
     for sample_id in sample_id_sample_name_map:
         if len(sample_id_sample_name_map) > 1:
             peak_tables_search = glob.iglob(
-                os.path.join(study_location, f"*{sample_id}*Peak Area*.xlsx")
+                os.path.join(study_location, f"*{sample_id}*Peak_Area*.xlsx")
             )
         else:
             peak_tables_search = glob.iglob(
-                os.path.join(study_location, "*Peak Area*.xlsx")
+                os.path.join(study_location, "*Peak_Area*.xlsx")
             )
         peak_table_paths: List[str] = [x for x in peak_tables_search]
         peak_table_paths.sort()
@@ -486,12 +500,12 @@ def validate_peak_table(peak_table_file_path: str):
     metabolon_template_path = (
         get_settings().file_resources.study_partner_metabolon_template_path
     )
-    maf_template: DataFrame = read_tsv(
-        os.path.join(
-            metabolon_template_path,
-            "m_metabolite_profiling_mass_spectrometry_v2_maf.tsv",
-        )
+    annotation_file_template_path = os.path.join(
+        metabolon_template_path,
+        "m_metabolite_profiling_mass_spectrometry_v2_maf.tsv",
     )
+    annotation_file_template = get_absolute_path(annotation_file_template_path)
+    maf_template: DataFrame = read_tsv(annotation_file_template)
 
     maf_template = maf_template[0:0]
     main_table: DataFrame = pd.read_excel(

@@ -39,18 +39,17 @@ from app.ws.study.study_service import StudyService, identify_study_id
 from app.ws.utils import log_request
 
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 iac = IsaApiClient()
 wsc = WsClient()
 
 
 class IsaInvestigation(Resource):
-
     @swagger.operation(
         summary="Get ISA Investigation",
         notes="Get the whole ISA Investigation in a single JSON. "
-              "Study obfuscation code is read first and will provide read-only access to the study. "
-              "User API token will give read/write access",
+        "Study obfuscation code is read first and will provide read-only access to the study. "
+        "User API token will give read/write access",
         parameters=[
             {
                 "name": "study_id",
@@ -58,7 +57,7 @@ class IsaInvestigation(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "investigation_only",
@@ -69,7 +68,7 @@ class IsaInvestigation(Resource):
                 "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": True,
-                "default": True
+                "default": True,
             },
             {
                 "name": "obfuscation-code",
@@ -77,7 +76,7 @@ class IsaInvestigation(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": False,
-                "allowMultiple": False
+                "allowMultiple": False,
             },
             {
                 "name": "user-token",
@@ -85,31 +84,28 @@ class IsaInvestigation(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": False,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+                "message": "Bad Request. Server could not understand the request due to malformed syntax.",
             },
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Study does not exist or your do not have access to this study."
+                "message": "Study does not exist or your do not have access to this study.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     @metabolights_exception_handler
     def get(self, study_id):
@@ -119,93 +115,129 @@ class IsaInvestigation(Resource):
             abort(404)
         study_id = study_id.upper()
 
-        logger.info('    ----    LOADING ISA STUDY %s    ----', study_id)
+        logger.info("    ----    LOADING ISA STUDY %s    ----", study_id)
 
         # User authentication
         user_token = None
         obfuscation_code = None
-        if 'user_token' in request.headers:
-            user_token = request.headers['user_token']
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
 
-        if 'obfuscation_code' in request.headers:
-            obfuscation_code = request.headers['obfuscation_code']
+        if "obfuscation_code" in request.headers:
+            obfuscation_code = request.headers["obfuscation_code"]
 
         # query validation
-        # 
-        # 
+        #
+        #
         investigation_only = True
         if request.args:
-            investigation_only = request.args.get('investigation_only')
+            investigation_only = request.args.get("investigation_only")
 
         skip_load_tables = True
-        if investigation_only == 'false':
+        if investigation_only == "false":
             skip_load_tables = False
 
         study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
-        logger.info('Getting Investigation %s', study_id)
+        logger.info("Getting Investigation %s", study_id)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token, obfuscation_code)
+        (
+            is_curator,
+            read_access,
+            write_access,
+            obfuscation_code,
+            study_location,
+            release_date,
+            submission_date,
+            study_status,
+        ) = wsc.get_permissions(study_id, user_token, obfuscation_code)
         if not read_access:
             abort(403, message=f"Study {study_id} is invalid or private.")
         study = StudyService.get_instance().get_study_by_acc(study_id)
         metadata_files = get_all_metadata_files(study_location)
-        investigation_file = [x for x in metadata_files if os.path.basename(x).lower() == "i_investigation.txt"]
+        investigation_file = [
+            x
+            for x in metadata_files
+            if os.path.basename(x).lower() == "i_investigation.txt"
+        ]
         if not investigation_file:
-            abort(404, message=f"There is no i_Investigation.txt file on {study_id} folder.")
-            
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id,
-                                                         user_token,
-                                                         skip_load_tables=skip_load_tables,
-                                                         study_location=study_location)
+            abort(
+                404,
+                message=f"There is no i_Investigation.txt file on {study_id} folder.",
+            )
 
-        logger.info('Got %s', isa_inv.identifier)
+        isa_study, isa_inv, std_path = iac.get_isa_study(
+            study_id,
+            user_token,
+            skip_load_tables=skip_load_tables,
+            study_location=study_location,
+        )
+
+        logger.info("Got %s", isa_inv.identifier)
         revision_status = None
         revision_comment = None
         revision_task_message = None
         if study.revision_number > 0:
-            revision: StudyRevisionModel = StudyRevisionService.get_study_revision(study.acc, revision_number=study.revision_number)
+            revision: StudyRevisionModel = StudyRevisionService.get_study_revision(
+                study.acc, revision_number=study.revision_number
+            )
             if revision:
                 revision_status = revision.status.value
                 revision_comment = revision.revision_comment or ""
                 revision_task_message = revision.task_message or ""
-        http_url = None 
+        http_url = None
         ftp_url = None
         globus_url = None
         aspera_path = None
         if study_status == "Public":
             configuration = get_settings().ftp_server.public.configuration
-            http_url = os.path.join(configuration.public_studies_http_base_url, study_id)
+            http_url = os.path.join(
+                configuration.public_studies_http_base_url, study_id
+            )
             ftp_url = os.path.join(configuration.public_studies_ftp_base_url, study_id)
-            globus_url = os.path.join(configuration.public_studies_globus_base_url, study_id)
-            aspera_path = os.path.join(configuration.public_studies_aspera_base_path, study_id)
-            
-        response = dict(mtblsStudy={},
-                        isaInvestigation={},
-                        validation={})
+            globus_url = os.path.join(
+                configuration.public_studies_globus_base_url, study_id
+            )
+            aspera_path = os.path.join(
+                configuration.public_studies_aspera_base_path, study_id
+            )
+
+        response = dict(mtblsStudy={}, isaInvestigation={}, validation={})
         success, status_update_task = get_study_task(study.reserved_accession, study.reserved_submission_id, "UPDATE_STUDY_STATUS")
 
-        response['mtblsStudy']['studyStatus'] = study_status
-        response['mtblsStudy']['curationRequest'] = ""
-        if hasattr(study, 'curation_request'):
-            response['mtblsStudy']['curationRequest'] = CurationRequest(study.curation_request).name
-        response['mtblsStudy']['modifiedTime'] = study.updatedate.isoformat()
-        response['mtblsStudy']['statusUpdateTime'] = study.status_date.isoformat() if study.status_date else ""
-        response['mtblsStudy']['read_access'] = read_access
-        response['mtblsStudy']['write_access'] = write_access
-        response['mtblsStudy']['is_curator'] = is_curator
-        response['mtblsStudy']['revisionNumber'] = study.revision_number
-        response['mtblsStudy']['revisionDatetime'] = study.revision_datetime.isoformat() if study.revision_datetime else ""
-        response['mtblsStudy']['revisionStatus'] = revision_status
+        response["mtblsStudy"]["studyStatus"] = study_status
+        response["mtblsStudy"]["curationRequest"] = ""
+        if hasattr(study, "curation_request"):
+            response["mtblsStudy"]["curationRequest"] = CurationRequest(
+                study.curation_request
+            ).name
+        response["mtblsStudy"]["modifiedTime"] = study.updatedate.isoformat()
+        response["mtblsStudy"]["statusUpdateTime"] = (
+            study.status_date.isoformat() if study.status_date else ""
+        )
+        response["mtblsStudy"]["read_access"] = read_access
+        response["mtblsStudy"]["write_access"] = write_access
+        response["mtblsStudy"]["is_curator"] = is_curator
+        response["mtblsStudy"]["revisionNumber"] = study.revision_number
+        response["mtblsStudy"]["revisionDatetime"] = (
+            study.revision_datetime.isoformat() if study.revision_datetime else ""
+        )
+        response["mtblsStudy"]["revisionStatus"] = revision_status
         response['mtblsStudy']['statusUpdateTaskId'] = status_update_task[1] if success else None
         response['mtblsStudy']['statusUpdateTaskResult'] = status_update_task[2] if success else None
-        response['mtblsStudy']['revisionComment'] = revision_comment
-        response['mtblsStudy']['revisionTaskMessage'] = revision_task_message
-        response['mtblsStudy']['studyHttpUrl'] = http_url
-        response['mtblsStudy']['studyFtpUrl'] = ftp_url
-        response['mtblsStudy']['studyGlobusUrl'] = globus_url
-        response['mtblsStudy']['studyAsperaPath'] = aspera_path
-        
+        response["mtblsStudy"]["revisionComment"] = revision_comment
+        response["mtblsStudy"]["revisionTaskMessage"] = revision_task_message
+        response["mtblsStudy"]["studyHttpUrl"] = http_url
+        response["mtblsStudy"]["studyFtpUrl"] = ftp_url
+        response["mtblsStudy"]["studyGlobusUrl"] = globus_url
+        response["mtblsStudy"]["studyAsperaPath"] = aspera_path
+
+        response["mtblsStudy"]["firstPrivateDate"] = (
+            study.first_private_date.isoformat() if study.first_private_date else ""
+        )
+        response["mtblsStudy"]["firstPublicDate"] = (
+            study.first_public_date.isoformat() if study.first_public_date else ""
+        )
+
         # ToDo: Make sure this date is formatted YYYY-MM-DD and update the isa_inv, isa_study before returning
         # response['mtblsStudy']['release_date'] = release_date
         # isa_inv.public_release_date = release_date
@@ -220,10 +252,10 @@ class IsaInvestigation(Resource):
 
     @swagger.operation(
         summary="Update Study",
-        notes='''Update Study. </p><pre><code>
+        notes="""Update Study. </p><pre><code>
 This is a rather complex object to describe here. 
 Please use the GET method above to retrieve the structure of your study prior to submitting this PUT operation.
-        </pre></code>''',
+        </pre></code>""",
         parameters=[
             {
                 "name": "study",
@@ -232,7 +264,7 @@ Please use the GET method above to retrieve the structure of your study prior to
                 "type": "string",
                 "format": "application/json",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             },
             {
                 "name": "user-token",
@@ -240,7 +272,7 @@ Please use the GET method above to retrieve the structure of your study prior to
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             },
             {
                 "name": "save-audit-copy",
@@ -250,27 +282,24 @@ Please use the GET method above to retrieve the structure of your study prior to
                 "defaultValue": True,
                 "format": "application/json",
                 "required": False,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 201,
-                "message": "Created."
-            },
+            {"code": 201, "message": "Created."},
             {
                 "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+                "message": "Bad Request. Server could not understand the request due to malformed syntax.",
             },
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            }
-        ]
+                "message": "Forbidden. Access to the study is not allowed for this user.",
+            },
+        ],
     )
     def put(self, study_id):
         log_request(request)
@@ -285,21 +314,26 @@ Please use the GET method above to retrieve the structure of your study prior to
             user_token = request.headers["user_token"]
         else:
             # user token is required
-            abort(401, message="Study does not exist or your do not have access to this study. Please provide a valid user_token")
+            abort(
+                401,
+                message="Study does not exist or your do not have access to this study. Please provide a valid user_token",
+            )
 
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
-        if "save_audit_copy" in request.headers and \
-                request.headers["save_audit_copy"].lower() == 'true':
+        if (
+            "save_audit_copy" in request.headers
+            and request.headers["save_audit_copy"].lower() == "true"
+        ):
             save_audit_copy = True
             save_msg_str = "be"
 
         # body content validation
         updated_inv = None
         try:
-            data_dict = json.loads(request.data.decode('utf-8'))
-            data = data_dict['investigation']
+            data_dict = json.loads(request.data.decode("utf-8"))
+            data = data_dict["investigation"]
             # if partial=True missing fields will be ignored
             result = IsaInvestigationSchema().load(data, partial=True)
             updated_inv = result.data
@@ -309,26 +343,38 @@ Please use the GET method above to retrieve the structure of your study prior to
             abort(400)
 
         # update Study details
-        logger.info('Updating Study Publication details for %s', study_id)
+        logger.info("Updating Study Publication details for %s", study_id)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        (
+            is_curator,
+            read_access,
+            write_access,
+            obfuscation_code,
+            study_location,
+            release_date,
+            submission_date,
+            study_status,
+        ) = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
-                                                         skip_load_tables=False,
-                                                         study_location=study_location)
+        isa_study, isa_inv, std_path = iac.get_isa_study(
+            study_id, user_token, skip_load_tables=False, study_location=study_location
+        )
 
         isa_inv = updated_inv
 
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path,
-                            save_investigation_copy=save_audit_copy,
-                            save_samples_copy=save_audit_copy,
-                            save_assays_copy=save_audit_copy)
-        logger.info('Updated %s', updated_inv.title)
+        iac.write_isa_study(
+            isa_inv,
+            user_token,
+            std_path,
+            save_investigation_copy=save_audit_copy,
+            save_samples_copy=save_audit_copy,
+            save_assays_copy=save_audit_copy,
+        )
+        logger.info("Updated %s", updated_inv.title)
 
         sch = IsaInvestigationSchema()
-        sch.context['investigation'] = Investigation()
+        sch.context["investigation"] = Investigation()
         return sch.dump(updated_inv)

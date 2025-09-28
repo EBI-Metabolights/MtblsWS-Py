@@ -1312,6 +1312,8 @@ class GetTsvFile(Resource):
         logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
         # Get the Assay table or create a new one if it does not already exist
         maf_file = False
+        col_hidden = False
+        sample_abundance = False
         if file_basename.startswith("m_") and file_basename.endswith(".tsv"):
             maf_file = True
         try:
@@ -1320,11 +1322,45 @@ class GetTsvFile(Resource):
                 col_length = len(col_names)
                 if col_length > 23:
                     selected_columns = []
+                    non_default_columns = []
                     for column in col_names:
                         header, ext = os.path.splitext(column)
                         if header in default_maf_columns:
                             selected_columns.append(column)
-                    file_df = read_tsv(file_name, selected_columns)
+                        else:
+                            non_default_columns.append(column)
+                    if len(selected_columns) > 0:
+                        file_df = read_tsv(file_name, selected_columns)
+                        col_hidden = True
+                        non_default_columns_len = len(non_default_columns)
+                        if non_default_columns_len > 0:
+                            first_five_non_default_columns = non_default_columns[:5]
+                            data_df = read_tsv(file_name, first_five_non_default_columns,nrows=10)
+                            for i in range(0, len(data_df)):
+                                val = data_df.iloc[i][first_five_non_default_columns[0]]
+                                if val:
+                                    sample_abundance = True
+                                    break
+                                if non_default_columns_len > 1:
+                                    val = data_df.iloc[i][first_five_non_default_columns[1]]
+                                    if val:
+                                        sample_abundance = True
+                                        break
+                                if non_default_columns_len > 2:
+                                    val = data_df.iloc[i][first_five_non_default_columns[2]]
+                                    if val:
+                                        sample_abundance = True
+                                        break
+                                if non_default_columns_len > 3:
+                                    val = data_df.iloc[i][first_five_non_default_columns[3]]
+                                    if val:
+                                        sample_abundance = True
+                                        break
+                                if non_default_columns_len > 4:
+                                    val = data_df.iloc[i][first_five_non_default_columns[4]]
+                                    if val:
+                                        sample_abundance = True
+                                        break
                 else:
                     file_df = read_tsv(file_name)
             else:
@@ -1337,7 +1373,7 @@ class GetTsvFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(file_df, study_id, file_name_param)
         df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
-        return {'header': df_header, 'data': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict, 'columns_hidden': col_hidden, 'sample_abundance': sample_abundance}
 
 
 class TsvFileRows(Resource):

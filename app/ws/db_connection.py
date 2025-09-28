@@ -25,14 +25,12 @@ from typing import Union
 
 import psycopg2
 import psycopg2.extras
-from psycopg2 import pool
 from app.config import get_settings
 from app.utils import (
     MetabolightsDBException,
     current_time,
     current_utc_time_without_timezone,
 )
-from app.ws.db.models import StudyRevisionModel
 from app.ws.db.types import CurationRequest
 from app.ws.settings.utils import get_study_settings
 from app.ws.study import identifier_service
@@ -131,8 +129,8 @@ query_studies_user = """
     s.id,
     s.revision_number,
     s.revision_datetime,
-    s.reserved_accession,
-    s.reserved_submission_id
+    s.first_private_date,
+    s.first_public_date
     from studies s, users u, study_user su 
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
@@ -579,6 +577,8 @@ def get_all_studies_for_user(user_token):
                 revision_task_message = revision[5] or ""
 
         revision_datetime = row[7].isoformat() if row[7] else None
+        first_private_date = row[8].isoformat() if row[8] else None
+        first_public_date = row[9].isoformat() if row[9] else None
         task_status, status_update_task = get_study_task(row[8], row[9], "UPDATE_STUDY_STATUS")
 
         complete_list.append(
@@ -602,6 +602,8 @@ def get_all_studies_for_user(user_token):
                 "studyFtpUrl": ftp_url,
                 "studyGlobusUrl": globus_url,
                 "studyAsperaPath": aspera_path,
+                "firstPrivateDate": first_private_date,
+                "firstPublicDate": first_public_date,
             }
         )
 

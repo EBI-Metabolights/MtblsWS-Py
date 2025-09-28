@@ -25,7 +25,7 @@ import subprocess
 from flask import Flask
 from flask_restful import abort
 from pubchempy import get_compounds
-from zeep import Client
+from zeep import Client, helpers
 from unidecode import unidecode
 from app.config import get_settings
 from app import application_path
@@ -47,6 +47,8 @@ from app.ws.study.study_service import StudyService
 from app.ws.utils import read_tsv, write_tsv, safe_str
 from chembl_structure_pipeline.standardizer import parse_molblock, update_mol_valences
 from rdkit import Chem
+from app.ws.chebi.settings import get_chebi_ws_settings
+from app.ws.chebi.chebi_utils import chebi_search_v2, get_complete_chebi_entity_v2, get_all_ontology_children_in_path
 
 logger = logging.getLogger('wslog')
 
@@ -1798,55 +1800,38 @@ def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_t
     name = ""
     smiles = ""
     formula = ""
-    change = None
     top_result = None
     lite_entity = None
 
     comp_name = clean_comp_name(comp_name)
 
-    client: ChebiWsProxy = get_chebi_ws_proxy()
-    if not client:
-        print_log("    -- Could not set up any ChEBI webservice calls. ")
-        abort(500, message='ERROR: Could not set up any direct ChEBI webservice calls, ChEBI WS may be down?')
-        return chebi_id, inchi, inchikey, name, smiles, formula, search_type
-
     try:
         if search_type == "inchi" and final_inchi_key:
-            print_log(
-                "    -- Querying ChEBI web services for '" + comp_name + "' based on final InChIKey " + final_inchi_key)
-            lite_entity = client.service.getLiteEntity(final_inchi_key, 'INCHI_INCHI_KEY', '10', 'ALL')
-        elif search_type == "external_db" and comp_name:
-            print_log("    -- Querying ChEBI web services for '" + comp_name + "' using external database id search")
-            lite_entity = client.service.getLiteEntity(comp_name, 'DATABASE_LINK_REGISTRY_NUMBER_CITATION', '10', 'ALL')
-        elif search_type == "synonym" and comp_name:
-            print_log("    -- Querying ChEBI web services for '" + comp_name + "' using synonym search")
-            lite_entity = client.service.getLiteEntity(comp_name, 'ALL_NAMES', '10', 'ALL')
-        elif search_type == "get_conjugate_acid" and acid_chebi_id:
-            lite_entity = client.service.getAllOntologyChildrenInPath(acid_chebi_id, 'is conjugate acid of', False)
-        elif search_type == "is_a":
-            lite_entity = client.service.getAllOntologyChildrenInPath(acid_chebi_id, 'is a', False)
-
-        if lite_entity and lite_entity[0]:
-            top_result = lite_entity[0]
+            print_log(f" -- Querying ChEBI web services 2 based on final InChIKey {final_inchi_key}")
+            chebi_id = chebi_search_v2(search_term=final_inchi_key)
+        elif search_type == "external_db" or search_type == "synonym":
+            if comp_name:
+                print_log(f"    -- Querying ChEBI web services based on compound name {comp_name}")
+                chebi_id = chebi_search_v2(search_term=comp_name)
+        elif search_type == "get_conjugate_acid" or search_type == "is_a":
+            if acid_chebi_id:
+                chebi_ids = get_all_ontology_children_in_path(acid_chebi_id=chebi_id, relation="is conjugate acid of")
+                if chebi_ids:
+                    chebi_id = chebi_ids[0]
         else:
             if final_inchi_key and len(final_inchi_key) > 0:
                 comp_name = clean_comp_name(comp_name)
-                print_log("    -- Querying ChEBI web services for " + comp_name + " using ChEBI name search")
-                lite_entity = client.service.getLiteEntity(final_inchi_key, 'CHEBI_NAME', '10', 'ALL')
-                if lite_entity:
-                    top_result = lite_entity[0]
+                print_log(f" -- Querying ChEBI web services 2 based on final InChIKey {final_inchi_key}")
+                chebi_id = chebi_search_v2(search_term=final_inchi_key)
 
-        if top_result:
-            chebi_id = top_result.chebiId
-            print_log('    -- Found ChEBI compound ' + chebi_id)
-            complete_entity = client.service.getCompleteEntity(chebi_id)
-            inchi = complete_entity.inchi
-            inchikey = complete_entity.inchiKey
-            name = complete_entity.chebiAsciiName
-            smiles = complete_entity.smiles
-            charge = complete_entity.charge
-            if complete_entity.Formulae and complete_entity.Formulae[0]:
-                formula = complete_entity.Formulae[0].data
+        complete_entity = get_complete_chebi_entity_v2(chebi_id=chebi_id)
+        inchi = complete_entity.default_structure.standard_inchi
+        inchikey = complete_entity.default_structure.standard_inchi_key
+        name = complete_entity.ascii_name
+        smiles = complete_entity.default_structure.smiles
+        charge = complete_entity.chemical_data.charge
+        if complete_entity.chemical_data.formula:
+            formula = complete_entity.chemical_data.formula
 
     except Exception as e:
         print_log('    -- Error querying ChEBI. Error ' + str(e), mode='error')
@@ -1861,6 +1846,7 @@ def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_t
                                    acid_chebi_id=chebi_id, search_type="get_conjugate_acid", loop_counter=True)
 
     return chebi_id, inchi, inchikey, name, smiles, formula, search_type
+
 
 def check_chemspider_api(inchikey='BSYNRYMUTXBXSQ-UHFFFAOYSA-N'):
     chemspider_search_status = 'Failure'
@@ -1968,12 +1954,12 @@ def create_pubchem_df(maf_df):
 
     return pubchem_df
 
-def check_chebi_api():
+def check_chebi_api(search_term='BSYNRYMUTXBXSQ-UHFFFAOYSA-N'):
     status = 'Failure'
+    chebi_ws2_url = get_chebi_ws_settings().chebi_ws_wsdl
+    chebi_es_search = f'{chebi_ws2_url}/public/es_search/?'
     try:
-        url = get_settings().chebi.service.connection.chebi_ws_wsdl
-        
-        print_log("Checking CHEBI API...   ", mode='info')
+        url = f'{chebi_es_search}term={search_term}&page=1&size=15'
         resp = requests.get(url, timeout=10)
         if resp.status_code == 200:
             status = 'Success'

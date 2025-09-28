@@ -1,3 +1,8 @@
+image: docker:24.0.5
+services:
+  - docker:24.0.5-dind
+before_script:
+  - docker info
 variables:
   APP_VERSION: "2.2.0"
   API_VERSION: "2.2.0"
@@ -74,7 +79,7 @@ deploy_metablsws_py:
   variables:
     CHART_NAME: metablsws-py
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "new-workflow" || $CI_COMMIT_BRANCH == "main-new-workflow" 
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "staging" 
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
@@ -84,7 +89,7 @@ deploy_common_worker:
   variables:
     CHART_NAME: metablsws-py-common-worker
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "staging" 
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "staging"
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
@@ -94,7 +99,7 @@ deploy_datamover_proxy:
   variables:
     CHART_NAME: metablsws-py-datamover-proxy
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "staging"
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "staging" 
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
