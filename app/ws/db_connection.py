@@ -33,7 +33,7 @@ from app.utils import (
     current_utc_time_without_timezone,
 )
 from app.ws.db.models import StudyRevisionModel
-from app.ws.db.types import CurationRequest
+from app.ws.db.types import CurationRequest, StudyCategory
 from app.ws.settings.utils import get_study_settings
 from app.ws.study import identifier_service
 from app.ws.utils import (
@@ -132,7 +132,13 @@ query_studies_user = """
     s.revision_number,
     s.revision_datetime,
     s.first_private_date,
-    s.first_public_date
+    s.first_public_date,
+    s.sample_type,
+    s.study_category,
+    s.mhd_accession,
+    s.mhd_model_version,
+    s.dataset_license,
+    s.template_version
     from studies s, users u, study_user su 
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
@@ -579,6 +585,12 @@ def get_all_studies_for_user(user_token):
         revision_datetime = row[7].isoformat() if row[7] else None
         first_private_date = row[8].isoformat() if row[8] else None
         first_public_date = row[9].isoformat() if row[9] else None
+        sample_type = row[10] if row[10] else None
+        study_category =  StudyCategory(row[11]).get_label()
+        mhd_accession = row[12] if row[12] else None
+        mhd_model_version = row[13] if row[13] else None
+        dataset_license = row[14] if row[14] else None
+        template_version = row[15] if row[15] else ""
         complete_list.append(
             {
                 "accession": study_id,
@@ -600,9 +612,14 @@ def get_all_studies_for_user(user_token):
                 "studyAsperaPath": aspera_path,
                 "firstPrivateDate": first_private_date,
                 "firstPublicDate": first_public_date,
+                "sampleTemplate": sample_type,
+                "studyCategory": study_category,
+                "mhdAccession": mhd_accession,
+                "mhdModelVersion": mhd_model_version,
+                "datasetLicense": dataset_license,
+                "templateVersion": template_version
             }
         )
-
     return complete_list
 
 

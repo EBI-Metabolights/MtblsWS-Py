@@ -19,7 +19,7 @@
 import json
 import os
 from flask import request
-from flask_restful import Resource, abort, reqparse
+from flask_restful import Resource, abort
 from isatools.model import Investigation
 from marshmallow import ValidationError
 from flask_restful_swagger import swagger
@@ -27,7 +27,7 @@ from app.config import get_settings
 from app.study_folder_utils import get_all_metadata_files
 from app.utils import metabolights_exception_handler
 from app.ws.db.models import StudyRevisionModel
-from app.ws.db.types import CurationRequest
+from app.ws.db.types import CurationRequest, StudyCategory
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import IsaInvestigationSchema
 from app.ws.mtblsWSclient import WsClient
@@ -233,7 +233,12 @@ class IsaInvestigation(Resource):
         response["mtblsStudy"]["firstPublicDate"] = (
             study.first_public_date.isoformat() if study.first_public_date else ""
         )
-
+        response["mtblsStudy"]["sampleTemplate"] = study.sample_type or ""
+        response["mtblsStudy"]["studyCategory"] = StudyCategory(study.study_category).get_label()
+        response["mtblsStudy"]["mhdAccession"] = study.mhd_accession or ""
+        response["mtblsStudy"]["mhdModelVersion"] = study.mhd_model_version or ""
+        response["mtblsStudy"]["datasetLicense"] = study.dataset_license or ""
+        response["mtblsStudy"]["templateVersion"] = study.template_version or ""
         # ToDo: Make sure this date is formatted YYYY-MM-DD and update the isa_inv, isa_study before returning
         # response['mtblsStudy']['release_date'] = release_date
         # isa_inv.public_release_date = release_date

@@ -1,27 +1,16 @@
-import datetime
 import json
 import logging
-from app.services.storage_service.models import SyncTaskResult, SyncTaskStatus
-from app.study_folder_utils import FileDescriptor
 from app.tasks.datamover_tasks.basic_tasks.ftp_operations import index_study_data_files
-from app.tasks.worker import MetabolightsTask, celery
-from app.utils import current_time
 import os
-import pathlib
-from typing import Dict, List, OrderedDict, Union
 from app.config import get_settings
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study
 from app.ws.db.types import StudyRevisionStatus, StudyStatus
-from app.ws.redis.redis import get_redis_server
-from app.tasks.worker import celery
-from celery.result import AsyncResult
 
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 
 logger = logging.getLogger("wslog")
-
 
 
 if __name__ == "__main__":
@@ -59,7 +48,6 @@ if __name__ == "__main__":
     mounted_paths = get_settings().study.mounted_paths
     # studies = ["MTBLS1"]
     for study_id in studies:
-        
         target_root_path = os.path.join(
             mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES"
         )
