@@ -51,16 +51,17 @@ from app.ws.ftp.ftp_operations import (FtpFolderPermission,
                                        FtpFolderPermissionModification,
                                        FtpFolderSyncStatus, PrivateFtpFolder,
                                        PrivateFtpFolderPath, PrivateFtpUploadInfo, SyncCalculation,
-                                       SyncFromFtpFolder, SyncFromStudyFolder, SyncPublicStudyToFTP)
+                                       SyncFromFtpFolder, SyncFromStudyFolder)
 from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.internal import BannerMessage
-from app.ws.isaAssay import StudyAssay, StudyAssayDelete, StudySampleTemplate
+from app.ws.isaAssay import StudyAssay, StudyAssayDelete
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaStudy import (StudyContacts, StudyDescription, StudyDescriptors,
                              StudyFactors, StudyMetaInfo, StudyProtocols,
                              StudyPublications, StudyReleaseDate,
                              StudySubmitters, StudyTitle)
+from app.ws.isa_table_sheet import StudySampleTemplate
 from app.ws.jira_update import Jira
 from app.ws.metabolight_parameters import MetabolightsParameters
 from app.ws.metabolight_statistics import MetabolightsStatistics
@@ -77,7 +78,7 @@ from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
                                MtblsPublicStudiesIndexAll, MtblsStudies,
                                MtblsStudiesIndexAll, MtblsStudiesIndexSync,
                                MtblsStudiesWithMethods, MtblsStudyFolders,
-                               MtblsStudyValidationStatus, MyMtblsStudies,
+                               MyMtblsStudies,
                                MyMtblsStudiesDetailed, PublicStudyDetail,
                                ReindexStudy, RetryReindexStudies, StudyFolderSynchronization,
                                UnindexedStudy)
@@ -110,9 +111,6 @@ from app.ws.tasks.create_json_files import (PublicStudyJsonExporter,
 from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
 from app.ws.v1.studies import V1StudyDetail
-from app.ws.validation import (NewValidation, OverrideValidation, StudyValidationTask,
-                               ValidationFile, ValidationProcess,
-                               ValidationComment, ValidationReport)
 from app.ws.reports import EuropePMCReport
 
 
@@ -335,14 +333,8 @@ def initialize_app(flask_app):
 
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
-    api.add_resource(StudyValidationTask, res_path + "/studies/<string:study_id>/validation-task")
-    api.add_resource(ValidationReport, res_path + "/studies/<string:study_id>/validation-report")
     api.add_resource(StudyFolderSynchronization, res_path + "/studies/<string:study_id>/study-folders/rsync-task")
     
-    api.add_resource(ValidationFile, res_path + "/studies/<string:study_id>/validate-study")
-    api.add_resource(NewValidation, res_path + "/studies/<string:study_id>/validation")
-    api.add_resource(MtblsStudyValidationStatus,
-                     res_path + "/studies/<string:study_id>/validation-status/<string:validation_status>")
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
     api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
@@ -365,9 +357,6 @@ def initialize_app(flask_app):
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
 
     api.add_resource(EnzymePortalHelper, res_path + "/ebi-internal/check_if_metabolite/<string:chebi_id>")
-    api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
-    api.add_resource(ValidationProcess, res_path + "/ebi-internal/<string:study_id>/validate-study/update-file")
-    api.add_resource(ValidationComment, res_path + "/ebi-internal/<string:study_id>/validate-study/comment")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split-maf")
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")

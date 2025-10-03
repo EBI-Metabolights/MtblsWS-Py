@@ -16,17 +16,11 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import glob
-import csv
 import json
 import logging
-import os
-import os.path
-from typing import Dict, List, Set, Tuple
-import numpy as np
-import pandas as pd
+from typing import Dict, Set, Tuple
 from flask import request
-from flask_restful import Resource, reqparse, abort
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from isatools.model import (
     Extract,
@@ -36,11 +30,11 @@ from isatools.model import (
     Protocol,
     Study,
     ProtocolParameter,
-    OntologySource
 )
 from app.utils import metabolights_exception_handler
 
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.isa_table_templates import add_new_assay_sheet
 from app.ws.mm_models import (
     AssaySchema,
     ProcessSchema,
@@ -49,24 +43,15 @@ from app.ws.mm_models import (
     SampleSchema,
 )
 from app.ws.mtblsWSclient import WsClient
-from app.ws.settings.utils import get_study_settings
+from app.ws.study.isa_table_models import NumericValue, OntologyValue
+from app.ws.study.user_service import UserService
 from app.ws.utils import (
     get_assay_type_from_file_name,
     get_assay_headers_and_protocols,
-    get_sample_headers_and_data,
-    write_tsv,
     remove_file,
     get_maf_name_from_assay_name,
-    add_new_protocols_from_assay,
-    create_maf,
-    add_ontology_to_investigation,
-    read_tsv,
     log_request,
-    copy_file,
-    new_timestamped_folder,
-    totuples,
 )
-from app.ws.db_connection import update_study_sample_type
 
 logger = logging.getLogger("wslog")
 iac = IsaApiClient()
@@ -194,7 +179,6 @@ class StudyAssayDelete(Resource):
             abort(401)
 
         # query validation
-        
 
         # check for access rights
         (
@@ -407,15 +391,19 @@ class StudyAssay(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         # query validation
-        
-        
+
         filename = None
-        
+
         list_only = True
         if request.args:
-            
-            filename = request.args.get("filename").lower() if request.args.get("filename") else None
-            list_only = True if request.args.get("list_only").lower() == "true" else False
+            filename = (
+                request.args.get("filename").lower()
+                if request.args.get("filename")
+                else None
+            )
+            list_only = (
+                True if request.args.get("list_only").lower() == "true" else False
+            )
 
         logger.info("Getting Assay %s for %s", filename, study_id)
         # check for access rights
@@ -459,6 +447,7 @@ class StudyAssay(Resource):
 { 
  "assay": {        
     "type": "LC-MS",
+    "template_version": "1.0",
     "columns": [
             {
                 "name"  : "polarity",
@@ -548,6 +537,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         # param validation
@@ -562,20 +552,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             # user token is required
             abort(401)
 
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location_deprecated,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         # check if we should be keeping copies of the metadata
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -589,287 +566,80 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
         # body content validation
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
-            data = data_dict["assay"]
-            assay_type = data["type"]
-            # platform = data['platform']
-            try:
-                columns = data["columns"]
-            except:
-                columns = []  # If not provided, ignore
-
+            data = data_dict.get("assay", {})
+            assay_type = data.get("type")
+            template_version = data.get("template_version", "")
+            columns = data.get("columns", [])
             if assay_type is None:
                 abort(412)
 
-        except (Exception):
+        except Exception:
             abort(400, message="Incorrect JSON provided")
-        study_metadata_location = os.path.join(
-            get_study_settings().mounted_paths.study_metadata_files_root_path, study_id
-        )
-        isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id=study_id,
-            api_key=user_token,
-            skip_load_tables=True,
-            study_location=study_metadata_location,
-        )
 
-        # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
-        # isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_id)
+        polarity = ""
+        column_type = ""
+        column_default_values = {}
+        for key_val in columns:
+            name = key_val.get("name", "") or ""
+            value = key_val.get("value", "") or ""
 
-        isa_inv, obi = add_ontology_to_investigation(
-            isa_inv,
-            "OBI",
-            "29",
-            "http://data.bioontology.org/ontologies/OBI",
-            "Ontology for Biomedical Investigations",
-        )
-
-        # Add the new assay to the investigation file
-        assay_file_name, assay, protocol_params, overall_technology = create_assay(
-            assay_type, columns, study_id, obi
-        )
-
-        # add the assay to the study
-        isa_study.assays.append(assay)
-
-        maf_name = ""
-        try:
-            maf_name = get_maf_name_from_assay_name(assay_file_name)
-            maf_df, annotation_file_name, new_column_counter = create_maf(
-                overall_technology, study_metadata_location, assay_file_name, maf_name
-            )
-        except:
-            logger.error(
-                "Could not create MAF for study "
-                + study_id
-                + " under assay "
-                + assay_file_name
-            )
-
-        message = update_assay_column_values(
-            columns, assay_file_name, maf_file_name=maf_name
-        )
-
-        logger.info("A copy of the previous files will %s saved", save_msg_str)
-        isa_study = add_new_protocols_from_assay(
-            assay_type, protocol_params, assay_file_name, study_id, isa_study
-        )
-        iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
-        )
-
-        protocol_names = ""
-        for prot in protocol_params:
-            protocol_names = protocol_names + prot[1] + ","
-
-        json_assay = AssaySchema().dump(assay)
-
-        return {
-            "success": "The assay was added to study " + study_id,
-            "protocols": protocol_names.rstrip(","),
-            "filename": assay.filename,
-            "maf": maf_name,
-            "assay": json_assay[0],
-        }
-
-
-# def get_all_unique_protocols_from_study_assays(study_id, assays):
-#     all_protocols = []
-#     unique_protocols = []
-#     all_names = []
-#     short_list = []
-
-#     try:
-#         for assay in assays:
-#             assay_type = get_assay_type_from_file_name(study_id, assay.filename)
-#             tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
-#                 assay_mandatory_type = get_assay_headers_and_protocols(assay_type)
-#             all_protocols = all_protocols + protocols
-#     except:
-#         return []
-
-#     for protocol in all_protocols:
-#         all_names.append(protocol[1])
-
-#     for prot_name in all_names:
-#         unique_protocols.append([prot_name, all_names.count(prot_name)])
-
-#     unique_protocols = list(map(list, set(map(lambda i: tuple(i), unique_protocols))))
-
-#     for i in unique_protocols:
-#         if i[1] == 1:
-#             short_list.append(i[0])
-
-#     return short_list
-
-
-def create_assay(assay_type, columns, study_id, ontology, output_folder=None):
-    profiling = "metabolite_profiling"
-    settings = get_study_settings()
-    studies_path = (
-        settings.mounted_paths.study_metadata_files_root_path
-    )  # Root folder for all studies
-    study_path = os.path.join(studies_path, study_id)  # This particular study
-    polarity = ""
-    column = ""
-    for key_val in columns:
-        if key_val["name"].lower() == "polarity":
-            polarity = key_val["value"]
-
-        if key_val["name"].lower() == "column type":
-            column = key_val["value"]
-
-    (
-        tidy_header_row,
-        tidy_data_row,
-        protocols,
-        assay_desc,
-        assay_data_types,
-        assay_file_type,
-        assay_data_mandatory,
-    ) = get_assay_headers_and_protocols(assay_type)
-
-    assay_platform = assay_desc + " - " + polarity
-    if column != "":
-        assay_platform = assay_platform + " - " + column
-
-    # this will be the final name for the copied assay template
-    file_name = (
-        "a_"
-        + study_id.upper()
-        + "_"
-        + assay_type
-        + "_"
-        + polarity
-        + "_"
-        + column.replace(" ", "-").lower()
-        + "_"
-        + profiling
-    )
-
-    file_name = get_valid_assay_file_name(file_name, study_path)
-    assay, overall_technology = get_new_assay(
-        file_name, assay_platform, assay_type, ontology
-    )
-
-    if output_folder:
-        study_path = output_folder
-    file_name = os.path.join(study_path, file_name)
-
-    try:
-        file = open(file_name, "w", encoding="utf-8")
-        writer = csv.writer(file, delimiter="\t", quotechar='"')
-        writer.writerow(tidy_header_row)
-        writer.writerow(tidy_data_row)
-        file.close()
-    except (FileNotFoundError, Exception):
-        abort(500, message="Could not write the assay file")
-
-    return file_name, assay, protocols, overall_technology
-
-
-def get_valid_assay_file_name(file_name, study_path):
-    # Has the filename has already been used in another assay?
-    file_counter = 0
-    assay_file = os.path.join(study_path, file_name + ".txt")
-    file_exists = os.path.isfile(assay_file)
-    while file_exists:
-        file_counter += 1
-        new_file = file_name + "-" + str(file_counter)
-        if not os.path.isfile(os.path.join(study_path, new_file + ".txt")):
-            file_name = new_file
-            break
-
-    return file_name + ".txt"
-
-
-def get_new_assay(file_name, assay_platform, assay_type, ontology):
-    assay = Assay(filename=file_name, technology_platform=assay_platform)
-    # technologyType
-    technology = OntologyAnnotation(
-        term_accession="http://purl.obolibrary.org/obo/OBI_0000366",
-        term="metabolite profiling",
-    )
-    # measurementType
-    measurement = assay.measurement_type
-    overall_technology = ""
-
-    if assay_type in ["NMR", "MRImaging"]:
-        technology.term = "NMR spectroscopy assay"
-        technology.term_accession = "http://purl.obolibrary.org/obo/OBI_0000623"
-        overall_technology = "NMR"
-    else:
-        technology.term = "mass spectrometry assay"
-        technology.term_accession = "http://purl.obolibrary.org/obo/OBI_0000470"
-        overall_technology = "MS"
-
-    # Add the termSource to the technologyType
-    technology.term_source = ontology
-    # Add the ontology term to the assay.technologyType
-    assay.technology_type = technology
-    # Add the measurementType to the assay.measurementType
-    measurement.term_source = ontology
-    measurement.term = "metabolite profiling"
-    measurement.term_accession = "http://purl.obolibrary.org/obo/OBI_0000366"
-    assay.measurement_type = measurement
-
-    try:
-        result = AssaySchema().load(assay, partial=True)
-    except Exception:
-        abort(400)
-
-    return assay, overall_technology
-
-
-def update_assay_column_values(columns, assay_file_name, maf_file_name=None):
-    # These are the real column headers from the assay file
-    assay_col_type = "Parameter Value[Column type]"
-    assay_scan_pol = "Parameter Value[Scan polarity]"
-    assay_sample_name = "Sample Name"
-    maf_column_name = "Metabolite Assignment File"
-
-    try:
-        table_df = read_tsv(assay_file_name)
-    except FileNotFoundError:
-        abort(400, message="The file " + assay_file_name + " was not found")
-
-    for key_val in columns:  # These are the values from the JSON passed
-        column_header = key_val["name"]
-        cell_value = key_val["value"]
-
-        try:
-            if column_header.lower() == "polarity":
-                column_index = table_df.columns.get_loc(assay_scan_pol)
-            elif column_header.lower() == "column type":
-                column_index = table_df.columns.get_loc(assay_col_type)
+            if isinstance(value, dict):
+                if hasattr(value, "unit"):
+                    unit = value.get("unit", {})
+                    default_value = NumericValue(
+                        unit=OntologyValue(
+                            term=unit.get("term") or "",
+                            term_accession=unit.get("term_accession", "") or "",
+                            term_source=unit.get("term_source", ""),
+                        )
+                    )
+                else:
+                    default_value = OntologyValue(
+                        term=value.get("term", "") or "",
+                        term_accession=value.get("term_accession", "") or "",
+                        term_source=value.get("term_source", ""),
+                    )
             else:
-                column_index = table_df.columns.get_loc(column_header)
+                default_value = str(value)
+            if name.lower() == "polarity":
+                term = (
+                    default_value.term.lower()
+                    if isinstance(default_value, OntologyAnnotation)
+                    else default_value.lower()
+                )
+                if "pos" in term and "neg" not in term:
+                    polarity = "positive"
+                elif "neg" in term and "pos" not in term:
+                    polarity = "negative"
+                elif "alt" in term or ("neg" in term and "pos" in term):
+                    polarity = "alternating"
+                column_default_values["Parameter Value[Scan polarity]"] = default_value
+            elif name.lower() == "column type":
+                column_type = value.lower().replace(" ", "-").strip()
+                column_default_values["Parameter Value[Column type]"] = default_value
+            else:
+                column_default_values[name] = default_value
 
-            update_cell(table_df, column_index, cell_value)
-        except:
-            logger.warning("Could not find %s in the assay file", column_header)
-
-    # Also update the default sample name, this will trigger validation errors
-    update_cell(table_df, table_df.columns.get_loc(assay_sample_name), "")
-
-    # Replace the default MAF file_name with the correct one
-    if maf_file_name is not None:
-        update_cell(table_df, table_df.columns.get_loc(maf_column_name), maf_file_name)
-
-    # Write the updated row back in the file
-    message = write_tsv(table_df, assay_file_name)
-
-    return message
-
-
-def update_cell(table_df, column_index, cell_value):
-    try:
-        for row_val in range(table_df.shape[0]):
-            table_df.iloc[int(0), int(column_index)] = cell_value
-    except ValueError:
-        abort(
-            417,
-            message="Unable to find the required 'value', 'row' and 'column' values",
+        success, assay_file_name, maf_filename = add_new_assay_sheet(
+            study_id, assay_type, polarity, column_type, column_default_values
         )
+
+        if success:
+            return {
+                "success": "The assay was added to study " + study_id,
+                "protocols": "",
+                "filename": assay_file_name,
+                "maf": maf_filename,
+                "assay": {},
+            }
+        else:
+            return {
+                "success": "failed ",
+                "protocols": "",
+                "filename": "",
+                "maf": "",
+                "assay": {},
+            }
 
 
 class AssayProcesses(Resource):
@@ -977,30 +747,38 @@ class AssayProcesses(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         # query validation
-        
-        
+
         assay_filename = None
-        
+
         process_name = None
-        
+
         protocol_name = None
-        
+
         list_only = True
         use_default_values = False
         if request.args:
-            
             assay_filename = (
-                request.args.get("assay_filename").lower() if request.args.get("assay_filename") else None
+                request.args.get("assay_filename").lower()
+                if request.args.get("assay_filename")
+                else None
             )
             process_name = (
-                request.args.get("process_name").lower() if request.args.get("process_name") else None
+                request.args.get("process_name").lower()
+                if request.args.get("process_name")
+                else None
             )
             protocol_name = (
-                request.args.get("protocol_name").lower() if request.args.get("protocol_name") else None
+                request.args.get("protocol_name").lower()
+                if request.args.get("protocol_name")
+                else None
             )
-            list_only = True if request.args.get("list_only").lower() == "true" else False
+            list_only = (
+                True if request.args.get("list_only").lower() == "true" else False
+            )
             use_default_values = (
-                True if request.args.get("use_default_values").lower() == "true" else False
+                True
+                if request.args.get("use_default_values").lower() == "true"
+                else False
             )
 
         logger.info("Getting Processes for Assay %s in %s", assay_filename, study_id)
@@ -1220,20 +998,24 @@ class AssaySamples(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         # query validation
-        
-        
+
         assay_filename = None
-        
+
         sample_name = None
-        
+
         list_only = True
         if request.args:
-            
             assay_filename = (
-                request.args.get("assay_filename").lower() if request.args.get("assay_filename") else None
+                request.args.get("assay_filename").lower()
+                if request.args.get("assay_filename")
+                else None
             )
-            sample_name = request.args.get("name").lower() if request.args.get("name") else None
-            list_only = True if request.args.get("list_only").lower() == "true" else False
+            sample_name = (
+                request.args.get("name").lower() if request.args.get("name") else None
+            )
+            list_only = (
+                True if request.args.get("list_only").lower() == "true" else False
+            )
 
         logger.info("Getting Samples for Assay %s in %s", assay_filename, study_id)
         # check for access rights
@@ -1390,20 +1172,24 @@ class AssaySamples(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         # query validation
-        
-        
+
         assay_filename = None
-        
+
         sample_name = None
-        
+
         list_only = True
         if request.args:
-            
             assay_filename = (
-                request.args.get("assay_filename").lower() if request.args.get("assay_filename") else None
+                request.args.get("assay_filename").lower()
+                if request.args.get("assay_filename")
+                else None
             )
-            sample_name = request.args.get("name").lower() if request.args.get("name") else None
-            list_only = True if request.args.get("list_only").lower() == "true" else False
+            sample_name = (
+                request.args.get("name").lower() if request.args.get("name") else None
+            )
+            list_only = (
+                True if request.args.get("list_only").lower() == "true" else False
+            )
         if not assay_filename:
             logger.warning("Missing Assay filename.")
             abort(400)
@@ -1475,9 +1261,13 @@ class AssaySamples(Resource):
         # check if all samples were updated
         warns = ""
         if len(updated_samples) != len(sample_list):
-            warns = "Some of the samples were not updated. " "Updated " + str(
-                len(updated_samples)
-            ) + " out of " + str(len(sample_list))
+            warns = (
+                "Some of the samples were not updated. "
+                "Updated "
+                + str(len(updated_samples))
+                + " out of "
+                + str(len(sample_list))
+            )
             logger.warning(warns)
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
@@ -1639,20 +1429,24 @@ class AssayOtherMaterials(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         # query validation
-        
-        
+
         assay_filename = None
-        
+
         obj_name = None
-        
+
         list_only = True
         if request.args:
-            
             assay_filename = (
-                request.args.get("assay_filename").lower() if request.args.get("assay_filename") else None
+                request.args.get("assay_filename").lower()
+                if request.args.get("assay_filename")
+                else None
             )
-            obj_name = request.args.get("name").lower() if request.args.get("name") else None
-            list_only = True if request.args.get("list_only").lower() == "true" else False
+            obj_name = (
+                request.args.get("name").lower() if request.args.get("name") else None
+            )
+            list_only = (
+                True if request.args.get("list_only").lower() == "true" else False
+            )
 
         logger.info(
             "Getting Other Materials for Assay %s in %s", assay_filename, study_id
@@ -1797,22 +1591,26 @@ class AssayDataFiles(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         # query validation
-        
-        
+
         assay_filename = None
-        
+
         data_filename = None
-        
+
         list_only = True
         if request.args:
-            
             assay_filename = (
-                request.args.get("assay_filename").lower() if request.args.get("assay_filename") else None
+                request.args.get("assay_filename").lower()
+                if request.args.get("assay_filename")
+                else None
             )
             data_filename = (
-                request.args.get("data_filename").lower() if request.args.get("data_filename") else None
+                request.args.get("data_filename").lower()
+                if request.args.get("data_filename")
+                else None
             )
-            list_only = True if request.args.get("list_only").lower() == "true" else False
+            list_only = (
+                True if request.args.get("list_only").lower() == "true" else False
+            )
 
         logger.info("Getting Data Files for Assay %s in %s", assay_filename, study_id)
         # check for access rights
@@ -1866,226 +1664,3 @@ class AssayDataFiles(Resource):
         if list_only:
             sch = DataFileSchema(only=("filename",), many=True)
         return extended_response(data={"dataFiles": sch.dump(found).data}, warns=warns)
-
-
-class StudySampleTemplate(Resource):
-    @swagger.operation(
-        summary="Init Sample sheet",
-        notes="""Initiate or Override sample sheet for given type from the template""",
-        parameters=[
-            {
-                "name": "study_id",
-                "description": "MTBLS Identifier",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string",
-            },
-            {
-                "name": "sample_type",
-                "description": "Type of Sample",
-                "required": True,
-                "allowEmptyValue": False,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-                "enum": [
-                    "minimum",
-                    "clinical",
-                    "in-vitro",
-                    "only-in-vitro",
-                    "non-clinical-tox",
-                    "plant",
-                    "isotopologue",
-                    "metaspace-imaging",
-                    "nmr-imaging",
-                    "ms-imaging",
-                    "minimum-bsd",
-                ],
-                "defaultValue": "minimum",
-                "default": "minimum",
-            },
-            {
-                "name": "user-token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False,
-            },
-            {
-                "name": "force",
-                "description": "Force overriding of sample sheet regardless of sample data if set True. Do nothing if data present and value set false",
-                "required": False,
-                "allowMultiple": False,
-                "allowEmptyValue": False,
-                "paramType": "query",
-                "dataType": "string",
-                "enum": ["True", "False"],
-                "defaultValue": "False",
-                "default": "False",
-            },
-        ],
-        responseMessages=[
-            {"code": 200, "message": "OK."},
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax.",
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication.",
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user.",
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist.",
-            },
-        ],
-    )
-    @metabolights_exception_handler
-    def post(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404)
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        # query validation        sampleType = None
-        force_override = False
-        if request.args:
-            
-            sampleType = (
-                request.args.get("sample_type").lower() if request.args.get("sample_type") else "minimum"
-            )
-
-            if request.args and request.args.get("force"):
-                force_override = True if request.args.get("force").lower() == "true" else False
-
-        logger.info("Init Sample for %s; Type %s", study_id, sampleType)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not is_curator:
-            abort(403)
-
-        filename, protocols, update_status = create_sample_sheet(
-            sample_type=sampleType, study_id=study_id, force_override=force_override
-        )
-        if update_status:
-            return {
-                "The sample sheet creation status": "Successful",
-                "filename": filename,
-            }
-        else:
-            return {"The sample sheet creation status": "Unsuccessful"}
-
-
-def create_sample_sheet(sample_type, study_id, force_override):
-    settings = get_study_settings()
-    studies_path = (
-        settings.mounted_paths.study_metadata_files_root_path
-    )  # Root folder for all studies
-    study_path = os.path.join(studies_path, study_id)  # This particular study
-
-    (
-        tidy_header_row,
-        tidy_data_row,
-        protocols,
-        sample_desc,
-        sample_data_types,
-        sample_file_type,
-        sample_data_mandatory,
-    ) = get_sample_headers_and_data(sample_type)
-
-    sample_file_name = "s_" + study_id.upper() + ".txt"
-    sample_file_fullpath = os.path.join(study_path, sample_file_name)
-    update_status = False
-    try:
-        if force_override:
-            create_audit_copy_and_write_table(
-                sample_file_name=sample_file_name,
-                study_id=study_id,
-                tidy_header_row=tidy_header_row,
-                tidy_data_row=tidy_data_row,
-            )
-            update_status = update_study_sample_type(
-                study_id=study_id, sample_type=sample_type
-            )
-        else:
-            if os.path.exists(sample_file_fullpath):
-                sample_df = pd.read_csv(
-                    sample_file_fullpath, sep="\t", header=0, encoding="utf-8"
-                )
-                sample_df = sample_df.replace(np.nan, "", regex=True)  # Remove NaN
-                df_data_dict = totuples(sample_df.reset_index(), "rows")
-                row_count = len(df_data_dict["rows"])
-                if row_count == 1:
-                    create_audit_copy_and_write_table(
-                        sample_file_name=sample_file_name,
-                        study_id=study_id,
-                        tidy_header_row=tidy_header_row,
-                        tidy_data_row=tidy_data_row,
-                    )
-                    update_status = update_study_sample_type(
-                        study_id=study_id, sample_type=sample_type
-                    )
-            else:
-                create_audit_copy_and_write_table(
-                    sample_file_name=sample_file_name,
-                    study_id=study_id,
-                    tidy_header_row=tidy_header_row,
-                    tidy_data_row=tidy_data_row,
-                )
-                update_status = update_study_sample_type(
-                    study_id=study_id, sample_type=sample_type
-                )
-
-    except Exception as ex:
-        logger.error("Exception while overriding sample sheet - %s", ex)
-        abort(500, message="Could not write the Sample file")
-
-    return sample_file_name, protocols, update_status
-
-
-def create_audit_copy_and_write_table(
-    sample_file_name, study_id, tidy_header_row, tidy_data_row
-):
-    # Create audit copy
-    settings = get_study_settings()
-    studies_path = (
-        settings.mounted_paths.study_metadata_files_root_path
-    )  # Root folder for all studies
-    study_path = os.path.join(studies_path, study_id)
-    sample_file_fullpath = os.path.join(study_path, sample_file_name)
-    if os.path.exists(sample_file_fullpath):
-        update_path = os.path.join(
-            settings.mounted_paths.study_audit_files_root_path,
-            study_id,
-            settings.audit_folder_name,
-        )
-        dest_path = new_timestamped_folder(update_path)
-        src_file = sample_file_fullpath
-        dest_file = os.path.join(dest_path, sample_file_name)
-        logger.info("Copying %s to %s", src_file, dest_file)
-        copy_file(src_file, dest_file)
-    # Write Table data
-    file = open(sample_file_fullpath, "w", encoding="utf-8")
-    writer = csv.writer(file, delimiter="\t", quotechar='"')
-    writer.writerow(tidy_header_row)
-    writer.writerow(tidy_data_row)
-    file.close()

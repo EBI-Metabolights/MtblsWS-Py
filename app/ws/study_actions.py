@@ -912,17 +912,6 @@ class StudyStatus(Resource):
             first_private_date=first_private_date,
         )
 
-    # @staticmethod
-    # def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
-    #     validates = validate_study(study_id, study_location, user_token, obfuscation_code, log_category='error')
-    #     validations = validates['validation']
-    #     status = validations['status']
-
-    #     if status != 'error':
-    #         return True
-
-    #     return False
-
 
 class ToggleAccess(Resource):
     @swagger.operation(

@@ -9,6 +9,7 @@ from app.config import get_settings
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus
+from app.ws.study.study_folder_service import StudyFolderService
 from app.ws.study.study_revision_service import StudyRevisionService
 
 from app.ws.study.user_service import UserService
@@ -70,7 +71,7 @@ def prepare_revisions():
                 study_status = StudyStatus(db_study.status)
                 audit_folder_path = os.path.join(study_audit_root_path, folder_name)
                 if not os.path.exists(audit_folder_path):
-                    StudyRevisionService.create_audit_folder(
+                    StudyFolderService.create_audit_folder(
                         db_study, folder_name=folder_name
                     )
                 if study_status != StudyStatus.PUBLIC:

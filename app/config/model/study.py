@@ -29,13 +29,13 @@ class StudyMountedPaths(BaseModel):
 class StudySettings(BaseModel):
     mounted_paths: StudyMountedPaths
     accession_number_prefix: str = "MTBLS"
-    submission_id_prefix: str = "REQ" # will be deprecated
     provisional_id_prefix: str = "REQ"
     accession_number_regex: str = r"^(MTBLS)(\d{1,20})$"
-    submission_id_regex: str = r"^(REQ)(\d{1,20})$"  # will be deprecated
     provisional_id_regex: str = r"^(REQ)(\d{1,20})$"
+    default_metadata_template_version: str = "1.0"
+    default_metadata_sample_template_name: str = "minimum"
+    default_study_category: str = "other"
     private_ftp_user_home_path: str = ""
-    max_study_in_submitted_status: int = 2 # will be deprecated
     max_study_in_provisional_status: int = 2
     min_study_creation_interval_in_mins: int = 5
     audit_files_symbolic_link_name: str = "AUDIT_FILES"
@@ -49,8 +49,6 @@ class StudySettings(BaseModel):
     study_folder_maintenance_log_file_name: str = "maintenance_log.tsv"
     metadata_files_signature_file_name: str = "metadata_files_signature.txt"
     data_files_maintenance_file_name: str = "data_files_summary.txt"
-
-    template_sample_file_name: str = "s_Sample.txt"
     
     files_list_json_file_name: str = "files-all.json"
     files_list_json_file_creation_timeout: int = 900

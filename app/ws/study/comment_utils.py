@@ -2,8 +2,10 @@ import datetime
 import logging
 from typing import OrderedDict
 from isatools import model
+from pydantic import BaseModel
 
 from app.ws.db.types import StudyCategory
+from app.ws.study.isa_table_models import OntologyValue
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,12 @@ def update_revision_comments(
             isa_study.comments.remove(comment)
 
 
+class CharacteristicDescription(BaseModel):
+    name: str
+    type: OntologyValue
+    format: str
+
+
 @staticmethod
 def update_mhd_comments(
     isa_study: model.Study,
@@ -56,7 +64,101 @@ def update_mhd_comments(
     mhd_model_version: None | str = None,
     mhd_accession: None | str = None,
     sample_template: None | str = None,
-    template_version: None | str = None
+    template_version: None | str = None,
+    characteristic_definitions: None | list[CharacteristicDescription] = None,
+) -> list[str]:
+    old_comments = {}
+    if isa_study.comments:
+        old_comments = {x.name: x for x in isa_study.comments}
+
+    new_comments = []
+
+    study_category_name = study_category
+    if study_category is not None:
+        if isinstance(study_category, StudyCategory):
+            study_category_name = study_category.get_label()
+        if isinstance(study_category, int):
+            try:
+                category = StudyCategory(study_category)
+            except Exception:
+                logger.warning(
+                    "'%s' can not be converted to study category for %s",
+                    study_category,
+                    isa_study.identifier,
+                )
+                category = StudyCategory.OTHER
+            study_category_name = category.get_label()
+
+    mhd_comments_map: OrderedDict[str, model.Comment] = OrderedDict()
+
+    mhd_comments_map["study category"] = model.Comment(
+        name="Study Category", value=str(study_category_name or "")
+    )
+    mhd_comments_map["template version"] = model.Comment(
+        name="Template Version", value=str(template_version or "")
+    )
+    mhd_comments_map["sample template"] = model.Comment(
+        name="Sample Template", value=str(sample_template or "")
+    )
+
+    if mhd_model_version:
+        mhd_comments_map["sample template"] = model.Comment(
+            name="MHD Model Version", value=str(mhd_model_version)
+        )
+
+    if mhd_accession:
+        mhd_comments_map["mhd accession"] = model.Comment(
+            name="MHD accession", value=mhd_accession
+        )
+    # if characteristic_definitions:
+    #     mhd_comments_map = OrderedDict()
+    #     mhd_comments_map["study characteristics name"] = []
+    #     mhd_comments_map["study characteristics type"] = []
+    #     mhd_comments_map["study characteristics type term accession number"] = []
+    #     mhd_comments_map["study characteristics type term source ref"] = []
+    #     mhd_comments_map["study characteristics format"] = []
+    #     mhd_comments_map["mhd accession"] = model.Comment(
+    #         name="MHD accession", value=mhd_accession
+    #     )
+    #     [x.name or "" for x in characteristic_definitions]
+
+    updated_comments: OrderedDict[str, model.Comment] = OrderedDict()
+    for comment_name, comment in old_comments.items():
+        if comment_name.lower() not in {
+            "study category",
+            "sample template",
+            "mhd accession",
+            "mhd model version",
+            "template version",
+        }:
+            new_comments.append(comment)
+        else:
+            lower = comment.name.lower()
+            new_comment = mhd_comments_map.get(lower, None)
+            if (
+                not new_comment
+                or comment.name != new_comment.name
+                or comment.value != new_comment.value
+            ):
+                updated_comments[comment.name] = "update"
+
+    for v in mhd_comments_map.values():
+        if v.name not in updated_comments:
+            updated_comments[v.name] = "new"
+        new_comments.append(v)
+    isa_study.comments = new_comments
+
+    return list(updated_comments.keys())
+
+
+@staticmethod
+def update_characteristics(
+    isa_study: model.Study,
+    study_category: None | int | StudyCategory = None,
+    mhd_model_version: None | str = None,
+    mhd_accession: None | str = None,
+    sample_template: None | str = None,
+    template_version: None | str = None,
 ) -> list[str]:
     old_comments = {}
     if isa_study.comments:
@@ -109,6 +211,7 @@ def update_mhd_comments(
             "sample template",
             "mhd accession",
             "mhd model version",
+            "template version",
         }:
             new_comments.append(comment)
         else:

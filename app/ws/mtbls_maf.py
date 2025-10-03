@@ -23,16 +23,18 @@ import os
 import pandas as pd
 
 from flask import request
-from flask_restful import Resource, reqparse, abort
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 
+from app.ws.isa_table_templates import create_maf_sheet
 from app.ws.mtblsWSclient import WsClient
 from app.ws.report_builders.combined_maf_builder import CombinedMafBuilder
 from app.ws.settings.utils import get_study_settings
+from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
-from app.ws.utils import create_maf, read_tsv, write_tsv
+from app.ws.utils import get_maf_name_from_assay_name, read_tsv
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 # MetaboLights (Java-Based) WebService client
 wsc = WsClient()
 
@@ -40,10 +42,7 @@ wsc = WsClient()
 # Convert panda DataFrame to json tuples object
 def totuples(df, text) -> dict:
     d = [
-        dict([
-            (colname, row[i])
-            for i, colname in enumerate(df.columns)
-        ])
+        dict([(colname, row[i]) for i, colname in enumerate(df.columns)])
         for row in df.values
     ]
     return {text: d}
@@ -52,20 +51,23 @@ def totuples(df, text) -> dict:
 def get_table_header(table_df):
     # Get an indexed header row
     df_header = pd.DataFrame(list(table_df))  # Get the header row only
-    df_header = df_header.reset_index().to_dict(orient='list')
+    df_header = df_header.reset_index().to_dict(orient="list")
     mapping = {}
     print(df_header)
-    for i in range(0, len(df_header['index'])):
-        mapping[df_header[0][i]] = df_header['index'][i]
+    for i in range(0, len(df_header["index"])):
+        mapping[df_header[0][i]] = df_header["index"][i]
     return mapping
 
 
 def insert_row(idx, df, df_insert):
-    return  pd.concat([df.iloc[:idx, ], df_insert, df.iloc[idx:, ]], ignore_index=True).reset_index(drop=True)
+    return pd.concat(
+        [df.iloc[:idx,], df_insert, df.iloc[idx:,]], ignore_index=True
+    ).reset_index(drop=True)
 
 
 class MtblsMAFSearch(Resource):
     """Get MAF from studies (assays)"""
+
     @swagger.operation(
         summary="Search for metabolite onto_information to use in the Metabolite Annotation file",
         nickname="MAF search",
@@ -78,7 +80,7 @@ class MtblsMAFSearch(Resource):
                 "allowMultiple": False,
                 "paramType": "path",
                 "dataType": "string",
-                "enum": ["name", "databaseid", "inchi", "smiles"]
+                "enum": ["name", "databaseid", "inchi", "smiles"],
             },
             {
                 "name": "search_value",
@@ -86,35 +88,29 @@ class MtblsMAFSearch(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "string"
-            }
+                "dataType": "string",
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. The metabolite search result is returned"
-            },
+            {"code": 200, "message": "OK. The metabolite search result is returned"},
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     def get(self, query_type):
         # param validation
         if query_type is None:
             abort(404)
 
-        
-        
         search_value = None
         if request.args:
-            
-            search_value = request.args.get('search_value')
+            search_value = request.args.get("search_value")
 
         if search_value is None:
             abort(404)
@@ -127,7 +123,7 @@ class MetaboliteAnnotationFile(Resource):
     @swagger.operation(
         summary="Read, and add missing samples for a MAF",
         nickname="Get MAF for a given MTBLS Assay",
-        notes='''Create or update a Metabolite Annotation File for an assay.
+        notes="""Create or update a Metabolite Annotation File for an assay.
 <pre><code> 
 {  
   "data": [ 
@@ -135,7 +131,7 @@ class MetaboliteAnnotationFile(Resource):
     { "assay_file_name": "a_some_assay_file-1.txt" } 
   ]
 }
-</code></pre>''',
+</code></pre>""",
         parameters=[
             {
                 "name": "study_id",
@@ -143,7 +139,7 @@ class MetaboliteAnnotationFile(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "data",
@@ -151,7 +147,7 @@ class MetaboliteAnnotationFile(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "body",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user-token",
@@ -159,35 +155,32 @@ class MetaboliteAnnotationFile(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Metabolite Annotation File (MAF) is returned"
+                "message": "OK. The Metabolite Annotation File (MAF) is returned",
             },
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
+                "message": "Not found. The requested identifier is not valid or does not exist.",
             },
-            {
-                "code": 417,
-                "message": "Incorrect parameters provided"
-            }
-        ]
+            {"code": 417, "message": "Incorrect parameters provided"},
+        ],
     )
     def post(self, study_id):
-        data_dict = json.loads(request.data.decode('utf-8'))
-        assay_file_names = data_dict['data']
+        data_dict = json.loads(request.data.decode("utf-8"))
+        assay_file_names = data_dict["data"]
 
         # param validation
         if study_id is None:
@@ -195,51 +188,77 @@ class MetaboliteAnnotationFile(Resource):
 
         # param validation
         if assay_file_names is None:
-            abort(417, message='Please ensure the JSON has at least one "assay_file_name" element')
+            abort(
+                417,
+                message='Please ensure the JSON has at least one "assay_file_name" element',
+            )
 
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        logger.info('MAF: Getting ISA-JSON Study %s', study_id)
+        logger.info("MAF: Getting ISA-JSON Study %s", study_id)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        (
+            is_curator,
+            read_access,
+            write_access,
+            obfuscation_code,
+            study_location_deprecated,
+            release_date,
+            submission_date,
+            study_status,
+        ) = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
-
-        maf_feedback = ""
-        study_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, study_id)
+        study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
+        # maf_feedback = ""
+        study_location = os.path.join(
+            get_study_settings().mounted_paths.study_metadata_files_root_path, study_id
+        )
         for assay_file_name in assay_file_names:
             annotation_file_name = None
-            assay_file = assay_file_name['assay_file_name']
+            assay_file = assay_file_name["assay_file_name"]
             full_assay_file_name = os.path.join(study_location, assay_file)
             if not os.path.isfile(full_assay_file_name):
                 abort(406, message="Assay file " + assay_file + " does not exist")
             assay_df = read_tsv(full_assay_file_name)
-            annotation_file_name = assay_df['Metabolite Assignment File'].iloc[0]
+            annotation_file_name = assay_df["Metabolite Assignment File"].iloc[0]
 
-            maf_df, new_annotation_file_name, new_column_counter = \
-                create_maf(None, study_location, assay_file, annotation_file_name=annotation_file_name)
-            if annotation_file_name != new_annotation_file_name:
-                assay_df['Metabolite Assignment File'] = new_annotation_file_name
-                write_tsv(assay_df, full_assay_file_name)
-                annotation_file_name = new_annotation_file_name
+            # maf_df, new_annotation_file_name, new_column_counter = \
+            #     create_maf(None, study_location, assay_file, annotation_file_name=annotation_file_name)
+            maf_file_name = get_maf_name_from_assay_name(assay_file_name)
+            main_technology_type = "NMR" if "nmr" in annotation_file_name else "MS"
+            success = create_maf_sheet(
+                study_path=study_location,
+                maf_file_name=maf_file_name,
+                main_technology_type=main_technology_type,
+                template_version=study.template_version,
+            )
 
-            if maf_df.empty:
-                abort(406, message="MAF file could not be created or updated")
+            if success:
+                return {"success": f"Added/Updated MAF(s) {maf_file_name}"}
+            # return
+            # if annotation_file_name != new_annotation_file_name:
+            #     assay_df['Metabolite Assignment File'] = new_annotation_file_name
+            #     write_tsv(assay_df, full_assay_file_name)
+            #     annotation_file_name = new_annotation_file_name
 
-            maf_feedback = maf_feedback + ". New row(s):" + str(new_column_counter) + " for assay file " + \
-                            annotation_file_name
+            # if maf_df.empty:
+            #     abort(406, message="MAF file could not be created or updated")
 
-        return {"success": "Added/Updated MAF(s)" + maf_feedback}
+            # maf_feedback = maf_feedback + ". New row(s):" + str(new_column_counter) + " for assay file " + \
+            #                 annotation_file_name
+
+        return {"success": "Failed"}
+
 
 class CombineMetaboliteAnnotationFiles(Resource):
     @swagger.operation(
         summary="[Deprecated] Combine MAFs for a list of studies",
         nickname="Combine MAF files",
-        notes='''Combine MAF files for a given list of studies, by analytical method. If a study contains assays with 
+        notes="""Combine MAF files for a given list of studies, by analytical method. If a study contains assays with 
         more than one analytical method, it will endeavour to try and select only the MAFs that correspond to the chosen 
         analytical method.
     <pre><code> 
@@ -251,7 +270,7 @@ class CombineMetaboliteAnnotationFiles(Resource):
       ],
       "method": "NMR"
     }
-    </code></pre>''',
+    </code></pre>""",
         parameters=[
             {
                 "name": "data",
@@ -259,7 +278,7 @@ class CombineMetaboliteAnnotationFiles(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "body",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user-token",
@@ -267,36 +286,33 @@ class CombineMetaboliteAnnotationFiles(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Metabolite Annotation File (MAF) is returned"
+                "message": "OK. The Metabolite Annotation File (MAF) is returned",
             },
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
+                "message": "Not found. The requested identifier is not valid or does not exist.",
             },
-            {
-                "code": 417,
-                "message": "Incorrect parameters provided"
-            }
-        ]
+            {"code": 417, "message": "Incorrect parameters provided"},
+        ],
     )
     def post(self):
-        data_dict = json.loads(request.data.decode('utf-8'))
-        studies_to_combine = data_dict['data']
-        method = data_dict['method']
+        data_dict = json.loads(request.data.decode("utf-8"))
+        studies_to_combine = data_dict["data"]
+        method = data_dict["method"]
 
         if studies_to_combine is None:
             abort(417)
@@ -304,23 +320,22 @@ class CombineMetaboliteAnnotationFiles(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-        
+
         UserService.get_instance().validate_user_has_curator_role(user_token)
         combiBuilder = CombinedMafBuilder(
-            studies_to_combine=studies_to_combine,
-            method=method
+            studies_to_combine=studies_to_combine, method=method
         )
 
         combiBuilder.build()
         r_d = {
-            'status': f'Combined Maf File Built, with {len(combiBuilder.unopenable_maf_register)} MAFs unable to be '
-                      f'opened: {str(combiBuilder.unopenable_maf_register)}. There were '
-                      f'{len(combiBuilder.missing_maf_register)} studies that had no MAF files: '
-                      f'{str(combiBuilder.missing_maf_register)} .There were '
-                      f'{len(combiBuilder.no_relevant_maf_register)} studies that had MAF files, but no '
-                      f'MAF file matching the given analytical method {method}: '
-                      f'{str(combiBuilder.no_relevant_maf_register)}'
+            "status": f"Combined Maf File Built, with {len(combiBuilder.unopenable_maf_register)} MAFs unable to be "
+            f"opened: {str(combiBuilder.unopenable_maf_register)}. There were "
+            f"{len(combiBuilder.missing_maf_register)} studies that had no MAF files: "
+            f"{str(combiBuilder.missing_maf_register)} .There were "
+            f"{len(combiBuilder.no_relevant_maf_register)} studies that had MAF files, but no "
+            f"MAF file matching the given analytical method {method}: "
+            f"{str(combiBuilder.no_relevant_maf_register)}"
         }
         # logging it out in the event of the swagger UI crashing as these are useful numbers
-        logger.info(r_d['status'])
+        logger.info(r_d["status"])
         return r_d

@@ -35,8 +35,10 @@ from app.utils import (
     current_time,
 )
 from app.ws.db.types import StudyStatus
+from app.ws.db_connection import update_study_sample_type
+from app.ws.isa_table_templates import create_sample_sheet
 from app.ws.settings.utils import get_cluster_settings, get_study_settings
-from app.ws.study.comment_utils import update_license, update_mhd_comments
+from app.ws.study.comment_utils import update_mhd_comments
 
 logger = logging.getLogger("wslog")
 
@@ -246,7 +248,7 @@ class StudyFolderMaintenanceTask(object):
         mhd_accession: None | str = None,
         mhd_model_version: None | str = None,
         dataset_license: None | str = None,
-        template_version: None | str = None
+        template_version: None | str = None,
     ) -> None:
         self.study_category = study_category
         self.mhd_accession = mhd_accession
@@ -1658,7 +1660,7 @@ class StudyFolderMaintenanceTask(object):
         return final_hash, file_hashes, search_path
 
     def sha256sum(self, filename):
-        if not filename or not os.path.exists(filename):
+        if not filename or not os.path.exists(filename) or os.path.isdir(filename):
             return hashlib.sha256("".encode()).hexdigest()
 
         sha256_hash = hashlib.sha256()
@@ -2288,7 +2290,7 @@ class StudyFolderMaintenanceTask(object):
             sample_template=self.sample_template,
             mhd_accession=self.mhd_accession,
             mhd_model_version=self.mhd_model_version,
-            template_version=self.template_version
+            template_version=self.template_version,
         )
         if updated_comments:
             self.actions.append(
@@ -2550,10 +2552,7 @@ class StudyFolderMaintenanceTask(object):
         investigation_file_path = os.path.join(
             self.study_metadata_files_path, self.investigation_file_name
         )
-        template_path = self.get_study_file_template_path()
-        temaplate_sample_file_path = os.path.join(
-            template_path, self.study_settings.template_sample_file_name
-        )
+
         if investigation and investigation.studies and investigation.studies[0]:
             study: isatools_model.Study = investigation.studies[0]
             sample_file_path = os.path.join(
@@ -2608,16 +2607,28 @@ class StudyFolderMaintenanceTask(object):
                 )
 
         if not os.path.exists(default_sample_file_path):
-            shutil.copy2(
-                temaplate_sample_file_path, default_sample_file_path
-            )  # copy from template
-            action_log = MaintenanceActionLog(
-                item=default_sample_file_path,
-                action=MaintenanceAction.COPY,
-                parameters={"from": temaplate_sample_file_path},
-                message=f"{study_id}: study file was copied from  {temaplate_sample_file_path}",
+            # shutil.copy2(
+            #     template_sample_file_path, default_sample_file_path
+            # )  # copy from template
+            success, _ = create_sample_sheet(
+                study_id=study_id,
+                study_path=self.study_metadata_files_path,
+                sample_type=self.sample_template,
+                template_version=self.template_version,
             )
-            self.actions.append(action_log)
+            if success:
+                update_study_sample_type(
+                    study_id=study_id, sample_type=self.sample_template
+                )
+                action_log = MaintenanceActionLog(
+                    item=default_sample_file_path,
+                    action=MaintenanceAction.COPY,
+                    parameters={
+                        "from": f"{self.sample_template} {self.template_version}"
+                    },
+                    message=f"{study_id}: study file was created",
+                )
+                self.actions.append(action_log)
         self.referenced_metadata_file_list.append(short_sample_file_name)
 
         if default_sample_file_path in sample_files_list:
@@ -2652,6 +2663,21 @@ class StudyFolderMaintenanceTask(object):
                         variant_column_name,
                         sample_type_column_name,
                     )
+                    if self.template_version == "2.0":
+                        cell_type_column_name = "Characteristics[Cell type]"
+                        disease_column_name = "Characteristics[Disease]"
+                        self.insert_ontology_column(
+                            sample_file_path,
+                            sample_df,
+                            sample_type_column_name,
+                            cell_type_column_name,
+                        )
+                        self.insert_ontology_column(
+                            sample_file_path,
+                            sample_df,
+                            cell_type_column_name,
+                            disease_column_name,
+                        )
         finally:
             if sample_df is not None:
                 self.write_tsv_file(sample_df, sample_file_path)

@@ -182,32 +182,6 @@ class StudyRevisionService:
         except Exception as ex:
             raise ex
 
-    def create_audit_folder(
-        study: Study,
-        folder_name: str,
-        metadata_files_path: str = None,
-        audit_folder_root_path: str = None,
-    ):
-        study_id = study.acc
-        study_status = StudyStatus(study.status)
-        public_release_date = study.releasedate
-        submission_date = study.submissiondate
-        maintenance_task = StudyFolderMaintenanceTask(
-            study_id,
-            study_status,
-            public_release_date,
-            submission_date,
-            obfuscationcode=study.obfuscationcode,
-            task_name=None,
-            cluster_execution_mode=False,
-        )
-        return maintenance_task.create_audit_folder(
-            metadata_files_path=metadata_files_path,
-            audit_folder_root_path=audit_folder_root_path,
-            folder_name=folder_name,
-            stage=None,
-        )
-
     @staticmethod
     def update_investigation_file_for_revision(study_id: str):
         study = StudyService.get_instance().get_study_by_acc(study_id)
