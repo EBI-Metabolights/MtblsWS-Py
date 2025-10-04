@@ -108,7 +108,6 @@ from app.ws.table_editor import (AddRows, ColumnsRows, ComplexColumns,
 # from app.ws.tasks.study_file_encoding import FileEncodingChecker
 from app.ws.tasks.create_json_files import (PublicStudyJsonExporter,
                                             StudyJsonExporter)
-from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
 from app.ws.v1.studies import V1StudyDetail
 from app.ws.reports import EuropePMCReport
@@ -307,21 +306,6 @@ def initialize_app(flask_app):
     api.add_resource(MetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/validate")
     api.add_resource(CombineMetaboliteAnnotationFiles, res_path + "/ebi-internal/mariana/maf/combine")
 
-    # Study
-    # api.add_resource(StudySources, res_path + "/studies/<string:study_id>/sources")
-    # api.add_resource(StudySamples, res_path + "/studies/<string:study_id>/samples")
-    # api.add_resource(EditSampleFile, res_path + "/studies/<string:study_id>/samples/<string:sample_file_name>")
-    # api.add_resource(StudyOtherMaterials, res_path + "/studies/<string:study_id>/otherMaterials")
-    # api.add_resource(StudyProcesses, res_path + "/studies/<string:study_id>/processSequence")
-
-    # Assay
-    # api.add_resource(AssaySamples, res_path + "/studies/<string:study_id>/assays/samples")
-    # api.add_resource(AssayOtherMaterials, res_path + "/studies/<string:study_id>/assays/otherMaterials")
-    # api.add_resource(AssayDataFiles, res_path + "/studies/<string:study_id>/assays/dataFiles")
-    # api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/processSequence")
-    # api.add_resource(AssayTable, res_path + "/studies/<string:study_id>/assay/tableCell")
-    # api.add_resource(EditAssayFile, res_path + "/studies/<string:study_id>/assay/<string:assay_file_name>")
-
     # Manipulating TSV tables
     api.add_resource(SimpleColumns, res_path + "/studies/<string:study_id>/column/<string:file_name>")
     api.add_resource(ComplexColumns, res_path + "/studies/<string:study_id>/columns/<string:file_name>")
@@ -371,7 +355,6 @@ def initialize_app(flask_app):
     api.add_resource(FTPRemoteFileManager, res_path + "/ebi-internal/ftp-filemanager-testing")
     api.add_resource(keggid, res_path + "/ebi-internal/keggid")
     api.add_resource(fellaPathway, res_path + "/ebi-internal/fella-pathway")
-    api.add_resource(PublicStudyTweet, res_path + "/ebi-internal/public-study-tweet")
 
     api.add_resource(MtblsOntologyTerms, res_path + "/mtbls-ontology/terms")
     api.add_resource(MtblsOntologyTerm, res_path + "/mtbls-ontology/terms/<string:term_id>")  

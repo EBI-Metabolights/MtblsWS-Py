@@ -1,15 +1,21 @@
 import logging
 import os
 from pathlib import Path
+import re
 from typing import Any, Literal, OrderedDict
 from isatools import model
 import httpx
 from isatools import model
+import pandas as pd
 from app.config import get_settings
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.isa_table_models import NumericValue, OntologyValue
-from app.ws.utils import get_maf_name_from_assay_name, read_tsv
+from app.ws.utils import (
+    get_legacy_assay_mapping,
+    get_maf_name_from_assay_name,
+    read_tsv,
+)
 
 logger = logging.getLogger(__name__)
 iac = IsaApiClient()
@@ -40,6 +46,88 @@ TECHNOLOGY_TYPE_ONTOLOGY_TERMS = {
         "http://purl.obolibrary.org/obo/OBI_0000623",
     ),
 }
+
+
+def get_assay_type_from_file_name(file_name: None | str):
+    assay_type = None
+    if not file_name:
+        return assay_type
+    file_name = file_name or ""
+    if file_name.startswith("a_"):
+        file_name_parts = file_name.split("_")
+        if len(file_name_parts) > 2:
+            assay_type = file_name_parts[2]
+
+    return assay_type
+
+
+def get_assay_table_header(
+    table_df,
+    template_version: str,
+    file_name: str,
+):
+    # Get an indexed header row
+    df_header = pd.DataFrame(list(table_df))  # Get the header row only
+    df_header = df_header.reset_index().to_dict(orient="list")
+    mappings = {}
+    assay_type = get_assay_type_from_file_name(file_name)
+
+    if assay_type:
+        assay_template = get_assay_template(assay_type, template_version)
+        assay_template_headers = assay_template.get("headers", [])
+        default_column_values: dict[str, dict[str, Any]] = {}
+        for header in assay_template_headers:
+            header_name: str = header.get("columnHeader")
+            if header_name in default_column_values:
+                data_type = "string"
+                file_type = "string"
+                if header_name.endswith(" File"):
+                    data_type = "file"
+                    for start, key in {
+                        ("raw", "raw"),
+                        ("derived", "derived"),
+                        ("acqu", "acqu"),
+                        ("free induction", "fid"),
+                        ("metabolite", "metadata_maf"),
+                    }:
+                        if header_name.lower().startswith(start):
+                            file_type = key
+
+                elif header_name.endswith("Protocol REF"):
+                    data_type = "protocol"
+
+                default_column_values[header_name] = {
+                    "data-type": data_type,
+                    "file-type": file_type,
+                    "mandatory": header.get("required"),
+                }
+            else:
+                default_column_values[header_name] = {
+                    "data-type": "string",
+                    "file-type": "string",
+                    "mandatory": False,
+                }
+        index_mappings = get_legacy_assay_mapping(df_header)
+        mappings: OrderedDict = OrderedDict()
+        for k, v in index_mappings.items():
+            match = re.match(r"^(.+)\.\d$", k)
+            label = match.groups()[0] if match else k
+            mappings[k] = {"index": v, "header": label}
+            if k in default_column_values:
+                mappings[k].update(default_column_values[k])
+            else:
+                mappings[k].update(
+                    {
+                        "data-type": "string",
+                        "file-type": "string",
+                        "mandatory": False,
+                    }
+                )
+
+    else:  # This means we have an assay file that not created with the new pattern
+        mappings = get_legacy_assay_mapping(df_header)
+
+    return mappings
 
 
 def update_study_protocols(
@@ -162,6 +250,11 @@ def add_new_assay_sheet(
         skip_load_tables=True,
         study_location=study_metadata_location,
     )
+    if not maf_file_name:
+        maf_file_name = get_maf_name_from_assay_name(assay_file_name)
+    default_column_values = default_column_values or {}
+
+    default_column_values["Metabolite Assignment File"] = maf_file_name
 
     success, technology_platform = create_assay_sheet(
         study_path=study_metadata_location,
@@ -174,8 +267,6 @@ def add_new_assay_sheet(
     )
     if not success:
         return False, None, None
-    if not maf_file_name:
-        maf_file_name = get_maf_name_from_assay_name(assay_file_name)
     main_technology_type = "NMR" if assay_type in ["NMR", "MRImaging"] else "MS"
     create_maf_sheet(
         study_path=study_metadata_location,
@@ -210,7 +301,7 @@ def add_new_assay_sheet(
         term_accession=term_accession,
     )
     assay = model.Assay(
-        filename=file_name,
+        filename=assay_file_name,
         technology_platform=technology_platform,
         technology_type=technology_type,
         measurement_type=measurement_type,

@@ -93,23 +93,12 @@ from app.ws.db_connection import (
 )
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.redis.redis import get_redis_server
 from app.ws.settings.utils import get_cluster_settings, get_study_settings
 from app.ws.study import identifier_service
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
-from app.ws.study_utilities import StudyUtils
-from app.ws.utils import (
-    copy_file,
-    copy_files_and_folders,
-    get_timestamp,
-    get_year_plus_one,
-    log_request,
-    remove_file,
-)
-from app.tasks.worker import celery
-from celery.result import AsyncResult
+from app.ws.utils import log_request
 
 logger = logging.getLogger("wslog")
 wsc = WsClient()
@@ -247,6 +236,7 @@ class MtblsPrivateStudies(Resource):
 
         priv_list = wsc.get_private_studies()
         return jsonify(priv_list)
+
 
 class MtblsStudiesWithMethods(Resource):
     @swagger.operation(

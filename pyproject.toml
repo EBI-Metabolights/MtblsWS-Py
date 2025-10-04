@@ -11,12 +11,11 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+python = ">=3.12,<3.13"
 pydantic = "^2.10.6"
 pydantic-settings = "^2.8.1"
 flask-restful-swagger = {git = "https://github.com/EBI-Metabolights/flask-restful-swagger.git", rev = "master"}
 flask-restful = "^0.3.10"
-dirsync = "^2.2.5"
 toml = "^0.10.2"
 metaspace2020 = "^2.0.9"
 flask-cors = "^5.0.1"
@@ -28,7 +27,6 @@ zeep = "^4.3.1"
 elasticsearch = "^1.4.0"
 python-jose = "^3.4.0"
 passlib = "^1.7.4"
-tweepy = "^4.15.0"
 cirpy = "^1.0.2"
 ctfile = "^0.1.12"
 pubchempy = "^1.0.4"
@@ -48,16 +46,19 @@ cascadict = "^0.8.5"
 fuzzywuzzy = "^0.18.0"
 marshmallow = "2.21.0"
 gunicorn = "^23.0.0"
-isatools = {git = "https://github.com/ISA-tools/isa-api.git", rev = "983fe1538b01ef97de06b61a5e58d73f0eab4bb1"}
 charset-normalizer = "3.4.1"
 email-validator = "^2.2.0"
-metabolights-utils = "^1.4.4"
+metabolights-utils = "^1.4.8"
+python-levenshtein = "^0.27.1"
+isatools = {git = "https://github.com/EBI-Metabolights/isa-api.git", rev = "master"}
 
 [tool.poetry.group.dev.dependencies]
-poetry = "^1.8.5"
+poetry = "^2.2.1"
 pytest = "^7.4.3"
 pylint = "^3.0.2"
 vulture = "^2.14"
+ruff = "^0.13.3"
+import-linter = "^2.5"
 
 [build-system]
 requires = ["poetry-core"]
@@ -66,3 +67,19 @@ build-backend = "poetry.core.masonry.api"
 [tool.pylint.'MESSAGES CONTROL']
 # disable = "W0612,C0301,C0115,C0116,C0303,C0114,W0311,W0718"
 disable = "W,C,R,F"
+
+[tool.importlinter]
+include_external_packages = true
+root_packages = ["app"]
+
+[[tool.importlinter.contracts]]
+name = "Unexpected dependencies"
+type = "forbidden"
+source_modules = [
+   "app",
+]
+forbidden_modules = [
+    "tweepy",
+]
+ignore_imports = [
+]

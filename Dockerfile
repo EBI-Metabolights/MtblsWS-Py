@@ -13,7 +13,7 @@ ENV POETRY_HOME=/opt/poetry
 WORKDIR /app-root
 
 RUN pip3 install --upgrade pip 
-RUN pip3 install poetry==1.8.5
+RUN pip3 install poetry==2.2.1
 RUN poetry --version
 
 COPY pyproject.toml .

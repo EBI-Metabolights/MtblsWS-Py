@@ -7,51 +7,63 @@ import sys
 
 import app as current_app
 from app.config import get_settings
+
 from app.tasks.datamover_worker_utils import (
     delete_current_workers,
     delete_queue,
     ping_datamover_worker,
 )
+from app.tasks.utils import set_basic_logging_config
 from app.tasks.worker import report_internal_technical_issue
 from app.utils import current_time
 
-logger = logging.getLogger('wslog_datamover')
+logger = logging.getLogger("wslog_datamover")
 
 if __name__ == "__main__":
+    set_basic_logging_config()
+
     worker_name = socket.gethostname()
 
     max_retry_count = 30
     period = 20
-    
+
     if len(sys.argv) > 1:
         period = int(sys.argv[1])
-        
+
     if len(sys.argv) > 2:
         max_retry_count = int(sys.argv[2])
 
     if len(sys.argv) > 3:
         worker_name = int(sys.argv[3])
-        
+
     current_retry_count = 0
     status_file_path = "/tmp/healtz.log"
     status_file = pathlib.Path(status_file_path)
     try:
         while True:
-            worker_version = ping_datamover_worker(worker_name, retry=1, timeout=5, wait_period=5, initial_wait_period=5)
+            worker_version = ping_datamover_worker(
+                worker_name, retry=1, timeout=5, wait_period=5, initial_wait_period=5
+            )
             if not worker_version:
                 current_retry_count += 1
             else:
                 current_retry_count = 0
                 if worker_version != current_app.__api_version__:
-                    print(
-                        f"Versions are not same. App version: {current_app.__api_version__}, " +
-                        f"Datamover worker version: {worker_version}"
+                    logger.warning(
+                        "Versions are not same. App version: %s, "
+                        + "Datamover worker version: %s",
+                        current_app.__api_version__,
+                        worker_version,
                     )
                 current = current_time().strftime("%Y-%m-%d %H:%M:%S")
-                status_file.write_text(f"{worker_name}, version: {worker_version}, last_update: {current}")
+                status_file.write_text(
+                    f"{worker_name}, version: {worker_version}, last_update: {current}"
+                )
             if current_retry_count >= max_retry_count:
-                print("There is no response from datamover. Exiting")
-                raise Exception(f"There is no response from datamover. Maximum retry count exceeded {max_retry_count}.")
+                logger.error("There is no response from datamover. Exiting...")
+                raise Exception(
+                    f"There is no response from datamover. Maximum retry count exceeded {max_retry_count}."
+                )
             time.sleep(period)
     except Exception as ex:
         report_internal_technical_issue(

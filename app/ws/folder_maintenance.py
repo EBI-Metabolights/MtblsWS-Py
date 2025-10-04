@@ -468,8 +468,6 @@ class StudyFolderMaintenanceTask(object):
             )
             self.actions.append(action_log)
 
-        # self.file_manager = MountedVolumeFileManager(f"{self.study_id}_local_file_manager")
-
     def backup_private_ftp_metadata_files(
         self, folder_name: Union[None, str] = None, stage: str = "BACKUP"
     ):

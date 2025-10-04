@@ -29,10 +29,7 @@ from app import application_path
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.isa_table_templates import add_new_assay_sheet
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import (
-    copy_files_and_folders,
-    update_correct_sample_file_name,
-)
+from app.ws.utils import update_correct_sample_file_name
 
 logger = logging.getLogger("wslog")
 isa_api = IsaApiClient()
@@ -106,12 +103,12 @@ class MetaSpaceIsaApiClient(Resource):
             try:
                 from_path = self.get_study_file_template_path()
                 to_path = output_dir
-                copy_files_and_folders(
-                    from_path,
-                    to_path,
-                    include_raw_data=True,
-                    include_investigation_file=True,
-                )
+                # copy_files_and_folders(
+                #     from_path,
+                #     to_path,
+                #     include_raw_data=True,
+                #     include_investigation_file=True,
+                # )
                 # status, message = convert_to_isa(to_path, study_id)
             except Exception as e:
                 logger.error(

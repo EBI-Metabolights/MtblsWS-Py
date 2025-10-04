@@ -28,6 +28,8 @@ from app.ws.isa_table_templates import create_sample_sheet
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_folder_service import StudyFolderService
+from app.ws.study.study_service import StudyService
+from app.ws.study.user_service import UserService
 from app.ws.utils import read_tsv
 
 
@@ -71,17 +73,6 @@ class StudySampleTemplate(Resource):
                 ],
                 "defaultValue": "minimum",
                 "default": "minimum",
-            },
-            {
-                "name": "template_version",
-                "description": "Version of sample template. e.g., 1.0, 2.0",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-                "defaultValue": "",
-                "default": "",
             },
             {
                 "name": "user-token",
@@ -139,13 +130,6 @@ class StudySampleTemplate(Resource):
         # query validation        sampleType = None
         force_override = False
         if request.args:
-            template_version = request.args.get("sample_type").get(
-                "template_version", None
-            )
-            if not template_version:
-                template_version = (
-                    get_study_settings().default_metadata_template_version
-                )
             sample_type = request.args.get("sample_type", "").lower()
             if not sample_type:
                 sample_type = "minimum"
@@ -154,25 +138,15 @@ class StudySampleTemplate(Resource):
                 True if request.args.get("force", "").lower() == "true" else False
             )
 
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
         logger.info(
             "Init Sample for %s; Type %s with version %s",
             study_id,
             sample_type,
-            template_version,
+            study.template_version,
         )
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not is_curator:
-            abort(403)
+
         settings = get_study_settings()
         studies_path = settings.mounted_paths.study_metadata_files_root_path
         study_path = os.path.join(studies_path, study_id)
@@ -185,21 +159,21 @@ class StudySampleTemplate(Resource):
             row_count = len(data)
             if row_count > 1:
                 have_data = True
-
-        if have_data:
+        if force_override or have_data:
             StudyFolderService.create_audit_folder_with_study_id(study_id)
-
-        status, filename = create_sample_sheet(
-            study_id=study_id,
-            file_path=study_path,
-            sample_type=sample_type,
-            template_version=template_version,
-        )
         update_status = False
-        if status:
-            update_status = update_study_sample_type(
-                study_id=study_id, sample_type=sample_type
+        if not have_data or force_override:
+            status, filename = create_sample_sheet(
+                study_id=study_id,
+                file_path=study_path,
+                sample_type=sample_type,
+                template_version=study.template_version,
             )
+
+            if status:
+                update_status = update_study_sample_type(
+                    study_id=study_id, sample_type=sample_type
+                )
         if update_status:
             return {
                 "The sample sheet creation status": "Successful",

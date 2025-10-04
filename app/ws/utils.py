@@ -30,7 +30,7 @@ import re
 import shutil
 import string
 import time
-from typing import List, Tuple
+from typing import Any, List, Tuple
 import uuid
 from os.path import normpath, basename
 
@@ -46,7 +46,6 @@ from isatools.model import Protocol, ProtocolParameter, OntologySource
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
 from pandas import Series
-from dirsync import sync
 from app.config import get_settings
 from app.config.utils import get_host_internal_url
 from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files
@@ -280,40 +279,6 @@ def copytree(
         raise
 
 
-def copy_files_and_folders(
-    source, destination, include_raw_data=True, include_investigation_file=True
-):
-    """
-    Make a copy of files/folders from origin to destination. If destination already exists, it will be replaced.
-    :param source:  string containing the full path to the source file, including filename
-    :param destination: string containing the path to the source file, including filename
-    :param include_raw_data: Copy all files or metadata only, Boolean (default True)
-    :param include_investigation_file: Copy the i_Investigation.txt file, Boolean (default True)
-    :return:
-    """
-
-    if source is None or destination is None:
-        return False, "Study or upload folder is not known, aborting"
-
-    try:
-        # copy origin to destination
-        logger.info("Copying %s to %s", source, destination)
-        copytree(
-            source,
-            destination,
-            include_raw_data=include_raw_data,
-            include_investigation_file=include_investigation_file,
-        )
-    except FileNotFoundError:
-        return False, "No files found under " + source
-    except IsADirectoryError:
-        return False, "Please give filename(s), not only upload folder " + source
-    except Exception:
-        return False, "Could not copy files from " + source
-
-    return True, "Files successfully copied from " + source + " to " + destination
-
-
 def remove_samples_from_isatab(std_path):
     # dest folder name is a timestamp
     settings = get_study_settings()
@@ -422,6 +387,7 @@ def get_assay_headers_and_protocols(assay_type):
         assay_mandatory_type,
     )
 
+
 def delete_column_from_tsv_file(file_df: pd.DataFrame, column_name: str):
     column_index = -1
     deleted_column_names = [column_name]
@@ -449,73 +415,24 @@ def delete_column_from_tsv_file(file_df: pd.DataFrame, column_name: str):
         return False
 
 
-def get_table_header(table_df, study_id=None, file_name=None):
+
+
+def get_table_header(table_df):
     # Get an indexed header row
     df_header = pd.DataFrame(list(table_df))  # Get the header row only
     df_header = df_header.reset_index().to_dict(orient="list")
-    mapping = {}
-    assay_type = None
 
-    if file_name is not None and file_name.startswith("a_"):
-        try:
-            assay_type = get_assay_type_from_file_name(study_id, file_name)
-        except:
-            assay_type = None
-
-    if assay_type is not None and assay_type != "a":
-        (
-            tidy_header_row,
-            tidy_data_row,
-            protocols,
-            assay_desc,
-            assay_data_type,
-            assay_file_type,
-            assay_data_mandatory,
-        ) = get_assay_headers_and_protocols(assay_type)
-        df_header["type"] = assay_data_type
-        df_header["file-type"] = assay_file_type
-        df_header["mandatory"] = assay_data_mandatory
-
-        try:
-            for i in range(0, len(df_header["index"])):
-                mapping[df_header[0][i]] = {
-                    "index": df_header["index"][i],
-                    "data-type": df_header["type"][i],
-                    "file-type": df_header["file-type"][i],
-                    "mandatory": df_header["mandatory"][i],
-                }
-        except:  # Using new assay file pattern, but not correct columns, so try the legacy mapping
-            mapping = get_legacy_assay_mapping(df_header)
-
-    else:  # This means we have an assay file that not created with the new pattern
-        mapping = get_legacy_assay_mapping(df_header)
-
-    return mapping
+    return get_legacy_assay_mapping(df_header)
 
 
-def get_legacy_assay_mapping(df_header):
+def get_legacy_assay_mapping(df_header) -> dict[str,]:
     mapping = {}
     for i in range(0, len(df_header["index"])):
         mapping[df_header[0][i]] = df_header["index"][i]
     return mapping
 
 
-def get_assay_type_from_file_name(study_id, file_name):
-    assay_type = None
-    file_name = file_name.replace(
-        "a_" + study_id + "_", ""
-    )  # Remove study_id and assay refs from filename
-    for file_part in file_name.split("_"):  # Split string on assay
-        assay_type = file_part  # Only interested in the assay type part, ie. first part
-        break
 
-    if assay_type == "a":  # Legacy filename
-        if file_name.endswith("metabolite_profiling_NMR_spectroscopy.txt"):
-            assay_type = "NMR"
-        elif file_name.endswith("metabolite_profiling_mass_spectrometry.txt"):
-            assay_type = "LC-MS"  # For this purpose LC and GC has the same columns
-
-    return assay_type
 
 
 def validate_row(table_header_df, row, http_type):

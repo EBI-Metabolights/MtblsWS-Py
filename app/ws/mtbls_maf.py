@@ -48,17 +48,6 @@ def totuples(df, text) -> dict:
     return {text: d}
 
 
-def get_table_header(table_df):
-    # Get an indexed header row
-    df_header = pd.DataFrame(list(table_df))  # Get the header row only
-    df_header = df_header.reset_index().to_dict(orient="list")
-    mapping = {}
-    print(df_header)
-    for i in range(0, len(df_header["index"])):
-        mapping[df_header[0][i]] = df_header["index"][i]
-    return mapping
-
-
 def insert_row(idx, df, df_insert):
     return pd.concat(
         [df.iloc[:idx,], df_insert, df.iloc[idx:,]], ignore_index=True
