@@ -395,6 +395,7 @@ def create_maf_sheet(
     main_technology_type: str,
     template_version: None | str = None,
     override_current: bool = False,
+    sample_names: None | list[str] = None,
 ):
     maf_file_path = os.path.join(study_path, maf_file_name)
     maf_template = get_maf_template(
@@ -405,7 +406,7 @@ def create_maf_sheet(
         override_maf = is_empty_isa_table_sheet(maf_file_path)
 
     if override_maf:
-        create_file_from_template(maf_file_path, maf_template)
+        create_file_from_template(maf_file_path, maf_template, sample_names)
         logger.info("%s maf file is created.", maf_file_name)
         return True
     else:
@@ -521,7 +522,11 @@ def get_json_from_policy_service(context_path: str) -> dict[str, Any]:
     return {}
 
 
-def create_file_from_template(sample_file_fullpath: str, template: dict[str, Any]):
+def create_file_from_template(
+    sample_file_fullpath: str,
+    template: dict[str, Any],
+    sample_names: None | list[str] = None,
+):
     if not template:
         return False
     header_row: list[str] = []
@@ -534,7 +539,10 @@ def create_file_from_template(sample_file_fullpath: str, template: dict[str, Any
             add_new_columns(
                 header_row, initial_row, header_name, column_structure, default_value
             )
-
+        if sample_names:
+            for sample_name in sample_names:
+                header_row.append(sample_name)
+                initial_row.append("")
         with Path(sample_file_fullpath).open("w") as f:
             f.write("\t".join(header_row) + "\n")
             f.write("\t".join(initial_row) + "\n")

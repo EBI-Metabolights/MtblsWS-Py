@@ -26,6 +26,7 @@ from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 
+from app.utils import metabolights_exception_handler
 from app.ws.isa_table_templates import create_maf_sheet
 from app.ws.mtblsWSclient import WsClient
 from app.ws.report_builders.combined_maf_builder import CombinedMafBuilder
@@ -167,80 +168,125 @@ class MetaboliteAnnotationFile(Resource):
             {"code": 417, "message": "Incorrect parameters provided"},
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         data_dict = json.loads(request.data.decode("utf-8"))
-        assay_file_names = data_dict["data"]
+        assay_files = data_dict.get("data", [])
+        # User authentication
+        user_token = request.headers.get("user_token", None)
 
         # param validation
-        if study_id is None:
+        if not study_id or not user_token:
             abort(417)
 
         # param validation
-        if assay_file_names is None:
+        if not assay_files:
             abort(
                 417,
                 message='Please ensure the JSON has at least one "assay_file_name" element',
             )
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        logger.info("MAF: Getting ISA-JSON Study %s", study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location_deprecated,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
-        study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
-        # maf_feedback = ""
         study_location = os.path.join(
             get_study_settings().mounted_paths.study_metadata_files_root_path, study_id
         )
-        for assay_file_name in assay_file_names:
+        assay_file_names: list[str] = []
+        invalid_assay_files: list[str] = []
+        for k in assay_files:
+            if isinstance(k, dict) and k.get("assay_file_name"):
+                file_name = k.get("assay_file_name")
+                file_path = os.path.join(study_location, file_name)
+                if not os.path.exists(file_path):
+                    invalid_assay_files.append(file_name)
+                else:
+                    assay_file_names.append(file_name)
+        if invalid_assay_files:
+            abort(417, message="invalid assay files: " + ", ".join(invalid_assay_files))
+
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+
+        study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
+        logger.info("MAF: Getting ISA-JSON Study %s", study_id)
+
+        invalid_maf_files = []
+        maf_files = {}
+        assay_file_samples = {}
+        for assay_file in assay_file_names:
             annotation_file_name = None
-            assay_file = assay_file_name["assay_file_name"]
-            full_assay_file_name = os.path.join(study_location, assay_file)
-            if not os.path.isfile(full_assay_file_name):
-                abort(406, message="Assay file " + assay_file + " does not exist")
-            assay_df = read_tsv(full_assay_file_name)
-            annotation_file_name = assay_df["Metabolite Assignment File"].iloc[0]
+            assay_file_path = os.path.join(study_location, assay_file)
+            assay_df = read_tsv(assay_file_path)
+            if "Metabolite Assignment File" not in assay_df.columns:
+                continue
 
-            # maf_df, new_annotation_file_name, new_column_counter = \
-            #     create_maf(None, study_location, assay_file, annotation_file_name=annotation_file_name)
-            maf_file_name = get_maf_name_from_assay_name(assay_file_name)
-            main_technology_type = "NMR" if "nmr" in annotation_file_name else "MS"
-            success = create_maf_sheet(
-                study_path=study_location,
-                maf_file_name=maf_file_name,
-                main_technology_type=main_technology_type,
-                template_version=study.template_version,
-            )
+            annotation_file_names = set(assay_df["Metabolite Assignment File"].unique())
+            samples = []
+            if "Sample Name" not in assay_df.columns:
+                for cell in assay_df["Sample Name"]:
+                    if cell and cell.strip():
+                        samples.append(cell)
+            assay_file_samples[assay_file] = samples
 
-            if success:
-                return {"success": f"Added/Updated MAF(s) {maf_file_name}"}
-            # return
-            # if annotation_file_name != new_annotation_file_name:
-            #     assay_df['Metabolite Assignment File'] = new_annotation_file_name
-            #     write_tsv(assay_df, full_assay_file_name)
-            #     annotation_file_name = new_annotation_file_name
+            for file in annotation_file_names:
+                if file and file.strip():
+                    if not file.endswith("_v2_maf.tsv"):
+                        invalid_maf_files.append(file)
+                        continue
+                    if file not in maf_files:
+                        maf_files[file] = []
+                    maf_files[file].append(assay_file)
+        updated_maf_files = []
+        new_maf_files = []
+        failed_maf_files = []
+        for maf_file, assay_files in maf_files.items():
+            sample_names = []
+            samples_set = set()
+            for file in assay_files:
+                for sample in assay_file_samples[assay_file]:
+                    if sample not in samples_set:
+                        samples_set.add(sample)
+                        sample_names.append(sample)
 
-            # if maf_df.empty:
-            #     abort(406, message="MAF file could not be created or updated")
+            main_technology_type = "NMR" if "nmr" in assay_file else "MS"
+            maf_file_path = os.path.join(study_location, maf_file)
+            valid = False
+            if os.path.exists(maf_file_path):
+                maf_df = read_tsv(assay_file_path)
+                if not maf_df.empty and len(maf_df) > 1:
+                    valid = True
+                    for sample in sample_names:
+                        if sample not in maf_df.columns:
+                            maf_df[sample] = ""
+                    updated_maf_files.append(maf_file)
+            if not valid:
+                success = create_maf_sheet(
+                    study_path=study_location,
+                    maf_file_name=annotation_file_name,
+                    main_technology_type=main_technology_type,
+                    template_version=study.template_version,
+                    sample_names=sample_names,
+                )
+                if success:
+                    new_maf_files.append(maf_file)
+                else:
+                    failed_maf_files.append(maf_file)
 
-            # maf_feedback = maf_feedback + ". New row(s):" + str(new_column_counter) + " for assay file " + \
-            #                 annotation_file_name
+        return {
+            "update_maf_files": updated_maf_files,
+            "new_maf_files": new_maf_files,
+            "failed_maf_files": failed_maf_files,
+            "invalid_maf_files": invalid_maf_files,
+        }
+        # return
+        # if annotation_file_name != new_annotation_file_name:
+        #     assay_df['Metabolite Assignment File'] = new_annotation_file_name
+        #     write_tsv(assay_df, full_assay_file_name)
+        #     annotation_file_name = new_annotation_file_name
 
-        return {"success": "Failed"}
+        # if maf_df.empty:
+        #     abort(406, message="MAF file could not be created or updated")
+
+        # maf_feedback = maf_feedback + ". New row(s):" + str(new_column_counter) + " for assay file " + \
+        #                 annotation_file_name
+
+        # return {"success": "Failed"}
 
 
 class CombineMetaboliteAnnotationFiles(Resource):

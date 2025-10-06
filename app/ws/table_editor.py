@@ -43,6 +43,7 @@ from app.ws.isa_table_templates import get_assay_table_header
 from app.ws.study import commons
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService, identify_study_id
+from app.ws.study.user_service import UserService
 from app.ws.utils import (
     delete_column_from_tsv_file,
     get_table_header,
@@ -666,19 +667,12 @@ class ColumnsRows(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = commons.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+        study_root_path = (
+            get_settings().study.mounted_paths.study_metadata_files_root_path
+        )
+        study_location = os.path.join(study_root_path, study_id)
+
         file_basename: str = file_name
         maf_file = (
             True
@@ -693,6 +687,7 @@ class ColumnsRows(Resource):
         except FileNotFoundError:
             abort(404, message="The file " + file_name + " was not found or not valid")
         other_columns = {}
+        updated = False
         for column in columns_rows:
             cell_value = column["value"]
             row_index = column["row"]
@@ -702,7 +697,10 @@ class ColumnsRows(Resource):
             #  Need to add values for column and row (not header)
             try:
                 # for row_val in range(table_df.shape[0]):
-                table_df.iloc[int(row_index), int(column_index)] = cell_value
+                value = table_df.iloc[int(row_index), int(column_index)]
+                if cell_value != value:
+                    table_df.iloc[int(row_index), int(column_index)] = cell_value
+                    updated = True
             except ValueError as e:
                 logger.error(
                     "(ValueError) Unable to find the required 'value', 'row' and 'column' values. Value: "
@@ -743,6 +741,17 @@ class ColumnsRows(Resource):
                     + ", column: "
                     + column,
                 )
+        if not updated:
+            filtered_headers = headers
+            if maf_file:
+                filtered_headers = other_columns
+            return {
+                "header": filtered_headers,
+                "updates": columns_rows,
+                "success": True,
+                "message": "same data",
+            }
+
         success = False
         try:
             # Write the new row back in the file
