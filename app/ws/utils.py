@@ -974,18 +974,21 @@ def get_absolute_path(input_path: str):
 def add_ontology_to_investigation(
     isa_inv, onto_name, onto_version, onto_file, onto_desc
 ):
-    # Check if the OBI ontology has already been referenced
     if not onto_name:
         onto_name = "N/A"
+
     onto = OntologySource(
-        name=onto_name, version=onto_version, file=onto_file, description=onto_desc
+        name=str(onto_name),
+        version=str(onto_version),
+        file=str(onto_file),
+        description=str(onto_desc),
     )
 
     onto_exists = isa_inv.get_ontology_source_reference(onto_name)
     if onto_exists is None:  # Add the ontology to the investigation
         ontologies = isa_inv.get_ontology_source_references()
         ontologies.append(onto)
-
+        ontologies.sort(key=lambda x: x.name)
     return isa_inv, onto
 
 
