@@ -1,7 +1,12 @@
-FROM python:3.12-slim-bullseye AS builder
+ARG CONTAINER_REGISTRY_PREFIX=docker.io/
+
+FROM ${CONTAINER_REGISTRY_PREFIX}python:3.12-slim-bullseye AS builder
 LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
 
-RUN apt-get clean && apt-get -y update && apt-get -y install build-essential python3-dev python3-pip libpq-dev libglib2.0-0 libsm6 libxrender1 libxext6
+RUN apt-get clean && apt-get -y update && apt-get -y \
+    install build-essential python3-dev python3-pip \
+    libpq-dev libglib2.0-0 libsm6 libxrender1 libxext6 \
+    git openssh-client ca-certificates
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -20,9 +25,9 @@ COPY pyproject.toml .
 COPY poetry.lock .
 RUN touch README.md
 
-RUN poetry install --without dev --no-root && rm -rf $POETRY_CACHE_DIR
+RUN poetry install --without dev -v && rm -rf $POETRY_CACHE_DIR
 
-FROM python:3.12-slim-bullseye AS runner
+FROM ${CONTAINER_REGISTRY_PREFIX}python:3.12-slim-bullseye AS runner
 LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
 
 RUN apt-get -y update \
