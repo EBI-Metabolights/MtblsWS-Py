@@ -1036,7 +1036,9 @@ class StudyContacts(Resource):
         if ror_id:
             ror_id_pattern = r"^(https://ror.org/[0-9a-z]{9}|https://www.wikidata.org/wiki/Q[1-9][0-9]{0,19})$"
             if not re.match(ror_id_pattern, ror_id):
-                errors.append(f"Invalid affiliation ROR ID or affiliation wikidata id '{ror_id}'")
+                errors.append(
+                    f"Invalid affiliation ROR ID or affiliation wikidata id '{ror_id}'"
+                )
 
         if new_contact.email:
             try:
@@ -1051,15 +1053,14 @@ class StudyContacts(Resource):
             except EmailNotValidError as e:
                 errors.append(f"Invalid alternative email {alternative_email}")
 
+        if new_contact.affiliation and len(new_contact.affiliation) < 10:
+            errors.append("Affiliation must be equal or greater than 10 characters.")
+
         if has_pi_role:
             if not new_contact.email:
                 errors.append("Principal Investigator email is empty")
             if not new_contact.affiliation:
                 errors.append("Principal Investigator affiliation is empty")
-            elif len(new_contact.affiliation) < 10:
-                errors.append(
-                    "Principal Investigator affiliation must be equal or greater than 10 characters."
-                )
             if not ror_id:
                 errors.append("Affiliation ROR ID is empty")
             if not orcid:
