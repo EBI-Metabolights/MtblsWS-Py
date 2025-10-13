@@ -65,7 +65,6 @@ build_docker:
     - docker build --build-arg CONTAINER_REGISTRY_PREFIX=$CI_REGISTRY_IMAGE/ --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $LATEST_IMAGE_NAME .
     - docker push $IMAGE_NAME
     - docker push $LATEST_IMAGE_NAME
-    - rm -rf $CONFIG_DIR
 
 build_sif:
   stage: build_sif
@@ -135,31 +134,37 @@ deploy_datamover_worker:
 .kube_deploy_script:
   stage: deploy
   script:
-  - BUILD_PATH=$(realpath tmp)
-  - echo "BUILD_PATH $BUILD_PATH"
-  - mkdir -p $BUILD_PATH
-  - cd $BUILD_PATH
-  - APPS_ROOT_PATH="$BUILD_PATH/apps"
-  - export K8S_CONFIG_FILE_PATH=$APPS_ROOT_PATH/$K8S_CONFIG_FILE_PATH
-  - rm -rf $APPS_ROOT_PATH
-  - echo git clone https://$CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD@${APPS_PROJECT_URL}
-  - git clone https://$CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD@${APPS_PROJECT_URL}
-  - cd $APPS_ROOT_PATH
-  - git switch $APPS_PROJECT_BRANCH_NAME
+  - apk add --no-cache git
+  - echo "APPS_PROJECT_URL $APPS_PROJECT_URL"
+  - CURRENT_PATH="$(pwd)"
+  - echo "CURRENT_PATH $CURRENT_PATH"
+  - rm -rf $CONFIG_DIR
+  - echo git clone https://$GITLAB_USER:$GITLAB_USER_TOKEN@${APPS_PROJECT_URL} $CONFIG_DIR
+  - git clone https://$GITLAB_USER:$GITLAB_USER_TOKEN@${APPS_PROJECT_URL} $CONFIG_DIR
+  - echo "CONFIG_DIR $CONFIG_DIR"
+  - CICD_PROJECT_ROOT_PATH="$(realpath $CONFIG_DIR)"
+  - export K8S_CONFIG_FILE_PATH=$CICD_PROJECT_ROOT_PATH/$K8S_CONFIG_FILE_PATH
+  - echo $K8S_CONFIG_FILE_PATH
+  - cd $CONFIG_DIR
+  - ls -al
+  - echo checkout $APPS_PROJECT_BRANCH_NAME
+  - git checkout $APPS_PROJECT_BRANCH_NAME
   - git status
   - git pull
-  - DEPLOYMENTS_FOLDER_SCRIPTS="$APPS_ROOT_PATH/$DEPLOYMENTS_FOLDER/scripts"
+  - DEPLOYMENTS_FOLDER_SCRIPTS="$CICD_PROJECT_ROOT_PATH/$DEPLOYMENTS_FOLDER/scripts"
   - echo "DEPLOYMENTS_FOLDER_SCRIPTS $DEPLOYMENTS_FOLDER_SCRIPTS"
+  - ls -al
   - cd $DEPLOYMENTS_FOLDER_SCRIPTS
   - cat initial_setup.sh
   - bash initial_setup.sh
-  - DEPLOYMENTS_CHART_PATH="$APPS_ROOT_PATH/$DEPLOYMENTS_FOLDER/charts/$CHART_NAME"
+  - DEPLOYMENTS_CHART_PATH="$CICD_PROJECT_ROOT_PATH/$DEPLOYMENTS_FOLDER/charts/$CHART_NAME"
   - echo "DEPLOYMENTS_CHART_PATH $DEPLOYMENTS_CHART_PATH"
   - cd $DEPLOYMENTS_CHART_PATH
   - cat template.sh
   - echo template.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG"
   - bash template.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG"
   - cat install.sh
-  - echo install.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG,sifImageFileUrl=$SIF_FILE_URL"
-  - bash install.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG,sifImageFileUrl=$SIF_FILE_URL"
-  - rm -rf $BUILD_PATH
+  - echo install.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG"
+  - bash install.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG"
+  - cd $CURRENT_PATH
+  - rm -rf $CONFIG_DIR
