@@ -77,21 +77,16 @@ build_docker:
 
 build_sif:
   stage: build_sif
-  image: $CI_REGISTRY_IMAGE/docker:latest
+  image: $CI_REGISTRY_IMAGE/debian:trixie
   tags:
     - docker
     - mtbls
   script:
     - |-
       apt-get update && sudo apt-get install -y \
-      git curl
-      build-essential \
-      libssl-dev \
-      uuid-dev \
-      libgpgme11-dev \
-      squashfs-tools \
-      libseccomp-dev \
-      pkg-config
+      git curl build-essential libssl-dev \
+      uuid-dev libgpgme11-dev squashfs-tools \
+      libseccomp-dev pkg-config
     - docker pull $IMAGE_NAME
     - singularity build $SIF_FILE_NAME $IMAGE_NAME
     - echo "$SIF_FILE_URL"
