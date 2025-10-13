@@ -17,8 +17,9 @@ workflow:
     - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "staging"
 stages:
   - build
-  - build_sif
   - deploy
+  - build_sif
+  - deploy-datamover-worker
 
 build_docker:
   stage: build
@@ -85,6 +86,13 @@ build_sif:
       curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $SIF_FILE_NAME "$SIF_LATEST_FILE_URL"
 
 deploy_metablsws_py:
+  stage: deploy
+  image:
+    name: $CI_REGISTRY_IMAGE/k8s:1.23.17
+    pull_policy: if-not-present
+  tags:
+    - docker
+    - mtbls
   variables:
     CHART_NAME: metablsws-py
   rules:
@@ -95,6 +103,13 @@ deploy_metablsws_py:
   extends: .kube_deploy_script
 
 deploy_common_worker:
+  stage: deploy
+  image:
+    name: $CI_REGISTRY_IMAGE/k8s:1.23.17
+    pull_policy: if-not-present
+  tags:
+    - docker
+    - mtbls
   variables:
     CHART_NAME: metablsws-py-common-worker
   rules:
@@ -105,6 +120,10 @@ deploy_common_worker:
   extends: .kube_deploy_script
 
 deploy_datamover_proxy:
+  stage: deploy-datamover-worker
+  image:
+    name: $CI_REGISTRY_IMAGE/k8s:1.23.17
+    pull_policy: if-not-present
   tags:
     - docker
     - mtbls
@@ -118,6 +137,7 @@ deploy_datamover_proxy:
   extends: .kube_deploy_script
 
 deploy_datamover_worker:
+  stage: deploy-datamover-worker
   image:
     name: $CI_REGISTRY_IMAGE/k8s:1.23.17
     pull_policy: if-not-present
@@ -132,7 +152,6 @@ deploy_datamover_worker:
   extends: .kube_deploy_script
 
 .kube_deploy_script:
-  stage: deploy
   script:
   - apk add --no-cache git
   - echo "APPS_PROJECT_URL $APPS_PROJECT_URL"
