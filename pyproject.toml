@@ -51,7 +51,7 @@ python-levenshtein = "^0.27.1"
 pyyaml = "^6.0.3"
 pyjwt = "^2.10.1"
 flask-restful-swagger = {git = "https://github.com/EBI-Metabolights/flask-restful-swagger.git", rev = "master"}
-isatools = {git = "https://github.com/EBI-Metabolights/isa-api.git", rev = "master"}
+isatools = {git = "https://github.com/EBI-Metabolights/isa-api.git", rev = "55fff3ea01666c0b5097d7b9cdec3e4c30e0fdbc"}
 sqlalchemy = "1.4.54"
 
 [tool.poetry.group.dev.dependencies]

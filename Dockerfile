@@ -18,14 +18,14 @@ ENV POETRY_HOME=/opt/poetry
 WORKDIR /app-root
 
 RUN pip3 install --upgrade pip 
-RUN pip3 install poetry==2.2.1
+RUN pip3 install --no-cache-dir  poetry==2.2.1
 RUN poetry --version
 
 COPY pyproject.toml .
 COPY poetry.lock .
 RUN touch README.md
 
-RUN poetry install --without dev -v && rm -rf $POETRY_CACHE_DIR
+RUN poetry install --without dev --no-root && rm -rf $POETRY_CACHE_DIR
 
 FROM ${CONTAINER_REGISTRY_PREFIX}python:3.12-slim-bullseye AS runner
 LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
