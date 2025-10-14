@@ -1245,22 +1245,13 @@ class StudyContacts(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "email",
-                "description": "Contact's email",
-                "required": False,
+                "name": "contact_index",
+                "description": "Contact's index in the contact list, starting from 0.",
+                "required": True,
                 "allowEmptyValue": False,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "string",
-            },
-            {
-                "name": "full_name",
-                "description": "Contact's first and last name",
-                "required": False,
-                "allowEmptyValue": False,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
+                "dataType": "integer",
             },
             {
                 "name": "contact",
@@ -1306,22 +1297,16 @@ class StudyContacts(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404)
+            abort(404, errors=["study_id must be provided."])
         # query validation
-        email = request.args.get("email", "")
-        full_name = request.args.get("full_name", "")
-        if email is None and full_name is None:
-            abort(400, "email or fullname (first_name last_name) must be provided.")
-        if full_name:
-            full_name = full_name.replace("", "").lower()
+        contact_index = int(request.args.get("contact_index", -1))
+        if contact_index < 0:
+            abort(400, errors=["contact_index must be provided."])
 
         # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
+        user_token = request.headers.get("user_token")
+        if not user_token:
+            abort(401, errors=["user_token must be provided."])
 
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
@@ -1342,65 +1327,52 @@ class StudyContacts(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(
             study_id, user_token, skip_load_tables=True, study_location=study_location
         )
-        errors = {}
+
+        if contact_index >= len(isa_study.contacts):
+            abort(404, errors=[f"person not found at index {contact_index}"])
+            
+        errors = []
         # body content validation
         updated_contact = None
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
-            data = data_dict["contacts"]
-            for contact in data:
-                # if partial=True missing fields will be ignored
-                result = PersonSchema().load(contact, partial=True)
-                updated_contact = result.data
-                validation_result = self.validate_contact(updated_contact)
-                updated_full_name = (
-                    f"{updated_contact.first_name} {updated_contact.last_name}"
+            contacts = data_dict.get("contacts", [])
+            if not contacts:
+                abort(400, ["No contact provided"])
+            contact = contacts[0]
+            # if partial=True missing fields will be ignored
+            result = PersonSchema().load(contact, partial=True)
+            updated_contact = result.data
+            errors = self.validate_contact(updated_contact)
+
+            isa_inv, updated_contact = roles_to_contacts(isa_inv, updated_contact)
+            for role in updated_contact.roles:
+                term_anno = role
+                term_source = term_anno.term_source
+                add_ontology_to_investigation(
+                    isa_inv,
+                    term_source.name,
+                    term_source.version,
+                    term_source.file,
+                    term_source.description,
                 )
-                if validation_result:
-                    errors[updated_full_name] = validation_result
-
-                isa_inv, updated_contact = roles_to_contacts(isa_inv, updated_contact)
-                for role in updated_contact.roles:
-                    term_anno = role
-                    term_source = term_anno.term_source
-                    add_ontology_to_investigation(
-                        isa_inv,
-                        term_source.name,
-                        term_source.version,
-                        term_source.file,
-                        term_source.description,
-                    )
         except (ValidationError, Exception) as ex:
-            import traceback
-
-            traceback.print_exc()
-            abort(400, errors=str(ex))
+            abort(400, errors=[str(ex)])
         if errors:
             abort(400, errors=errors)
         # update contact details
         logger.info("Updating Contact details for %s", study_id)
-
-        person_found = False
-        if (email and len(email) > 3) or (full_name and len(full_name) > 3):
-            for index, person in enumerate(isa_study.contacts):
-                current_full_name = person.first_name + person.last_name
-                current_full_name = current_full_name.replace(" ", "").lower()
-                if person.email == email or current_full_name == full_name:
-                    person_found = True
-                    # update person details
-                    isa_study.contacts[index] = updated_contact
-                    break
-
-            if not person_found:
-                abort(404, f"person not found {person.first_name} {person.last_name}")
-
-            logger.info("A copy of the previous files will %s saved", save_msg_str)
-            iac.write_isa_study(
-                isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
-            )
-            inputs = {"user_token": user_token, "study_id": study_id}
-            reindex_study.apply_async(kwargs=inputs, expires=60)
-            logger.info("Updated %s", updated_contact.email)
+        
+        
+        isa_study.contacts[contact_index] = updated_contact
+        
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(
+            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+        )
+        inputs = {"user_token": user_token, "study_id": study_id}
+        reindex_study.apply_async(kwargs=inputs, expires=60)
+        logger.info("Updated %s", updated_contact.email)
 
         return PersonSchema().dump(updated_contact)
 
