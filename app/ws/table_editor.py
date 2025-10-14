@@ -149,7 +149,7 @@ class SimpleColumns(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "integer",
+                "dataType": "number",
             },
             {
                 "name": "new_column_default_value",

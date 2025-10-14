@@ -73,7 +73,7 @@ build_docker:
 build_sif:
   stage: build_sif
   image: 
-    name: ${CICD_GITLAB_REGISTRY}singularity:4.0.0
+    name: dockerhub.ebi.ac.uk/mtbls/apps/singularity:4.0.0
     pull_policy: if-not-present
   tags:
     - docker
@@ -91,7 +91,7 @@ build_sif:
 deploy_metablsws_py:
   stage: deploy
   image:
-    name: ${CICD_GITLAB_REGISTRY}k8s:1.23.17
+    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
     pull_policy: if-not-present
   tags:
     - docker
@@ -108,7 +108,7 @@ deploy_metablsws_py:
 deploy_common_worker:
   stage: deploy
   image:
-    name: ${CICD_GITLAB_REGISTRY}k8s:1.23.17
+    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
     pull_policy: if-not-present
   tags:
     - docker
@@ -125,7 +125,7 @@ deploy_common_worker:
 deploy_datamover_proxy:
   stage: deploy-datamover-worker
   image:
-    name: ${CICD_GITLAB_REGISTRY}k8s:1.23.17
+    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
     pull_policy: if-not-present
   tags:
     - docker
@@ -142,7 +142,7 @@ deploy_datamover_proxy:
 deploy_datamover_worker:
   stage: deploy-datamover-worker
   image:
-    name: ${CICD_GITLAB_REGISTRY}k8s:1.23.17
+    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
     pull_policy: if-not-present
   tags:
     - docker

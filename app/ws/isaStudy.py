@@ -1251,7 +1251,7 @@ class StudyContacts(Resource):
                 "allowEmptyValue": False,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "integer",
+                "dataType": "number",
             },
             {
                 "name": "contact",
@@ -1330,7 +1330,7 @@ class StudyContacts(Resource):
 
         if contact_index >= len(isa_study.contacts):
             abort(404, errors=[f"person not found at index {contact_index}"])
-            
+
         errors = []
         # body content validation
         updated_contact = None
@@ -1362,10 +1362,9 @@ class StudyContacts(Resource):
             abort(400, errors=errors)
         # update contact details
         logger.info("Updating Contact details for %s", study_id)
-        
-        
+
         isa_study.contacts[contact_index] = updated_contact
-        
+
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
             isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
@@ -1399,22 +1398,13 @@ class StudyContacts(Resource):
                 "allowMultiple": False,
             },
             {
-                "name": "email",
+                "name": "contact_index",
                 "description": "Contact's email",
-                "required": False,
+                "required": True,
                 "allowEmptyValue": False,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "string",
-            },
-            {
-                "name": "full_name",
-                "description": "Contact's first and last name, concatenated without any extra characters",
-                "required": False,
-                "allowEmptyValue": False,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
+                "dataType": "int",
             },
             {
                 "name": "save-audit-copy",
@@ -1451,20 +1441,20 @@ class StudyContacts(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404)
+            abort(404, errors=["study_id must be provided."])
         # query validation
-        email = request.args.get("email")
-        full_name = request.args.get("full_name")
-        if email is None and full_name is None:
-            abort(400, "email or fullname (first_name last_name) must be provided.")
-        if full_name:
-            full_name = full_name.replace("", "").lower()
+        contact_index = request.args.get("contact_index")
+        if contact_index is None:
+            abort(400, errors=["contact_index must be defined."])
+        if isinstance(contact_index, str):
+            contact_index = int(contact_index) if contact_index.isnumeric() else -1
+        if isinstance(contact_index, int) and int(contact_index) < 0:
+            abort(400, errors=["contact_index must be a positive integer."])
+
         # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            abort(401)
+        user_token = request.headers.get("user_token")
+        if not user_token:
+            abort(401, errors=["user_token must be provided."])
 
         # check for keeping copies
         save_audit_copy = False
@@ -1475,44 +1465,24 @@ class StudyContacts(Resource):
         ):
             save_audit_copy = True
             save_msg_str = "be"
-
-        # delete contact
-        logger.info("Deleting contact %s for %s", email, study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+        study_root_path = (
+            get_settings().study.mounted_paths.study_metadata_files_root_path
+        )
+        study_location = os.path.join(study_root_path, study_id)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
             study_id, user_token, skip_load_tables=True, study_location=study_location
         )
-        person_found = False
-        for index, person in enumerate(isa_study.contacts):
-            if (
-                person.email == email
-                or person.first_name + person.last_name == full_name
-            ):
-                person_found = True
-                # delete contact
-                del isa_study.contacts[index]
-                break
+        if contact_index >= len(isa_study.contacts):
+            abort(404, errors=[f"Contact not found at {contact_index}."])
+        person = isa_study.contacts.pop(int(contact_index))
 
-        if not person_found:
-            abort(404)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
             isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
         )
-        logger.info("Deleted %s", person.email)
+        logger.info("%s Contact at %s deleted ", study_id, contact_index)
 
         return PersonSchema().dump(person)
 
