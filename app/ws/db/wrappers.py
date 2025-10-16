@@ -8,7 +8,7 @@ import os.path
 from isatools import isatab
 
 from app.ws.db import models
-from app.ws.db.models import TableModel, ValidationEntriesModel, BackupModel, IndexedUserModel, IndexedAssayModel
+from app.ws.db.models import TableModel, ValidationEntriesModel, ValidationEntryModel, BackupModel, IndexedUserModel, IndexedAssayModel
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus, UserRole, UserStatus
 from app.ws.db.utils import date_str_to_int, datetime_to_int
@@ -223,6 +223,36 @@ def fill_validations(m_study, path, revalidate_study, user_token_to_revalidate):
     validation_entries_model = ValidationEntriesModel()
     m_study.validations = validation_entries_model
 
+#     if revalidate_study:
+#         results = validate_study(m_study.studyIdentifier, path, user_token_to_revalidate, m_study.obfuscationCode)
+#         if results and "validation" in results:
+#             validation_result = results["validation"]
+#             if "status" in validation_result:
+#                 validation_entries_model.status = validation_result["status"]
+#             validation_entries_model.overriden = False
+#             validation_entries_model.passedMinimumRequirement = False
+#             if "validations" in validation_result:
+#                 validations = validation_result["validations"]
+#                 for section in validations:
+#                     if "details" in section:
+#                         for message in section["details"]:
+#                             validation_entry_model = ValidationEntryModel()
+#                             validation_entry_model.status = message["status"]
+#                             validation_entry_model.description = message["description"]
+#                             validation_entry_model.message = message["message"]
+#                             validation_entry_model.group = message["section"]
+#                             validation_entry_model.overriden = message["val_override"]
+#                             validation_entries_model.entries.append(validation_entry_model)
+
+
+# def get_value_with_column_name(dataframe, column_name):
+#     try:
+#         ind = dataframe.columns.get_loc(column_name)
+#         return dataframe.values[0][ind]
+#     except KeyError:
+#         logger.warning(f"Column name {column_name} does not exist in frame")
+#         return None
+
 
 def get_value_from_dict(series, column_name):
     if column_name in series:
@@ -260,10 +290,13 @@ def fill_organism(m_study):
 def fill_sample_table(m_study, path):
     sample_files = glob.glob(os.path.join(path, "s_*.txt"))
     first_priority_path = os.path.join(path, "s_" + m_study.studyIdentifier + ".txt")
+    second_priority_path = os.path.join(path, 's_Sample.txt')
     selected = sample_files[0] if sample_files else None
     if sample_files:
         if first_priority_path in sample_files:
             selected = first_priority_path
+        elif second_priority_path in sample_files:
+            selected = second_priority_path
 
     file_path = selected
 

@@ -12,8 +12,7 @@ from app.services.cluster.hpc_utils import get_new_hpc_datamover_client
 from app.tasks.system_monitor_tasks import heartbeat
 from app.tasks.worker import celery as app
 
-logger = logging.getLogger("wslog_datamover")
-
+logger = logging.getLogger('wslog_datamover')
 
 def get_status(worker_name: str):
     client: HpcClient = get_new_hpc_datamover_client()
@@ -21,8 +20,7 @@ def get_status(worker_name: str):
     name = f"{project_name}_{worker_name}"
     jobs: List[HpcJob] = client.get_job_status([name])
     return jobs
-
-
+    
 def create_datamover_worker(worker_name: str):
     project_name = get_settings().hpc_cluster.datamover.job_prefix
     name = f"{project_name}_{worker_name}"
@@ -38,34 +36,24 @@ def create_datamover_worker(worker_name: str):
     sif_image_file_url = os.environ.get("SINGULARITY_IMAGE_FILE_URL")
     config_file_path = os.environ.get("DATAMOVER_CONFIG_FILE_PATH", default="")
     if not config_file_path:
-        config_file_path = os.path.realpath(
-            worker_config.singularity_image_configuration.config_file_path
-        )
+        config_file_path = os.path.realpath(worker_config.singularity_image_configuration.config_file_path)
         if not config_file_path:
             config_file_path = os.path.realpath("datamover-config.yaml")
-
+    
     secrets_folder_path = os.environ.get("DATAMOVER_SECRETS_PATH", default="")
     if not secrets_folder_path:
-        secrets_folder_path = os.path.realpath(
-            worker_config.singularity_image_configuration.secrets_path
-        )
+        secrets_folder_path = os.path.realpath(worker_config.singularity_image_configuration.secrets_path)
         if not secrets_folder_path:
             secrets_folder_path = os.path.realpath(".datamover-secrets")
-    time_limit = settings.workers.datamover_workers.maximum_uptime_in_seconds
-    logger.info(
-        "Run singularity task %s with command '%s' and arguments '%s'",
-        name,
-        command,
-        ",".join(args),
-    )
+    time_limit = settings.workers.datamover_workers.maximum_uptime_in_seconds             
     job_id, messages = client.run_singularity(
-        task_name=name,
-        command=command,
-        command_arguments=",".join(args) + f" {name}",
+        task_name=name, 
+        command=command, 
+        command_arguments=",".join(args) + f" {name}", 
         singularity_image_configuration=worker_config.singularity_image_configuration,
         unique_task_name=False,
-        sif_image_file_url=sif_image_file_url,
-        source_config_file_path=config_file_path,
+        sif_image_file_url=sif_image_file_url, 
+        source_config_file_path=config_file_path, 
         source_secrets_folder_path=secrets_folder_path,
         maximum_uptime_in_seconds=time_limit,
         temp_directory_path=get_settings().server.temp_directory_path,
@@ -74,9 +62,8 @@ def create_datamover_worker(worker_name: str):
     )
 
     for message in messages:
-        logger.info(message)
+        print(message)
     return job_id
-
 
 def create_queue(name: str):
     if not app.conf.task_queues:
@@ -88,7 +75,7 @@ def create_queue(name: str):
             queue_exists = True
             break
     if not queue_exists:
-        logger.info(f"Queue is created for datamover worker: {name}")
+        print(f"Queue is created for datamover worker: {name}")
         app.conf.task_queues.append(kombu.Queue(name=name, routing_key="heartbeat"))
 
 
@@ -102,7 +89,7 @@ def delete_queue(name: str):
             target = queue
             break
     if not target:
-        logger.info(f"Queue will be deleted for datamover worker: {name}")
+        print(f"Queue will be deleted for datamover worker: {name}")
         app.conf.task_queues.remove(queue)
 
 
@@ -112,7 +99,9 @@ def delete_current_workers(worker_name: str):
     if jobs:
         job_ids = [job.job_id for job in jobs if "RUN" in job.status.upper()]
         client: HpcClient = get_new_hpc_datamover_client()
-        result = client.kill_jobs(job_ids, failing_gracefully=True)
+        result = client.kill_jobs(
+            job_ids, failing_gracefully=True
+        )
         if len(result.job_ids) < len(job_ids):
             logger.warning(f"{result.stdout}, {result.stderr}")
             return False
@@ -128,7 +117,7 @@ def delete_current_workers(worker_name: str):
 def start_worker(worker_name: str):
     up = False
     for i in range(5):
-        logger.info(f"Create datamover worker. Attempt {i + 1}.")
+        logger.warning(f"Create datamover worker. Attempt {i + 1}.")
         create_datamover_worker(worker_name)
         time.sleep(5)
         started = False
@@ -163,20 +152,16 @@ def restart_datamover_worker(worker_name: str):
 
     create_queue(name)
     # return True
-    worker_version = ping_datamover_worker(
-        worker_name, retry=5, timeout=10, wait_period=5, initial_wait_period=20
-    )
+    worker_version = ping_datamover_worker(worker_name, retry=5, timeout=10, wait_period=5, initial_wait_period=20)
     if not worker_version:
-        logger.warning("Datamover worker is not active.")
+        print("Datamover worker is not active.")
         return False
     else:
-        logger.info(f"Datamover worker '{name}' is active now.")
+        print(f"Datamover worker '{name}' is active now.")
         return True
 
 
-def ping_datamover_worker(
-    worker_name: str, retry=1, timeout=5, wait_period=1, initial_wait_period=0
-):
+def ping_datamover_worker(worker_name: str, retry=1, timeout=5, wait_period=1, initial_wait_period=0):
     project_name = get_settings().hpc_cluster.datamover.job_prefix
     name = f"{project_name}_{worker_name}"
     if initial_wait_period > 0:
@@ -194,6 +179,6 @@ def ping_datamover_worker(
             else:
                 time.sleep(wait_period)
         except Exception as ex:
-            logger.error(f"No response from datamover worker {name}: {str(ex)}")
+            print(f"No response from datamover worker {name}: {str(ex)}")
 
     return None

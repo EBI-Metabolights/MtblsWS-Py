@@ -4,17 +4,13 @@ app_version
 api_version
 .secrets*
 .test_data
-*.old/
+.old/
 *.old.py
 x_*/
 configs
 celerybeat-*
 .RData
 .Rhistory
-
-.output*/
-.venv*/
-.ssh*/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -1462,6 +1462,129 @@ class CopyFilesFolders(Resource):
         )
         return jsonify(result.model_dump())
 
+    #     log_request(request)
+    #     # param validation
+    #     if study_id is None:
+    #         abort(404, message='Please provide valid parameter for study identifier')
+    #     study_id = study_id.upper()
+    #
+    #     # User authentication
+    #     user_token = None
+    #     if "user_token" in request.headers:
+    #         user_token = request.headers["user_token"]
+    #
+    #     # query validation
+    #
+    #
+    #
+    #     include_raw_data = False
+    #     file_location = None
+    #
+    #     # If false, only sync ISA-Tab metadata files
+    #     if request.args:
+    #
+    #         include_raw_data = False if request.args.get('include_raw_data').lower() != 'true' else True
+    #         file_location = request.args.get('file_location')
+    #
+    #     # body content validation
+    #     files = {}
+    #     single_files_only = False
+    #     status = False
+    #     if request.data:
+    #         try:
+    #             data_dict = json.loads(request.data.decode('utf-8'))
+    #             files = data_dict['files'] if 'files' in data_dict else {}
+    #             if files:
+    #                 single_files_only = True
+    #         except KeyError:
+    #             logger.info("No 'files' parameter was provided.")
+    #
+    #     # check for access rights
+    #     is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+    #     study_status = wsc.get_permissions(study_id, user_token)
+    #     if not write_access:
+    #         abort(403)
+    #
+    #     status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
+    #     upload_location = status["os_upload_path"]
+    #     if file_location:
+    #         upload_location = file_location
+    #
+    #     logger.info("For %s we use %s as the upload path. The study path is %s", study_id, upload_location,
+    #                 study_location)
+    #     ftp_private_storage = StorageService.get_ftp_private_storage()
+    #     audit_status, dest_path = write_audit_files(study_location)
+    #     if single_files_only:
+    #         for file in files:
+    #             try:
+    #                 from_file = file["from"]
+    #                 to_file = file["to"]
+    #                 if not from_file or not to_file:
+    #                     abort(417, message="Please provide both 'from' and 'to' file parameters")
+    #
+    #                 if not file_location:
+    #                     ftp_source_file = os.path.join(upload_location, from_file)
+    #                     destination_file = os.path.join(study_location, to_file)
+    #                     # download directly to study folder
+    #                     ftp_private_storage.sync_from_storage(ftp_source_file, destination_file, logger=logger)
+    #                     continue
+    #
+    #                 # continue if manual upload folder defined
+    #                 source_file = os.path.join(upload_location, to_file)
+    #                 destination_file = os.path.join(study_location, to_file)
+    #
+    #                 logger.info("Copying specific file %s to %s", from_file, to_file)
+    #
+    #
+    #                 if from_file != to_file:
+    #                     if os.path.isfile(source_file):
+    #                         logger.info(
+    #                             "The filename/folder you are copying to (%s) already exists in the upload folder, deleting first",
+    #                             to_file)
+    #                         os.remove(source_file)
+    #                     else:
+    #                         logger.info("Renaming file %s to %s", from_file, to_file)
+    #                         os.rename(os.path.join(upload_location, from_file), source_file)
+    #
+    #                 if os.path.isdir(source_file):
+    #                     logger.info(source_file + ' is a directory')
+    #                     try:
+    #                         if os.path.exists(destination_file) and os.path.isdir(destination_file):
+    #                             logger.info('Removing directory ' + destination_file)
+    #                             shutil.rmtree(destination_file)  # Remove the destination file/folder first
+    #
+    #                         logger.info("Copying folder '%s' to study folder '%s'", source_file, destination_file)
+    #                         shutil.copytree(source_file, destination_file)
+    #                         status = True
+    #                     except OSError as e:
+    #                         logger.error('Folder already exists? Can not copy %s to %s',
+    #                                      source_file, destination_file, str(e))
+    #                 else:
+    #                     logger.info("Copying file %s to study folder %s", to_file, study_location)
+    #                     shutil.copy2(source_file, destination_file)
+    #                     status = True
+    #             except Exception as e:
+    #                 logger.error('File copy failed with error ' + str(e))
+    #
+    #     else:
+    #         logger.info("Copying all newer files from '%s' to '%s'", upload_location, study_location)
+    #         include_inv = False
+    #         if is_curator:
+    #             include_inv = True
+    #         if file_location:
+    #             status, message = copy_files_and_folders(upload_location, study_location,
+    #                                                  include_raw_data=include_raw_data,
+    #                                                  include_investigation_file=include_inv)
+    #         else:
+    #             status, message = ftp_private_storage.sync_from_storage(upload_location, study_location, logger=logger)
+    #             ftp_private_storage.sync_from_storage(upload_location, study_location, logger=logger)
+    #     message = ''
+    #     if status:
+    #         reindex_status, message = wsc.reindex_study(study_id, user_token)
+    #         return {'Success': 'Copied files from ' + upload_location}
+    #     else:
+    #         return {'Warning': message}
+
 
 class SyncFolder(Resource):
     @swagger.operation(

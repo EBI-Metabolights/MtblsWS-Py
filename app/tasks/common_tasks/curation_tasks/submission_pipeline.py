@@ -1,22 +1,34 @@
 import logging
+import os
 import time
 from typing import Any
 
 from celery import chain
+from pydantic import BaseModel
 import requests
 
 from app.config import get_settings
+from app.services.storage_service.acl import Acl
+from app.tasks.common_tasks.curation_tasks.study_revision import prepare_study_revision
 from app.tasks.common_tasks.curation_tasks.submission_model import (
     MakeStudyPrivateParameters,
     StudySubmissionError,
 )
+from app.tasks.datamover_tasks.basic_tasks.ftp_operations import index_study_data_files
 from app.tasks.datamover_tasks.curation_tasks.submission_pipeline import (
     index_study_data_files_task,
     make_ftp_folder_readonly_task,
     make_ftp_folder_writable_task,
 )
 from app.tasks.worker import MetabolightsTask, celery
+from app.ws.auth.auth_manager import AuthenticationManager
+from app.ws.db.models import StudyRevisionModel
+from app.ws.db.schemes import Study
+from app.ws.db.types import StudyStatus
 from app.ws.db_connection import update_study_status
+from app.ws.settings.utils import get_cluster_settings
+from app.ws.study.study_revision_service import StudyRevisionService
+from app.tasks.datamover_tasks.basic_tasks import file_management
 from app.ws.study.study_service import StudyService
 
 logger = logging.getLogger(__name__)

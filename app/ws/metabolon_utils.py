@@ -709,13 +709,6 @@ def create_sample_file(
     final_sample_file_data["Term Accession Number.3"] = (
         "http://purl.obolibrary.org/obo/CHMO_0002746"
     )
-    final_sample_file_data["Characteristics[Cell type]"] = ""
-    final_sample_file_data["Term Source REF.3"] = ""
-    final_sample_file_data["Term Accession Number.3"] = ""
-    
-    final_sample_file_data["Characteristics[Disease]"] = ""
-    final_sample_file_data["Term Source REF.4"] = ""
-    final_sample_file_data["Term Accession Number.4"] = ""
     final_sample_file_data["Protocol REF"] = "Sample collection"
     final_sample_file_data["Sample Name"] = merged_data["Sample Name"]
 

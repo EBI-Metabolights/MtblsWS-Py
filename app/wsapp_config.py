@@ -51,17 +51,16 @@ from app.ws.ftp.ftp_operations import (FtpFolderPermission,
                                        FtpFolderPermissionModification,
                                        FtpFolderSyncStatus, PrivateFtpFolder,
                                        PrivateFtpFolderPath, PrivateFtpUploadInfo, SyncCalculation,
-                                       SyncFromFtpFolder, SyncFromStudyFolder)
+                                       SyncFromFtpFolder, SyncFromStudyFolder, SyncPublicStudyToFTP)
 from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.internal import BannerMessage
-from app.ws.isaAssay import StudyAssay, StudyAssayDelete
+from app.ws.isaAssay import StudyAssay, StudyAssayDelete, StudySampleTemplate
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaStudy import (StudyContacts, StudyDescription, StudyDescriptors,
                              StudyFactors, StudyMetaInfo, StudyProtocols,
                              StudyPublications, StudyReleaseDate,
                              StudySubmitters, StudyTitle)
-from app.ws.isa_table_sheet import StudySampleTemplate
 from app.ws.jira_update import Jira
 from app.ws.metabolight_parameters import MetabolightsParameters
 from app.ws.metabolight_statistics import MetabolightsStatistics
@@ -78,7 +77,7 @@ from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
                                MtblsPublicStudiesIndexAll, MtblsStudies,
                                MtblsStudiesIndexAll, MtblsStudiesIndexSync,
                                MtblsStudiesWithMethods, MtblsStudyFolders,
-                               MyMtblsStudies,
+                               MtblsStudyValidationStatus, MyMtblsStudies,
                                MyMtblsStudiesDetailed, PublicStudyDetail,
                                ReindexStudy, RetryReindexStudies, StudyFolderSynchronization,
                                UnindexedStudy)
@@ -108,8 +107,12 @@ from app.ws.table_editor import (AddRows, ColumnsRows, ComplexColumns,
 # from app.ws.tasks.study_file_encoding import FileEncodingChecker
 from app.ws.tasks.create_json_files import (PublicStudyJsonExporter,
                                             StudyJsonExporter)
+from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
 from app.ws.v1.studies import V1StudyDetail
+from app.ws.validation import (NewValidation, OverrideValidation, StudyValidationTask,
+                               ValidationFile, ValidationProcess,
+                               ValidationComment, ValidationReport)
 from app.ws.reports import EuropePMCReport
 
 
@@ -306,6 +309,21 @@ def initialize_app(flask_app):
     api.add_resource(MetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/validate")
     api.add_resource(CombineMetaboliteAnnotationFiles, res_path + "/ebi-internal/mariana/maf/combine")
 
+    # Study
+    # api.add_resource(StudySources, res_path + "/studies/<string:study_id>/sources")
+    # api.add_resource(StudySamples, res_path + "/studies/<string:study_id>/samples")
+    # api.add_resource(EditSampleFile, res_path + "/studies/<string:study_id>/samples/<string:sample_file_name>")
+    # api.add_resource(StudyOtherMaterials, res_path + "/studies/<string:study_id>/otherMaterials")
+    # api.add_resource(StudyProcesses, res_path + "/studies/<string:study_id>/processSequence")
+
+    # Assay
+    # api.add_resource(AssaySamples, res_path + "/studies/<string:study_id>/assays/samples")
+    # api.add_resource(AssayOtherMaterials, res_path + "/studies/<string:study_id>/assays/otherMaterials")
+    # api.add_resource(AssayDataFiles, res_path + "/studies/<string:study_id>/assays/dataFiles")
+    # api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/processSequence")
+    # api.add_resource(AssayTable, res_path + "/studies/<string:study_id>/assay/tableCell")
+    # api.add_resource(EditAssayFile, res_path + "/studies/<string:study_id>/assay/<string:assay_file_name>")
+
     # Manipulating TSV tables
     api.add_resource(SimpleColumns, res_path + "/studies/<string:study_id>/column/<string:file_name>")
     api.add_resource(ComplexColumns, res_path + "/studies/<string:study_id>/columns/<string:file_name>")
@@ -317,8 +335,14 @@ def initialize_app(flask_app):
 
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
+    api.add_resource(StudyValidationTask, res_path + "/studies/<string:study_id>/validation-task")
+    api.add_resource(ValidationReport, res_path + "/studies/<string:study_id>/validation-report")
     api.add_resource(StudyFolderSynchronization, res_path + "/studies/<string:study_id>/study-folders/rsync-task")
     
+    api.add_resource(ValidationFile, res_path + "/studies/<string:study_id>/validate-study")
+    api.add_resource(NewValidation, res_path + "/studies/<string:study_id>/validation")
+    api.add_resource(MtblsStudyValidationStatus,
+                     res_path + "/studies/<string:study_id>/validation-status/<string:validation_status>")
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
     api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
@@ -341,6 +365,9 @@ def initialize_app(flask_app):
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
 
     api.add_resource(EnzymePortalHelper, res_path + "/ebi-internal/check_if_metabolite/<string:chebi_id>")
+    api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
+    api.add_resource(ValidationProcess, res_path + "/ebi-internal/<string:study_id>/validate-study/update-file")
+    api.add_resource(ValidationComment, res_path + "/ebi-internal/<string:study_id>/validate-study/comment")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split-maf")
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
@@ -355,6 +382,7 @@ def initialize_app(flask_app):
     api.add_resource(FTPRemoteFileManager, res_path + "/ebi-internal/ftp-filemanager-testing")
     api.add_resource(keggid, res_path + "/ebi-internal/keggid")
     api.add_resource(fellaPathway, res_path + "/ebi-internal/fella-pathway")
+    api.add_resource(PublicStudyTweet, res_path + "/ebi-internal/public-study-tweet")
 
     api.add_resource(MtblsOntologyTerms, res_path + "/mtbls-ontology/terms")
     api.add_resource(MtblsOntologyTerm, res_path + "/mtbls-ontology/terms/<string:term_id>")  

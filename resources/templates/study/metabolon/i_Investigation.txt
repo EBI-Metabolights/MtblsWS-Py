@@ -38,11 +38,7 @@ Study Title	Metabolon template
 Study Description	Insert information here such as publication abstract								
 Study Submission Date	2021-06-04								
 Study Public Release Date	2022-06-04								
-Study File Name	s_MTBLS310.txt
-Comment[License]	CC0 1.0 Universal
-Comment[Sample Template]	minimum
-Comment[Study Category]	other								
-Comment[Template Version]	2.0								
+Study File Name	s_MTBLS310.txt								
 STUDY DESIGN DESCRIPTORS									
 Study Design Type	ultra-performance liquid chromatography-mass spectrometry	untargeted metabolites	metabolon	targeted metabolites					
 Study Design Type Term Accession Number	http://purl.obolibrary.org/obo/CHMO_0000715	http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000279	http://purl.jp/bio/4/id/201606002506532625	http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000272					
