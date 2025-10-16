@@ -25,6 +25,9 @@ stages:
 
 configuration_parameters:
   stage: build
+  tags:
+    - mtbls
+    - shell
   script:
     - echo "CI_BUILDS_DIR $CI_BUILDS_DIR"
     - echo "CI_REGISTRY_USER $CI_REGISTRY_USER"
@@ -49,6 +52,9 @@ configuration_parameters:
 
 build_docker:
   stage: build
+  tags:
+    - mtbls
+    - shell
   script:
     - docker image prune -f
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
@@ -66,6 +72,9 @@ build_docker:
 
 build_sif:
   stage: build
+  tags:
+    - mtbls
+    - shell
   script:
     - singularity build $SIF_FILE_NAME docker-daemon://$IMAGE_NAME
     - echo "$SIF_FILE_URL"
@@ -115,6 +124,9 @@ deploy_datamover_worker:
 
 .kube_deploy_script:
   stage: deploy
+  tags:
+    - mtbls
+    - shell
   script:
   - BUILD_PATH=$(realpath tmp)
   - echo "BUILD_PATH $BUILD_PATH"
