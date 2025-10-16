@@ -42,6 +42,7 @@ from app.ws.compress import CompressRawDataFolders
 from app.ws.cronjob import cronjob
 from app.ws.curation_log import curation_log
 from app.ws.db.dbmanager import DBManager
+from app.ws.download_data_file import DownloadDataFile
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.elasticsearch.search import ElasticSearchQuery
 from app.ws.email.email_service import EmailService
@@ -236,6 +237,7 @@ def initialize_app(flask_app):
     api.add_resource(StudyFilesTree, res_path + "/studies/<string:study_id>/files/tree")
     api.add_resource(SampleStudyFiles, res_path + "/studies/<string:study_id>/files/samples")
     api.add_resource(SendFiles, res_path + "/studies/<string:study_id>/download")
+    api.add_resource(DownloadDataFile, res_path + "/studies/<string:study_id>/download-data-file")
     api.add_resource(SendFilesPrivate, res_path + "/studies/<string:study_id>/download/<string:obfuscation_code>")
     api.add_resource(UnzipFiles, res_path + "/studies/<string:study_id>/files/unzip")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")
