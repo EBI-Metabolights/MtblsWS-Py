@@ -1,0 +1,42 @@
+ARG CONTAINER_REGISTRY_PREFIX=docker.io/
+
+FROM ${CONTAINER_REGISTRY_PREFIX}debian:trixie
+LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV SINGULARITY_VERSION=4.0.0
+ENV GO_VERSION=1.21.1
+ENV OS=linux
+ENV ARCH=amd64
+ENV PATH=/usr/local/bin:/usr/local/go/bin:$PATH
+
+RUN apt-get update && apt-get install -y  \
+    autoconf \
+    automake \
+    cryptsetup \
+    git \
+    libfuse-dev \
+    libglib2.0-dev \
+    libseccomp-dev \
+    libtool \
+    pkg-config \
+    runc \
+    squashfs-tools \
+    squashfs-tools-ng \
+    uidmap \
+    wget \
+    zlib1g-dev make && \
+    wget -qO get-docker.sh https://get.docker.com && \
+    bash ./get-docker.sh && \
+    rm ./get-docker.sh && \
+    wget https://dl.google.com/go/go$GO_VERSION.$OS-$ARCH.tar.gz && \
+    tar -C /usr/local -xzvf go$GO_VERSION.$OS-$ARCH.tar.gz && \
+    rm go$GO_VERSION.$OS-$ARCH.tar.gz && \
+    echo 'export PATH=/usr/local/bin:/usr/local/go/bin:$PATH' >> ~/.bashrc && . ~/.bashrc && \
+    wget https://github.com/sylabs/singularity/releases/download/v${SINGULARITY_VERSION}/singularity-ce-${SINGULARITY_VERSION}.tar.gz && \
+    tar -xzf singularity-ce-${SINGULARITY_VERSION}.tar.gz && rm -rf singularity-ce-${SINGULARITY_VERSION}.tar.gz && \
+    cd singularity-ce-4.0.0 && ./mconfig && make -C builddir && \
+    make -C builddir install && \
+    rm -rf /var/lib/apt/lists/* && apt autoremove --purge -y
+
+CMD ["/bin/bash"]

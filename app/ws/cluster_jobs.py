@@ -16,22 +16,18 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-from random import random
-import subprocess
 import logging
 import os
 from typing import List
-from flask_restful import Resource, reqparse, abort
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from flask import request
-from datetime import datetime
 from app.config import get_settings
 from app.services.cluster.hpc_client import HpcJob, SubmittedJobResult
 from app.services.cluster.hpc_utils import get_new_hpc_compute_client, get_new_hpc_datamover_client
 from app.utils import current_time
 from app.ws.db_connection import check_access_rights
 from app.ws.study.user_service import UserService
-from app.ws.settings.utils import get_cluster_settings
 
 logger = logging.getLogger('wslog')
 

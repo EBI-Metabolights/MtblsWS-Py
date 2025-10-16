@@ -23,6 +23,7 @@ import os
 import time
 
 from flask_restful import abort
+from isatools import model
 from isatools.convert import isatab2json
 from isatools.isatab import load, dump
 from app.ws.settings.utils import get_study_settings
@@ -36,11 +37,10 @@ MetaboLights ISA-API client
 Use the Python-based ISA-API tools
 """
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 
 
 class IsaApiClient:
-
     def __init__(self):
         self.settings = get_study_settings()
 
@@ -56,7 +56,9 @@ class IsaApiClient:
         start = time.time()
 
         if study_location is None:
-            logger.info("Study location is not set, will have load study from filesystem")
+            logger.info(
+                "Study location is not set, will have load study from filesystem"
+            )
             path = commons.get_study_location(study_id, api_key)
         else:
             logger.info("Study location is: " + study_location)
@@ -65,22 +67,37 @@ class IsaApiClient:
         # try the new parser first
         isa_json = None
         try:
-            isa_json = isatab2json.convert(path, validate_first=False, use_new_parser=True)
+            isa_json = isatab2json.convert(
+                path, validate_first=False, use_new_parser=True
+            )
         except Exception:  # on failure, use the old one
             try:
-                isa_json = isatab2json.convert(path, validate_first=False, use_new_parser=False)
+                isa_json = isatab2json.convert(
+                    path, validate_first=False, use_new_parser=False
+                )
             except Exception:
                 # if it fails too
                 if isa_json is None:
                     abort(500)
             else:
-                logger.info('... get_isa_json() processing (I): %s sec.', time.time() - start)
+                logger.info(
+                    "... get_isa_json() processing (I): %s sec.", time.time() - start
+                )
                 return isa_json
         else:
-            logger.info('... get_isa_json() processing (II): %s sec.', time.time() - start)
+            logger.info(
+                "... get_isa_json() processing (II): %s sec.", time.time() - start
+            )
             return isa_json
 
-    def get_isa_study(self, study_id, api_key, skip_load_tables=True, study_location=None, failing_gracefully=False):
+    def get_isa_study(
+        self,
+        study_id,
+        api_key=None,
+        skip_load_tables=True,
+        study_location=None,
+        failing_gracefully=False,
+    ) -> tuple[None | model.Study, None | model.Investigation, None | str]:
         """
         Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier
@@ -91,11 +108,13 @@ class IsaApiClient:
                 and path to the Study in the file system
         """
 
-        if skip_load_tables == 'false':
+        if skip_load_tables == "false":
             skip_load_tables = False
 
         if study_location is None:
-            logger.info("Study location is not set, will have load study from filesystem")
+            logger.info(
+                "Study location is not set, will have load study from filesystem"
+            )
             std_path = commons.get_study_location(study_id, api_key)
         else:
             logger.info("Study location is: " + study_location)
@@ -103,13 +122,15 @@ class IsaApiClient:
 
         try:
             i_filename = glob.glob(os.path.join(std_path, "i_*.txt"))[0]
-            fp = open(i_filename, encoding='utf-8', errors='ignore')
+            fp = open(i_filename, encoding="utf-8", errors="ignore")
             # loading tables also load Samples and Assays
             isa_inv = load(fp, skip_load_tables)
             # ToDo. Add MAF to isa_study
             isa_study = isa_inv.studies[0]
         except IndexError as e:
-            logger.exception("Failed to find Investigation file %s from %s", study_id, std_path)
+            logger.exception(
+                "Failed to find Investigation file %s from %s", study_id, std_path
+            )
             logger.error(str(e))
             if failing_gracefully:
                 return None, None, None
@@ -128,7 +149,9 @@ class IsaApiClient:
                     abort(417, message=f"Error: {str(e)}")
 
         except Exception as e:
-            logger.exception("Failed to find Investigation file %s from %s", study_id, std_path)
+            logger.exception(
+                "Failed to find Investigation file %s from %s", study_id, std_path
+            )
             logger.error(str(e))
             if failing_gracefully:
                 return None, None, None
@@ -140,7 +163,7 @@ class IsaApiClient:
     @staticmethod
     def load_op(std_path, skip_load_tables):
         i_filename = glob.glob(os.path.join(std_path, "i_*.txt"))[0]
-        fp = open(i_filename, encoding='utf-8', errors='ignore')
+        fp = open(i_filename, encoding="utf-8", errors="ignore")
         # loading tables also load Samples and Assays
         isa_inv = load(fp, skip_load_tables)
         # ToDo. Add MAF to isa_study
@@ -154,25 +177,33 @@ class IsaApiClient:
         breakpoint = self._find_breakpoint(lines)
 
         if breakpoint == -1:
-            logger.warning(f"No matching line found for study {study_id}. No changes made.")
+            logger.warning(
+                f"No matching line found for study {study_id}. No changes made."
+            )
             return False
         # Try fixing the corrupted file
         try:
             self._fix_corruption(std_path, i_filename, lines, breakpoint)
             # Assess the fix in-memory
-            inmem_test = io.StringIO(''.join(lines[:breakpoint + 1]))
+            inmem_test = io.StringIO("".join(lines[: breakpoint + 1]))
             self._test_fix(inmem_test, skip_load_tables)
 
             # If everything works, rename and update the files
             self._rename_files(i_filename, std_path)
 
-            logger.info(f"Investigation file for study {study_id} has been successfully fixed.")
+            logger.info(
+                f"Investigation file for study {study_id} has been successfully fixed."
+            )
             return True
 
         except (IOError, ValueError) as e:
-            logger.error(f"File error while processing investigation file for {study_id}: {str(e)}")
+            logger.error(
+                f"File error while processing investigation file for {study_id}: {str(e)}"
+            )
         except Exception as e:
-            logger.exception(f"Unexpected error while processing investigation file for {study_id}: {str(e)}")
+            logger.exception(
+                f"Unexpected error while processing investigation file for {study_id}: {str(e)}"
+            )
 
         return False
 
@@ -186,7 +217,7 @@ class IsaApiClient:
     def _read_file(self, i_filename: str) -> list:
         """Read the contents of the investigation file."""
         try:
-            with open(i_filename, mode='r', encoding='utf-8', errors='ignore') as inv:
+            with open(i_filename, mode="r", encoding="utf-8", errors="ignore") as inv:
                 return inv.readlines()
         except IOError as e:
             raise IOError(f"Error reading file {i_filename}: {str(e)}")
@@ -194,16 +225,18 @@ class IsaApiClient:
     def _find_breakpoint(self, lines: list) -> int:
         """Find the line that starts with the given prefix."""
         for idx, line in enumerate(lines):
-            if line.startswith('Study Person Roles Term Source REF'):
+            if line.startswith("Study Person Roles Term Source REF"):
                 return idx
         return -1
 
-    def _fix_corruption(self, std_path: str, i_filename: str, lines: list, breakpoint: int):
+    def _fix_corruption(
+        self, std_path: str, i_filename: str, lines: list, breakpoint: int
+    ):
         """Fix the corruption by creating a temp file and writing correct lines."""
-        tmp_filename = os.path.join(std_path, f'tmp_{os.path.basename(i_filename)}')
+        tmp_filename = os.path.join(std_path, f"tmp_{os.path.basename(i_filename)}")
         try:
-            with open(tmp_filename, mode='w') as tmp_file:
-                tmp_file.writelines(lines[:breakpoint + 1])
+            with open(tmp_filename, mode="w") as tmp_file:
+                tmp_file.writelines(lines[: breakpoint + 1])
         except IOError as e:
             raise IOError(f"Failed to write temporary file {tmp_filename}: {str(e)}")
 
@@ -217,13 +250,20 @@ class IsaApiClient:
     def _rename_files(self, i_filename: str, std_path: str):
         """Rename and replace the corrupted file."""
         try:
-            tmp_filename = os.path.join(std_path, f'tmp_{os.path.basename(i_filename)}')
+            tmp_filename = os.path.join(std_path, f"tmp_{os.path.basename(i_filename)}")
             os.rename(tmp_filename, i_filename)
         except OSError as e:
             raise OSError(f"Failed to rename or move files: {str(e)}")
 
-    def write_isa_study(self, inv_obj, api_key, std_path,
-                        save_investigation_copy=True, save_samples_copy=False, save_assays_copy=False):
+    def write_isa_study(
+        self,
+        inv_obj,
+        api_key,
+        std_path,
+        save_investigation_copy=True,
+        save_samples_copy=False,
+        save_assays_copy=False,
+    ):
         """
         Write back an ISA-API Investigation object directly into ISA-Tab files
         :param inv_obj: ISA-API Investigation object
@@ -237,9 +277,15 @@ class IsaApiClient:
         # dest folder name is a timestamp
         study_id = os.path.basename(std_path)
         settings = self.settings
-        
-        if save_investigation_copy or save_samples_copy or save_assays_copy:  # Only create audit folder when requested
-            update_path = os.path.join(settings.mounted_paths.study_audit_files_root_path, study_id, settings.audit_folder_name)
+
+        if (
+            save_investigation_copy or save_samples_copy or save_assays_copy
+        ):  # Only create audit folder when requested
+            update_path = os.path.join(
+                settings.mounted_paths.study_audit_files_root_path,
+                study_id,
+                settings.audit_folder_name,
+            )
 
             dest_path = new_timestamped_folder(update_path)
 

@@ -25,6 +25,7 @@ from app.ws.db.schemes import Study, StudyRevision
 from app.ws.db.types import StudyRevisionStatus, StudyStatus
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
+from app.ws.study.comment_utils import update_license, update_mhd_comments, update_revision_comments
 from app.ws.study.study_service import StudyService
 from isatools import model
 
@@ -181,32 +182,6 @@ class StudyRevisionService:
         except Exception as ex:
             raise ex
 
-    def create_audit_folder(
-        study: Study,
-        folder_name: str,
-        metadata_files_path: str = None,
-        audit_folder_root_path: str = None,
-    ):
-        study_id = study.acc
-        study_status = StudyStatus(study.status)
-        public_release_date = study.releasedate
-        submission_date = study.submissiondate
-        maintenance_task = StudyFolderMaintenanceTask(
-            study_id,
-            study_status,
-            public_release_date,
-            submission_date,
-            obfuscationcode=study.obfuscationcode,
-            task_name=None,
-            cluster_execution_mode=False,
-        )
-        return maintenance_task.create_audit_folder(
-            metadata_files_path=metadata_files_path,
-            audit_folder_root_path=audit_folder_root_path,
-            folder_name=folder_name,
-            stage=None,
-        )
-
     @staticmethod
     def update_investigation_file_for_revision(study_id: str):
         study = StudyService.get_instance().get_study_by_acc(study_id)
@@ -244,60 +219,25 @@ class StudyRevisionService:
         #     isa_inv_input.submission_date = study.submissiondate.strftime("%Y-%m-%d")
         #     isa_inv_input.public_release_date = study.releasedate.strftime("%Y-%m-%d")
 
-        revision_comments = [
-            c
-            for c in isa_study.comments
-            if c.name.strip().lower() in {"revision", "dataset revision"}
-        ]
-        revision_datetimes = [
-            c
-            for c in isa_study.comments
-            if c.name.strip().lower() in {"revision date", "dataset revision date"}
-        ]
-        revision_logs = [
-            c
-            for c in isa_study.comments
-            if c.name.strip().lower() in {"revision log", "dataset revision log"}
-        ]
-        revision_comments.extend(revision_datetimes)
-        revision_comments.extend(revision_logs)
+        update_mhd_comments(
+            isa_study,
+            study_category=study.study_category,
+            sample_template=study.sample_type,
+            mhd_accession=study.mhd_accession,
+            mhd_model_version=study.mhd_model_version,
+            template_version=study.template_version
+        )
+        update_license(isa_study, study.dataset_license)
 
-        if study.revision_number > 0:
-            comment = model.Comment(name="Revision", value=str(study.revision_number))
-            isa_study.comments.append(comment)
-            revision_datetime = ""
-            if study.revision_datetime:
-                revision_datetime = study.revision_datetime.strftime("%Y-%m-%d")
-            comment = model.Comment(name="Revision Date", value=revision_datetime)
-            isa_study.comments.append(comment)
-            log = revision.revision_comment or ""
-            log = log.strip().replace("\t", " ").replace("\n", " ")
-            comment = model.Comment(name="Revision Log", value=log)
-            isa_study.comments.append(comment)
-
-        for comment in revision_comments:
-            isa_study.comments.remove(comment)
-
-        StudyRevisionService.update_license(study, isa_study)
+        update_revision_comments(
+            isa_study,
+            revision_number=revision.revision_number,
+            revision_datetime=revision.revision_datetime,
+            revision_comment=revision.revision_comment,
+        )
         iac.write_isa_study(
             isa_inv_input, None, std_path, save_investigation_copy=False
         )
-
-    @staticmethod
-    def update_license(study: Study, isa_study: model.Study):
-        license_name = study.dataset_license if study.dataset_license else ""
-        updated_comments = []
-        license_updated = False
-        for comment in isa_study.comments:
-            if comment.name.lower() != "license":
-                updated_comments.append(comment)
-            elif not license_updated:
-                comment.value = license_name
-                updated_comments.append(comment)
-                license_updated = True
-        if not license_updated:
-            updated_comments.append(model.Comment(name="License", value=license_name))
-        isa_study.comments = updated_comments
 
     @staticmethod
     def start_study_revision_task(
@@ -339,18 +279,21 @@ class StudyRevisionService:
                     .join(Study, StudyRevision.accession_number == Study.acc)
                     .filter(
                         Study.revision_number == StudyRevision.revision_number,
-                        StudyRevision.status in (StudyRevisionStatus.INITIATED.value, StudyRevisionStatus.FAILED.value,),
+                        StudyRevision.status
+                        in (
+                            StudyRevisionStatus.INITIATED.value,
+                            StudyRevisionStatus.FAILED.value,
+                        ),
                         StudyRevision.revision_datetime <= ten_minutes_ago,
                     )
                 )
                 study_revisions: list[StudyRevision] = query.all()
                 models = [
-                    StudyRevisionModel.model_validate(
-                        x, from_attributes=True
-                    ) for x in study_revisions
+                    StudyRevisionModel.model_validate(x, from_attributes=True)
+                    for x in study_revisions
                 ]
                 return models
-                    
+
             except Exception as e:
                 db_session.rollback()
                 raise e
