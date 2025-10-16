@@ -60,18 +60,20 @@ def setup_logging():
         if not os.path.exists(get_settings().server.log.log_path):
             os.makedirs(get_settings().server.log.log_path, exist_ok=True)
         logging_config_file_path = default_logging_config_file_path
+        if os.path.exists(default_logging_config_file_path):
+            print(f"Using default logging config file {default_logging_config_file_path}")
+        else:
+            print(f"Creating default logging config file {default_logging_config_file_path}")
 
-        print(f"Creating default logging config file {default_logging_config_file_path}")
-
-        env = Environment(
-            loader=FileSystemLoader(convert_relative_to_real_path('resources/')),
-            autoescape=select_autoescape(['html', 'xml'])
-        )
-        template = env.get_template('template_logging.conf')
-        content = {"hostname": hostname}
-        log_file_content = template.render(content)
-        with open(default_logging_config_file_path, "w") as file:
-            file.writelines(log_file_content)
+            env = Environment(
+                loader=FileSystemLoader(convert_relative_to_real_path('resources/')),
+                autoescape=select_autoescape(['html', 'xml'])
+            )
+            template = env.get_template('template_logging.conf')
+            content = {"hostname": hostname}
+            log_file_content = template.render(content)
+            with open(default_logging_config_file_path, "w") as file:
+                file.writelines(log_file_content)
 
     logging.config.fileConfig(logging_config_file_path)
     print(f"Running on server: '{hostname}' using logging config {logging_config_file_path}")

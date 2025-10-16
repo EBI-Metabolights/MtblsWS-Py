@@ -69,7 +69,6 @@ from app.ws.ftp.ftp_utils import (
 )
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study.comment_utils import update_license, update_mhd_comments
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
@@ -328,14 +327,11 @@ class StudyStatus(Resource):
             )
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         study: schemes.Study = StudyService.get_instance().get_study_by_acc(study_id)
-        if (
-            study.status == types.StudyStatus.PUBLIC.value
-            and study_status.upper() != "PUBLIC"
-        ):
+        if study.status == types.StudyStatus.PUBLIC.value and study_status.upper() != "PUBLIC":
             raise MetabolightsException(
                 message="Public studies can not be updated. Please contact MetaboLights team for any changes."
             )
-
+            
         if study.revision_number > 0:
             revision = StudyRevisionService.get_study_revision(
                 study_id, study.revision_number
@@ -411,17 +407,7 @@ class StudyStatus(Resource):
         )
         isa_study: model.Study = isa_study_item
         if status_updated:
-            update_license(
-                isa_study, dataset_license=study.dataset_license
-            )
-            update_mhd_comments(
-                isa_study,
-                study_category=study.study_category,
-                sample_template=study.sample_type,
-                mhd_accession=study.mhd_accession,
-                mhd_model_version=study.mhd_model_version,
-                template_version=study.template_version
-            )
+            StudyRevisionService.update_license(study, isa_study)
         if study_status.lower() in {"public", "in review", "private"}:
             updated_submission_date = (
                 first_private_date_baseline.strftime("%Y-%m-%d")
@@ -771,11 +757,6 @@ class StudyStatus(Resource):
             delete_unreferenced_metadata_files=False,
             settings=get_settings().study,
             apply_future_actions=True,
-            mhd_accession=study.mhd_accession,
-            mhd_model_version=study.mhd_model_version,
-            study_category=study.study_category,
-            sample_template=study.sample_type,
-            dataset_license=study.dataset_license
         )
         date_format = "%Y-%m-%d_%H-%M-%S"
         folder_name = time.strftime(date_format) + "_" + task_name
@@ -911,6 +892,17 @@ class StudyStatus(Resource):
             first_public_date=first_public_date,
             first_private_date=first_private_date,
         )
+
+    # @staticmethod
+    # def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
+    #     validates = validate_study(study_id, study_location, user_token, obfuscation_code, log_category='error')
+    #     validations = validates['validation']
+    #     status = validations['status']
+
+    #     if status != 'error':
+    #         return True
+
+    #     return False
 
 
 class ToggleAccess(Resource):

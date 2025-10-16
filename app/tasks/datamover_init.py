@@ -1,12 +1,10 @@
 import logging
 import socket
 from app.tasks.datamover_worker_utils import restart_datamover_worker
-from app.tasks.utils import set_basic_logging_config
 
 logger = logging.getLogger("wslog_datamover")
 
 if __name__ == "__main__":
-    set_basic_logging_config()
     worker_name = socket.gethostname()
 
     if not worker_name:

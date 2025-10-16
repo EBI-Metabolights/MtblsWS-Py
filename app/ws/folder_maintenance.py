@@ -35,10 +35,7 @@ from app.utils import (
     current_time,
 )
 from app.ws.db.types import StudyStatus
-from app.ws.db_connection import update_study_sample_type
-from app.ws.isa_table_templates import create_sample_sheet
 from app.ws.settings.utils import get_cluster_settings, get_study_settings
-from app.ws.study.comment_utils import update_mhd_comments
 
 logger = logging.getLogger("wslog")
 
@@ -243,19 +240,7 @@ class StudyFolderMaintenanceTask(object):
         max_file_count_on_splitted_folder=100,
         create_data_files_maintenance_file=True,
         cluster_execution_mode=False,
-        study_category: None | int = None,
-        sample_template: None | str = None,
-        mhd_accession: None | str = None,
-        mhd_model_version: None | str = None,
-        dataset_license: None | str = None,
-        template_version: None | str = None,
     ) -> None:
-        self.study_category = study_category
-        self.mhd_accession = mhd_accession
-        self.mhd_model_version = mhd_model_version
-        self.sample_template = sample_template
-        self.dataset_license = dataset_license
-        self.template_version = template_version
         self.study_id = study_id
         self.obfuscationcode = obfuscationcode
         self.study_status = study_status
@@ -468,6 +453,8 @@ class StudyFolderMaintenanceTask(object):
             )
             self.actions.append(action_log)
 
+        # self.file_manager = MountedVolumeFileManager(f"{self.study_id}_local_file_manager")
+
     def backup_private_ftp_metadata_files(
         self, folder_name: Union[None, str] = None, stage: str = "BACKUP"
     ):
@@ -539,7 +526,7 @@ class StudyFolderMaintenanceTask(object):
             if not audit_folder_root_path:
                 audit_folder_root_path = self.study_audit_files_path
             audit_folder_path = os.path.join(audit_folder_root_path, folder_name)
-            audit_folder_hash_path = os.path.join(audit_folder_path, "HASHES")
+            audit_folder_hash_path = os.path.join(audit_folder_path, "HASHES") 
             os.makedirs(audit_folder_hash_path, exist_ok=True)
 
             for file in metadata_files_list:
@@ -872,9 +859,7 @@ class StudyFolderMaintenanceTask(object):
             if assay_df is None:
                 raise MaintenanceException(message=f"{assay_file_path} is not valid.")
 
-            all_data_columns = [
-                column for column in assay_df.columns if " Data File" in column
-            ]
+            all_data_columns = [column for column in assay_df.columns if " Data File" in column]
             if all_data_columns:
                 for i in range(len(all_data_columns)):
                     column_name = all_data_columns[i]
@@ -888,7 +873,7 @@ class StudyFolderMaintenanceTask(object):
     ) -> List[MaintenanceActionLog]:
         self.calculate_readonly_study_folders_future_actions()
         referenced_file_set = self.get_all_referenced_data_files()
-        updated_file_names = {item: item for item in referenced_file_set}
+        updated_file_names = {item:item for item in referenced_file_set}
         if updated_file_names:
             if self.future_actions_sanitise_referenced_files:
                 self._create_sanitise_file_name_actions(updated_file_names)
@@ -963,7 +948,7 @@ class StudyFolderMaintenanceTask(object):
             # )
             # self._create_folder_future_actions(
             #     sub_folder,
-            #     0o770,
+            #     0o770, 
             #     cluster_private_ftp_recycle_bin_root_path,
             #     created_folders,
             #     deleted_folders,
@@ -1288,11 +1273,13 @@ class StudyFolderMaintenanceTask(object):
             files = glob.glob(search_pattern, recursive=False)
             for tsv_file_path in files:
                 current_file_path = os.path.basename(tsv_file_path)
-                tsv_file_df: None | pd.DataFrame = self.read_tsv_file(tsv_file_path)
+                tsv_file_df = self.read_tsv_file(tsv_file_path)
                 if tsv_file_df is None:
                     raise MaintenanceException(message=f"{tsv_file_path} is not valid.")
 
-                tsv_file_df = tsv_file_df.map(lambda x: update_value(tsv_file_path, x))
+                tsv_file_df = tsv_file_df.applymap(
+                    lambda x: update_value(tsv_file_path, x)
+                )
                 if tsv_file_path in updated_files and updated_files[tsv_file_path]:
                     self.write_tsv_file(tsv_file_df, tsv_file_path)
                     updates = (
@@ -1486,7 +1473,7 @@ class StudyFolderMaintenanceTask(object):
                 f.write(f"{metadata_files_signature}")
 
             with open(metadata_files_hashes_file, "w") as f:
-                f.write(f"{json.dumps(files_hash_map, indent=4)}")
+                f.write(f"{json.dumps(files_hash_map, indent = 4)}")
 
             action_log = MaintenanceActionLog(
                 item=metadata_files_signature_path,
@@ -1637,12 +1624,8 @@ class StudyFolderMaintenanceTask(object):
         return final_hash, file_hashes
 
     def calculate_data_file_hashes(self, search_path: Union[None, str] = None):
-        search_path = (
-            search_path if search_path else f"{self.study_metadata_files_path}/FILES"
-        )
-        data_files_list = self.get_all_data_files(
-            recursive=True, search_path=search_path
-        )
+        search_path = search_path if search_path else f"{self.study_metadata_files_path}/FILES"
+        data_files_list = self.get_all_data_files(recursive=True, search_path=search_path)
         file_hashes = OrderedDict()
         data_files_list.sort()
         hashes = []
@@ -1656,9 +1639,9 @@ class StudyFolderMaintenanceTask(object):
 
         final_hash = hashlib.sha256(",".join(hashes).encode("utf-8")).hexdigest()
         return final_hash, file_hashes, search_path
-
+    
     def sha256sum(self, filename):
-        if not filename or not os.path.exists(filename) or os.path.isdir(filename):
+        if not filename or not os.path.exists(filename):
             return hashlib.sha256("".encode()).hexdigest()
 
         sha256_hash = hashlib.sha256()
@@ -1694,12 +1677,12 @@ class StudyFolderMaintenanceTask(object):
             metadata_files.extend(glob.glob(search_pattern, recursive=recursive))
         return metadata_files
 
-    def get_all_data_files(self, recursive=True, search_path: Union[None, str] = None):
+    def get_all_data_files(
+        self, recursive=True, search_path: Union[None, str] = None
+    ):
         data_files = []
-        search_path = (
-            search_path if search_path else f"{self.study_metadata_files_path}/FILES"
-        )
-
+        search_path = search_path if search_path else f"{self.study_metadata_files_path}/FILES"
+        
         if not os.path.exists(search_path) or not os.path.isdir(search_path):
             return data_files
 
@@ -1707,7 +1690,7 @@ class StudyFolderMaintenanceTask(object):
 
         data_files.extend(glob.iglob(search_pattern, recursive=recursive))
         return data_files
-
+    
     def maintain_metadata_file_types_and_permissions(self, recursive=False):
         metadata_files = []
         metadata_files_list = self.get_all_metadata_files(recursive=False)
@@ -2271,36 +2254,6 @@ class StudyFolderMaintenanceTask(object):
         )
         study: isatools_model.Study = investigation.studies[0]
 
-        # updated = update_license(study, dataset_license=self.dataset_license)
-        # if updated:
-        #     self.actions.append(
-        #         MaintenanceActionLog(
-        #             item=investigation_file_path,
-        #             action=MaintenanceAction.UPDATE_CONTENT,
-        #             parameters={},
-        #             message=f"{self.study_id}: i_Investigation.txt study license updated.",
-        #             successful=True,
-        #         )
-        #     )
-        updated_comments = update_mhd_comments(
-            study,
-            study_category=self.study_category,
-            sample_template=self.sample_template,
-            mhd_accession=self.mhd_accession,
-            mhd_model_version=self.mhd_model_version,
-            template_version=self.template_version,
-        )
-        if updated_comments:
-            self.actions.append(
-                MaintenanceActionLog(
-                    item=investigation_file_path,
-                    action=MaintenanceAction.UPDATE_CONTENT,
-                    parameters={},
-                    message=f"{self.study_id}: i_Investigation.txt study coments are updated: {', '.join(updated_comments)}",
-                    successful=True,
-                )
-            )
-
         # patch for isaatools
         for item in study.factors:
             factor: isatools_model.StudyFactor = item
@@ -2550,7 +2503,10 @@ class StudyFolderMaintenanceTask(object):
         investigation_file_path = os.path.join(
             self.study_metadata_files_path, self.investigation_file_name
         )
-
+        template_path = self.get_study_file_template_path()
+        temaplate_sample_file_path = os.path.join(
+            template_path, self.study_settings.template_sample_file_name
+        )
         if investigation and investigation.studies and investigation.studies[0]:
             study: isatools_model.Study = investigation.studies[0]
             sample_file_path = os.path.join(
@@ -2605,28 +2561,16 @@ class StudyFolderMaintenanceTask(object):
                 )
 
         if not os.path.exists(default_sample_file_path):
-            # shutil.copy2(
-            #     template_sample_file_path, default_sample_file_path
-            # )  # copy from template
-            success, _ = create_sample_sheet(
-                study_id=study_id,
-                study_path=self.study_metadata_files_path,
-                sample_type=self.sample_template,
-                template_version=self.template_version,
+            shutil.copy2(
+                temaplate_sample_file_path, default_sample_file_path
+            )  # copy from template
+            action_log = MaintenanceActionLog(
+                item=default_sample_file_path,
+                action=MaintenanceAction.COPY,
+                parameters={"from": temaplate_sample_file_path},
+                message=f"{study_id}: study file was copied from  {temaplate_sample_file_path}",
             )
-            if success:
-                update_study_sample_type(
-                    study_id=study_id, sample_type=self.sample_template
-                )
-                action_log = MaintenanceActionLog(
-                    item=default_sample_file_path,
-                    action=MaintenanceAction.COPY,
-                    parameters={
-                        "from": f"{self.sample_template} {self.template_version}"
-                    },
-                    message=f"{study_id}: study file was created",
-                )
-                self.actions.append(action_log)
+            self.actions.append(action_log)
         self.referenced_metadata_file_list.append(short_sample_file_name)
 
         if default_sample_file_path in sample_files_list:
@@ -2661,21 +2605,6 @@ class StudyFolderMaintenanceTask(object):
                         variant_column_name,
                         sample_type_column_name,
                     )
-                    if self.template_version == "2.0":
-                        cell_type_column_name = "Characteristics[Cell type]"
-                        disease_column_name = "Characteristics[Disease]"
-                        self.insert_ontology_column(
-                            sample_file_path,
-                            sample_df,
-                            sample_type_column_name,
-                            cell_type_column_name,
-                        )
-                        self.insert_ontology_column(
-                            sample_file_path,
-                            sample_df,
-                            cell_type_column_name,
-                            disease_column_name,
-                        )
         finally:
             if sample_df is not None:
                 self.write_tsv_file(sample_df, sample_file_path)
@@ -3262,7 +3191,7 @@ class StudyFolderMaintenanceTask(object):
                 values = (
                     ", ".join(list(zip_files_map.keys()))
                     if len(zip_files_map) < 20
-                    else f"{', '.join(list(zip_files_map.keys()))} ..."
+                    else f'{", ".join(list(zip_files_map.keys()))} ...'
                 )
                 action_log = MaintenanceActionLog(
                     item=assay_file_path,
@@ -3326,7 +3255,7 @@ class StudyFolderMaintenanceTask(object):
             values = (
                 ", ".join(list(move_to_derived_file_column_list))
                 if len(move_to_derived_file_column_list) < 20
-                else f"{', '.join(list(move_to_derived_file_column_list))} ..."
+                else f'{", ".join(list(move_to_derived_file_column_list))} ...'
             )
             action_log = MaintenanceActionLog(
                 item=assay_file_path,
@@ -3349,7 +3278,7 @@ class StudyFolderMaintenanceTask(object):
             values = (
                 ", ".join(list(move_to_raw_file_column_list))
                 if len(move_to_raw_file_column_list) < 20
-                else f"{', '.join(list(move_to_raw_file_column_list))} ..."
+                else f'{", ".join(list(move_to_raw_file_column_list))} ...'
             )
             action_log = MaintenanceActionLog(
                 item=assay_file_path,

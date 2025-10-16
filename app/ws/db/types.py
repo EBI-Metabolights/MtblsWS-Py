@@ -8,7 +8,7 @@ class UserRole(Enum):
     ANONYMOUS = 2
     REVIEWER = 3  # this is not in java project
     SYSTEM_ADMIN = 4  # this is not in java project
-
+    
     @staticmethod
     def from_name(name: str):
         if not name:
@@ -28,7 +28,7 @@ class CurationRequest(int, Enum):
     MANUAL_CURATION = 0
     NO_CURATION = 1
     SEMI_AUTOMATED_CURATION = 2
-
+    
     @staticmethod
     def from_name(name: str):
         if not name:
@@ -49,14 +49,13 @@ class CurationRequest(int, Enum):
         elif self.value == 2:
             return "Semi-automated Curation"
         return "Manual Curation"
-
-
+    
 class UserStatus(Enum):
     NEW = 0
     VERIFIED = 1
     ACTIVE = 2
     FROZEN = 3
-
+    
     @staticmethod
     def from_name(name: str):
         if not name:
@@ -70,15 +69,14 @@ class UserStatus(Enum):
         elif name.upper() == "FROZEN":
             return UserStatus.FROZEN
         return UserStatus.FROZEN
-
-
+    
 class StudyStatus(Enum):
     PROVISIONAL = 0
     PRIVATE = 1
     INREVIEW = 2
     PUBLIC = 3
     DORMANT = 4
-
+    
     @staticmethod
     def from_name(name: str):
         if not name:
@@ -120,47 +118,24 @@ class StudyStatus(Enum):
             return "Dormant"
         return "Dormant"
 
-
-class StudyCategory(enum.IntEnum):
-    OTHER = 0
-    MS_MHD_ENABLED = 1
-    MS_IMAGING = 2
-    MS_OTHER = 3
-    NMR = 4
-    MS_MHD_LEGACY = 5
-
-    @staticmethod
-    def from_name(name: str):
-        if not name:
-            return StudyCategory.OTHER
-        try:
-            return StudyCategory[name.upper().replace("-", "_")]
-        except Exception:
-            return StudyCategory.OTHER
-
-    def get_label(self):
-        return self.name.lower().replace("_", "-")
-
-
 class StudyTaskStatus(str, Enum):
-    NOT_EXECUTED = "NOT_EXECUTED"
-    EXECUTING = "EXECUTING"
-    EXECUTION_SUCCESSFUL = "EXECUTION_SUCCESSFUL"
-    EXECUTION_FAILED = "EXECUTION_FAILED"
+    NOT_EXECUTED = 'NOT_EXECUTED'
+    EXECUTING = 'EXECUTING'
+    EXECUTION_SUCCESSFUL = 'EXECUTION_SUCCESSFUL'
+    EXECUTION_FAILED = 'EXECUTION_FAILED'
 
 
 class StudyTaskName(str, Enum):
-    REINDEX = "REINDEX"
-    SEND_TWEET = "SEND_TWEET"
-    SEND_EMAIL = "SEND_EMAIL"
-
+    REINDEX = 'REINDEX'
+    SEND_TWEET = 'SEND_TWEET'
+    SEND_EMAIL = 'SEND_EMAIL'
 
 class StudyRevisionStatus(enum.IntEnum):
     INITIATED = 0
     IN_PROGRESS = 1
     FAILED = 2
     COMPLETED = 3
-
+    
     def get_as_string(self):
         name = self.name
         if name == "IN_PROGRESS":
