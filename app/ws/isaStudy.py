@@ -919,9 +919,8 @@ class StudyContacts(Resource):
         )
 
         contact_persons = {}
-        for contact in isa_study.contacts:
-            contact_name_key = (contact.first_name + contact.last_name).lower()
-            contact_persons[contact_name_key] = contact
+        for idx, contact in enumerate(isa_study.contacts):
+            contact_persons[idx] = contact
 
         # body content validation
         new_contacts = []
@@ -931,37 +930,36 @@ class StudyContacts(Resource):
             data_dict = json.loads(request.data.decode("utf-8"))
         except Exception as e:
             abort(400, error=f"input data is not valid json: {e}")
-
+        initial_contacts_length = len(isa_study.contacts)
         try:
             data = data_dict.get("contacts", [])
             # if partial=True missing fields will be ignored
 
-            for contact in data:
+            for idx, contact in enumerate(data):
                 # Add new contact
                 result = PersonSchema().load(contact, partial=False)
                 new_contact: PersonSchema = result.data
                 logger.info(
                     "Adding new Contact %s for %s", new_contact.first_name, study_id
                 )
-                contact_key = (new_contact.first_name + new_contact.last_name).lower()
-                full_name = f"{new_contact.first_name} {new_contact.last_name}"
-                if contact_key not in contact_persons:
-                    # Check that the ontology is referenced in the investigation
-                    validation_result = self.validate_contact(new_contact)
-                    if validation_result:
-                        errors[full_name] = validation_result
-                    isa_inv, new_contact = roles_to_contacts(isa_inv, new_contact)
-                    for role in new_contact.roles:
-                        term_anno = role
-                        term_source = term_anno.term_source
-                        new_contacts.append(new_contact)
-                        add_ontology_to_investigation(
-                            isa_inv,
-                            term_source.name,
-                            term_source.version,
-                            term_source.file,
-                            term_source.description,
-                        )
+                # contact_key = (new_contact.first_name + new_contact.last_name).lower()
+                # full_name = f"{new_contact.first_name} {new_contact.last_name}"
+                # Check that the ontology is referenced in the investigation
+                validation_result = self.validate_contact(new_contact)
+                if validation_result:
+                    errors[initial_contacts_length + idx] = validation_result
+                isa_inv, new_contact = roles_to_contacts(isa_inv, new_contact)
+                for role in new_contact.roles:
+                    term_anno = role
+                    term_source = term_anno.term_source
+                    new_contacts.append(new_contact)
+                    add_ontology_to_investigation(
+                        isa_inv,
+                        term_source.name,
+                        term_source.version,
+                        term_source.file,
+                        term_source.description,
+                    )
                 else:
                     raise Exception(
                         f"Contact '{new_contact.first_name} {new_contact.last_name}' is already defined."
@@ -974,10 +972,13 @@ class StudyContacts(Resource):
             abort(400, error=str(e))
 
         if errors:
-            abort(400, errors=errors)
+            if len(errors) == 1:
+                abort(400, errors=list(errors.values())[0])
+            else:
+                abort(400, errors=errors)
 
         # add contact
-        isa_study.contacts = isa_study.contacts + new_contacts
+        isa_study.contacts.extend(new_contacts)
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
