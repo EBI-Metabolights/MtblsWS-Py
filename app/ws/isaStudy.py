@@ -887,10 +887,6 @@ class StudyContacts(Resource):
             abort(404)
         # query validation
 
-        email = request.args.get("email")
-        # No email param allowed, just to prevent confusion with UPDATE
-        if email:
-            abort(400)
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -917,11 +913,7 @@ class StudyContacts(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(
             study_id, user_token, skip_load_tables=True, study_location=study_location
         )
-
-        contact_persons = {}
-        for idx, contact in enumerate(isa_study.contacts):
-            contact_persons[idx] = contact
-
+        
         # body content validation
         new_contacts = []
         errors = {}
@@ -960,10 +952,7 @@ class StudyContacts(Resource):
                         term_source.file,
                         term_source.description,
                     )
-                else:
-                    raise Exception(
-                        f"Contact '{new_contact.first_name} {new_contact.last_name}' is already defined."
-                    )
+      
         except Exception as e:
             import traceback
 
