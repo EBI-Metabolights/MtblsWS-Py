@@ -981,7 +981,7 @@ class StudyContacts(Resource):
         logger.info("Got %s contacts", len(new_contacts))
         
         sch = PersonSchema()
-        return sch.dump(new_contacts, many=True)
+        return sch.dump(isa_study, many=True)
         
 
     def validate_contact(self, new_contact: PersonSchema):
