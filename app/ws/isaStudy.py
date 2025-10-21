@@ -884,7 +884,7 @@ class StudyContacts(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404)
+            abort(404, errors=["study_id is not defined."])
         # query validation
 
         # User authentication
@@ -892,7 +892,7 @@ class StudyContacts(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         else:
-            abort(401)
+            abort(401, errors=["user_token is not defined."])
 
         # check for keeping copies
         save_audit_copy = False
@@ -921,12 +921,13 @@ class StudyContacts(Resource):
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
         except Exception as e:
-            abort(400, error=f"input data is not valid json: {e}")
+            abort(400, errors=[f"input data is not valid json: {e}"])
         initial_contacts_length = len(isa_study.contacts)
         try:
             data = data_dict.get("contacts", [])
             # if partial=True missing fields will be ignored
-
+            if not data:
+                abort(400, errors=["input data has no contact"])
             for idx, contact in enumerate(data):
                 # Add new contact
                 result = PersonSchema().load(contact, partial=False)
@@ -941,10 +942,10 @@ class StudyContacts(Resource):
                 if validation_result:
                     errors[initial_contacts_length + idx] = validation_result
                 isa_inv, new_contact = roles_to_contacts(isa_inv, new_contact)
+                new_contacts.append(new_contact)
                 for role in new_contact.roles:
                     term_anno = role
                     term_source = term_anno.term_source
-                    new_contacts.append(new_contact)
                     add_ontology_to_investigation(
                         isa_inv,
                         term_source.name,
@@ -958,7 +959,7 @@ class StudyContacts(Resource):
 
             traceback.print_exc()
             logger.error(e)
-            abort(400, error=str(e))
+            abort(400, errors=[str(e)])
 
         if errors:
             if len(errors) == 1:
@@ -976,25 +977,12 @@ class StudyContacts(Resource):
         inputs = {"user_token": user_token, "study_id": study_id}
         reindex_study.apply_async(kwargs=inputs, expires=60)
 
-        obj_list = isa_study.contacts
         # Using context to avoid envelop tags in contained objects
+        logger.info("Got %s contacts", len(new_contacts))
+        
         sch = PersonSchema()
-        sch.context["contact"] = Person()
-        if email is None:
-            # return a list of objs
-            logger.info("Got %s contacts", len(obj_list))
-            return sch.dump(obj_list, many=True)
-        else:
-            # return a single obj
-            found = False
-            for index, obj in enumerate(obj_list):
-                if obj.email == email:
-                    found = True
-                    break
-            if not found:
-                abort(404)
-            logger.info("Got %s", obj.email)
-            return sch.dump(obj)
+        return sch.dump(new_contacts, many=True)
+        
 
     def validate_contact(self, new_contact: PersonSchema):
         errors = []
