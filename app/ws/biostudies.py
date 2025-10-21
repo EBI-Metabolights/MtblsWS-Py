@@ -24,6 +24,7 @@ from flask_restful_swagger import swagger
 
 from app.ws.db_connection import biostudies_accession, biostudies_acc_to_mtbls
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.user_service import UserService
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -146,6 +147,7 @@ class BioStudies(Resource):
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
+        UserService.get_instance().validate_user_has_write_access
         if not write_access:
             abort(403)
 

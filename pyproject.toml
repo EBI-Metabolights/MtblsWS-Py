@@ -53,6 +53,7 @@ pyjwt = "^2.10.1"
 flask-restful-swagger = {git = "https://github.com/EBI-Metabolights/flask-restful-swagger.git", rev = "master"}
 isatools = {git = "https://github.com/EBI-Metabolights/isa-api.git", rev = "55fff3ea01666c0b5097d7b9cdec3e4c30e0fdbc"}
 sqlalchemy = "1.4.54"
+python-keycloak = "^5.8.1"
 
 [tool.poetry.group.dev.dependencies]
 poetry = "^2.2.1"
