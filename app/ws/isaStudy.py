@@ -981,9 +981,9 @@ class StudyContacts(Resource):
         logger.info("Got %s contacts", len(new_contacts))
         
         sch = PersonSchema()
-        sch.context['contact'] = Person()
         return sch.dump(isa_study.contacts, many=True)
-    
+        
+
     def validate_contact(self, new_contact: PersonSchema):
         errors = []
         comments = {x.name: x for x in new_contact.comments}
