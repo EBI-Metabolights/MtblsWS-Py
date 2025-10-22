@@ -71,7 +71,6 @@ build_docker:
     - docker push $LATEST_IMAGE_NAME
 
 build_sif:
-  stage: build_sif
   image: 
     name: dockerhub.ebi.ac.uk/mtbls/apps/singularity:4.0.0
     pull_policy: if-not-present
@@ -79,7 +78,6 @@ build_sif:
     - docker
     - mtbls
   script:
-    - docker pull $IMAGE_NAME
     - singularity build $SIF_FILE_NAME docker-daemon://$IMAGE_NAME
     - echo "$SIF_FILE_URL"
     - |-
