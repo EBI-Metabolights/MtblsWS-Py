@@ -24,7 +24,7 @@ stages:
 build_docker:
   stage: build
   image: 
-    name: ${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX:-docker.io}/docker:28.5.1-dind
+    name: ${CICD_GITLAB_REGISTRY}docker:28.5.1-dind
   tags:
     - docker
     - mtbls
@@ -72,7 +72,7 @@ build_docker:
 build_sif:
   stage: build_sif
   image: 
-    name: ${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX:-docker.io}/mtbls/singularity:3.4.0
+    name: ${CICD_GITLAB_REGISTRY}mtbls/singularity:3.4.0
   tags:
     - docker
     - mtbls
@@ -88,7 +88,7 @@ build_sif:
 deploy_metablsws_py:
   stage: deploy
   image:
-    name: ${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX:-docker.io}/alpine/k8s:1.23.17
+    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
   tags:
     - docker
     - mtbls
@@ -104,7 +104,7 @@ deploy_metablsws_py:
 deploy_common_worker:
   stage: deploy
   image:
-    name: ${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX:-docker.io}/alpine/k8s:1.23.17
+    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
   tags:
     - docker
     - mtbls
@@ -120,7 +120,7 @@ deploy_common_worker:
 deploy_datamover_proxy:
   stage: deploy-datamover-worker
   image:
-    name: ${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX:-docker.io}/alpine/k8s:1.23.17
+    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
   tags:
     - docker
     - mtbls
@@ -136,7 +136,7 @@ deploy_datamover_proxy:
 deploy_datamover_worker:
   stage: deploy-datamover-worker
   image:
-    name: ${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX:-docker.io}/alpine/k8s:1.23.17
+    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
   tags:
     - docker
     - mtbls
