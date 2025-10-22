@@ -141,11 +141,8 @@ deploy_datamover_proxy:
 
 deploy_datamover_worker:
   stage: deploy-datamover-worker
-  image:
-    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
-    pull_policy: if-not-present
   tags:
-    - docker
+    - shell
     - mtbls
   variables:
     CHART_NAME: metablsws-py-datamover-worker
