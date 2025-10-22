@@ -76,7 +76,6 @@ build_sif:
     - shell
     - mtbls
   script:
-    - docker pull $IMAGE_NAME
     - singularity build $SIF_FILE_NAME docker-daemon://$IMAGE_NAME
     - echo "$SIF_FILE_URL"
     - |-
