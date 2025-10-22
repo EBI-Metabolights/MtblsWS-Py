@@ -1974,8 +1974,8 @@ python-dateutil = "~2.9.0.post0"
 PyYAML = "~6.0.2"
 rdflib = "~7.0.0"
 requests = "~2.32.3"
-setuptools = "~77.0.3"
-SQLAlchemy = ">=1.4.52"
+setuptools = ">=77.0.3,<81"
+SQLAlchemy = "~1.4.54"
 wheel = "~0.43.0"
 
 [package.extras]
@@ -1984,8 +1984,8 @@ notebook = ["bokeh (>=3.4.2,<3.5.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/EBI-Metabolights/isa-api.git"
-reference = "55fff3ea01666c0b5097d7b9cdec3e4c30e0fdbc"
-resolved_reference = "55fff3ea01666c0b5097d7b9cdec3e4c30e0fdbc"
+reference = "master"
+resolved_reference = "50394ea5ba658b9d9125b5576eccc02d3d57e95e"
 
 [[package]]
 name = "iso8601"
@@ -5317,4 +5317,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "c7d445c40791f44e3dd2d1b3625903bf506568d5113eefb8801880f6db40d4d4"
+content-hash = "a06d7f250b36bed809339561a576e5cac1b1ec9aea71e37d57fbde7a340762eb"
