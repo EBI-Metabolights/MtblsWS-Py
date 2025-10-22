@@ -72,9 +72,6 @@ build_docker:
 
 build_sif:
   stage: build_sif
-  image: 
-    name: dockerhub.ebi.ac.uk/mtbls/apps/singularity:4.3.4-noble
-    pull_policy: if-not-present
   tags:
     - shell
     - mtbls
@@ -141,8 +138,11 @@ deploy_datamover_proxy:
 
 deploy_datamover_worker:
   stage: deploy-datamover-worker
+  image:
+    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
+    pull_policy: if-not-present
   tags:
-    - shell
+    - docker
     - mtbls
   variables:
     CHART_NAME: metablsws-py-datamover-worker
