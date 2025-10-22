@@ -44,6 +44,7 @@ from app.tasks.datamover_tasks.curation_tasks import data_file_operations
 from app.utils import (
     MetabolightsAuthorizationException,
     MetabolightsException,
+    current_time,
     metabolights_exception_handler,
 )
 from app.ws.isaApiClient import IsaApiClient
@@ -682,7 +683,12 @@ class StudyRawAndDerivedDataFiles(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["RAW_FILES", "DERIVED_FILES", "SUPPLEMENTARY_FILES", "RECYCLE_BIN"],
+                "enum": [
+                    "RAW_FILES",
+                    "DERIVED_FILES",
+                    "SUPPLEMENTARY_FILES",
+                    "RECYCLE_BIN",
+                ],
             },
             {
                 "name": "override",
@@ -975,7 +981,12 @@ class StudyRawAndDerivedDataFolder(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["RAW_FILES", "DERIVED_FILES", "SUPPLEMENTARY_FILES", "RECYCLE_BIN"],
+                "enum": [
+                    "RAW_FILES",
+                    "DERIVED_FILES",
+                    "SUPPLEMENTARY_FILES",
+                    "RECYCLE_BIN",
+                ],
             },
             {
                 "name": "override",
@@ -1049,7 +1060,7 @@ class StudyRawAndDerivedDataFolder(Resource):
         if not target_location or target_location not in (
             "RAW_FILES",
             "DERIVED_FILES",
-            "SUPPLEMENTARY_FILES"
+            "SUPPLEMENTARY_FILES",
             "RECYCLE_BIN",
         ):
             abort(400, message="target location is invalid or not defined")
@@ -1091,7 +1102,9 @@ class StudyRawAndDerivedDataFolder(Resource):
 
         raw_data_dir = os.path.abspath(os.path.join(study_path, "RAW_FILES"))
         derived_data_dir = os.path.abspath(os.path.join(study_path, "DERIVED_FILES"))
-        supplementary_data_dir = os.path.abspath(os.path.join(study_path, "SUPPLEMENTARY_FILES"))
+        supplementary_data_dir = os.path.abspath(
+            os.path.join(study_path, "SUPPLEMENTARY_FILES")
+        )
         excluded_folder_set.add(raw_data_dir)
         excluded_folder_set.add(derived_data_dir)
 
@@ -2147,7 +2160,7 @@ def get_study_metadata_and_data_files(
                     parent_relative_path="",
                     relative_path="FILES",
                     is_dir=True,
-                    modified_time=int(datetime.datetime.now(datetime.UTC).timestamp()),
+                    modified_time=int(current_time(utc_timezone=True).timestamp()),
                 )
         # metadata_files = get_all_metadata_files()
         # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
@@ -2165,13 +2178,9 @@ def get_study_metadata_and_data_files(
                 if directory:
                     ftp_folder_path = os.path.join(ftp_folder_path, directory)
 
-                inputs = {"path": ftp_folder_path, "recursive": include_sub_dir}
-                task = list_directory.apply_async(kwargs=inputs, expires=60 * 5)
-                output = task.get(
-                    timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds
-                    * 2
+                ftp_search_result = get_private_ftp_files(
+                    include_sub_dir, settings, ftp_folder_path
                 )
-                ftp_search_result = LiteFileSearchResult.model_validate(output)
                 if search_result:
                     search_result.latest = ftp_search_result.study
                 else:
@@ -2193,6 +2202,54 @@ def get_study_metadata_and_data_files(
         search_result.uploadPath = upload_path
         search_result.obfuscationCode = study.obfuscationcode
     return search_result.model_dump(serialize_as_any=True)
+
+
+private_ftp_accessible: bool = True
+private_ftp_status_check_in_progress: bool = False
+last_private_ftp_status_check_datetime = current_time(utc_timezone=True)
+
+
+def get_private_ftp_files(include_sub_dir, settings, ftp_folder_path):
+    current = current_time(utc_timezone=True)
+
+    global private_ftp_accessible
+    global last_private_ftp_status_check_datetime
+    global private_ftp_status_check_in_progress
+
+    update_check_time_delta = 60
+    now = int(current.timestamp())
+    last_update = int(last_private_ftp_status_check_datetime.timestamp())
+    check_ftp = True if private_ftp_accessible else False
+
+    if now - last_update > update_check_time_delta:
+        logger.warning("Private FTP will be checked again...")
+        check_ftp = True
+    
+    if not check_ftp:
+        return LiteFileSearchResult(privateFtpAccessible=False)
+
+    if not private_ftp_accessible and private_ftp_status_check_in_progress:
+        logger.debug("Private FTP in progress...")
+        return LiteFileSearchResult(privateFtpAccessible=False)
+    
+    private_ftp_status_check_in_progress = True
+    config = settings.hpc_cluster.configuration
+    try:
+        inputs = {"path": ftp_folder_path, "recursive": include_sub_dir}
+        task = list_directory.apply_async(kwargs=inputs, expires=60)
+        output = task.get(timeout=config.task_get_timeout_in_seconds)
+        ftp_search_result = LiteFileSearchResult.model_validate(output)
+        private_ftp_accessible = True
+        ftp_search_result.privateFtpAccessible = True
+        return ftp_search_result
+    except Exception as ex:
+        logger.warning("Private FTP is not accessible: %s", ex)
+        private_ftp_accessible = False
+        return LiteFileSearchResult(privateFtpAccessible=False)
+    finally:
+        private_ftp_status_check_in_progress = False
+        last_private_ftp_status_check_datetime = current_time(utc_timezone=True)
+        
 
 
 class FileList(Resource):

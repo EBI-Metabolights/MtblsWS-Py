@@ -72,7 +72,7 @@ build_docker:
 build_sif:
   stage: build_sif
   image: 
-    name: ${CICD_GITLAB_REGISTRY}mtbls/singularity:3.4.0
+    name: ${CICD_GITLAB_REGISTRY}mtbls/singularity:4.0.0
   tags:
     - docker
     - mtbls
