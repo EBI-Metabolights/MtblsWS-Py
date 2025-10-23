@@ -2184,12 +2184,13 @@ def get_study_metadata_and_data_files(
                 )
                 if search_result:
                     search_result.latest = ftp_search_result.study
+                    search_result.privateFtpAccessible = ftp_search_result.privateFtpAccessible
                 else:
                     search_result = ftp_search_result
                 # search_result.latest = search_result.study
                 # search_result.study = []
             except Exception as exc:
-                logger.error(f"Error for study {study.acc}: {str(exc)}")
+                logger.error("Error for study %s: %s", study.acc, exc)
                 raise MetabolightsException(
                     "Search failed.", exception=exc, http_code=500
                 )
@@ -2205,7 +2206,7 @@ def get_study_metadata_and_data_files(
     return search_result.model_dump(serialize_as_any=True)
 
 
-def get_private_ftp_files(include_sub_dir, settings, ftp_folder_path):
+def get_private_ftp_files(include_sub_dir, settings, ftp_folder_path) -> LiteFileSearchResult:
     status_key = "private_ftp_connection:status"
     update_time_key = "private_ftp_connection:last_update_time"
     status_check_in_progress_key = "private_ftp_connection:status_check_in_progress"
@@ -2218,7 +2219,9 @@ def get_private_ftp_files(include_sub_dir, settings, ftp_folder_path):
     try:
         redis = get_redis_server()
         value = redis.get_value(update_time_key)
-        if value:
+        if not value:
+            call_async_task = True
+        else:
             last_check_timestamp = int(value.decode())
             current = int(current_time(utc_timezone=True).timestamp())
             if not current or (
