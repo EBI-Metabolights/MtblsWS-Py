@@ -92,7 +92,6 @@ def delete_study_folders(
     study_id: Union[None, str] = None,
     force_to_maintain=False,
     delete_metadata_storage_folders=True,
-    delete_data_storage_folders=True,
     delete_private_ftp_storage_folders=True,
     failing_gracefully=False,
     task_name=None,
@@ -109,7 +108,7 @@ def delete_study_folders(
             study: Study = db_session.query(Study).filter(Study.acc == study_id).first()
 
             if not study:
-                raise MetabolightsDBException(f"No study found on db.")
+                raise MetabolightsDBException("No study found on db.")
 
             study_status = StudyStatus(study.status)
             maintenance_task = StudyFolderMaintenanceTask(
@@ -136,8 +135,6 @@ def delete_study_folders(
                 maintenance_task.delete_rw_storage_folders()
             if delete_private_ftp_storage_folders:
                 maintenance_task.delete_private_ftp_storage_folders()
-            if delete_data_storage_folders:
-                maintenance_task.delete_readonly_storage_folders()
 
             create_study_folders(
                 all_results,
@@ -146,6 +143,7 @@ def delete_study_folders(
                 maintain_metadata_storage=True,
                 maintain_private_ftp_storage=True,
                 failing_gracefully=failing_gracefully,
+                force_to_maintain=True
             )
 
         return True

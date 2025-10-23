@@ -1346,7 +1346,6 @@ class StudyFolderMaintenanceTask(object):
                     self.maintain_assay_files(investigation)
                     self.maintain_assay_file_content(investigation)
         except Exception as ex:
-            print(ex)
             action_log = MaintenanceActionLog(
                 item=self.study_metadata_files_path,
                 action=MaintenanceAction.ERROR_MESSAGE,

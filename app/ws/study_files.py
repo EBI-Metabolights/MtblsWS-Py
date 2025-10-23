@@ -2231,12 +2231,12 @@ def get_private_ftp_files(include_sub_dir, settings, ftp_folder_path) -> LiteFil
             else:
                 status_value = redis.get_value(status_key)
                 if status_value:
-                    accessible = bool(value.decode())
+                    accessible = bool(status_value.decode())
                     if accessible:
                         call_async_task = True
         if not accessible and call_async_task:
             in_progress_value = redis.get_value(status_check_in_progress_key)
-            in_progress = bool(value.decode()) if in_progress_value else False
+            in_progress = bool(in_progress_value.decode()) if in_progress_value else False
         redis_available = True
     except Exception as ex:
         logger.warning("Cache server FTP status check error: %s", ex)
