@@ -143,7 +143,6 @@ def delete_study_folders(
                 maintain_metadata_storage=True,
                 maintain_private_ftp_storage=True,
                 failing_gracefully=failing_gracefully,
-                force_to_maintain=True
             )
 
         return True
