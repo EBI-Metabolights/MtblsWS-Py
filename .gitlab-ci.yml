@@ -14,7 +14,7 @@ variables:
   CONFIG_DIR: "config-files"
 workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging"
 stages:
   - build
   - deploy
@@ -95,7 +95,7 @@ deploy_metablsws_py:
   variables:
     CHART_NAME: metablsws-py
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "staging" 
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging" 
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
