@@ -15,7 +15,21 @@ class MetabolightsServiceAccount(BaseModel):
     api_token: str
     email: str
 
+class OpenIdConnnectClient(BaseModel):
+    server_url: str
+    realm_name: str
+    client_id: str
+    client_secret: str
 
+class OpenIdConnnectAdmin(BaseModel):
+    server_url: str
+    username: str
+    password: str
+    realm_name: str = "metabolights"
+
+        
 class AuthSettings(BaseModel):
     configuration: AuthConfiguration
     service_account: MetabolightsServiceAccount
+    openid_connect_client: OpenIdConnnectClient
+    openid_connect_admin: OpenIdConnnectAdmin
