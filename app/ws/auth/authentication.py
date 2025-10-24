@@ -1,3 +1,4 @@
+from functools import lru_cache
 from http.client import HTTPException
 import json
 import logging
@@ -27,12 +28,18 @@ from app.ws.redis.redis import RedisStorage, get_redis_server
 from app.ws.study.user_service import UserService
 
 logger = logging.getLogger("wslog")
-keycloak_openid = KeycloakOpenID(
-    server_url="http://hh-rke-wp-webadmin-33-worker-3.caas.ebi.ac.uk:32063",
-    realm_name="metabolights",
-    client_id="mtblsws-py-localhost",
-    client_secret_key="xtJVB3ivGpZr7mDFufykyDYrTwvu9crz",
-)
+
+
+@lru_cache(1)
+def get_keycloak_openid() -> KeycloakOpenID:
+    settings = get_settings().auth.openid_connect_client
+    keycloak_openid = KeycloakOpenID(
+        server_url=settings.server_url,
+        realm_name=settings.realm_name,
+        client_id=settings.client_id,
+        client_secret_key=settings.client_secret,
+    )
+    return keycloak_openid
 
 
 def validate_token_in_request_body(content):
@@ -173,7 +180,7 @@ class AuthLoginWithToken(Resource):
         api_token = content["token"]
         user = (
             UserService.get_instance().validate_user_has_submitter_or_super_user_role(
-                username, api_token
+                api_token
             )
         )
         settings = get_settings().auth.configuration
@@ -503,8 +510,7 @@ class AuthUser(Resource):
         Verify the given token and return user information.
         """
         try:
-            user_info = keycloak_openid.userinfo(token)
-            print(user_info)
+            user_info = get_keycloak_openid().userinfo(token)
             if not user_info:
                 raise HTTPException(status_code=401, detail="Invalid token")
             # username = user_info.get("username")
@@ -531,6 +537,9 @@ class AuthUser(Resource):
                 jsonify({"content": "invalid", "message": None, "err": None}), 401
             ), None
         except Exception as ex:
+            import traceback
+
+            traceback.print_exc()
             return make_response(
                 jsonify({"content": "invalid", "message": None, "err": None}), 401
             ), None
