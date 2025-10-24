@@ -44,10 +44,12 @@ from app.tasks.datamover_tasks.curation_tasks import data_file_operations
 from app.utils import (
     MetabolightsAuthorizationException,
     MetabolightsException,
+    current_time,
     metabolights_exception_handler,
 )
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.redis.redis import get_redis_server
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import (
     get_all_files_from_filesystem,
@@ -682,7 +684,12 @@ class StudyRawAndDerivedDataFiles(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["RAW_FILES", "DERIVED_FILES", "SUPPLEMENTARY_FILES", "RECYCLE_BIN"],
+                "enum": [
+                    "RAW_FILES",
+                    "DERIVED_FILES",
+                    "SUPPLEMENTARY_FILES",
+                    "RECYCLE_BIN",
+                ],
             },
             {
                 "name": "override",
@@ -975,7 +982,12 @@ class StudyRawAndDerivedDataFolder(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["RAW_FILES", "DERIVED_FILES", "SUPPLEMENTARY_FILES", "RECYCLE_BIN"],
+                "enum": [
+                    "RAW_FILES",
+                    "DERIVED_FILES",
+                    "SUPPLEMENTARY_FILES",
+                    "RECYCLE_BIN",
+                ],
             },
             {
                 "name": "override",
@@ -1049,7 +1061,7 @@ class StudyRawAndDerivedDataFolder(Resource):
         if not target_location or target_location not in (
             "RAW_FILES",
             "DERIVED_FILES",
-            "SUPPLEMENTARY_FILES"
+            "SUPPLEMENTARY_FILES",
             "RECYCLE_BIN",
         ):
             abort(400, message="target location is invalid or not defined")
@@ -1091,7 +1103,9 @@ class StudyRawAndDerivedDataFolder(Resource):
 
         raw_data_dir = os.path.abspath(os.path.join(study_path, "RAW_FILES"))
         derived_data_dir = os.path.abspath(os.path.join(study_path, "DERIVED_FILES"))
-        supplementary_data_dir = os.path.abspath(os.path.join(study_path, "SUPPLEMENTARY_FILES"))
+        supplementary_data_dir = os.path.abspath(
+            os.path.join(study_path, "SUPPLEMENTARY_FILES")
+        )
         excluded_folder_set.add(raw_data_dir)
         excluded_folder_set.add(derived_data_dir)
 
@@ -2147,7 +2161,7 @@ def get_study_metadata_and_data_files(
                     parent_relative_path="",
                     relative_path="FILES",
                     is_dir=True,
-                    modified_time=int(datetime.datetime.now(datetime.UTC).timestamp()),
+                    modified_time=int(current_time(utc_timezone=True).timestamp()),
                 )
         # metadata_files = get_all_metadata_files()
         # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
@@ -2165,21 +2179,18 @@ def get_study_metadata_and_data_files(
                 if directory:
                     ftp_folder_path = os.path.join(ftp_folder_path, directory)
 
-                inputs = {"path": ftp_folder_path, "recursive": include_sub_dir}
-                task = list_directory.apply_async(kwargs=inputs, expires=60 * 5)
-                output = task.get(
-                    timeout=settings.hpc_cluster.configuration.task_get_timeout_in_seconds
-                    * 2
+                ftp_search_result = get_private_ftp_files(
+                    include_sub_dir, settings, ftp_folder_path
                 )
-                ftp_search_result = LiteFileSearchResult.model_validate(output)
                 if search_result:
                     search_result.latest = ftp_search_result.study
+                    search_result.privateFtpAccessible = ftp_search_result.privateFtpAccessible
                 else:
                     search_result = ftp_search_result
                 # search_result.latest = search_result.study
                 # search_result.study = []
             except Exception as exc:
-                logger.error(f"Error for study {study.acc}: {str(exc)}")
+                logger.error("Error for study %s: %s", study.acc, exc)
                 raise MetabolightsException(
                     "Search failed.", exception=exc, http_code=500
                 )
@@ -2193,6 +2204,86 @@ def get_study_metadata_and_data_files(
         search_result.uploadPath = upload_path
         search_result.obfuscationCode = study.obfuscationcode
     return search_result.model_dump(serialize_as_any=True)
+
+
+def get_private_ftp_files(include_sub_dir, settings, ftp_folder_path) -> LiteFileSearchResult:
+    status_key = "private_ftp_connection:status"
+    update_time_key = "private_ftp_connection:last_update_time"
+    status_check_in_progress_key = "private_ftp_connection:status_check_in_progress"
+    update_check_time_delta = 60
+    call_async_task = False
+    in_progress = False
+    accessible = False
+    last_check_timestamp: None | int = None
+    redis_available = False
+    try:
+        redis = get_redis_server()
+        value = redis.get_value(update_time_key)
+        if not value:
+            call_async_task = True
+        else:
+            last_check_timestamp = int(value.decode())
+            current = int(current_time(utc_timezone=True).timestamp())
+            if not current or (
+                current - last_check_timestamp > update_check_time_delta
+            ):
+                call_async_task = True
+            else:
+                status_value = redis.get_value(status_key)
+                if status_value:
+                    accessible = bool(status_value.decode())
+                    if accessible:
+                        call_async_task = True
+        if not accessible and call_async_task:
+            in_progress_value = redis.get_value(status_check_in_progress_key)
+            in_progress = bool(in_progress_value.decode()) if in_progress_value else False
+        redis_available = True
+    except Exception as ex:
+        logger.warning("Cache server FTP status check error: %s", ex)
+
+    if not call_async_task:
+        return LiteFileSearchResult(privateFtpAccessible=False)
+    if in_progress:
+        logger.debug("Private FTP status check in progress...")
+        return LiteFileSearchResult(privateFtpAccessible=False)
+    if redis_available:
+        try:
+            get_redis_server().set_value(
+                status_check_in_progress_key, "1", ex=update_check_time_delta
+            )
+        except Exception as ex:
+            logger.debug("Redis server access error: ex", ex)
+
+    timeout = settings.hpc_cluster.configuration.task_get_timeout_in_seconds
+    status_result = False
+    try:
+        inputs = {"path": ftp_folder_path, "recursive": include_sub_dir}
+        task = list_directory.apply_async(kwargs=inputs, expires=timeout)
+        output = task.get(timeout=timeout)
+        ftp_search_result = LiteFileSearchResult.model_validate(output)
+        status_result = True
+        return ftp_search_result
+    except Exception as ex:
+        logger.warning("Private FTP is not accessible: %s", ex)
+        return LiteFileSearchResult(privateFtpAccessible=False)
+    finally:
+        if redis_available:
+            try:
+                current = int(current_time(utc_timezone=True).timestamp())
+                if current - last_check_timestamp > 10:
+                    redis = get_redis_server()
+                    redis.set_value(
+                        status_key, "1" if status_result else "0", ex=update_check_time_delta
+                    )
+                    redis.set_value(
+                        status_check_in_progress_key, "0", ex=update_check_time_delta
+                    )
+                    
+                    redis.set_value(
+                        update_time_key, str(current), ex=update_check_time_delta
+                    )
+            except Exception as ex:
+                logger.debug("Redis server access error: ex", ex)
 
 
 class FileList(Resource):

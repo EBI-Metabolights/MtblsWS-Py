@@ -981,9 +981,9 @@ class StudyContacts(Resource):
         logger.info("Got %s contacts", len(new_contacts))
         
         sch = PersonSchema()
+        sch.context['contact'] = Person()
         return sch.dump(isa_study.contacts, many=True)
-        
-
+    
     def validate_contact(self, new_contact: PersonSchema):
         errors = []
         comments = {x.name: x for x in new_contact.comments}
@@ -3411,6 +3411,9 @@ class StudyPublications(Resource):
 
         # Add new Publication
         logger.info("Adding new Publication %s for %s", new_publication.title, study_id)
+        validation_result = self.validate_publication(new_publication)
+        if validation_result:
+            abort(409, message=validation_result)
         # check for access rights
         (
             is_curator,
@@ -3484,7 +3487,24 @@ class StudyPublications(Resource):
             # logger.info("A copy of the previous files will %s saved", save_msg_str)
 
         return PublicationSchema().dump(new_publication)
-
+    
+    def validate_publication(self, new_publication: PublicationSchema):
+        errors = []
+        status = getattr(new_publication, "status", None)
+        if not new_publication.title or len(new_publication.title) < 20:
+            errors.append("Publication title is not valid")
+        if new_publication.doi:
+            doi_pattern = r"^10[.].+/.+$"
+            if not re.match(doi_pattern, new_publication.doi, re.IGNORECASE):
+                errors.append(f"Invalid DOI '{new_publication.doi}'")
+        if new_publication.pubmed_id:
+            pmid_pattern = r"^[1-9]([0-9]{1,8})?$"
+            if not re.match(pmid_pattern, new_publication.pubmed_id):
+                errors.append(f"Invalid PubMed ID '{new_publication.pubmed_id}'")
+        if not status:
+            errors.append(f"Publication status cannot be empty")        
+        return errors
+    
     @swagger.operation(
         summary="Get Study Publications",
         notes="""Get Study Publications.
@@ -3844,6 +3864,9 @@ class StudyPublications(Resource):
 
         # update Study Publication details
         logger.info("Updating Study Publication details for %s", study_id)
+        validation_result = self.validate_publication(updated_publication)
+        if validation_result:
+            abort(409, message=validation_result)
         # check for access rights
         (
             is_curator,
