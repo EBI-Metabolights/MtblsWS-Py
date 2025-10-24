@@ -111,7 +111,7 @@ deploy_common_worker:
   variables:
     CHART_NAME: metablsws-py-common-worker
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "staging"
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging"
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
@@ -127,7 +127,7 @@ deploy_datamover_proxy:
   variables:
     CHART_NAME: metablsws-py-datamover-proxy
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "staging" 
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging" 
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
