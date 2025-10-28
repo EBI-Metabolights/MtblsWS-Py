@@ -38,6 +38,8 @@ from pydantic.alias_generators import to_camel
 from app.config import get_settings
 from app.study_folder_utils import convert_relative_to_real_path
 from app.utils import current_time, ttl_cache
+from app.ws.study_templates.models import FileTemplates, ValidationConfiguration, ValidationControls
+from app.ws.study_templates.utils import get_validation_configuration
 
 logger = logging.getLogger("wslog")
 
@@ -136,7 +138,7 @@ def filter_term_by_keyword(
 
 
 class DefaultControlLists(BaseModel):
-    control_lists: Dict[str, List[Entity]] = {}
+    control_lists: Dict[str, List[Entity] | ValidationControls | FileTemplates ] = {}
     model_config = ConfigDict(alias_generator=to_camel)
 
 
@@ -157,11 +159,16 @@ class MetaboLightsOntology:
         self.initiate()
         default_list: DefaultControlLists = DefaultControlLists()
         default_list.control_lists = self.branch_map
+        self.update_validation_configuration(default_list.control_lists)
         self.control_lists: DefaultControlLists = default_list
         self.control_lists_dict: Dict[str, Any] = self.control_lists.model_dump(
             by_alias=True
         )
-
+    def update_validation_configuration(self, control_lists):
+        configuration: ValidationConfiguration = get_validation_configuration()
+        control_lists["controls"] = configuration.controls
+        control_lists["templates"] = configuration.templates
+            
     def get_default_control_lists(self, name: str = ""):
         if name:
             default_list: DefaultControlLists = DefaultControlLists()
@@ -173,6 +180,7 @@ class MetaboLightsOntology:
             )
         if not self.control_lists.control_lists:
             self.control_lists.control_lists = self.branch_map
+            self.update_validation_configuration(default_list.control_lists)
             self.control_lists_dict = self.control_lists.model_dump(by_alias=True)
         return self.control_lists_dict
 
