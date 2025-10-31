@@ -512,9 +512,9 @@ class AuthUser(Resource):
         """
         try:
             user_info = get_keycloak_openid().userinfo(token)
-            if not user_info or not user_info.get("username"):
+            if not user_info or not user_info.get("email"):
                 raise HTTPException(status_code=401, detail="Invalid token")
-            username = user_info.get("username")
+            username = user_info.get("email")
             if username != email:
                 return make_response(jsonify({"content": "invalid", "message": "jwt token user and input user is not same", "err": None}), 401)
             try:
