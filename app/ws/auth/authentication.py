@@ -24,6 +24,7 @@ from app.ws.auth.utils import (
 )
 from app.ws.db.models import StudyAccessPermission, UserModel
 from app.ws.db.types import StudyStatus, UserRole, UserStatus
+from app.ws.db_connection import create_user
 from app.ws.redis.redis import RedisStorage, get_redis_server
 from app.ws.study.user_service import UserService
 
@@ -511,12 +512,38 @@ class AuthUser(Resource):
         """
         try:
             user_info = get_keycloak_openid().userinfo(token)
-            if not user_info:
+            if not user_info or not user_info.get("username"):
                 raise HTTPException(status_code=401, detail="Invalid token")
-            # username = user_info.get("username")
-            # if username != email:
-            #     return make_response(jsonify({"content": "invalid", "message": None, "err": None}), 401)
-
+            username = user_info.get("username")
+            if username != email:
+                return make_response(jsonify({"content": "invalid", "message": "jwt token user and input user is not same", "err": None}), 401)
+            try:
+                # check user is created
+                UserService.get_instance().get_db_user_by_user_name(username)
+            except MetabolightsAuthorizationException as ex:
+                # user is defined in keycloak but it is not defined in db
+                email_verified = user_info.get("email_verified", False)
+                if not email_verified:
+                    raise HTTPException(status_code=401, detail="Email address is not verified")
+                orcid = user_info.get("orcid", "") or ""
+                orcid = orcid.replace("https://orcid.org/", "") or None
+                success, message = create_user(
+                    first_name=user_info.get("given_name"),
+                    last_name=user_info.get("family_name"),
+                    email=user_info.get("email"),
+                    affiliation=user_info.get("affiliation"),
+                    affiliation_url=user_info.get("affiliationUrl"),
+                    address=user_info.get("address", {}).get("country", None),
+                    orcid=orcid,
+                    api_token=str(uuid.uuid4()),
+                    password_encoded=str(uuid.uuid4()),
+                    metaspace_api_key=None,
+                )
+                if success:
+                    logger.info(message)
+                else:
+                    logger.warning(message)
+                
             response = make_response(
                 jsonify(
                     {
@@ -529,7 +556,9 @@ class AuthUser(Resource):
             )
             response.headers["Access-Control-Expose-Headers"] = "Jwt, User"
             response.headers["jwt"] = token
-            response.headers["user"] = user_info.get("username")
+            response.headers["user"] = username
+
+                
             return response, user_info.get("email")
 
         except KeycloakAuthenticationError as ex:
