@@ -362,7 +362,7 @@ class AuthValidation(Resource):
 
 class OneTimeTokenValidation(Resource):
     @swagger.operation(
-        summary="Get current JWT token from one time token",
+        summary="[Deprecated] Get current JWT token from one time token",
         notes="Get current JWT token from one time token",
         parameters=[
             {
