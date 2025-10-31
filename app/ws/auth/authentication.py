@@ -1,5 +1,4 @@
 from functools import lru_cache
-from http.client import HTTPException
 import json
 import logging
 import re
@@ -13,6 +12,7 @@ from keycloak import KeycloakAuthenticationError, KeycloakOpenID
 
 from app.config import get_settings
 from app.utils import (
+    MetabolightsAuthenticationException,
     MetabolightsAuthorizationException,
     MetabolightsException,
     metabolights_exception_handler,
@@ -513,10 +513,21 @@ class AuthUser(Resource):
         try:
             user_info = get_keycloak_openid().userinfo(token)
             if not user_info or not user_info.get("email"):
-                raise HTTPException(status_code=401, detail="Invalid token")
+                raise MetabolightsAuthenticationException(
+                    http_code=401, message="Invalid token"
+                )
             username = user_info.get("email")
             if username != email:
-                return make_response(jsonify({"content": "invalid", "message": "jwt token user and input user is not same", "err": None}), 401)
+                return make_response(
+                    jsonify(
+                        {
+                            "content": "invalid",
+                            "message": "jwt token user and input user is not same",
+                            "err": None,
+                        }
+                    ),
+                    401,
+                )
             try:
                 # check user is created
                 UserService.get_instance().get_db_user_by_user_name(username)
@@ -524,7 +535,10 @@ class AuthUser(Resource):
                 # user is defined in keycloak but it is not defined in db
                 email_verified = user_info.get("email_verified", False)
                 if not email_verified:
-                    raise HTTPException(status_code=401, detail="Email address is not verified")
+                    raise MetabolightsAuthenticationException(
+                        http_code=401,
+                        message=f"Email address '{username}' is not verified",
+                    )
                 orcid = user_info.get("orcid", "") or ""
                 orcid = orcid.replace("https://orcid.org/", "") or None
                 success, message = create_user(
@@ -538,12 +552,14 @@ class AuthUser(Resource):
                     api_token=str(uuid.uuid4()),
                     password_encoded=str(uuid.uuid4()),
                     metaspace_api_key=None,
+                    role=UserRole.ROLE_SUBMITTER.value,
+                    status=UserStatus.ACTIVE.value
                 )
                 if success:
                     logger.info(message)
                 else:
                     logger.warning(message)
-                
+
             response = make_response(
                 jsonify(
                     {
@@ -558,7 +574,6 @@ class AuthUser(Resource):
             response.headers["jwt"] = token
             response.headers["user"] = username
 
-                
             return response, user_info.get("email")
 
         except KeycloakAuthenticationError as ex:

@@ -234,6 +234,8 @@ def create_user(
     api_token,
     password_encoded,
     metaspace_api_key,
+    role=1,
+    status=0,
 ):
     email = email.lower()
     insert_user_query = """
@@ -251,7 +253,7 @@ def create_user(
             %(apitoken_value)s, %(email_value)s, %(firstname_value)s,
             %(current_time)s, 
             %(lastname_value)s, %(password_value)s, 
-            2, 0,
+            %(role_value)s, %(status_value)s,
             %(email_value)s, %(orcid_value)s, %(metaspace_api_key_value)s
         );
     """
@@ -267,6 +269,8 @@ def create_user(
         "password_value": password_encoded,
         "orcid_value": orcid,
         "metaspace_api_key_value": metaspace_api_key,
+        "role_value": role,
+        "status_value": status,
         "current_time": current_utc_time_without_timezone(),
     }
 
