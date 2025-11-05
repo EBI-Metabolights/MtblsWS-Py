@@ -1039,10 +1039,10 @@ class StudyContacts(Resource):
                 errors.append("Principal Investigator email is empty")
             if not new_contact.affiliation:
                 errors.append("Principal Investigator affiliation is empty")
-            if not ror_id:
-                errors.append("Affiliation ROR ID is empty")
-            if not orcid:
-                errors.append("ORCID is empty")
+            # if not ror_id:
+            #     errors.append("Affiliation ROR ID is empty")
+            # if not orcid:
+            #     errors.append("ORCID is empty")
         return errors
 
     @swagger.operation(
