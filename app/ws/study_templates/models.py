@@ -199,21 +199,21 @@ class FieldValueValidation(StudyBaseModel):
     ] = ValidationType.ANY_ONTOLOGY_TERM
     constraints: Annotated[
         None | list[FieldConstraint], Field(description="Field constraints")
-    ] = None
+    ] = []
     default_value: Annotated[
         None | OntologyTerm, Field(description="Default ontology term")
-    ]
+    ] = None
     allowed_missing_ontology_terms: Annotated[
         None | list[OntologyTerm], Field(description="Allowed missing ontology terms")
-    ]
+    ] = []
     allowed_other_sources: Annotated[
         None | list[AdditionalSource],
         Field(description="Allowed values from other non ontology sources."),
-    ]
+    ] = []
     allowed_placeholders: Annotated[
         None | list[OntologyTermPlaceholder],
         Field(description="Allowed placeholders for term source and accession"),
-    ]
+    ] = []
     terms: Annotated[
         None | list[OntologyTerm],
         Field(
@@ -222,7 +222,7 @@ class FieldValueValidation(StudyBaseModel):
             "it defines ordered allowed ontology terms, "
             "otherwise it lists ordered and recommended ontology terms."
         ),
-    ]
+    ] = []
     ontologies: Annotated[
         None | list[str],
         Field(
@@ -230,7 +230,7 @@ class FieldValueValidation(StudyBaseModel):
             "If validation type is ontology-term-in-selected-ontologies, "
             "it defines ontology sources, otherwise it lists recommended ontology sources."
         ),
-    ]
+    ] = []
 
     allowed_parent_ontology_terms: Annotated[
         None | ParentOntologyTerms,
@@ -238,11 +238,11 @@ class FieldValueValidation(StudyBaseModel):
             description="Parent ontology terms to find the allowed child ontology terms. "
             "Applicable only for validation type child-ontology-term"
         ),
-    ]
+    ] = []
     unexpected_terms: Annotated[
         None | list[str],
         Field(description="unexpected terms."),
-    ] = None
+    ] = []
 
 
 class ColumnDescription(StudyBaseModel):
@@ -252,7 +252,9 @@ class ColumnDescription(StudyBaseModel):
     ]
     column_category: Annotated[
         None
-        | Literal["", "Basic", "Protocol", "Parameter", "Characteristics", "File", "Label"],
+        | Literal[
+            "", "Basic", "Protocol", "Parameter", "Characteristics", "File", "Label"
+        ],
         Field(description="column category"),
     ] = None
     column_header: Annotated[str, Field(description="column header")]
@@ -330,7 +332,8 @@ class ValidationControls(StudyBaseModel):
             "Select the first one."
         ),
     ] = {}
-    
+
+
 class ValidationConfiguration(StudyBaseModel):
     controls: Annotated[ValidationControls, Field(description="File templates")]
     templates: Annotated[FileTemplates, Field(description="File templates")]

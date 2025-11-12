@@ -103,11 +103,6 @@ class MtblsControlLists(Resource):
     )
     def get(self):
         log_request(request)
-        
-
-        
-
-        
         name = request.args.get('name').strip() if request.args.get('name') else None
         filepath = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
         mtbl_ontology: MetaboLightsOntology = load_ontology_file(filepath)
