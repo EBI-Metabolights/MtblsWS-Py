@@ -341,72 +341,71 @@ def sync_public_ftp_folder_with_revisions(
 )
 def check_not_started_study_revisions(self):
     user_token = get_settings().auth.service_account.api_token
-    unstarted_revisions = StudyRevisionService.get_all_non_started_study_revision_tasks()
-    if not unstarted_revisions or len(unstarted_revisions) == 0:
-        logger.info("No unstarted revisions found.")
-        return
-    logger.info(f"Found {len(unstarted_revisions)} unstarted revisions.")
-    for result in unstarted_revisions:
-        task = sync_study_revision.apply_async(kwargs={"study_id": result.accession_number, "user_token": user_token, "latest_revision": result.revision_number})
-        logger.info(f"Task {task.id} is created for study {result.accession_number} revision {result.revision_number}.")
 
-    
-if __name__ == "__main__":
-    user_token = get_settings().auth.service_account.api_token
-    # user = UserService.get_instance().get_db_user_by_user_token(user_token)
-
-    studies = []
     with DBManager.get_instance().session_maker() as db_session:
         try:
             # db_session.query(StudyRevision).delete()
             # db_session.commit()
-            result = db_session.query(
-                Study.acc,
-                Study.revision_number,
-                Study.revision_datetime,
-                Study.status,
-                Study.studysize,
-            ).all()
-            if result:
-                studies = list(result)
-                studies.sort(
-                    key=lambda x: int(x["acc"].replace("MTBLS", "").replace("REQ", ""))
+            ten_mins_ago = datetime.datetime.now(
+                datetime.timezone.utc
+            ) - datetime.timedelta(minutes=10)
+            result = (
+                db_session.query(
+                    Study.acc,
+                    Study.revision_number,
+                    Study.revision_datetime,
+                    Study.status,
+                    Study.studysize,
+                    StudyRevision.status,
                 )
+                .join(
+                    StudyRevision,
+                    and_(
+                        StudyRevision.accession_number == Study.acc,
+                        StudyRevision.revision_number == Study.revision_number,
+                    ),
+                )
+                .filter(
+                    or_(
+                        Study.status == StudyStatus.PRIVATE.value,
+                        Study.status == StudyStatus.PUBLIC.value,
+                    ),
+                    Study.revision_number > 0,
+                    or_(
+                        StudyRevision.status == StudyRevisionStatus.INITIATED.value,
+                        StudyRevision.status == StudyRevisionStatus.FAILED.value,
+                    ),
+                    StudyRevision.revision_datetime < ten_mins_ago,
+                )
+                .all()
+            )
 
+            if not result:
+                logger.info("There is no unstarted revision task.")
+                return
+            unstarted_revisions = list(result)
+            unstarted_revisions.sort(key=lambda x: int(x["studysize"]))
+            logger.info(f"Found {len(unstarted_revisions)} unstarted revisions.")
+
+            for study in unstarted_revisions:
+                study_id = study["acc"]
+                revision_number = study["revision_number"]
+                task = sync_study_revision.apply_async(
+                    kwargs={
+                        "study_id": study_id,
+                        "user_token": user_token,
+                        "latest_revision": study["revision_number"],
+                    }
+                )
+                logger.info(
+                    f"Task {task.id} is created for "
+                    f"study {study_id} revision {revision_number}."
+                )
+            exit(1)
         except Exception as e:
             db_session.rollback()
             raise e
-    selected_studies = [
-        (x["acc"], x["studysize"])
-        for x in studies
-        if x["revision_number"] == 1
-        # if int(x["acc"].replace("MTBLS", "").replace("REQ", "")) >= 10000
-    ]
-    selected_studies.sort(key=lambda x: x[1])
-    studies = [x[0] for x in selected_studies]
 
-    # studies = ["MTBLS8"]
-    for study_id in studies:
-        study: Study = StudyService.get_instance().get_study_by_acc(study_id)
-        study_status = StudyStatus(study.status)
-        if study_status not in {StudyStatus.PUBLIC}:
-            continue
 
-        if study.revision_number > 0:
-            revision = StudyRevisionService.get_study_revision(
-                study.acc, study.revision_number
-            )
-            if revision.status in {
-                StudyRevisionStatus.FAILED,
-                StudyRevisionStatus.INITIATED,
-            }:
-                result = sync_study_revision(
-                    study_id=study_id,
-                    user_token=user_token,
-                    latest_revision=study.revision_number,
-                )
-                print(f"{result}")
-            else:
-                print(
-                    f"{study_id} will be skipped. Its revision status: {revision.status.name}"
-                )
+if __name__ == "__main__":
+    check_not_started_study_revisions()
