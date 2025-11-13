@@ -12,12 +12,15 @@ from app.tasks.hpc_rsync_worker import HpcRsyncWorker
 from app.tasks.worker import get_flask_app
 from app.ws.db.schemes import Study
 from app.ws.db.types import StudyStatus
-from app.ws.folder_maintenance import (MaintenanceActionLog,
-                                       MaintenanceException,
-                                       StudyFolderMaintenanceTask)
+from app.ws.folder_maintenance import (
+    MaintenanceActionLog,
+    MaintenanceException,
+    StudyFolderMaintenanceTask,
+)
 from app.config.model.study import StudySettings
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_service import StudyService
+
 
 def get_files(search_path, patterns: List[str], recursive: bool = False):
     files = []
@@ -37,14 +40,16 @@ def update_readonly_storage_folders(
     output_summary_report=None,
     delete_unreferenced_metadata_files=False,
     apply_future_actions=False,
-    cluster_mode:bool=False,
+    cluster_mode: bool = False,
 ):
     if not study_id_list:
         raise MaintenanceException(message="At least one study should be selected")
 
     maintenance_task_list: Dict[str, StudyFolderMaintenanceTask] = {}
-    start = time.time() 
-    start_time_str = datetime.datetime.fromtimestamp(start).strftime("%Y-%m-%d %H:%M:%S")
+    start = time.time()
+    start_time_str = datetime.datetime.fromtimestamp(start).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
     print(f"Maintenance task started at {start_time_str}")
     if not settings:
         settings = get_study_settings()
@@ -56,7 +61,9 @@ def update_readonly_storage_folders(
         header = f"STUDY_ID\tSTUDY STATUS\tSTATUS\tCOMMAND\tACTION\tITEM\tMESSAGE\tPARAMETERS\n"
         fa.writelines([header])
         for study_id in study_id_list:
-            study: Study = StudyService.get_instance().get_study_by_acc(study_id=study_id)
+            study: Study = StudyService.get_instance().get_study_by_acc(
+                study_id=study_id
+            )
             study_status = StudyStatus(study.status)
             public_release_date = study.releasedate
             submission_date = study.submissiondate
@@ -71,23 +78,34 @@ def update_readonly_storage_folders(
                 settings=settings,
                 apply_future_actions=apply_future_actions,
                 force_to_maintain=True,
-                cluster_execution_mode=cluster_mode
+                cluster_execution_mode=cluster_mode,
+                mhd_accession=study.mhd_accession,
+                mhd_model_version=study.mhd_model_version,
+                study_category=study.study_category,
+                sample_template=study.sample_type,
+                dataset_license=study.dataset_license,
+                template_version=study.template_version,
             )
-                    
-            
+
             maintenance_task_list[study_id] = maintenance_task
-            try: 
+            try:
                 maintenance_task.sync_audit_folders_to_readonly_storage()
                 maintenance_task.sync_metadata_files_to_readonly_storage()
                 maintenance_task.sync_metadata_public_versions_to_readonly_storage()
             finally:
                 if maintenance_task.actions:
-                    write_actions(fa, maintenance_task.actions, study_id, study_status.name)
+                    write_actions(
+                        fa, maintenance_task.actions, study_id, study_status.name
+                    )
                 if maintenance_task.future_actions:
-                    write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
+                    write_actions(
+                        fa, maintenance_task.future_actions, study_id, study_status.name
+                    )
                 task_done_time = time.time()
-                print(f"{study_id} readonly storage maintenance has been completed. Elapsed time in seconds: {int((task_done_time - start)*100)/100.0} " )
-                    
+                print(
+                    f"{study_id} readonly storage maintenance has been completed. Elapsed time in seconds: {int((task_done_time - start) * 100) / 100.0} "
+                )
+
     return maintenance_task_list
 
 
@@ -108,7 +126,6 @@ def write_actions(f, actions: List[MaintenanceActionLog], study_id, study_status
 
 
 if __name__ == "__main__":
-    
 
     def sort_by_study_id(key: str):
         if key:
@@ -118,8 +135,8 @@ if __name__ == "__main__":
         return -1
 
     study_ids = []
-    if len(sys.argv) > 1 and sys.argv[1]:         
-        study_ids = sys.argv[1].split(',')
+    if len(sys.argv) > 1 and sys.argv[1]:
+        study_ids = sys.argv[1].split(",")
 
     target = None
     if len(sys.argv) > 2 and sys.argv[2]:
@@ -135,25 +152,31 @@ if __name__ == "__main__":
 
     apply_future_actions = False
     if len(sys.argv) > 5 and sys.argv[5]:
-        apply_future_actions = True if sys.argv[5].lower().startswith("apply") else False
+        apply_future_actions = (
+            True if sys.argv[5].lower().startswith("apply") else False
+        )
 
     cluster_mode = False
     if len(sys.argv) > 6 and sys.argv[6]:
         cluster_mode = True if sys.argv[6].lower().startswith("cluster") else False
-        
+
     items = set()
     if not study_ids:
         studies = StudyService.get_instance().get_all_study_ids()
         skip_study_ids = []
-        study_ids = [study[0] for study in studies if study[0] and study[0] not in skip_study_ids]
+        study_ids = [
+            study[0] for study in studies if study[0] and study[0] not in skip_study_ids
+        ]
     else:
-        study_status_map = {data.name.upper():data.value for data in StudyStatus}
+        study_status_map = {data.name.upper(): data.value for data in StudyStatus}
         for item in study_ids:
             if item and item.upper().startswith("MTBLS"):
                 items.add(item)
             elif item and item.upper() in study_status_map:
                 status = StudyStatus(study_status_map[item.upper()])
-                study_id_result = StudyService.get_instance().get_study_ids_with_status(status)
+                study_id_result = StudyService.get_instance().get_study_ids_with_status(
+                    status
+                )
                 for study in study_id_result:
                     items.add(study[0])
         study_ids = list(items)
@@ -164,7 +187,7 @@ if __name__ == "__main__":
         output_summary_report=output_summary_report,
         task_name=task_name,
         apply_future_actions=apply_future_actions,
-        cluster_mode=cluster_mode
+        cluster_mode=cluster_mode,
     )
 
     print("end")

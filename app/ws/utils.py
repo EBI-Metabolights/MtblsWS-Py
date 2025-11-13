@@ -30,7 +30,7 @@ import re
 import shutil
 import string
 import time
-from typing import List, Tuple
+from typing import Any, List, Tuple
 import uuid
 from os.path import normpath, basename
 
@@ -46,7 +46,6 @@ from isatools.model import Protocol, ProtocolParameter, OntologySource
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
 from pandas import Series
-from dirsync import sync
 from app.config import get_settings
 from app.config.utils import get_host_internal_url
 from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files
@@ -280,40 +279,6 @@ def copytree(
         raise
 
 
-def copy_files_and_folders(
-    source, destination, include_raw_data=True, include_investigation_file=True
-):
-    """
-    Make a copy of files/folders from origin to destination. If destination already exists, it will be replaced.
-    :param source:  string containing the full path to the source file, including filename
-    :param destination: string containing the path to the source file, including filename
-    :param include_raw_data: Copy all files or metadata only, Boolean (default True)
-    :param include_investigation_file: Copy the i_Investigation.txt file, Boolean (default True)
-    :return:
-    """
-
-    if source is None or destination is None:
-        return False, "Study or upload folder is not known, aborting"
-
-    try:
-        # copy origin to destination
-        logger.info("Copying %s to %s", source, destination)
-        copytree(
-            source,
-            destination,
-            include_raw_data=include_raw_data,
-            include_investigation_file=include_investigation_file,
-        )
-    except FileNotFoundError:
-        return False, "No files found under " + source
-    except IsADirectoryError:
-        return False, "Please give filename(s), not only upload folder " + source
-    except Exception:
-        return False, "Could not copy files from " + source
-
-    return True, "Files successfully copied from " + source + " to " + destination
-
-
 def remove_samples_from_isatab(std_path):
     # dest folder name is a timestamp
     settings = get_study_settings()
@@ -423,64 +388,6 @@ def get_assay_headers_and_protocols(assay_type):
     )
 
 
-def get_sample_headers_and_data(sample_type: None):
-    tidy_header_row = ""
-    tidy_data_row = ""
-    protocols = ""
-    sample_desc = ""
-    sample_data_type = ""
-    sample_file_type = ""
-    sample_mandatory_type = ""
-
-    if sample_type is None:
-        sample_type = "minimum"
-
-    resource_folder = os.path.join(application_path, "resources")
-    logger.info(" - get_sample_headers_and_data for sample type " + sample_type)
-    sample_master_template = os.path.join(
-        resource_folder, "MetaboLightsSampleMaster.tsv"
-    )
-    master_df = read_tsv(sample_master_template)
-
-    header_row = master_df.loc[master_df["name"] == sample_type + "-header"]
-    data_row = master_df.loc[master_df["name"] == sample_type + "-data"]
-    protocol_row = master_df.loc[master_df["name"] == sample_type + "-protocol"]
-    sample_desc_row = master_df.loc[master_df["name"] == sample_type + "-sample"]
-    sample_data_type_row = master_df.loc[master_df["name"] == sample_type + "-type"]
-    sample_file_type_row = master_df.loc[master_df["name"] == sample_type + "-file"]
-    sample_data_mandatory_row = master_df.loc[
-        master_df["name"] == sample_type + "-mandatory"
-    ]
-
-    try:
-        protocols = get_protocols_for_assay(protocol_row, sample_type)
-        sample_desc = get_desc_for_sample(sample_desc_row, sample_type)
-        sample_data_type = get_data_type_for_assay(sample_data_type_row, sample_type)
-        sample_file_type = get_file_type_for_assay(sample_file_type_row, sample_type)
-        sample_mandatory_type = get_mandatory_data_for_assay(
-            sample_data_mandatory_row, sample_type
-        )
-        tidy_header_row = tidy_template_row(
-            header_row
-        )  # Remove empty cells after end of column definition
-        tidy_data_row = tidy_template_row(data_row)
-    except:
-        logger.error(
-            "Could not retrieve all required template info for this sample type: "
-            + sample_type
-        )
-
-    return (
-        tidy_header_row,
-        tidy_data_row,
-        protocols,
-        sample_desc,
-        sample_data_type,
-        sample_file_type,
-        sample_mandatory_type,
-    )
-
-
 def delete_column_from_tsv_file(file_df: pd.DataFrame, column_name: str):
     column_index = -1
     deleted_column_names = [column_name]
@@ -508,73 +415,24 @@ def delete_column_from_tsv_file(file_df: pd.DataFrame, column_name: str):
         return False
 
 
-def get_table_header(table_df, study_id=None, file_name=None):
+
+
+def get_table_header(table_df):
     # Get an indexed header row
     df_header = pd.DataFrame(list(table_df))  # Get the header row only
     df_header = df_header.reset_index().to_dict(orient="list")
-    mapping = {}
-    assay_type = None
 
-    if file_name is not None and file_name.startswith("a_"):
-        try:
-            assay_type = get_assay_type_from_file_name(study_id, file_name)
-        except:
-            assay_type = None
-
-    if assay_type is not None and assay_type != "a":
-        (
-            tidy_header_row,
-            tidy_data_row,
-            protocols,
-            assay_desc,
-            assay_data_type,
-            assay_file_type,
-            assay_data_mandatory,
-        ) = get_assay_headers_and_protocols(assay_type)
-        df_header["type"] = assay_data_type
-        df_header["file-type"] = assay_file_type
-        df_header["mandatory"] = assay_data_mandatory
-
-        try:
-            for i in range(0, len(df_header["index"])):
-                mapping[df_header[0][i]] = {
-                    "index": df_header["index"][i],
-                    "data-type": df_header["type"][i],
-                    "file-type": df_header["file-type"][i],
-                    "mandatory": df_header["mandatory"][i],
-                }
-        except:  # Using new assay file pattern, but not correct columns, so try the legacy mapping
-            mapping = get_legacy_assay_mapping(df_header)
-
-    else:  # This means we have an assay file that not created with the new pattern
-        mapping = get_legacy_assay_mapping(df_header)
-
-    return mapping
+    return get_legacy_assay_mapping(df_header)
 
 
-def get_legacy_assay_mapping(df_header):
+def get_legacy_assay_mapping(df_header) -> dict[str,]:
     mapping = {}
     for i in range(0, len(df_header["index"])):
         mapping[df_header[0][i]] = df_header["index"][i]
     return mapping
 
 
-def get_assay_type_from_file_name(study_id, file_name):
-    assay_type = None
-    file_name = file_name.replace(
-        "a_" + study_id + "_", ""
-    )  # Remove study_id and assay refs from filename
-    for file_part in file_name.split("_"):  # Split string on assay
-        assay_type = file_part  # Only interested in the assay type part, ie. first part
-        break
 
-    if assay_type == "a":  # Legacy filename
-        if file_name.endswith("metabolite_profiling_NMR_spectroscopy.txt"):
-            assay_type = "NMR"
-        elif file_name.endswith("metabolite_profiling_mass_spectrometry.txt"):
-            assay_type = "LC-MS"  # For this purpose LC and GC has the same columns
-
-    return assay_type
 
 
 def validate_row(table_header_df, row, http_type):
@@ -1113,140 +971,24 @@ def get_absolute_path(input_path: str):
     return new_path
 
 
-def create_maf(
-    technology, study_metadata_location, assay_file_name, annotation_file_name
-):
-    settings = get_settings()
-
-    update_maf = False
-
-    if technology is None:
-        if "nmr" in assay_file_name.lower():
-            technology = "NMR"
-
-    # Fixed column headers to look for in the MAF, defaults to MS
-    sample_name = "Sample Name"
-    assay_name = "MS Assay Name"
-    annotation_file_template = get_absolute_path(
-        settings.file_resources.study_mass_spectrometry_maf_file_template_path
-    )
-
-    # NMR MAF and assay name
-    if technology == "NMR":
-        annotation_file_template = get_absolute_path(
-            settings.file_resources.study_nmr_spectroscopy_maf_file_template_path
-        )
-        assay_name = "NMR Assay Name"
-
-    if annotation_file_name is None or len(annotation_file_name) == 0:
-        annotation_file_name = get_maf_name_from_assay_name(assay_file_name)
-
-    full_annotation_file_name = os.path.join(
-        study_metadata_location, annotation_file_name
-    )
-    assay_file_name = os.path.join(study_metadata_location, assay_file_name)
-
-    # Get the MAF table or create a new one if it does not already exist
-    if os.path.exists(full_annotation_file_name):
-        try:
-            maf_df = read_tsv(full_annotation_file_name)
-            if maf_df.empty or len(maf_df.columns) == 0:
-                update_maf = True
-                maf_df = read_tsv(annotation_file_template)
-                logger.info(
-                    "MAF is empty. Copy columnsfrom template MAF: %s",
-                    full_annotation_file_name,
-                )
-        except Exception as e:
-            if os.path.getsize(full_annotation_file_name) > 0:
-                logger.info(
-                    "Trying to open as Excel tsv file 'ISO-8859-1' file %s. %s", full_annotation_file_name, str(e)
-                )
-                maf_df = read_tsv(
-                    full_annotation_file_name, sep="\t", header=0, encoding="ISO-8859-1"
-                )  # Excel format
-                if maf_df.empty or len(maf_df.columns) == 0:
-                    update_maf = True
-                    maf_df = read_tsv(annotation_file_template)
-                    logger.info(
-                        "MAF is empty. Copy columnsfrom template MAF: %s", full_annotation_file_name
-                    )
-
-    else:
-        update_maf = True
-        maf_df = read_tsv(annotation_file_template)
-        logger.info("Creating new MAF: " + full_annotation_file_name)
-
-    # Read NMR or MS Assay Name first, if that is empty, use Sample Name
-    assay_df = read_tsv(assay_file_name)
-
-    assay_names = []
-    # Get the MS/NMR Assay Name or Sample names from the assay
-    try:
-        assay_names_df = assay_df[assay_name]
-        if assay_names_df:
-            for assay_name in assay_names_df:
-                if len(assay_name) != 0:
-                    assay_names.append(assay_name)
-    except:
-        logger.warning(
-            "The assay "
-            + assay_file_name
-            + " does not have "
-            + assay_name
-            + " defined!"
-        )
-    sample_names = []
-    try:
-        sample_names = assay_df[sample_name]
-    except Exception as ex:
-        logger.warning(
-            "The assay "
-            + assay_file_name
-            + " does not have "
-            + sample_name
-            + " defined! "
-            + str(ex)
-        )
-
-    if len(assay_names) == 0:
-        assay_names = sample_names
-
-    new_column_counter = 0
-    # Does the column already exist?
-    for row in assay_names:
-        s_name = str(row)
-        if s_name != "":
-            try:
-                in_maf = maf_df.columns.get_loc(s_name)
-            except KeyError:  # Key is not found, so add it
-                # Add the new columns to the MAF
-                maf_df[s_name] = ""
-                new_column_counter += 1
-                update_maf = True
-
-    # Write the new empty columns back in the file
-    if update_maf:
-        write_tsv(maf_df, full_annotation_file_name)
-
-    return maf_df, annotation_file_name, new_column_counter
-
-
 def add_ontology_to_investigation(
     isa_inv, onto_name, onto_version, onto_file, onto_desc
 ):
-    # Check if the OBI ontology has already been referenced
     if not onto_name:
         onto_name = "N/A"
+
     onto = OntologySource(
-        name=onto_name, version=onto_version, file=onto_file, description=onto_desc
+        name=str(onto_name),
+        version=str(onto_version),
+        file=str(onto_file),
+        description=str(onto_desc),
     )
 
     onto_exists = isa_inv.get_ontology_source_reference(onto_name)
     if onto_exists is None:  # Add the ontology to the investigation
         ontologies = isa_inv.get_ontology_source_references()
         ontologies.append(onto)
-
+        ontologies.sort(key=lambda x: x.name)
     return isa_inv, onto
 
 

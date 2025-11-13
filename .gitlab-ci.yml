@@ -1,8 +1,3 @@
-image: docker:24.0.5
-services:
-  - docker:24.0.5-dind
-before_script:
-  - docker info
 variables:
   APP_VERSION: "2.2.0"
   API_VERSION: "2.2.0"
@@ -16,19 +11,31 @@ variables:
   SIF_LATEST_FILE_NAME: "${CI_PROJECT_NAME}_${CI_COMMIT_REF_NAME}_latest.sif"
   SIF_FILE_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}_sif/$APP_VERSION/$SIF_FILE_NAME"
   SIF_LATEST_FILE_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}_sif/$CI_COMMIT_REF_NAME/$SIF_LATEST_FILE_NAME"
+  CONFIG_DIR: "config-files"
 workflow:
   rules:
     - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "staging"
 stages:
   - build
   - deploy
+  - build_sif
+  - deploy-datamover-worker
 
-configuration_parameters:
+build_docker:
   stage: build
+  image: 
+    name: ${CICD_GITLAB_REGISTRY}docker:28.5.1-dind
   tags:
+    - docker
     - mtbls
-    - shell
+  before_script:
+    - docker info
   script:
+    - docker version
+    - git reset --hard origin/$APPS_PROJECT_BRANCH_NAME
+    - git status
+    - ls -al
+    - echo "-----------------------------------------------------------------------"
     - echo "CI_BUILDS_DIR $CI_BUILDS_DIR"
     - echo "CI_REGISTRY_USER $CI_REGISTRY_USER"
     - echo "CI_REGISTRY $CI_REGISTRY"
@@ -49,32 +56,26 @@ configuration_parameters:
     - echo "MTBLS_NFS_USER_GROUP1_ID $MTBLS_NFS_USER_GROUP1_ID"
     - echo "MTBLS_NFS_USER_GROUP2_ID $MTBLS_NFS_USER_GROUP2_ID"
     - echo "MTBLS_NFS_USER_ID $MTBLS_NFS_USER_ID"
-
-build_docker:
-  stage: build
-  tags:
-    - mtbls
-    - shell
-  script:
-    - docker image prune -f
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
+    - echo "-----------------------------------------------------------------------"
     - echo "Build number $BUILD_NUMBER, commit name ${CI_COMMIT_REF_NAME}"
     - echo "${BUILD_NUMBER}" > build_number
     - echo  "$APP_VERSION" | xargs > app_version
     - echo  "$API_VERSION" | xargs > api_version
-    - git status
-    - echo "docker build --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $IMAGE_NAME ."
-    - docker build --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $IMAGE_NAME .
-    - echo "docker build --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $LATEST_IMAGE_NAME ."
-    - docker build --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $LATEST_IMAGE_NAME .
+    - echo "-----------------------------------------------------------------------"
+    - echo "docker build --build-arg CONTAINER_REGISTRY_PREFIX=${CICD_GITLAB_REGISTRY} --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $IMAGE_NAME ."
+    - docker build --build-arg CONTAINER_REGISTRY_PREFIX=${CICD_GITLAB_REGISTRY} --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $IMAGE_NAME .
+    - echo "docker build --build-arg CONTAINER_REGISTRY_PREFIX=${CICD_GITLAB_REGISTRY} --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $LATEST_IMAGE_NAME ."
+    - docker build --build-arg CONTAINER_REGISTRY_PREFIX=${CICD_GITLAB_REGISTRY} --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $LATEST_IMAGE_NAME .
     - docker push $IMAGE_NAME
     - docker push $LATEST_IMAGE_NAME
 
 build_sif:
-  stage: build
+  stage: build_sif
+  image: 
+    name: ${CICD_GITLAB_REGISTRY}mtbls/singularity:4.0.0
   tags:
+    - docker
     - mtbls
-    - shell
   script:
     - singularity build $SIF_FILE_NAME docker-daemon://$IMAGE_NAME
     - echo "$SIF_FILE_URL"
@@ -85,6 +86,12 @@ build_sif:
       curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $SIF_FILE_NAME "$SIF_LATEST_FILE_URL"
 
 deploy_metablsws_py:
+  stage: deploy
+  image:
+    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
+  tags:
+    - docker
+    - mtbls
   variables:
     CHART_NAME: metablsws-py
   rules:
@@ -95,6 +102,12 @@ deploy_metablsws_py:
   extends: .kube_deploy_script
 
 deploy_common_worker:
+  stage: deploy
+  image:
+    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
+  tags:
+    - docker
+    - mtbls
   variables:
     CHART_NAME: metablsws-py-common-worker
   rules:
@@ -105,6 +118,12 @@ deploy_common_worker:
   extends: .kube_deploy_script
 
 deploy_datamover_proxy:
+  stage: deploy-datamover-worker
+  image:
+    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
+  tags:
+    - docker
+    - mtbls
   variables:
     CHART_NAME: metablsws-py-datamover-proxy
   rules:
@@ -115,6 +134,12 @@ deploy_datamover_proxy:
   extends: .kube_deploy_script
 
 deploy_datamover_worker:
+  stage: deploy-datamover-worker
+  image:
+    name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
+  tags:
+    - docker
+    - mtbls
   variables:
     CHART_NAME: metablsws-py-datamover-worker
   rules:
@@ -123,35 +148,43 @@ deploy_datamover_worker:
   extends: .kube_deploy_script
 
 .kube_deploy_script:
-  stage: deploy
-  tags:
-    - mtbls
-    - shell
   script:
-  - BUILD_PATH=$(realpath tmp)
-  - echo "BUILD_PATH $BUILD_PATH"
-  - mkdir -p $BUILD_PATH
-  - cd $BUILD_PATH
-  - APPS_ROOT_PATH="$BUILD_PATH/apps"
-  - rm -rf $APPS_ROOT_PATH
-  - echo git clone https://$CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD@${APPS_PROJECT_URL}
-  - git clone https://$CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD@${APPS_PROJECT_URL}
-  - cd $APPS_ROOT_PATH
-  - git switch $APPS_PROJECT_BRANCH_NAME
-  - git status
-  - git pull
-  - DEPLOYMENTS_FOLDER_SCRIPTS="$APPS_ROOT_PATH/$DEPLOYMENTS_FOLDER/scripts"
+  - apk add --no-cache git
+  - echo "APPS_PROJECT_URL $APPS_PROJECT_URL"
+  - CURRENT_PATH="$(pwd)"
+  - export CICD_PROJECT_ROOT_PATH="$CURRENT_PATH/$CONFIG_DIR"
+  - export K8S_CONFIG_FILE_PATH="$CICD_PROJECT_ROOT_PATH/$K8S_CONFIG_FILE_PATH"
+  - DEPLOYMENTS_FOLDER_SCRIPTS="$CICD_PROJECT_ROOT_PATH/$DEPLOYMENTS_FOLDER/scripts"
+  - DEPLOYMENTS_CHART_PATH="$CICD_PROJECT_ROOT_PATH/$DEPLOYMENTS_FOLDER/charts/$CHART_NAME"
+
+  - echo "CURRENT_PATH $CURRENT_PATH"
+  - echo "CICD_PROJECT_ROOT_PATH $CICD_PROJECT_ROOT_PATH"
+  - echo "K8S_CONFIG_FILE_PATH $K8S_CONFIG_FILE_PATH"
   - echo "DEPLOYMENTS_FOLDER_SCRIPTS $DEPLOYMENTS_FOLDER_SCRIPTS"
+
+  - rm -rf $CONFIG_DIR
+  - echo git clone https://$GITLAB_USER:$GITLAB_USER_TOKEN@${APPS_PROJECT_URL} $CONFIG_DIR
+  - git clone https://$GITLAB_USER:$GITLAB_USER_TOKEN@${APPS_PROJECT_URL} $CONFIG_DIR
+  - cd $CONFIG_DIR
+  - ls -al
+  - echo checkout $APPS_PROJECT_BRANCH_NAME
+  - git checkout $APPS_PROJECT_BRANCH_NAME
+  - git status
+  - echo "cd $DEPLOYMENTS_FOLDER_SCRIPTS"
   - cd $DEPLOYMENTS_FOLDER_SCRIPTS
+  - echo "initial_setup.sh file content"
   - cat initial_setup.sh
   - bash initial_setup.sh
-  - DEPLOYMENTS_CHART_PATH="$APPS_ROOT_PATH/$DEPLOYMENTS_FOLDER/charts/$CHART_NAME"
   - echo "DEPLOYMENTS_CHART_PATH $DEPLOYMENTS_CHART_PATH"
   - cd $DEPLOYMENTS_CHART_PATH
+  - echo "template.sh.sh file content"
   - cat template.sh
   - echo template.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG"
   - bash template.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG"
+  - echo "install.sh file content"
   - cat install.sh
-  - echo install.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG,sifImageFileUrl=$SIF_FILE_URL"
-  - bash install.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG,sifImageFileUrl=$SIF_FILE_URL"
-  - rm -rf $BUILD_PATH
+  - echo install.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG"
+  - bash install.sh "image.repository=$CI_REGISTRY_IMAGE,image.tag=$IMAGE_TAG"
+  - cd $CURRENT_PATH
+  - echo "Cleanup - remove config directory"
+  - rm -rf $CONFIG_DIR

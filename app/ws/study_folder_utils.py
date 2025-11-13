@@ -61,6 +61,7 @@ class LiteFileSearchResult(BaseModel):
     uploadPath: str = ""
     obfuscationCode: str = ""
     latest: List[LiteFileMetadata] = []
+    privateFtpAccessible: bool = True
     model_config = ConfigDict(from_attributes=True)
 
 

@@ -153,7 +153,7 @@ class StudyService(object):
         return m_study
     
     def get_study_with_detailed_user(self, study_id) -> StudyModel:
-         with DBManager.get_instance().session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
             query = query.filter(Study.acc == study_id)
             study = query.first()

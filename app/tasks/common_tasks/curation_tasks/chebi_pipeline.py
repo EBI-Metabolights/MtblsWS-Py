@@ -29,7 +29,7 @@ def init_chebi_search_manager():
 
         
 
-@celery.task(bind=True, base=MetabolightsTask, max_retries=1, soft_time_limit=60*60*24, name="app.tasks.common_tasks.curation_tasks.validation.run_chebi_pipeline_task")
+@celery.task(bind=True, base=MetabolightsTask, max_retries=1, soft_time_limit=60*60*24, name="app.tasks.common_tasks.curation_tasks.chebi_pipeline.run_chebi_pipeline_task")
 def run_chebi_pipeline_task(self, study_id: str, user_token: str, annotation_file_name: str, email: str, classyfire_search: bool = True, update_study_maf: bool = False):
     output: Dict[str, Any] = {}   
     start = current_time()
