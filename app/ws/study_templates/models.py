@@ -1,7 +1,7 @@
 import datetime
 import enum
-from typing import Annotated, Literal
 
+from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel, to_pascal
 
@@ -25,6 +25,12 @@ class ConstraintType(enum.StrEnum):
     MINIMUM = "minimum"
     MAXIMUM = "maximum"
     REQUIRED = "required"
+
+
+class EnforcementLevel(enum.StrEnum):
+    REQUIRED = "required"
+    RECOMMENDED = "recommended"
+    OPTIONAL = "optional"
 
 
 class StudyCategoryStr(enum.StrEnum):
@@ -96,26 +102,26 @@ class SelectionCriteria(StudyBaseModel):
     study_created_at_or_after: Annotated[
         None | datetime.datetime,
         Field(description="Filter to select studies created after the defined date."),
-    ]
+    ] = None
     study_created_before: Annotated[
         None | datetime.datetime,
         Field(description="Filter to select studies created before the defined date."),
-    ]
+    ] = None
     study_category_filter: Annotated[
         None | list[StudyCategoryStr],
         Field(description="Filter to select studies with the defined category"),
-    ]
+    ] = None
     template_version_filter: Annotated[
         None | list[str],
         Field(description="Filter to select studies with the defined template version"),
-    ]
+    ] = None
     isa_file_template_name_filter: Annotated[
         None | list[str],
         Field(
             description="Filter to select ISA-TAB file template. "
             "LC-MS, GC-MS, etc. for assay, minimum, clinical, etc. for sample"
         ),
-    ]
+    ] = None
     linked_field_and_value_filter: Annotated[
         None | list[FieldSelector],
         Field(
@@ -128,7 +134,7 @@ class SelectionCriteria(StudyBaseModel):
             "Units can be linked to Parameter Value, Factor Value and Characteristic fields."
             "Comments can be linked to ISA-TAB nodes (Sample Name, Source Name, Protocol REF, etc.)"
         ),
-    ]
+    ] = None
 
 
 class AdditionalSource(StudyBaseModel):
@@ -160,15 +166,15 @@ class ParentOntologyTerms(StudyBaseModel):
     exclude_by_label_pattern: Annotated[
         None | list[str],
         Field(description="Label match regex patterns to filter ontology terms."),
-    ]
+    ] = []
     exclude_by_accession: Annotated[
         None | list[str],
         Field(description="Accession numbers of the excluded ontology terms."),
-    ]
+    ] = []
     parents: Annotated[
         list[OntologyTerm],
         Field(description="List of parent ontology terms"),
-    ]
+    ] = []
 
 
 class FieldValueValidation(StudyBaseModel):
@@ -183,7 +189,7 @@ class FieldValueValidation(StudyBaseModel):
     description: Annotated[
         str,
         Field(description="Definition of rule and summary of selection criteria."),
-    ]
+    ] = ""
     field_name: Annotated[
         str,
         Field(
@@ -194,6 +200,10 @@ class FieldValueValidation(StudyBaseModel):
     selection_criteria: Annotated[
         SelectionCriteria, Field(description="Field selection criteria")
     ]
+    enforcement_level: Annotated[
+        EnforcementLevel, Field(description="Rule enforcement level")
+    ] = EnforcementLevel.REQUIRED
+
     validation_type: Annotated[
         ValidationType, Field(description="Validation rule type")
     ] = ValidationType.ANY_ONTOLOGY_TERM
@@ -238,7 +248,8 @@ class FieldValueValidation(StudyBaseModel):
             description="Parent ontology terms to find the allowed child ontology terms. "
             "Applicable only for validation type child-ontology-term"
         ),
-    ] = []
+    ] = None
+
     unexpected_terms: Annotated[
         None | list[str],
         Field(description="unexpected terms."),
@@ -335,5 +346,5 @@ class ValidationControls(StudyBaseModel):
 
 
 class ValidationConfiguration(StudyBaseModel):
-    controls: Annotated[ValidationControls, Field(description="File templates")]
-    templates: Annotated[FileTemplates, Field(description="File templates")]
+    controls: Annotated[ValidationControls, Field(description="File templates")] = {}
+    templates: Annotated[FileTemplates, Field(description="File templates")] = {}
