@@ -1,7 +1,7 @@
 import datetime
 import enum
-
 from typing import Annotated, Literal
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel, to_pascal
 
@@ -346,5 +346,10 @@ class ValidationControls(StudyBaseModel):
 
 
 class ValidationConfiguration(StudyBaseModel):
-    controls: Annotated[ValidationControls, Field(description="File templates")] = {}
-    templates: Annotated[FileTemplates, Field(description="File templates")] = {}
+    controls: Annotated[
+        ValidationControls,
+        Field(description="Investigation, sample, assay validation controls"),
+    ] = ValidationControls()
+    templates: Annotated[
+        FileTemplates, Field(description="Investigation, sample, assay file templates")
+    ] = FileTemplates()
