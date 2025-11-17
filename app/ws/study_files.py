@@ -1830,16 +1830,14 @@ def get_study_metadata_and_data_files(
                     include_sub_dir, settings, ftp_folder_path
                 )
                 if search_result:
-                    search_result.privateFtpAccessible = (
-                        ftp_search_result.privateFtpAccessible
-                    )
+                    search_result.privateFtpAccessible = ftp_search_result.privateFtpAccessible
                     search_result.latest = ftp_search_result.study
                 else:
                     search_result = ftp_search_result
                 # search_result.latest = search_result.study
                 # search_result.study = []
             except Exception as exc:
-                logger.error("Error for study {study.acc}: {str(exc)}")
+                logger.error(f"Error for study {study.acc}: {str(exc)}")
                 raise MetabolightsException(
                     "Search failed.", exception=exc, http_code=500
                 )
@@ -1861,6 +1859,51 @@ def get_study_metadata_and_data_files(
 
 
 def get_private_ftp_files(include_sub_dir, settings, ftp_folder_path):
+    # status_key = "private_ftp_connection:status"
+    # update_time_key = "private_ftp_connection:last_update_time"
+    # status_check_in_progress_key = "private_ftp_connection:status_check_in_progress"
+    # update_check_time_delta = 60
+    # call_async_task = True
+    # in_progress = False
+    # accessible = True
+    # last_check_timestamp: None | int = None
+    # redis_available = False
+    # try:
+    #     redis = get_redis_server()
+    #     value = redis.get_value(update_time_key)
+    #     if value:
+    #         last_check_timestamp = int(value.decode())
+    #         current = int(current_time(utc_timezone=True).timestamp())
+    #         if not current or (
+    #             current - last_check_timestamp > update_check_time_delta
+    #         ):
+    #             call_async_task = False
+    #         else:
+    #             status_value = redis.get_value(status_key)
+    #             if status_value:
+    #                 accessible = bool(value.decode())
+    #                 if accessible:
+    #                     call_async_task = True
+    #     if not accessible and call_async_task:
+    #         in_progress_value = redis.get_value(status_check_in_progress_key)
+    #         in_progress = bool(in_progress_value.decode()) if in_progress_value else False
+    #     redis_available = True
+    # except Exception as ex:
+    #     logger.warning("Cache server FTP status check error: %s", ex)
+
+    # if not call_async_task:
+    #     return LiteFileSearchResult(privateFtpAccessible=False)
+    # if in_progress:
+    #     logger.debug("Private FTP status check in progress...")
+    #     return LiteFileSearchResult(privateFtpAccessible=False)
+    # if redis_available:
+    #     try:
+    #         get_redis_server().set_value(
+    #             status_check_in_progress_key, "1", ex=update_check_time_delta
+    #         )
+    #     except Exception as ex:
+    #         logger.debug("Redis server access error: ex", ex)
+
     timeout = settings.hpc_cluster.configuration.task_get_timeout_in_seconds
     # status_result = False
     try:
@@ -1873,6 +1916,24 @@ def get_private_ftp_files(include_sub_dir, settings, ftp_folder_path):
     except Exception as ex:
         logger.warning("Private FTP is not accessible: %s", ex)
         return LiteFileSearchResult(privateFtpAccessible=False)
+    # finally:
+    #     if redis_available:
+    #         try:
+    #             current = int(current_time(utc_timezone=True).timestamp())
+    #             if current - last_check_timestamp > 10:
+    #                 redis = get_redis_server()
+    #                 redis.set_value(
+    #                     status_key, "1" if status_result else "0", ex=update_check_time_delta
+    #                 )
+    #                 redis.set_value(
+    #                     status_check_in_progress_key, "0", ex=update_check_time_delta
+    #                 )
+                    
+    #                 redis.set_value(
+    #                     update_time_key, str(current), ex=update_check_time_delta
+    #                 )
+    #         except Exception as ex:
+    #             logger.debug("Redis server access error: ex", ex)
 
 
 class FileList(Resource):
