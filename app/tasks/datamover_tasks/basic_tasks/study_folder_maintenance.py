@@ -37,11 +37,12 @@ def create_study_folders(
         study_id = study.acc
         study_status = StudyStatus(study.status)
 
+        if maintain_metadata_storage:
+            maintenance_task.maintain_study_rw_storage_folders()
+            
         if maintain_private_ftp_storage:
             maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
 
-        if maintain_metadata_storage:
-            maintenance_task.maintain_study_rw_storage_folders()
         rows = []
         for action_log in maintenance_task.actions:
             success = action_log.successful
@@ -128,7 +129,7 @@ def delete_study_folders(
                 study_category=study.study_category,
                 sample_template=study.sample_type,
                 dataset_license=study.dataset_license,
-                template_version=study.template_version
+                template_version=study.template_version,
             )
             all_results = []
             if delete_metadata_storage_folders:
@@ -319,7 +320,7 @@ def maintain_storage_study_folders(
                     study_category=study.study_category,
                     sample_template=study.sample_type,
                     dataset_license=study.dataset_license,
-                    template_version=study.template_version
+                    template_version=study.template_version,
                 )
 
                 if maintain_metadata_storage:

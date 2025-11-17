@@ -1471,6 +1471,7 @@ class DeleteStudy(Resource):
             "user_token": user_token,
             "study_id": study_id,
             "task_name": "DELETE_STUDY",
+            "force_to_maintain": True
         }
         cluster_settings = get_cluster_settings()
         task = delete_study_folders.apply_async(kwargs=inputs)
