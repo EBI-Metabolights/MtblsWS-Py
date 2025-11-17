@@ -202,7 +202,7 @@ class StudyRevisions(Resource):
                     pathlib.Path(result_file).read_text(encoding="utf-8")
                 )
                 start_time = datetime.datetime.fromisoformat(
-                    content["start_time"]
+                    content["startTime"]
                 ).timestamp()
                 # 1 sec threshold 
                 if start_time < last_modified:
@@ -211,7 +211,7 @@ class StudyRevisions(Resource):
                         "Metadata files are updated after the last validation. Re-run validation.",
                     )
 
-                if not content["study_id"]:
+                if not content["resourceId"]:
                     return (
                         False,
                         "Validation file content is not valid. Study id is different.",
