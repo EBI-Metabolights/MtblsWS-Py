@@ -40,7 +40,7 @@ def create_study_folders(
 
         if maintain_metadata_storage:
             maintenance_task.maintain_study_rw_storage_folders()
-
+            
         if maintain_private_ftp_storage:
             maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
 
