@@ -189,10 +189,10 @@ def create_sample_sheet(
         study_path = os.path.join(studies_path, study_id)
 
     sample_file_name = "s_" + study_id.upper() + ".txt"
-    assay_file_path = os.path.join(study_path, sample_file_name)
+    sample_file_path = os.path.join(study_path, sample_file_name)
     override_file = True
     if not override_current:
-        override_file = is_empty_isa_table_sheet(assay_file_path)
+        override_file = is_empty_isa_table_sheet(sample_file_path)
     if override_file:
         if not sample_type:
             sample_type = settings.study.default_metadata_sample_template_name
@@ -203,9 +203,9 @@ def create_sample_sheet(
         template = get_sample_template(
             template_name=sample_type, template_version=template_version
         )
-        Path(assay_file_path).parent.mkdir(parents=True, exist_ok=True)
-        success = create_file_from_template(assay_file_path, template)
-        logger.info("%s file is created.", assay_file_path)
+        Path(sample_file_path).parent.mkdir(parents=True, exist_ok=True)
+        success = create_file_from_template(sample_file_path, template)
+        logger.info("%s file is created.", sample_file_path)
         return success, sample_file_name
     return False, None
 

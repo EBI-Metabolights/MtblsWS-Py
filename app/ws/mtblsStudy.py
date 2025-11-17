@@ -1467,11 +1467,21 @@ class DeleteStudy(Resource):
         mtbls_email = get_settings().auth.service_account.email
         add_placeholder_flag(study_id)
         study_submitters(study_id, mtbls_email, "add")
+        delete_study_folders(
+            study_id=study_id,
+            force_to_maintain=True,
+            delete_private_ftp_storage_folders=False,
+            delete_metadata_storage_folders=True,
+            task_name=f"DELETE_STUDY_{study_id}",
+            failing_gracefully=False
+        )
+
         inputs = {
-            "user_token": user_token,
             "study_id": study_id,
-            "task_name": "DELETE_STUDY",
-            "force_to_maintain": True
+            "task_name": f"DELETE_STUDY_{study_id}",
+            "force_to_maintain": True,
+            "delete_private_ftp_storage_folders": True,
+            "delete_metadata_storage_folders": False
         }
         cluster_settings = get_cluster_settings()
         task = delete_study_folders.apply_async(kwargs=inputs)
