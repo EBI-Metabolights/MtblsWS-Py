@@ -30,7 +30,7 @@ from isatools.model import (
     ProtocolParameter,
     Study,
 )
-
+from app.config import get_settings
 from app.utils import metabolights_exception_handler
 from app.ws.auth.permissions import validate_submission_update, validate_submission_view
 from app.ws.db.types import UserRole
@@ -40,10 +40,16 @@ from app.ws.isa_table_templates import (
     get_protocol_descriptions,
 )
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.isa_table_templates import (
+    add_new_assay_sheet,
+    get_assay_type_from_file_name,
+    get_protocol_descriptions,
+)
 from app.ws.mm_models import AssaySchema
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.isa_table_models import NumericValue, OntologyValue
-from app.ws.study.utils import get_study_metadata_path
+from app.ws.study.study_service import StudyService
+from app.ws.study.user_service import UserService
 from app.ws.utils import (
     get_maf_name_from_assay_name,
     log_request,
@@ -150,6 +156,34 @@ class StudyAssayDelete(Resource):
         if not assay_file_name:
             abort(404)
 
+        if assay_file_name is None:
+            abort(404)
+        assay_file_name = assay_file_name.strip()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            # user token is required
+            abort(401)
+
+        # query validation
+        # check for access rights
+        (
+            is_curator,
+            read_access,
+            write_access,
+            obfuscation_code,
+            study_location,
+            release_date,
+            submission_date,
+            study_status,
+        ) = wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+        study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
+        template_version = study.template_version
         # check if we should be keeping copies of the metadata
         save_audit_copy = True
         save_msg_str = "be"
@@ -186,22 +220,37 @@ class StudyAssayDelete(Resource):
             assay_type = get_assay_type_from_file_name(assay.filename)
 
             if assay_type not in assay_type_protocols:
-                protocol_descriptions = get_protocol_descriptions(assay_type=assay_type)
-                protocols = protocol_descriptions.get("protocols", [])
+                # (
+                #     tidy_header_row,
+                #     tidy_data_row,
+                #     protocols,
+                #     assay_desc,
+                #     assay_data_type,
+                #     assay_file_type,
+                #     assay_mandatory_type,
+                # ) = get_assay_headers_and_protocols(assay_type)
+                # get_assay_protocols(assay_type)
 
-                assay_type_protocols[assay_type] = protocols
-            protocols = assay_type_protocols[assay_type]
-            for protocol in protocols:
-                protocol_name = protocol.get("name")
+                protocol_description = get_protocol_descriptions(
+                    assay_type=assay_type, template_version=template_version
+                )
+                # protocols = protocol_description.get("protocolDefinitions", [])
+
+                assay_type_protocols[assay_type] = protocol_description
+            protocol_description = assay_type_protocols[assay_type]
+            for protocol_name in protocol_description.get("protocols", []):
+                # protocol_name = protocol.get("name")
                 if protocol_name not in assay_protocols_and_parameters:
                     assay_protocols_and_parameters[protocol_name] = {}
                 if a_file not in assay_protocols_and_parameters[protocol_name]:
                     assay_protocols_and_parameters[protocol_name][a_file] = set()
-                parameters = protocol.get("parameters", [])
+                parameters = protocol_description.get("protocolDefinitions", {}).get(
+                    "parameters", []
+                )
                 assay_protocols_and_parameters[protocol_name][a_file].update(parameters)
 
         a_file = selected_assay.filename
-        logger.info("Removing assay " + assay_file_name + " from study " + study_id)
+        logger.info("Removing assay %s from study %s", assay_file_name, study_id)
         assay_type = get_assay_type_from_file_name(assay_file_name)
         # Get all unique protocols for the study, ie. any protocol that is only used once
 
@@ -483,14 +532,14 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             data_dict = json.loads(request.data.decode("utf-8"))
             data = data_dict.get("assay", {})
             assay_type = data.get("type")
-            template_version = data.get("template_version", "")
+            # template_version = data.get("template_version", "")
             columns = data.get("columns", [])
             if assay_type is None:
                 abort(412)
-
+        
         except Exception:
             abort(400, message="Incorrect JSON provided")
-
+        study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
         polarity = ""
         column_type = ""
         column_default_values = {}
@@ -536,7 +585,8 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                 column_default_values[name] = default_value
 
         success, assay_file_name, maf_filename = add_new_assay_sheet(
-            study_id, assay_type, polarity, column_type, column_default_values
+            study_id, assay_type, polarity, column_type, column_default_values, 
+            template_version=study.template_version
         )
 
         if success:
