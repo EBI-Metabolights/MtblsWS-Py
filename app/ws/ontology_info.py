@@ -1336,7 +1336,7 @@ def getBioportalTerm(keyword, mapping=False, ontologies="", limit=50):
             except:
                 definition = ""
             try:
-                synonymn = ", ".join(term["definition"])
+                synonymn = ", ".join(term["synonymn"])
             except:
                 synonymn = ""
 

@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import re
 from typing import Any, Literal, OrderedDict
+from cachetools import TTLCache, cached
 from isatools import model
 import httpx
 from isatools import model
@@ -132,14 +133,17 @@ def get_assay_table_header(
 
 def update_study_protocols(
     isa_study: model.Study,
-    protocols: list[dict[str, Any]],
+    protocol_definition: dict[str, Any],
 ):
     # Add new protocol
     assay_protocols = OrderedDict(
-        [(x.get("name"), x.get("parameters")) for x in protocols]
+        [
+            (k, v.get("parameters", []))
+            for k, v in protocol_definition.get("protocolDefinitions", {}).items()
+        ]
     )
     protocols = isa_study.protocols
-    study_protocols_map = OrderedDict([(x.name, x) for x in protocols])
+    study_protocols_map: OrderedDict[str, model.Protocol] = OrderedDict([(x.name, x) for x in protocols])
     for name, params in assay_protocols.items():
         assay_params = {x for x in params if x and x.strip()}
         if name in study_protocols_map:
@@ -309,9 +313,11 @@ def add_new_assay_sheet(
 
     assays: list[model.Assay] = isa_study.assays
     assays.append(assay)
-    protocol_descriptions = get_protocol_descriptions(assay_type=assay_type)
-    protocols = protocol_descriptions.get("protocols", [])
-    update_study_protocols(isa_study, protocols)
+    protocol_description = get_protocol_descriptions(
+        assay_type=assay_type, template_version=template_version
+    )
+    # protocols = protocol_descriptions.get("protocols", [])
+    update_study_protocols(isa_study, protocol_description)
 
     logger.info("A copy of the previous files will be saved")
     assay.technology_platform = technology_platform
@@ -425,6 +431,7 @@ def is_empty_isa_table_sheet(isa_table_file_path: str):
     return empty
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_ontology_source_references() -> dict[str, model.OntologySource]:
     settings = get_settings()
     service_url = settings.external_dependencies.api.policy_engine_url
@@ -439,13 +446,13 @@ def get_ontology_source_references() -> dict[str, model.OntologySource]:
         response_json = response.json()
         if response_json:
             ontology_sources = {
-                x.get("sourceName", ""): model.OntologySource(
-                    name=x.get("sourceName", ""),
-                    file=x.get("sourceFile", ""),
-                    version=x.get("sourceVersion", ""),
-                    description=x.get("sourceDescription", ""),
+                k: model.OntologySource(
+                    name=v.get("sourceName", ""),
+                    file=v.get("sourceFile", ""),
+                    version=v.get("sourceVersion", ""),
+                    description=v.get("sourceDescription", ""),
                 )
-                for x in response_json.get("result", [])
+                for k, v in response_json.get("result", []).items()
             }
             return ontology_sources
     except Exception as ex:
@@ -453,6 +460,7 @@ def get_ontology_source_references() -> dict[str, model.OntologySource]:
     return {}
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_sample_template(
     template_name: str, template_version: None | str = None
 ) -> dict[str, Any]:
@@ -463,6 +471,7 @@ def get_sample_template(
     )
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_assay_template(
     assay_type: str, template_version: None | str = None
 ) -> dict[str, Any]:
@@ -473,6 +482,7 @@ def get_assay_template(
     )
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_maf_template(
     maf_type: str, template_version: None | str = None
 ) -> dict[str, Any]:
@@ -485,14 +495,16 @@ def get_maf_template(
     )
 
 
-def get_protocol_descriptions(
-    assay_type: str, template_version: None | str = None
-) -> dict[str, Any]:
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
+def get_protocol_descriptions(assay_type: str, template_version: str) -> dict[str, Any]:
     templates_base_path = "/v1/data/metabolights/validation/v2/templates"
-    context_path = f"{templates_base_path}/studyProtocolTemplates/{assay_type}"
-    return get_json_from_policy_service(context_path=context_path).get("result", {})
+    context_path = f"{templates_base_path}/protocolTemplates/{assay_type}"
+    result = get_json_from_policy_service(context_path=context_path).get("result", [])
+    descriptions = [x for x in result if x.get("version", "") == template_version]
+    return descriptions[0] if descriptions else None
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_template_from_policy_service(
     context_path: str, template_version: None | str = None
 ) -> dict[str, Any]:
@@ -508,6 +520,7 @@ def get_template_from_policy_service(
     return {}
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_json_from_policy_service(context_path: str) -> dict[str, Any]:
     settings = get_settings()
     service_url = settings.external_dependencies.api.policy_engine_url
