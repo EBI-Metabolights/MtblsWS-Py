@@ -347,20 +347,13 @@ class ColumnDescription(StudyBaseModel):
         return None
 
 
+
 class InvestigationFileSection(StudyBaseModel):
     name: Annotated[str, Field(description="Section name")]
-    fields: Annotated[list[str], Field(description="Section row prefixes")] = []
+    fields: Annotated[list[str], Field(description="Section row prefixes")]
     default_comments: Annotated[
         list[str], Field(description="Default comments for the section")
-    ] = []
-    default_field_values: Annotated[
-        dict[str, str | list[str] | list[list[str]]],
-        Field(description="Default field values"),
-    ] = {}
-    default_comment_values: Annotated[
-        dict[str, str | list[str] | list[list[str]]],
-        Field(description="Default comment values"),
-    ] = {}
+    ]
 
 
 class InvestigationFileTemplate(StudyBaseModel):
@@ -649,6 +642,62 @@ class TemplateSettings(StudyBaseModel):
     ] = {}
 
 
+class ProtocolParameterDefinition(StudyBaseModel):
+    definition: Annotated[str, Field(description="Definition of protocol parameter.")]
+    type: Annotated[
+        OntologyTerm, Field(description="Ontology term of protocol parameter type")
+    ]
+    type_curie: Annotated[
+        str,
+        Field(
+            description="Compact URI presentation (obo_id) of protocol parameter type. "
+            "e.g. MS:1000831, OBI:0001139"
+        ),
+    ] = ""
+    format: Annotated[
+        Literal["Text", "Ontology", "Numeric"],
+        Field(description="value representation format"),
+    ]
+    examples: Annotated[
+        list[str], Field(description="Example protocol parameter values.")
+    ] = []
+
+
+class ProtocolDefinition(StudyBaseModel):
+    name: Annotated[str, Field(description="Name of protocol")]
+    description: Annotated[str, Field(description="Description of protocol")]
+    type: Annotated[OntologyTerm, Field(description="Ontology term of protocol type")]
+    type_curie: Annotated[
+        str, Field(description="Compact URI presentation (obo_id) of protocol type")
+    ] = ""
+    parameters: Annotated[list[str], Field(description="Parameters of protocol")] = []
+    parameter_definitions: Annotated[
+        dict[str, ProtocolParameterDefinition],
+        Field(
+            description="Definition of protocol parameter "
+            "listed in the `parameters` field",
+        ),
+    ] = {}
+
+
+class StudyProtocolTemplate(StudyBaseModel):
+    version: Annotated[str, Field(description="Template version")]
+    description: Annotated[str, Field(description="Template description")] = ""
+    protocols: Annotated[list[str], Field(description="Ordered protocol names")] = []
+    protocol_definitions: Annotated[
+        dict[str, ProtocolDefinition],
+        Field(description="Definition of protocol listed in the `protocols` field"),
+    ] = {}
+
+
+class OntologySourceReferenceTemplate(StudyBaseModel):
+    source_name: Annotated[str, Field(description="Source name")]
+    source_file: Annotated[str, Field(description="Source file")]
+    source_version: Annotated[str, Field(description="Source version")]
+    source_description: Annotated[
+        str, Field(description="Source description and full name")
+    ]
+
 class FileTemplates(StudyBaseModel):
     assay_file_header_templates: Annotated[
         dict[str, list[IsaTableFileTemplate]],
@@ -674,11 +723,6 @@ class FileTemplates(StudyBaseModel):
         dict[str, OntologySourceReferenceTemplate],
         Field(description="Ontology source reference templates"),
     ] = {}
-    configuration: Annotated[
-        TemplateSettings,
-        Field(description="Validation template settings"),
-    ] = {}
-
 
 class ValidationControls(StudyBaseModel):
     assay_file_controls: Annotated[
