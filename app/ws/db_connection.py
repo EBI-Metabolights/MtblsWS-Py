@@ -138,7 +138,8 @@ query_studies_user = """
     s.mhd_accession,
     s.mhd_model_version,
     s.dataset_license,
-    s.template_version
+    s.template_version,
+    s.created_at
     from studies s, users u, study_user su 
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
@@ -591,6 +592,7 @@ def get_all_studies_for_user(user_token):
         mhd_model_version = row[13] if row[13] else None
         dataset_license = row[14] if row[14] else None
         template_version = row[15] if row[15] else ""
+        created_at = row[16].isoformat() if row[16] else None
         complete_list.append(
             {
                 "accession": study_id,
@@ -617,7 +619,8 @@ def get_all_studies_for_user(user_token):
                 "mhdAccession": mhd_accession,
                 "mhdModelVersion": mhd_model_version,
                 "datasetLicense": dataset_license,
-                "templateVersion": template_version
+                "templateVersion": template_version,
+                "createdAt": created_at
             }
         )
     return complete_list
