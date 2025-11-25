@@ -31,6 +31,7 @@ class EnforcementLevel(enum.StrEnum):
     REQUIRED = "required"
     RECOMMENDED = "recommended"
     OPTIONAL = "optional"
+    NOT_APPLICABLE = "not-applicable"
 
 
 class StudyCategoryStr(enum.StrEnum):
@@ -151,15 +152,16 @@ class AdditionalSource(StudyBaseModel):
 
 
 class FieldConstraint(StudyBaseModel):
-    type_: Annotated[
-        ConstraintType, Field(alias="type", description="Constraint type.")
-    ]
     constraint: Annotated[
-        None | str | int | bool, Field(description="Constraint value")
+        None | str | int | float | bool, Field(description="Constraint value")
     ] = None
     error_message: Annotated[
         str, Field(description="Error message if value does not satisfy the constraint")
     ] = ""
+    enforcement_level: Annotated[
+        EnforcementLevel,
+        Field(description="Rule enforcement level for the constraint."),
+    ] = EnforcementLevel.REQUIRED
 
 
 class ParentOntologyTerms(StudyBaseModel):
@@ -200,16 +202,21 @@ class FieldValueValidation(StudyBaseModel):
     selection_criteria: Annotated[
         SelectionCriteria, Field(description="Field selection criteria")
     ]
-    enforcement_level: Annotated[
-        EnforcementLevel, Field(description="Rule enforcement level")
+    term_enforcement_level: Annotated[
+        EnforcementLevel, Field(description="Rule enforcement level for ontology terms")
+    ] = EnforcementLevel.REQUIRED
+    unexpected_term_enforcement_level: Annotated[
+        EnforcementLevel,
+        Field(description="Rule enforcement level for unexpected terms"),
     ] = EnforcementLevel.REQUIRED
 
     validation_type: Annotated[
         ValidationType, Field(description="Validation rule type")
     ] = ValidationType.ANY_ONTOLOGY_TERM
     constraints: Annotated[
-        None | list[FieldConstraint], Field(description="Field constraints")
-    ] = []
+        None | dict[ConstraintType, FieldConstraint],
+        Field(description="Field constraints"),
+    ] = {}
     default_value: Annotated[
         None | OntologyTerm, Field(description="Default ontology term")
     ] = None
@@ -291,6 +298,23 @@ class ColumnDescription(StudyBaseModel):
         return None
 
 
+
+class InvestigationFileSection(StudyBaseModel):
+    name: Annotated[str, Field(description="Section name")]
+    fields: Annotated[list[str], Field(description="Section row prefixes")]
+    default_comments: Annotated[
+        list[str], Field(description="Default comments for the section")
+    ]
+
+
+class InvestigationFileTemplate(StudyBaseModel):
+    version: Annotated[str, Field(description="Template version")]
+    description: Annotated[str, Field(description="Template name")]
+    sections: Annotated[
+        list[InvestigationFileSection], Field(description="Investigation file sections")
+    ]
+
+
 class IsaTableFileTemplate(StudyBaseModel):
     fixed_column_count: Annotated[int, Field(description="Fixed column count.")] = 0
     description: Annotated[str, Field(description="Template name")]
@@ -299,6 +323,62 @@ class IsaTableFileTemplate(StudyBaseModel):
         list[ColumnDescription], Field(description="ISA-TAB table column definitions")
     ]
 
+
+class ProtocolParameterDefinition(StudyBaseModel):
+    definition: Annotated[str, Field(description="Definition of protocol parameter.")]
+    type: Annotated[
+        OntologyTerm, Field(description="Ontology term of protocol parameter type")
+    ]
+    type_curie: Annotated[
+        str,
+        Field(
+            description="Compact URI presentation (obo_id) of protocol parameter type. "
+            "e.g. MS:1000831, OBI:0001139"
+        ),
+    ] = ""
+    format: Annotated[
+        Literal["Text", "Ontology", "Numeric"],
+        Field(description="value representation format"),
+    ]
+    examples: Annotated[
+        list[str], Field(description="Example protocol parameter values.")
+    ] = []
+
+
+class ProtocolDefinition(StudyBaseModel):
+    name: Annotated[str, Field(description="Name of protocol")]
+    description: Annotated[str, Field(description="Description of protocol")]
+    type: Annotated[OntologyTerm, Field(description="Ontology term of protocol type")]
+    type_curie: Annotated[
+        str, Field(description="Compact URI presentation (obo_id) of protocol type")
+    ] = ""
+    parameters: Annotated[list[str], Field(description="Parameters of protocol")] = []
+    parameter_definitions: Annotated[
+        dict[str, ProtocolParameterDefinition],
+        Field(
+            description="Definition of protocol parameter "
+            "listed in the `parameters` field",
+        ),
+    ] = {}
+
+
+class StudyProtocolTemplate(StudyBaseModel):
+    version: Annotated[str, Field(description="Template version")]
+    description: Annotated[str, Field(description="Template description")] = ""
+    protocols: Annotated[list[str], Field(description="Ordered protocol names")] = []
+    protocol_definitions: Annotated[
+        dict[str, ProtocolDefinition],
+        Field(description="Definition of protocol listed in the `protocols` field"),
+    ] = {}
+
+
+class OntologySourceReferenceTemplate(StudyBaseModel):
+    source_name: Annotated[str, Field(description="Source name")]
+    source_file: Annotated[str, Field(description="Source file")]
+    source_version: Annotated[str, Field(description="Source version")]
+    source_description: Annotated[
+        str, Field(description="Source description and full name")
+    ]
 
 class FileTemplates(StudyBaseModel):
     assay_file_header_templates: Annotated[
@@ -313,7 +393,18 @@ class FileTemplates(StudyBaseModel):
         dict[str, list[IsaTableFileTemplate]],
         Field(description="maf file templates"),
     ] = {}
-
+    investigation_file_templates: Annotated[
+        dict[str, list[InvestigationFileTemplate]],
+        Field(description="investigation file templates"),
+    ] = {}
+    protocol_templates: Annotated[
+        dict[str, list[StudyProtocolTemplate]],
+        Field(description="Study protocol templates"),
+    ] = {}
+    ontology_source_reference_templates: Annotated[
+        dict[str, OntologySourceReferenceTemplate],
+        Field(description="Ontology source reference templates"),
+    ] = {}
 
 class ValidationControls(StudyBaseModel):
     assay_file_controls: Annotated[
