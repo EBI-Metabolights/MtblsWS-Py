@@ -249,8 +249,7 @@ class StudyFolderMaintenanceTask(object):
         mhd_model_version: None | str = None,
         dataset_license: None | str = None,
         template_version: None | str = None,
-        created_at: None | datetime = None,
-        study_template: None | str = None,
+        created_at: None | datetime = None
     ) -> None:
         self.study_category = study_category
         self.mhd_accession = mhd_accession
@@ -259,7 +258,6 @@ class StudyFolderMaintenanceTask(object):
         self.dataset_license = dataset_license
         self.template_version = template_version
         self.created_at = created_at
-        self.study_template = study_template
         self.study_id = study_id
         self.obfuscationcode = obfuscationcode
         self.study_status = study_status
@@ -2288,7 +2286,7 @@ class StudyFolderMaintenanceTask(object):
             mhd_accession=self.mhd_accession,
             mhd_model_version=self.mhd_model_version,
             template_version=self.template_version,
-            created_at=self.created_at,
+            created_at=self.created_at
         )
         if updated_comments:
             self.actions.append(

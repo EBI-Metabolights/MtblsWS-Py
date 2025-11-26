@@ -66,7 +66,6 @@ def update_mhd_comments(
     mhd_accession: None | str = None,
     sample_template: None | str = None,
     template_version: None | str = None,
-    study_template: None | str = None,
     created_at: None | datetime.datetime = None,
     characteristic_definitions: None | list[CharacteristicDescription] = None,
 ) -> list[str]:
