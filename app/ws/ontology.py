@@ -106,12 +106,17 @@ class MtblsControlLists(Resource):
         ],
     )
     def get(self):
-        log_request(request)
-        public_endpoint(request)
-
+        # log_request(request)
+        # name = request.args.get('name').strip() if request.args.get('name') else None
+        # filepath = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
+        # mtbl_ontology: MetaboLightsOntology = load_ontology_file(filepath)
+        # return jsonify(mtbl_ontology.get_default_control_lists(name))
+        
         configuration: ValidationConfiguration = get_validation_configuration()
         return jsonify({"controlLists": configuration.model_dump(by_alias=True)})
-
+        
+        
+class Ontology(Resource):
 
 class Ontology(Resource):
     @swagger.operation(

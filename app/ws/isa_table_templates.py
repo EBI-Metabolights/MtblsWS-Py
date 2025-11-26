@@ -14,6 +14,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.isa_table_models import NumericValue, OntologyValue
 from app.ws.study_templates.models import InvestigationFileTemplate
+from app.ws.study_templates.models import InvestigationFileTemplate
 from app.ws.utils import (
     get_legacy_assay_mapping,
     get_maf_name_from_assay_name,
@@ -582,53 +583,26 @@ def get_json_from_policy_service(context_path: str) -> dict[str, Any]:
     return {}
 
 
-def serialize_investigation_value(value: str | list[str] | list[list[str]]):
-    if not value:
-        return ""
-    if isinstance(value, str):
-        return value.strip()
-    if isinstance(value, list):
-        vals = value
-        if isinstance(value[0], list):
-            vals = []
-            for val in value:
-                vals.append(";".join([str(x) if x else "" for x in val]))
-
-        return "\t".join([str(x) if x else "" for x in vals])
-    return str(value)
-
-
 def create_investigation_file(
     investigation_file_fullpath: str,
-    study_template_name: str = "minimum",
+    template_name: str = "minimum",
     version: None | str = None,
 ):
-    template_json = get_investigation_template(study_template_name, version)
+    template_json = get_investigation_template(template_name, version)
     template = InvestigationFileTemplate.model_validate(template_json, by_alias=True)
-    rows = []
-    for section in template.sections:
-        rows.append(f"{section.name}")
-        field_values = section.default_field_values
-        comment_values = section.default_comment_values
-        if section.fields:
-            rows.extend(
-                [
-                    f"{x}\t{serialize_investigation_value(field_values.get(x, ''))}"
-                    for x in section.fields
-                ]
-            )
-        if section.default_comments:
-            rows.extend(
-                [
-                    f"Comment[{x}]\t"
-                    f"{serialize_investigation_value(comment_values.get(x, ''))}"
-                    for x in section.default_comments
-                ]
-            )
     file_path = Path(investigation_file_fullpath)
 
     with file_path.open("w") as f:
-        f.write("\n".join(rows))
+        for section in template.sections:
+            f.write(f"{section.name}\t\n")
+            if section.fields:
+                f.write("\n".join([f"{x}\t" for x in section.fields]))
+                f.write("\n")
+            if section.default_comments:
+                f.write(
+                    "\n".join([f"Comment[{x}]\t" for x in section.default_comments])
+                )
+                f.write("\n")
     return True
 
 
