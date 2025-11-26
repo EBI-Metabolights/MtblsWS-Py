@@ -46,11 +46,7 @@ from app.ws.auth.permissions import (
 )
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.ontology_info import (
-    get_ontology_name,
-    get_ontology_search_result,
-    getOnto_info,
-)
+from app.ws.ontology_info import MetaboLightsOntology, get_ontology_name, get_ontology_search_result, getOLSTerm, getOnto_info, load_ontology_file
 from app.ws.study_templates.models import ValidationConfiguration
 from app.ws.study_templates.utils import get_validation_configuration
 from app.ws.utils import log_request
@@ -110,12 +106,17 @@ class MtblsControlLists(Resource):
         ],
     )
     def get(self):
-        log_request(request)
-        public_endpoint(request)
-
+        # log_request(request)
+        # name = request.args.get('name').strip() if request.args.get('name') else None
+        # filepath = convert_relative_to_real_path(get_settings().file_resources.mtbls_ontology_file)
+        # mtbl_ontology: MetaboLightsOntology = load_ontology_file(filepath)
+        # return jsonify(mtbl_ontology.get_default_control_lists(name))
+        
         configuration: ValidationConfiguration = get_validation_configuration()
         return jsonify({"controlLists": configuration.model_dump(by_alias=True)})
-
+        
+        
+class Ontology(Resource):
 
 class Ontology(Resource):
     @swagger.operation(
@@ -202,34 +203,28 @@ class Ontology(Resource):
     )
     def get(self):
         log_request(request)
-        raise_deprecation_error(request)
-        public_endpoint(request)
-        term = parse_input(request.args.get("term"))
-        branch = parse_input(request.args.get("branch"))
-        mapping = parse_input(request.args.get("mapping"))
-        queryFields = parse_set_str(parse_input(request.args.get("queryFields")))
-        ontologies = parse_set_str(
-            parse_input(request.args.get("ontology")), lowercase=False
-        )
-        if (
-            not term.startswith("http://")
-            and not term.startswith("https://")
-            and ":" in term
-        ):
-            splitted_term = term.split(":")
-            listed_ontologies = parse_set_str(splitted_term[0], lowercase=False)
-            if not ontologies:
-                ontologies = listed_ontologies
-            else:
-                ontologies.extend(listed_ontologies)
+        raise DeprecationWarning("Endpoint is deprecated.")        
+        # term = parse_input(request.args.get('term'))
+        # branch =  parse_input(request.args.get('branch'))
+        # mapping = parse_input(request.args.get('mapping'))
+        # queryFields = parse_set_str(parse_input(request.args.get('queryFields')))
+        # ontologies = parse_set_str(parse_input(request.args.get('ontology')), lowercase=False)
+        # if not term.startswith("http://") and not term.startswith("https://") and ":" in term:
+        #     splitted_term = term.split(":")
+        #     listed_ontologies = parse_set_str(splitted_term[0], lowercase=False)
+        #     if not ontologies:
+        #         ontologies = listed_ontologies
+        #     else:
+        #         ontologies.extend(listed_ontologies)
+            
+        #     term = splitted_term[1]
+        # if ontologies:
+        #     ontologies = ",".join(set(ontologies))
+        # result = get_ontology_search_result(term, branch, ontologies, mapping, queryFields)
+        # return jsonify(result)
+        
 
-            term = splitted_term[1]
-        if ontologies:
-            ontologies = ",".join(set(ontologies))
-        result = get_ontology_search_result(
-            term, branch, ontologies, mapping, queryFields
-        )
-        return jsonify(result)
+    # =========================== put =============================================
 
     @swagger.operation(
         summary="Add new entity to metabolights ontology",

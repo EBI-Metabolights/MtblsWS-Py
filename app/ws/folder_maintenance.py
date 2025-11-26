@@ -36,6 +36,7 @@ from app.utils import (
 from app.ws.db.types import StudyStatus
 from app.ws.db_connection import update_study_sample_type
 from app.ws.isa_table_templates import create_investigation_file, create_sample_sheet
+from app.ws.isa_table_templates import create_investigation_file, create_sample_sheet
 from app.ws.settings.utils import get_cluster_settings, get_study_settings
 from app.ws.study.comment_utils import update_mhd_comments
 
@@ -2223,12 +2224,14 @@ class StudyFolderMaintenanceTask(object):
         else:
             create_investigation_file(
                 investigation_file_path,
-                study_template_name=self.study_template or "minimum",
+                template_name="minimum",
                 version=self.template_version,
             )
             action_log = MaintenanceActionLog(
                 item=investigation_file_path,
                 action=MaintenanceAction.COPY,
+                parameters={"from": "templates"},
+                message=f"{study_id}: {study_settings.investigation_file_name} does not exist. File was created from template",
                 parameters={"from": "templates"},
                 message=f"{study_id}: {study_settings.investigation_file_name} does not exist. File was created from template",
             )
