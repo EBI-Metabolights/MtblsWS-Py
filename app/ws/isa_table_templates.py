@@ -563,19 +563,27 @@ def create_investigation_file(
 ):
     template_json = get_investigation_template(template_name, version)
     template = InvestigationFileTemplate.model_validate(template_json, by_alias=True)
+    rows = []
+    for section in template.sections:
+        rows.append(f"{section.name}")
+        if section.fields:
+            rows.extend(
+                [
+                    f"{x}\t{section.default_field_values.get(x, '')}"
+                    for x in section.fields
+                ]
+            )
+        if section.default_comments:
+            rows.extend(
+                [
+                    f"{x}\t{section.default_comment_values.get(x, '')}"
+                    for x in section.default_comments
+                ]
+            )
     file_path = Path(investigation_file_fullpath)
 
     with file_path.open("w") as f:
-        for section in template.sections:
-            f.write(f"{section.name}\t\n")
-            if section.fields:
-                f.write("\n".join([f"{x}\t" for x in section.fields]))
-                f.write("\n")
-            if section.default_comments:
-                f.write(
-                    "\n".join([f"Comment[{x}]\t" for x in section.default_comments])
-                )
-                f.write("\n")
+        f.write("\n".join(rows))
     return True
 
 

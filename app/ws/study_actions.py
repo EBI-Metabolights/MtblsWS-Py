@@ -363,12 +363,12 @@ class StudyStatus(Resource):
             update_license(isa_study, dataset_license=context.dataset_license)
             update_mhd_comments(
                 isa_study,
-                study_category=context.study_category,
-                sample_template=context.sample_template,
-                mhd_accession=context.mhd_accession,
-                mhd_model_version=context.mhd_model_version,
-                template_version=context.template_version,
-                study_template=context.study_template,
+                study_category=study.study_category,
+                sample_template=study.sample_type,
+                mhd_accession=study.mhd_accession,
+                mhd_model_version=study.mhd_model_version,
+                template_version=study.template_version,
+                created_at=study.created_at
             )
         if new_study_status in {types.StudyStatus.PUBLIC, types.StudyStatus.PRIVATE}:
             updated_submission_date = (
