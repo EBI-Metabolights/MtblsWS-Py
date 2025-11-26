@@ -132,8 +132,14 @@ class WsClient:
         # Updated to remove Java WS /study/createEmptyStudy dependency
 
         user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
-
-        study_id = create_empty_study(user_token)
+        study_config = get_settings().study
+        template_version = study_config.default_metadata_template_version
+        study_category = study_config.default_study_category
+        sample_template_name = study_config.default_metadata_sample_template_name
+        study_id = create_empty_study(user_token, 
+                                        template_version=template_version, 
+                                        study_category_name=study_category, 
+                                        sample_template_name=sample_template_name)
         if not study_id:
             raise MetabolightsException("Error while creating new study in db")
         return study_id

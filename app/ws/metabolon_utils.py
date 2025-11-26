@@ -859,7 +859,7 @@ def create_investigation_file(study_id, study_location, assay_file_names: List[s
             term_source=source_references["OBI"],
         )
         technology_type = OntologyAnnotation(
-            term="mass spectrometry",
+            term="mass spectrometry assay",
             term_accession="http://purl.obolibrary.org/obo/OBI_0000470",
             term_source=source_references["OBI"],
         )
