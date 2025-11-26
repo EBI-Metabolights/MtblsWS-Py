@@ -12,6 +12,7 @@ from app.config import get_settings
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.isa_table_models import NumericValue, OntologyValue
+from app.ws.study_templates.models import InvestigationFileTemplate
 from app.ws.utils import (
     get_legacy_assay_mapping,
     get_maf_name_from_assay_name,
@@ -143,7 +144,9 @@ def update_study_protocols(
         ]
     )
     protocols = isa_study.protocols
-    study_protocols_map: OrderedDict[str, model.Protocol] = OrderedDict([(x.name, x) for x in protocols])
+    study_protocols_map: OrderedDict[str, model.Protocol] = OrderedDict(
+        [(x.name, x) for x in protocols]
+    )
     for name, params in assay_protocols.items():
         assay_params = {x for x in params if x and x.strip()}
         if name in study_protocols_map:
@@ -483,6 +486,17 @@ def get_assay_template(
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=60))
+def get_investigation_template(
+    template_name: str, template_version: None | str = None
+) -> dict[str, Any]:
+    templates_base_path = "/v1/data/metabolights/validation/v2/templates"
+    context_path = f"{templates_base_path}/investigationFileTemplates/{template_name}"
+    return get_template_from_policy_service(
+        context_path=context_path, template_version=template_version
+    )
+
+
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_maf_template(
     maf_type: str, template_version: None | str = None
 ) -> dict[str, Any]:
@@ -496,7 +510,9 @@ def get_maf_template(
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=60))
-def get_protocol_descriptions(assay_type: str, template_version: str) -> dict[str, Any]:
+def get_protocol_descriptions(
+    assay_type: str, template_version: str
+) -> None | dict[str, Any]:
     templates_base_path = "/v1/data/metabolights/validation/v2/templates"
     context_path = f"{templates_base_path}/protocolTemplates/{assay_type}"
     result = get_json_from_policy_service(context_path=context_path).get("result", [])
@@ -533,6 +549,29 @@ def get_json_from_policy_service(context_path: str) -> dict[str, Any]:
     except Exception as ex:
         logger.error("%s", ex)
     return {}
+
+
+def create_investigation_file(
+    investigation_file_fullpath: str,
+    template_name: str = "minimum",
+    version: None | str = None,
+):
+    template_json = get_investigation_template(template_name, version)
+    template = InvestigationFileTemplate.model_validate(template_json, by_alias=True)
+    file_path = Path(investigation_file_fullpath)
+
+    with file_path.open("w") as f:
+        for section in template.sections:
+            f.write(f"{section.name}\t\n")
+            if section.fields:
+                f.write("\n".join([f"{x}\t" for x in section.fields]))
+                f.write("\n")
+            if section.default_comments:
+                f.write(
+                    "\n".join([f"Comment[{x}]\t" for x in section.default_comments])
+                )
+                f.write("\n")
+    return True
 
 
 def create_file_from_template(
