@@ -873,14 +873,14 @@ def load_ontology_file(filepath) -> MetaboLightsOntology:
     return None
 
 
-def initiate_mtbls_model():
-    file = convert_relative_to_real_path(
-        get_settings().file_resources.mtbls_ontology_file
-    )
-    load_ontology_file(file)
+# def initiate_mtbls_model():
+#     file = convert_relative_to_real_path(
+#         get_settings().file_resources.mtbls_ontology_file
+#     )
+#     load_ontology_file(file)
 
 
-initiate_mtbls_model()
+# initiate_mtbls_model()
 
 
 @ttl_cache(2048)

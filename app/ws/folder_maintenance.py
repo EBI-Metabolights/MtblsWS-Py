@@ -36,7 +36,7 @@ from app.utils import (
 )
 from app.ws.db.types import StudyStatus
 from app.ws.db_connection import update_study_sample_type
-from app.ws.isa_table_templates import create_sample_sheet
+from app.ws.isa_table_templates import create_investigation_file, create_sample_sheet
 from app.ws.settings.utils import get_cluster_settings, get_study_settings
 from app.ws.study.comment_utils import update_mhd_comments
 
@@ -2216,12 +2216,16 @@ class StudyFolderMaintenanceTask(object):
             #     for file in investigation_file_candidates:
             #         self.backup_file(file, reason="Investigation file name is not invalid.")
         else:
-            shutil.copy2(temaplate_investigation_file_path, investigation_file_path)
+            create_investigation_file(
+                investigation_file_path,
+                template_name="minimum",
+                version=self.template_version,
+            )
             action_log = MaintenanceActionLog(
                 item=investigation_file_path,
                 action=MaintenanceAction.COPY,
-                parameters={"from": temaplate_investigation_file_path},
-                message=f"{study_id}: {study_settings.investigation_file_name} does not exist. File was copied from {temaplate_investigation_file_path}",
+                parameters={"from": "templates"},
+                message=f"{study_id}: {study_settings.investigation_file_name} does not exist. File was created from template",
             )
             self.actions.append(action_log)
 
