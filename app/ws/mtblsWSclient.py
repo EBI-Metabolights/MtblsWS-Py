@@ -140,13 +140,23 @@ class WsClient:
             send_email=send_email,
         )
 
-    def reindex_study(
-        self,
-        study_id,
-        user_token=None,
-        include_validation_results: bool = False,
-        sync: bool = False,
-    ):
+        user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
+        study_config = get_settings().study
+        template_version = study_config.default_metadata_template_version
+        study_category = study_config.default_study_category
+        sample_template_name = study_config.default_metadata_sample_template_name
+        study_id = create_empty_study(user_token, 
+                                        template_version=template_version, 
+                                        study_category_name=study_category, 
+                                        sample_template_name=sample_template_name)
+        if not study_id:
+            raise MetabolightsException("Error while creating new study in db")
+        return study_id
+
+    def reindex_study(self, study_id, user_token, include_validation_results: bool = False, sync: bool = False):
+        # Updated to remove Java WS /study/reindexStudyOnToken dependency
+
+        UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
         try:
             self.elasticsearch_service.reindex_study(
                 study_id, user_token, include_validation_results, sync=sync

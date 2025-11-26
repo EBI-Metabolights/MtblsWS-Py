@@ -947,7 +947,14 @@ class CreateAccession(Resource):
                 )
 
         try:
-            study_acc = create_empty_study(user_token, study_id=study_acc)
+            study_config = get_settings().study
+            template_version = study_config.default_metadata_template_version
+            study_category = study_config.default_study_category
+            sample_template_name = study_config.default_metadata_sample_template_name
+            study_acc = create_empty_study(user_token, study_id=study_acc, 
+                                           template_version=template_version, 
+                                           study_category_name=study_category, 
+                                           sample_template_name=sample_template_name)
             # study = StudyService.get_instance().get_study_by_acc(study_id=study_acc)
 
             if study_acc:
