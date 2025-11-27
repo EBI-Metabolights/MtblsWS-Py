@@ -347,7 +347,6 @@ class ColumnDescription(StudyBaseModel):
         return None
 
 
-
 class InvestigationFileSection(StudyBaseModel):
     name: Annotated[str, Field(description="Section name")]
     fields: Annotated[list[str], Field(description="Section row prefixes")]
@@ -355,11 +354,14 @@ class InvestigationFileSection(StudyBaseModel):
         list[str], Field(description="Default comments for the section")
     ]
     default_field_values: Annotated[
-        dict[str, str], Field(description="Default field values")
+        dict[str, str | list[str] | list[list[str]]],
+        Field(description="Default field values"),
     ] = {}
     default_comment_values: Annotated[
-        dict[str, str], Field(description="Default comment values")
+        dict[str, str | list[str] | list[list[str]]],
+        Field(description="Default comment values"),
     ] = {}
+
 
 class InvestigationFileTemplate(StudyBaseModel):
     version: Annotated[str, Field(description="Template version")]
@@ -703,6 +705,7 @@ class OntologySourceReferenceTemplate(StudyBaseModel):
         str, Field(description="Source description and full name")
     ]
 
+
 class FileTemplates(StudyBaseModel):
     assay_file_header_templates: Annotated[
         dict[str, list[IsaTableFileTemplate]],
@@ -728,6 +731,7 @@ class FileTemplates(StudyBaseModel):
         dict[str, OntologySourceReferenceTemplate],
         Field(description="Ontology source reference templates"),
     ] = {}
+
 
 class ValidationControls(StudyBaseModel):
     assay_file_controls: Annotated[

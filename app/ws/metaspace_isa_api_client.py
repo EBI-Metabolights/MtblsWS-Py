@@ -87,6 +87,8 @@ class MetaSpaceIsaApiClient(Resource):
             )
 
         if not isa_inv:
+            # TODO Not implemented
+
             isa_study, isa_inv, std_path = isa_api.get_isa_study(
                 study_id, None, skip_load_tables=True, study_location=output_dir
             )
