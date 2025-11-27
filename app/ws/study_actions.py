@@ -390,7 +390,7 @@ class StudyStatus(Resource):
                 mhd_accession=study.mhd_accession,
                 mhd_model_version=study.mhd_model_version,
                 template_version=study.template_version,
-                created_at=study.created_at
+                created_at=study.created_at,
             )
         if new_study_status in {types.StudyStatus.PUBLIC, types.StudyStatus.PRIVATE}:
             updated_submission_date = (

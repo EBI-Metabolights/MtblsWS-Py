@@ -250,6 +250,7 @@ class StudyFolderMaintenanceTask(object):
         dataset_license: None | str = None,
         template_version: None | str = None,
         created_at: None | datetime = None,
+        study_template: None | str = None,
     ) -> None:
         self.study_category = study_category
         self.mhd_accession = mhd_accession
@@ -258,6 +259,7 @@ class StudyFolderMaintenanceTask(object):
         self.dataset_license = dataset_license
         self.template_version = template_version
         self.created_at = created_at
+        self.study_template = study_template
         self.study_id = study_id
         self.obfuscationcode = obfuscationcode
         self.study_status = study_status
@@ -2222,7 +2224,7 @@ class StudyFolderMaintenanceTask(object):
         else:
             create_investigation_file(
                 investigation_file_path,
-                template_name="minimum",
+                study_template_name=self.study_template or "minimum",
                 version=self.template_version,
             )
             action_log = MaintenanceActionLog(
