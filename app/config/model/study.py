@@ -37,6 +37,7 @@ class StudySettings(BaseModel):
     provisional_id_regex: str = r"^(REQ)(\d{1,20})$"
     default_metadata_template_version: str = "1.0"
     default_metadata_sample_template_name: str = "minimum"
+    default_metadata_study_template_name: str = "minimum"
     default_study_category: str = "other"
     private_ftp_user_home_path: str = ""
     max_study_in_provisional_status: int = 2
