@@ -86,7 +86,8 @@ if __name__ == "__main__":
             study_category=study.study_category,
             sample_template=study.sample_type,
             dataset_license=study.dataset_license,
-            template_version=study.template_version
+            template_version=study.template_version,
+            study_template=study.study_template,
         )
         audit_folder_path = maintenance_task.study_audit_files_path
         backup_folders = glob.glob(

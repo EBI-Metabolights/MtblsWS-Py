@@ -128,7 +128,7 @@ class StudyCategory(enum.IntEnum):
     MS_OTHER = 3
     NMR = 4
     MS_MHD_LEGACY = 5
-
+    
     @staticmethod
     def from_name(name: str):
         if not name:

@@ -157,7 +157,7 @@ class Study(Base):
     mhd_accession = Column(String(50))
     mhd_model_version = Column(String(50))
     created_at = Column(DateTime, nullable=True)
-
+    study_template = Column(String, default="minimum")
     users = relationship("User", secondary="study_user", back_populates="studies")
 
 

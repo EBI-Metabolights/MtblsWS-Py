@@ -37,6 +37,7 @@ from app.config import get_settings
 from app.utils import current_time
 from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.isa_table_templates import create_investigation_file, create_maf_sheet
 from app.ws.settings.utils import get_study_settings
 from app.ws.utils import (
     copy_file,
@@ -492,22 +493,11 @@ def create_isa_files(
         sample_name_client_id_df,
     )
 
-    create_investigation_file(study_id, target_location, assay_file_names)
+    create_metabolon_investigation_file(study_id, target_location, assay_file_names)
     return True, "ISA files are created successfully."
 
 
 def validate_peak_table(peak_table_file_path: str):
-    metabolon_template_path = (
-        get_settings().file_resources.study_partner_metabolon_template_path
-    )
-    annotation_file_template_path = os.path.join(
-        metabolon_template_path,
-        "m_metabolite_profiling_mass_spectrometry_v2_maf.tsv",
-    )
-    annotation_file_template = get_absolute_path(annotation_file_template_path)
-    maf_template: DataFrame = read_tsv(annotation_file_template)
-
-    maf_template = maf_template[0:0]
     main_table: DataFrame = pd.read_excel(
         peak_table_file_path, engine="openpyxl", dtype=str, index_col=None, header=None
     )
@@ -546,15 +536,23 @@ def create_maf_file(
     use_sample_id_in_filename: bool = False,
 ):
     pd.options.mode.copy_on_write = True
-    metabolon_template_path = (
-        get_settings().file_resources.study_partner_metabolon_template_path
+
+    maf_file_name_prefix = (
+        f"m_{study_id}_{sample_id}" if use_sample_id_in_filename else f"m_{study_id}"
     )
-    maf_template: DataFrame = read_tsv(
-        os.path.join(
-            metabolon_template_path,
-            "m_metabolite_profiling_mass_spectrometry_v2_maf.tsv",
-        )
+    maf_file_name = (
+        f"{maf_file_name_prefix}_metabolite_profiling_mass_spectrometry_v2_maf.tsv"
     )
+    maf_file_name_path = os.path.join(study_location, maf_file_name)
+
+    create_maf_sheet(
+        study_path=study_location,
+        maf_file_name=maf_file_name,
+        main_technology_type="MS",
+        template_version="1.0",
+    )
+
+    maf_template: DataFrame = read_tsv(maf_file_name_path)
 
     maf_template = maf_template[0:0]
     main_table: DataFrame = pd.read_excel(
@@ -639,13 +637,6 @@ def create_maf_file(
         columns=[metbolite_identification_column_name], axis=1, inplace=True
     )
 
-    maf_file_name_prefix = (
-        f"m_{study_id}_{sample_id}" if use_sample_id_in_filename else f"m_{study_id}"
-    )
-    maf_file_name = (
-        f"{maf_file_name_prefix}_metabolite_profiling_mass_spectrometry_v2_maf.tsv"
-    )
-    maf_file_name_path = os.path.join(study_location, maf_file_name)
     maf_template.to_csv(
         maf_file_name_path, sep="\t", encoding="utf-8", index=False, header=True
     )
@@ -712,7 +703,7 @@ def create_sample_file(
     final_sample_file_data["Characteristics[Cell type]"] = ""
     final_sample_file_data["Term Source REF.3"] = ""
     final_sample_file_data["Term Accession Number.3"] = ""
-    
+
     final_sample_file_data["Characteristics[Disease]"] = ""
     final_sample_file_data["Term Source REF.4"] = ""
     final_sample_file_data["Term Accession Number.4"] = ""
@@ -821,20 +812,21 @@ def create_assay_file(
     return file_name
 
 
-def create_investigation_file(study_id, study_location, assay_file_names: List[str]):
+def create_metabolon_investigation_file(
+    study_id, study_location, assay_file_names: List[str]
+):
     settings = get_study_settings()
     status, message = True, "Copied Metabolon template into study " + study_id
     invest_file = settings.investigation_file_name
-
-    # Get the correct location of the Metabolon template study
-    template_study_location = (
-        get_settings().file_resources.study_partner_metabolon_template_path
-    )
-    template_study_location = os.path.join(template_study_location, invest_file)
     dest_file = os.path.join(study_location, invest_file)
 
     try:
-        copy_file(template_study_location, dest_file)
+        create_investigation_file(
+            dest_file,
+            study_template_name="metabolon",
+            version="1.0",
+        )
+        # copy_file(template_study_location, dest_file)
     except:
         return False, "Could not copy Metabolon template into study " + study_id
 

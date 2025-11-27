@@ -411,9 +411,7 @@ class StudyStatus(Resource):
         )
         isa_study: model.Study = isa_study_item
         if status_updated:
-            update_license(
-                isa_study, dataset_license=study.dataset_license
-            )
+            update_license(isa_study, dataset_license=study.dataset_license)
             update_mhd_comments(
                 isa_study,
                 study_category=study.study_category,
@@ -421,7 +419,7 @@ class StudyStatus(Resource):
                 mhd_accession=study.mhd_accession,
                 mhd_model_version=study.mhd_model_version,
                 template_version=study.template_version,
-                created_at=study.created_at
+                created_at=study.created_at,
             )
         if study_status.lower() in {"public", "in review", "private"}:
             updated_submission_date = (
@@ -776,7 +774,9 @@ class StudyStatus(Resource):
             mhd_model_version=study.mhd_model_version,
             study_category=study.study_category,
             sample_template=study.sample_type,
-            dataset_license=study.dataset_license
+            dataset_license=study.dataset_license,
+            template_version=study.template_version,
+            study_template=study.study_template,
         )
         date_format = "%Y-%m-%d_%H-%M-%S"
         folder_name = time.strftime(date_format) + "_" + task_name

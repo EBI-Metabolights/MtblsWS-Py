@@ -122,6 +122,7 @@ def delete_study_folders(
                 sample_template=study.sample_type,
                 dataset_license=study.dataset_license,
                 template_version=study.template_version,
+                study_template=study.study_template,
             )
             all_results = []
             if delete_metadata_storage_folders:
@@ -313,6 +314,7 @@ def maintain_storage_study_folders(
                     sample_template=study.sample_type,
                     dataset_license=study.dataset_license,
                     template_version=study.template_version,
+                    study_template=study.study_template,
                 )
 
                 if maintain_metadata_storage:

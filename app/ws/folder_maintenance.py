@@ -250,6 +250,7 @@ class StudyFolderMaintenanceTask(object):
         dataset_license: None | str = None,
         template_version: None | str = None,
         created_at: None | datetime = None,
+        study_template: None | str = None,
     ) -> None:
         self.study_category = study_category
         self.mhd_accession = mhd_accession
@@ -258,6 +259,7 @@ class StudyFolderMaintenanceTask(object):
         self.dataset_license = dataset_license
         self.template_version = template_version
         self.created_at = created_at
+        self.study_template = study_template
         self.study_id = study_id
         self.obfuscationcode = obfuscationcode
         self.study_status = study_status
@@ -524,7 +526,7 @@ class StudyFolderMaintenanceTask(object):
         audit_folder_root_path: Union[None, str] = None,
         folder_name: Union[None, str] = None,
         metadata_files_signature_root_path: Union[None, str] = None,
-        stage: str = "BACKUP",
+        stage: None | str = "BACKUP",
     ):
         # if os.path.exists(self.study_metadata_files_path):
         metadata_files_list = self.get_all_metadata_files(
@@ -2181,10 +2183,7 @@ class StudyFolderMaintenanceTask(object):
         investigation_file_path = os.path.join(
             self.study_metadata_files_path, study_settings.investigation_file_name
         )
-        template_path = self.get_study_file_template_path()
-        temaplate_investigation_file_path = os.path.join(
-            template_path, study_settings.investigation_file_name
-        )
+
         investigation_file_candidates = glob.glob(
             os.path.join(self.study_metadata_files_path, "i_*.txt")
         )
@@ -2225,7 +2224,7 @@ class StudyFolderMaintenanceTask(object):
         else:
             create_investigation_file(
                 investigation_file_path,
-                template_name="minimum",
+                study_template_name=self.study_template or "minimum",
                 version=self.template_version,
             )
             action_log = MaintenanceActionLog(
@@ -2260,18 +2259,6 @@ class StudyFolderMaintenanceTask(object):
             )
             self.actions.append(action_log)
             raise ex
-
-    def get_study_file_template_path(self):
-        template_path = get_settings().file_resources.study_default_template_path
-
-        template_path = (
-            template_path
-            if f".{os.sep}" not in template_path
-            else template_path.replace(f".{os.sep}", "", 1)
-        )
-        if not template_path.startswith(os.sep) and f":{os.sep}" not in template_path:
-            template_path = os.path.join(application_path, template_path)
-        return template_path
 
     def maintain_investigation_file_content(
         self, investigation: isatools_model.Investigation
