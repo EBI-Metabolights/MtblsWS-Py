@@ -24,16 +24,36 @@ iac = IsaApiClient()
 
 
 MEASURMENT_TYPE_ONTOLOGY_TERMS = {
-    "metabolite profiling": ("OBI", "http://purl.obolibrary.org/obo/OBI_0000366"),
+    "metabolite profiling": (
+        "metabolite profiling assay",
+        "OBI",
+        "http://purl.obolibrary.org/obo/OBI_0000366",
+    ),
     "targeted metabolite profiling": (
-        "MSIO",
+        "targeted metabolite profilingMSIO",
         "http://purl.obolibrary.org/obo/MSIO_0000100",
     ),
     "untargeted metabolite profiling": (
-        "MSIO",
+        "untargeted metabolite profilingMSIO",
         "http://purl.obolibrary.org/obo/MSIO_0000101",
     ),
 }
+ASSAY_TYPE_ONTOLOGY_TERMS = {
+    "LC-MS": (
+        "metabolite profiling assay",
+        "OBI",
+        "http://purl.obolibrary.org/obo/OBI_0000366",
+    ),
+    "targeted metabolite profiling": (
+        "targeted metabolite profilingMSIO",
+        "http://purl.obolibrary.org/obo/MSIO_0000100",
+    ),
+    "untargeted metabolite profiling": (
+        "untargeted metabolite profilingMSIO",
+        "http://purl.obolibrary.org/obo/MSIO_0000101",
+    ),
+}
+
 DEFAULT_MEASUREMENT_TYPE = "metabolite profiling"
 
 TECHNOLOGY_TYPE_ONTOLOGY_TERMS = {
@@ -297,11 +317,11 @@ def add_new_assay_sheet(
 
     if not measurment_type_name:
         measurment_type_name = DEFAULT_MEASUREMENT_TYPE
-    term_source, term_accession = MEASURMENT_TYPE_ONTOLOGY_TERMS.get(
+    term, term_source, term_accession = MEASURMENT_TYPE_ONTOLOGY_TERMS.get(
         measurment_type_name
     )
     measurement_type = model.OntologyAnnotation(
-        term=measurment_type_name,
+        term=term,
         term_source=update_ontology_sources(
             isa_inv, ontology_source_references, term_source
         ),
@@ -312,6 +332,12 @@ def add_new_assay_sheet(
         technology_platform=technology_platform,
         technology_type=technology_type,
         measurement_type=measurement_type,
+        comments=[
+            model.Comment(name="Assay Type Label", value=assay_type),
+            model.Comment(name="Assay Type", value=assay_type),
+            model.Comment(name="Assay Type Term Accession Number", value=""),
+            model.Comment(name="Assay Type Term Source REF", value=""),
+        ],
     )
 
     assays: list[model.Assay] = isa_study.assays
@@ -347,6 +373,8 @@ def get_valid_assay_file_name(file_name, study_path):
 
 def update_ontology_sources(isa_inv, ontology_source_references, ontology_source):
     obi_ontology_reference = ontology_source_references.get(ontology_source)
+    if not obi_ontology_reference:
+        return None
     item: model.OntologySource = isa_inv.get_ontology_source_reference(ontology_source)
     obi_ontology = obi_ontology_reference
     if item is None:  # Add the ontology to the investigation
@@ -406,6 +434,8 @@ def create_maf_sheet(
     override_current: bool = False,
     sample_names: None | list[str] = None,
 ):
+    if not maf_file_name:
+        return False
     maf_file_path = os.path.join(study_path, maf_file_name)
     maf_template = get_maf_template(
         maf_type=main_technology_type, template_version=template_version
@@ -550,6 +580,7 @@ def get_json_from_policy_service(context_path: str) -> dict[str, Any]:
         logger.error("%s", ex)
     return {}
 
+
 def serialize_investigation_value(value: str | list[str] | list[list[str]]):
     if not value:
         return ""
@@ -564,6 +595,7 @@ def serialize_investigation_value(value: str | list[str] | list[list[str]]):
 
         return "\t".join([str(x) if x else "" for x in vals])
     return str(value)
+
 
 def create_investigation_file(
     investigation_file_fullpath: str,

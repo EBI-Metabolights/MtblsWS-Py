@@ -846,7 +846,7 @@ def create_metabolon_investigation_file(
         isa_study.filename = f"s_{study_id}.txt"
         source_references = {x.name: x for x in isa_inv.ontology_source_references}
         measurement_type = OntologyAnnotation(
-            term="metabolite profiling",
+            term="metabolite profiling assay",
             term_accession="http://purl.obolibrary.org/obo/OBI_0000366",
             term_source=source_references["OBI"],
         )

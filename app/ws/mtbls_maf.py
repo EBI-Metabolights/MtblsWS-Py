@@ -255,10 +255,10 @@ class MetaboliteAnnotationFile(Resource):
                         if sample not in maf_df.columns:
                             maf_df[sample] = ""
                     updated_maf_files.append(maf_file)
-            if not valid:
+            if os.path.exists(maf_file_path) and not valid:
                 success = create_maf_sheet(
                     study_path=study_location,
-                    maf_file_name=annotation_file_name,
+                    maf_file_name=maf_file,
                     main_technology_type=main_technology_type,
                     template_version=study.template_version,
                     sample_names=sample_names,
