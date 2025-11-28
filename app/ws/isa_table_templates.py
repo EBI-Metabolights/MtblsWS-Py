@@ -582,6 +582,7 @@ def get_json_from_policy_service(context_path: str) -> dict[str, Any]:
         logger.error("%s", ex)
     return {}
 
+
 def serialize_investigation_value(value: str | list[str] | list[list[str]]):
     if not value:
         return ""
@@ -596,6 +597,7 @@ def serialize_investigation_value(value: str | list[str] | list[list[str]]):
 
         return "\t".join([str(x) if x else "" for x in vals])
     return str(value)
+
 
 def create_investigation_file(
     investigation_file_fullpath: str,
