@@ -5,4 +5,6 @@
     "python-envs.defaultEnvManager": "ms-python.python:system",
     "python-envs.pythonProjects": [],
     "python.analysis.typeCheckingMode": "off"
+    "python-envs.pythonProjects": [],
+    "python.analysis.typeCheckingMode": "off"
 }

@@ -26,6 +26,7 @@ from flask import jsonify, request
 from flask_restful import Resource, abort, marshal_with
 from flask_restful_swagger import swagger
 from isatools import model
+from isatools import model
 from marshmallow import ValidationError
 
 from app.tasks.common_tasks.basic_tasks.elasticsearch import reindex_study
@@ -37,7 +38,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import PersonSchema
 from app.ws.models import Investigation_api_model, serialize_investigation
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study.utils import get_study_metadata_path
+from app.ws.study.user_service import UserService
 from app.ws.study_templates.utils import get_validation_configuration
 from app.ws.utils import (
     add_ontology_to_investigation,
@@ -842,8 +843,9 @@ class StudyContacts(Resource):
         logger.info("Got %s contacts", len(new_contacts))
 
         sch = PersonSchema()
-        sch.context["contact"] = model.Person()
+        sch.context["contact"] = Person()
         return sch.dump(isa_study.contacts, many=True)
+
 
     def validate_contact(self, new_contact: PersonSchema):
         errors = []
@@ -3061,9 +3063,9 @@ class StudyPublications(Resource):
             )
             # logger.info("A copy of the previous files will %s saved", save_msg_str)
 
-        return mm_models.PublicationSchema().dump(new_publication)
+        return PublicationSchema().dump(new_publication)
 
-    def validate_publication(self, new_publication: mm_models.PublicationSchema):
+    def validate_publication(self, new_publication: PublicationSchema):
         errors = []
         status = getattr(new_publication, "status", None)
         if not new_publication.title or len(new_publication.title) < 20:
@@ -3077,8 +3079,9 @@ class StudyPublications(Resource):
             if not re.match(pmid_pattern, new_publication.pubmed_id):
                 errors.append(f"Invalid PubMed ID '{new_publication.pubmed_id}'")
         if not status:
-            errors.append("Publication status cannot be empty")
+            errors.append(f"Publication status cannot be empty")
         return errors
+
 
     @swagger.operation(
         summary="Get Study Publications",

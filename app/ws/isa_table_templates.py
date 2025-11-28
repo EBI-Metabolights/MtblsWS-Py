@@ -32,13 +32,11 @@ MEASURMENT_TYPE_ONTOLOGY_TERMS = {
         "http://purl.obolibrary.org/obo/OBI_0000366",
     ),
     "targeted metabolite profiling": (
-        "targeted metabolite profiling",
-        "MSIO",
+        "targeted metabolite profilingMSIO",
         "http://purl.obolibrary.org/obo/MSIO_0000100",
     ),
     "untargeted metabolite profiling": (
-        "untargeted metabolite profiling",
-        "MSIO",
+        "untargeted metabolite profilingMSIO",
         "http://purl.obolibrary.org/obo/MSIO_0000101",
     ),
 }
@@ -49,16 +47,15 @@ ASSAY_TYPE_ONTOLOGY_TERMS = {
         "http://purl.obolibrary.org/obo/OBI_0000366",
     ),
     "targeted metabolite profiling": (
-        "targeted metabolite profiling",
-        "MSIO",
+        "targeted metabolite profilingMSIO",
         "http://purl.obolibrary.org/obo/MSIO_0000100",
     ),
     "untargeted metabolite profiling": (
-        "untargeted metabolite profiling",
-        "MSIO",
+        "untargeted metabolite profilingMSIO",
         "http://purl.obolibrary.org/obo/MSIO_0000101",
     ),
 }
+
 DEFAULT_MEASUREMENT_TYPE = "metabolite profiling"
 
 TECHNOLOGY_TYPE_ONTOLOGY_TERMS = {
@@ -379,9 +376,7 @@ def get_valid_assay_file_name(file_name, study_path):
 def update_ontology_sources(isa_inv, ontology_source_references, ontology_source):
     obi_ontology_reference = ontology_source_references.get(ontology_source)
     if not obi_ontology_reference:
-        obi_ontology_reference = model.OntologySource(
-            name=ontology_source, version="", description="", file=ontology_source
-        )
+        return None
     item: model.OntologySource = isa_inv.get_ontology_source_reference(ontology_source)
     if item is None:  # Add the ontology to the investigation
         ontologies = isa_inv.get_ontology_source_references()
@@ -587,6 +582,7 @@ def get_json_from_policy_service(context_path: str) -> dict[str, Any]:
         logger.error("%s", ex)
     return {}
 
+
 def serialize_investigation_value(value: str | list[str] | list[list[str]]):
     if not value:
         return ""
@@ -601,6 +597,7 @@ def serialize_investigation_value(value: str | list[str] | list[list[str]]):
 
         return "\t".join([str(x) if x else "" for x in vals])
     return str(value)
+
 
 def create_investigation_file(
     investigation_file_fullpath: str,
