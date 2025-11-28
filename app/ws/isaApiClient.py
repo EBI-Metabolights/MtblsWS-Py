@@ -90,6 +90,31 @@ class IsaApiClient:
             )
             return isa_json
 
+    ASSAY_TYPES = {
+        "LC-MS",
+        "GC-MS",
+        "GCxGC-MS",
+        "MALDI-MS",
+        "FIA-MS",
+        "DI-MS",
+        "CE-MS",
+        "MS",
+        "NMR",
+        "MRImaging",
+        "MSImaging",
+        "GC-FID",
+        "LC-DAD",
+    }
+
+    def find_assay_type(self, assay: model.Assay):
+        file_name = assay.filename or ""
+        parts = file_name.split("_")
+        if len(parts) > 3:
+            candidate = parts[2]
+            if candidate in self.ASSAY_TYPES:
+                return candidate
+        return None
+
     def get_isa_study(
         self,
         study_id,
@@ -126,7 +151,26 @@ class IsaApiClient:
             # loading tables also load Samples and Assays
             isa_inv = load(fp, skip_load_tables)
             # ToDo. Add MAF to isa_study
-            isa_study = isa_inv.studies[0]
+            isa_study: model.Study = isa_inv.studies[0]
+            for item in isa_study.assays:
+                assay: model.Assay = item
+                assay_type_labels = [
+                    x
+                    for x in assay.comments
+                    if x.name == "Assay Type Label" and x.value
+                ]
+                if len(assay_type_labels) == 1:
+                    continue
+                new_comments = [
+                    x for x in assay.comments if x.name != "Assay Type Label"
+                ]
+                assay_type = self.find_assay_type(assay)
+                # if assay_type:
+                new_comments.append(
+                    model.Comment(name="Assay Type Label", value=assay_type or "")
+                )
+                assay.comments = new_comments
+
         except IndexError as e:
             logger.exception(
                 "Failed to find Investigation file %s from %s", study_id, std_path

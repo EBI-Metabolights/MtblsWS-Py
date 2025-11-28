@@ -26,6 +26,7 @@ from flask import jsonify, request
 from flask_restful import Resource, abort, marshal_with
 from flask_restful_swagger import swagger
 from isatools import model
+from isatools import model
 from marshmallow import ValidationError
 
 from app.tasks.common_tasks.basic_tasks.elasticsearch import reindex_study
@@ -36,7 +37,8 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import PersonSchema
 from app.ws.models import Investigation_api_model, serialize_investigation
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study.utils import get_study_metadata_path
+from app.ws.study.user_service import UserService
+from app.ws.study_templates.utils import get_validation_configuration
 from app.ws.utils import (
     add_ontology_to_investigation,
     delete_column_from_tsv_file,
@@ -832,8 +834,9 @@ class StudyContacts(Resource):
         logger.info("Got %s contacts", len(new_contacts))
 
         sch = PersonSchema()
-        sch.context["contact"] = model.Person()
+        sch.context["contact"] = Person()
         return sch.dump(isa_study.contacts, many=True)
+
 
     def validate_contact(self, new_contact: PersonSchema):
         errors = []
@@ -3035,9 +3038,9 @@ class StudyPublications(Resource):
             )
             # logger.info("A copy of the previous files will %s saved", save_msg_str)
 
-        return mm_models.PublicationSchema().dump(new_publication)
+        return PublicationSchema().dump(new_publication)
 
-    def validate_publication(self, new_publication: mm_models.PublicationSchema):
+    def validate_publication(self, new_publication: PublicationSchema):
         errors = []
         status = getattr(new_publication, "status", None)
         if not new_publication.title or len(new_publication.title) < 20:
@@ -3051,8 +3054,9 @@ class StudyPublications(Resource):
             if not re.match(pmid_pattern, new_publication.pubmed_id):
                 errors.append(f"Invalid PubMed ID '{new_publication.pubmed_id}'")
         if not status:
-            errors.append("Publication status cannot be empty")
+            errors.append(f"Publication status cannot be empty")
         return errors
+
 
     @swagger.operation(
         summary="Get Study Publications",
@@ -3375,7 +3379,7 @@ class StudyPublications(Resource):
 
         # Check that the ontology is referenced in the investigation
         new_status = updated_publication.status
-        # term_source = new_status.term_source
+        term_source = new_status.term_source
 
         found = False
         for index, publication in enumerate(isa_study.publications):
@@ -3388,7 +3392,30 @@ class StudyPublications(Resource):
                 break
         if not found:
             abort(404)
-        # if term_source:
+        new_source_name = ""
+        if updated_publication and new_status:
+            new_source = updated_publication.status.term_source.name.lower()
+        selected_ontology_source_ref = None
+        if new_source_name and isa_inv.ontology_source_references:
+            for ref in isa_inv.ontology_source_references:
+                if (ref.name or "").lower() == new_source:
+                    selected_ontology_source_ref = ref
+                    break
+        if not selected_ontology_source_ref and new_source_name:
+            config = get_validation_configuration()
+            term_source = updated_publication.status.term_source
+            if config:
+                refs = config.templates.ontology_source_reference_templates
+                if refs and new_source_name.upper() in refs:
+                    item = refs[new_source_name.upper()]
+                    term_source = model.OntologySource(
+                        name=str(item.source_name),
+                        version=str(item.version),
+                        file=str(item.name),
+                        description=str(item.description),
+                    )
+            isa_inv.ontology_source_references.append(term_source)
+        # if new_source:
         #     add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
         #                                   term_source.file, term_source.description)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
