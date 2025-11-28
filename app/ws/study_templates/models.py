@@ -1,8 +1,8 @@
 import datetime
 import enum
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.alias_generators import to_camel, to_pascal
 
 
@@ -13,7 +13,7 @@ class MetadataFileType(enum.StrEnum):
     ASSIGNMENT = "assignment"
 
 
-class ValidationType(enum.StrEnum):
+class OntologyValidationType(enum.StrEnum):
     ANY_ONTOLOGY_TERM = "any-ontology-term"
     CHILD_ONTOLOGY_TERM = "child-ontology-term"
     SELECTED_ONTOLOGY = "ontology-term-in-selected-ontologies"
@@ -63,13 +63,17 @@ class OntologyTerm(StudyBaseModel):
     term_accession_number: Annotated[
         str,
         Field(
-            description="The accession number from the Term Source associated with the term.",
+            description="The accession number from the Term Source "
+            "associated with the term.",
         ),
     ]
     term_source_ref: Annotated[
         str,
         Field(description="Source reference name of ontology term. e.g., EFO, OBO."),
     ]
+
+    def __str__(self):
+        return f"[{self.term}, {self.term_source_ref}, {self.term_accession_number}]"
 
 
 class OntologyTermPlaceholder(StudyBaseModel):
@@ -82,6 +86,9 @@ class OntologyTermPlaceholder(StudyBaseModel):
         Field(description="Source reference name of placeholder. e.g., MTBLS."),
     ]
 
+    def __str__(self):
+        return f"[{self.term_source_ref}, {self.term_accession_number}]"
+
 
 class FieldSelector(StudyBaseModel):
     name: Annotated[
@@ -91,16 +98,17 @@ class FieldSelector(StudyBaseModel):
     value: Annotated[
         None | str,
         Field(
-            description="Node value to find . e.g. Protocol REF with value 'Sample collection'"
+            description="Node value to match."
+            " e.g. Protocol REF with value 'Sample collection'"
         ),
     ]
 
 
 class SelectionCriteria(StudyBaseModel):
     isa_file_type: Annotated[
-        MetadataFileType,
+        None | MetadataFileType,
         Field(description="ISA-TAB file type."),
-    ]
+    ] = None
     study_created_at_or_after: Annotated[
         None | datetime.datetime,
         Field(description="Filter to select studies created after the defined date."),
@@ -133,8 +141,10 @@ class SelectionCriteria(StudyBaseModel):
             "Characteristics can be linked to Sample Name or Source Name. "
             "Parameter Value can be linked to Protocol REF with value. "
             "e.g., {name: 'Protocol REF', 'value': 'Mass spectrometry'}, "
-            "Units can be linked to Parameter Value, Factor Value and Characteristic fields."
-            "Comments can be linked to ISA-TAB nodes (Sample Name, Source Name, Protocol REF, etc.)"
+            "Units can be linked to Parameter Value, Factor Value "
+            "and Characteristic fields."
+            "Comments can be linked to ISA-TAB nodes "
+            "(Sample Name, Source Name, Protocol REF, etc.)"
         ),
     ] = None
 
@@ -151,13 +161,17 @@ class AdditionalSource(StudyBaseModel):
         ),
     ]
 
+    def __str__(self):
+        return f"[{self.source_label}, {self.accession_prefix}]"
+
 
 class FieldConstraint(StudyBaseModel):
     constraint: Annotated[
         None | str | int | float | bool, Field(description="Constraint value")
     ] = None
     error_message: Annotated[
-        str, Field(description="Error message if value does not satisfy the constraint")
+        str,
+        Field(description="Error message if value does not satisfy the constraint."),
     ] = ""
     enforcement_level: Annotated[
         EnforcementLevel,
@@ -180,7 +194,7 @@ class ParentOntologyTerms(StudyBaseModel):
     ] = []
 
 
-class FieldValueValidation(StudyBaseModel):
+class BaseOntologyValidation(StudyBaseModel):
     rule_name: Annotated[
         str,
         Field(
@@ -189,10 +203,6 @@ class FieldValueValidation(StudyBaseModel):
             "e.g., Parameter Value[Instrument]-01, Parameter Value[Instrument]-02"
         ),
     ]
-    description: Annotated[
-        str,
-        Field(description="Definition of rule and summary of selection criteria."),
-    ] = ""
     field_name: Annotated[
         str,
         Field(
@@ -200,6 +210,36 @@ class FieldValueValidation(StudyBaseModel):
             "e.g., Parameter Value[Instrument], Study Assay Measurement Type."
         ),
     ]
+
+    ontology_validation_type: Annotated[
+        None | OntologyValidationType, Field(description="Validation rule type")
+    ] = OntologyValidationType.ANY_ONTOLOGY_TERM
+
+    ontologies: Annotated[
+        None | list[str],
+        Field(
+            description="Ordered ontology source references. "
+            "If validation type is ontology-term-in-selected-ontologies, "
+            "it defines ontology sources, "
+            "otherwise it lists recommended ontology sources."
+        ),
+    ] = None
+
+    allowed_parent_ontology_terms: Annotated[
+        None | ParentOntologyTerms,
+        Field(
+            description="Parent ontology terms "
+            "to find the allowed child ontology terms. "
+            "Applicable only for validation type child-ontology-term"
+        ),
+    ] = None
+
+
+class FieldValueValidation(BaseOntologyValidation):
+    description: Annotated[
+        str,
+        Field(description="Definition of rule and summary of selection criteria."),
+    ] = ""
     selection_criteria: Annotated[
         SelectionCriteria, Field(description="Field selection criteria")
     ]
@@ -212,8 +252,8 @@ class FieldValueValidation(StudyBaseModel):
     ] = EnforcementLevel.REQUIRED
 
     validation_type: Annotated[
-        ValidationType, Field(description="Validation rule type")
-    ] = ValidationType.ANY_ONTOLOGY_TERM
+        OntologyValidationType, Field(description="Validation rule type")
+    ] = OntologyValidationType.ANY_ONTOLOGY_TERM
     constraints: Annotated[
         None | dict[ConstraintType, FieldConstraint],
         Field(description="Field constraints"),
@@ -246,14 +286,16 @@ class FieldValueValidation(StudyBaseModel):
         Field(
             description="Ordered ontology source references. "
             "If validation type is ontology-term-in-selected-ontologies, "
-            "it defines ontology sources, otherwise it lists recommended ontology sources."
+            "it defines ontology sources, "
+            "otherwise it lists recommended ontology sources."
         ),
     ] = []
 
     allowed_parent_ontology_terms: Annotated[
         None | ParentOntologyTerms,
         Field(
-            description="Parent ontology terms to find the allowed child ontology terms. "
+            description="Parent ontology terms to "
+            "find the allowed child ontology terms. "
             "Applicable only for validation type child-ontology-term"
         ),
     ] = None
@@ -262,6 +304,25 @@ class FieldValueValidation(StudyBaseModel):
         None | list[str],
         Field(description="unexpected terms."),
     ] = []
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def validate_model(cls, v: Any, handler) -> Self:
+        if isinstance(v, dict):
+            enforcement = v.get("enforcementLevel", None)
+            if enforcement:
+                v["termEnforcementLevel"] = enforcement
+            constraints = v.get("constraints", None)
+            if isinstance(constraints, list):
+                new_constraints = {}
+                for item in constraints:
+                    new_constraints[item.get("type")] = item
+                v["constraints"] = new_constraints
+        validation_type = v.get("validationType", None)
+        if validation_type == "check-only-constraints":
+            v["termEnforcementLevel"] = EnforcementLevel.NOT_APPLICABLE
+
+        return handler(v)
 
 
 class ColumnDescription(StudyBaseModel):
@@ -301,10 +362,10 @@ class ColumnDescription(StudyBaseModel):
 
 class InvestigationFileSection(StudyBaseModel):
     name: Annotated[str, Field(description="Section name")]
-    fields: Annotated[list[str], Field(description="Section row prefixes")]
+    fields: Annotated[list[str], Field(description="Section row prefixes")] = []
     default_comments: Annotated[
         list[str], Field(description="Default comments for the section")
-    ]
+    ] = []
     default_field_values: Annotated[
         dict[str, str | list[str] | list[list[str]]],
         Field(description="Default field values"),
@@ -399,6 +460,7 @@ class ActiveMhdProfile(StudyBaseModel):
     default_version: Annotated[str, Field(description="default profile version")]
     active_versions: Annotated[list[str], Field(description="active profile versions")]
 
+
 class TemplateConfiguration(StudyBaseModel):
     active_investigation_file_templates: Annotated[
         list[str], Field(description="active investigation file templates")
@@ -422,6 +484,14 @@ class TemplateConfiguration(StudyBaseModel):
         dict[StudyCategoryStr, ActiveMhdProfile],
         Field(description="active dataset licenses"),
     ]
+    active_study_design_descriptor_categories: Annotated[
+        list[str],
+        Field(description="active study design descriptor categories"),
+    ]
+    active_assay_design_descriptor_categories: Annotated[
+        list[str],
+        Field(description="active assay design descriptor categories"),
+    ]
     default_sample_file_template: Annotated[
         str, Field(description="default sample file name")
     ]
@@ -432,10 +502,6 @@ class TemplateConfiguration(StudyBaseModel):
     default_dataset_license: Annotated[
         str, Field(description="default dataset license name")
     ]
-    default_file_controls: Annotated[
-        dict[MetadataFileType, list[DefaultControl]],
-        Field(description="default control lists"),
-    ]
     investigation_file_name: Annotated[
         str, Field(description="investigation file name")
     ]
@@ -443,6 +509,12 @@ class TemplateConfiguration(StudyBaseModel):
         list[str], Field(description="derived file extensions")
     ]
     raw_file_extensions: Annotated[list[str], Field(description="raw file extensions")]
+
+    assay_file_type_mappings: Annotated[
+        dict[StudyCategoryStr, list[str]],
+        Field(description="Study category assay file type mappings"),
+    ]
+
 
 class LicenseInfo(StudyBaseModel):
     name: Annotated[str, Field(description="license name")]
@@ -457,20 +529,128 @@ class MhdProfileInfo(StudyBaseModel):
         str, Field(description="announcement file profile URL")
     ] = ""
 
+
+class StudyCategoryDefinition(StudyBaseModel):
+    index: Annotated[int, Field(description="study category index")]
+    name: Annotated[str, Field(description="study category name")]
+    label: Annotated[str, Field(description="study category label")]
+    description: Annotated[str, Field(description="study category description")]
+
+
+class CommentDescription(StudyBaseModel):
+    name: Annotated[str, Field(description="Comment name")]
+    label: Annotated[str, Field(description="Comment label")]
+    is_ontology: Annotated[
+        bool, Field(description="Is the comment an ontology term")
+    ] = False
+    control_list_key: Annotated[
+        None | str, Field(description="Comment control list key")
+    ] = None
+
+
+class CommentGroupDefinition(StudyBaseModel):
+    allow_multiple: Annotated[
+        bool, Field(description="comment group can be defined multiple")
+    ] = False
+    join_operator: Annotated[
+        None | str,
+        Field(description="join operator if group has multiple values"),
+    ] = None
+    comments: Annotated[
+        list[CommentDescription], Field(description="comments in group")
+    ] = False
+
+
+class SectionDefaultComments(StudyBaseModel):
+    groups: Annotated[list[str], Field(description="comment groups in section")] = []
+
+    groupDefinitions: Annotated[
+        dict[str, CommentGroupDefinition],
+        Field(description="section comment group definitions"),
+    ] = {}
+
+
+class DefaultCommentConfiguration(StudyBaseModel):
+    study_comments: Annotated[
+        SectionDefaultComments, Field(description="study section comments")
+    ]
+    assay_comments: Annotated[
+        SectionDefaultComments, Field(description="study assay section comments")
+    ]
+    study_design_descriptor_comments: Annotated[
+        SectionDefaultComments,
+        Field(description="study design descriptors section comments"),
+    ]
+    study_factor_comments: Annotated[
+        SectionDefaultComments, Field(description="study factors section comments")
+    ]
+    study_protocol_comments: Annotated[
+        SectionDefaultComments, Field(description="study protocol section comments")
+    ]
+    study_publication_comments: Annotated[
+        SectionDefaultComments, Field(description="study publications section comments")
+    ]
+    study_contact_comments: Annotated[
+        SectionDefaultComments, Field(description="study contacts section comments")
+    ]
+
+
+class DescriptorCategoryDefinition(StudyBaseModel):
+    name: Annotated[str, Field(description="study category name")]
+    label: Annotated[str, Field(description="study category label")]
+    control_list_key: Annotated[
+        None | str, Field(description="study category description")
+    ]
+
+
+class DescriptorConfiguration(StudyBaseModel):
+    default_descriptor_category: Annotated[
+        str, Field(description="default descriptor category")
+    ] = "default"
+    default_submitter_source: Annotated[
+        str, Field(description="default submitter source")
+    ] = ""
+    default_data_curation_source: Annotated[
+        str, Field(description="default data curation source")
+    ] = ""
+    default_workflow_source: Annotated[
+        str, Field(description="default workflow source")
+    ] = ""
+    default_descriptor_categories: Annotated[
+        dict[str, DescriptorCategoryDefinition],
+        Field(description="default descriptor sources"),
+    ] = {}
+    default_descriptor_sources: Annotated[
+        dict[str, OntologyTerm], Field(description="default descriptor sources")
+    ] = {}
+
+
 class TemplateSettings(StudyBaseModel):
     active_template_versions: Annotated[
-        list[str], Field(description="active temlate versions")
-    ] = []
+        list[str], Field(description="active template versions")
+    ]
     default_template_version: Annotated[
         str, Field(description="default study template version")
-    ] = ""
+    ]
     dataset_licenses: Annotated[
         dict[str, LicenseInfo],
         Field(description="MetaboLights template versions"),
     ] = {}
-    study_categories: Annotated[list[str], Field(description="study categories")] = []
-    study_category_index_mapping: Annotated[
-        dict[str | int, str], Field(description="study category index mapping")
+    descriptor_configuration: Annotated[
+        DescriptorConfiguration, Field(description="default comment configuration")
+    ] = DescriptorConfiguration()
+    result_file_formats: Annotated[
+        dict[str, OntologyTerm], Field(description="result file formats")
+    ] = {}
+    default_file_controls: Annotated[
+        dict[MetadataFileType, list[DefaultControl]],
+        Field(description="default control lists"),
+    ]
+    default_comments: Annotated[
+        DefaultCommentConfiguration, Field(description="default comment configuration")
+    ]
+    study_categories: Annotated[
+        dict[str, StudyCategoryDefinition], Field(description="study categories")
     ] = {}
     mhd_profiles: Annotated[
         dict[str, dict[str, MhdProfileInfo]],
@@ -510,7 +690,7 @@ class FileTemplates(StudyBaseModel):
     configuration: Annotated[
         TemplateSettings,
         Field(description="Validation template settings"),
-    ] = TemplateSettings()
+    ] = {}
 
 
 class ValidationControls(StudyBaseModel):
@@ -527,6 +707,15 @@ class ValidationControls(StudyBaseModel):
         dict[str, list[FieldValueValidation]],
         Field(
             description="Controls for sample file columns. "
+            "Field value validations are ordered by precedence. "
+            "If there are more than one matches for the field."
+            "Select the first one."
+        ),
+    ] = {}
+    assignment_file_controls: Annotated[
+        dict[str, list[FieldValueValidation]],
+        Field(
+            description="Controls for MAF file columns. "
             "Field value validations are ordered by precedence. "
             "If there are more than one matches for the field."
             "Select the first one."
