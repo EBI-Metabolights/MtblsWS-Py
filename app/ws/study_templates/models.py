@@ -785,10 +785,10 @@ class TemplateSettings(StudyBaseModel):
         dict[str, LicenseInfo],
         Field(description="MetaboLights template versions"),
     ] = {}
-    study_categories: Annotated[list[str], Field(description="study categories")]
+    study_categories: Annotated[list[str], Field(description="study categories")] = []
     study_category_index_mapping: Annotated[
         dict[str | int, str], Field(description="study category index mapping")
-    ]
+    ] = {}
     mhd_profiles: Annotated[
         dict[str, dict[str, MhdProfileInfo]],
         Field(description="MHD profiles and versions"),
