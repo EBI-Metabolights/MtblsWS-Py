@@ -107,13 +107,16 @@ class IsaApiClient:
         "LC-DAD",
     }
 
-    def find_assay_type(self, assay: model.Assay):
+    def find_assay_type_and_identifier(self, assay: model.Assay) -> tuple[str, None]:
         file_name = assay.filename or ""
         parts = file_name.split("_")
         if len(parts) > 3:
-            candidate = parts[2]
-            if candidate in self.ASSAY_TYPES:
-                return candidate
+            match = re.match(r"^(.+?)(?:-(\d+))?$", parts[2])
+            if match:
+                candidate = match.groups()[0]
+                identifier = match.groups()[1]
+                if candidate in self.ASSAY_TYPES:
+                    return candidate, parts[2] if identifier else None
         return None
 
     def get_isa_study(
@@ -155,21 +158,34 @@ class IsaApiClient:
             isa_study: model.Study = isa_inv.studies[0]
             for item in isa_study.assays:
                 assay: model.Assay = item
+                assay_type = None
+                identifier = None
                 assay_type_labels = [
-                    x
+                    x.value
                     for x in assay.comments
                     if x.name == "Assay Type Label" and x.value
                 ]
                 if len(assay_type_labels) == 1:
-                    continue
-                new_comments = [
-                    x for x in assay.comments if x.name != "Assay Type Label"
+                    assay_type = assay_type_labels[0]
+                assay_identifiers = [
+                    x.value
+                    for x in assay.comments
+                    if x.name == "Assay Identifier" and x.value
                 ]
-                assay_type = self.find_assay_type(assay)
-                # if assay_type:
-                new_comments.append(
+                if len(assay_identifiers) == 1:
+                    identifier = assay_identifiers[0]
+                if assay_type and assay_type in self.ASSAY_TYPES and identifier:
+                    continue
+                assay_type, identifier = self.find_assay_type_and_identifier(assay)
+                new_comments = [
+                    model.Comment(name="Assay Identifier", value=identifier or ""),
                     model.Comment(name="Assay Type Label", value=assay_type or "")
-                )
+                ]
+                new_comments.extend([
+                    x
+                    for x in assay.comments
+                    if x.name not in {"Assay Type Label", "Assay Identifier"}
+                ])
                 assay.comments = new_comments
 
         except IndexError as e:
