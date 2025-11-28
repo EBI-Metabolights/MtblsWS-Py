@@ -389,6 +389,16 @@ class OntologySourceReferenceTemplate(StudyBaseModel):
     ]
 
 
+class DefaultControl(StudyBaseModel):
+    key_pattern: Annotated[str, Field(description="pattern of column or field")]
+    default_key: Annotated[str, Field(description="default key name")]
+
+
+class ActiveMhdProfile(StudyBaseModel):
+    profile_name: Annotated[str, Field(description="profile name")]
+    default_version: Annotated[str, Field(description="default profile version")]
+    active_versions: Annotated[list[str], Field(description="active profile versions")]
+
 class TemplateConfiguration(StudyBaseModel):
     active_investigation_file_templates: Annotated[
         list[str], Field(description="active investigation file templates")
@@ -405,8 +415,12 @@ class TemplateConfiguration(StudyBaseModel):
     active_study_categories: Annotated[
         list[str], Field(description="active study categories")
     ]
-    investigation_file_name: Annotated[
-        str, Field(description="investigation file name")
+    active_dataset_licenses: Annotated[
+        list[str], Field(description="active dataset licenses")
+    ]
+    active_mhd_profiles: Annotated[
+        dict[StudyCategoryStr, ActiveMhdProfile],
+        Field(description="active dataset licenses"),
     ]
     default_sample_file_template: Annotated[
         str, Field(description="default sample file name")
@@ -415,14 +429,33 @@ class TemplateConfiguration(StudyBaseModel):
         str, Field(description="default study file name")
     ]
     default_study_category: Annotated[str, Field(description="default study category")]
-    study_category_index_mapping: Annotated[
-        dict[str | int, str], Field(description="study category mapping")
+    default_dataset_license: Annotated[
+        str, Field(description="default dataset license name")
+    ]
+    default_file_controls: Annotated[
+        dict[MetadataFileType, list[DefaultControl]],
+        Field(description="default control lists"),
+    ]
+    investigation_file_name: Annotated[
+        str, Field(description="investigation file name")
     ]
     derived_file_extensions: Annotated[
         list[str], Field(description="derived file extensions")
     ]
     raw_file_extensions: Annotated[list[str], Field(description="raw file extensions")]
 
+class LicenseInfo(StudyBaseModel):
+    name: Annotated[str, Field(description="license name")]
+    version: Annotated[str, Field(description="license version")] = ""
+    url: Annotated[str, Field(description="license URL")] = ""
+
+
+class MhdProfileInfo(StudyBaseModel):
+    file_schema: Annotated[str, Field(description="File schema URL")]
+    mhd_file_profile: Annotated[str, Field(description="MHD file profile URL")] = ""
+    announcement_file_profile: Annotated[
+        str, Field(description="announcement file profile URL")
+    ] = ""
 
 class TemplateSettings(StudyBaseModel):
     active_template_versions: Annotated[
@@ -431,6 +464,18 @@ class TemplateSettings(StudyBaseModel):
     default_template_version: Annotated[
         str, Field(description="default study template version")
     ] = ""
+    dataset_licenses: Annotated[
+        dict[str, LicenseInfo],
+        Field(description="MetaboLights template versions"),
+    ] = {}
+    study_categories: Annotated[list[str], Field(description="study categories")]
+    study_category_index_mapping: Annotated[
+        dict[str | int, str], Field(description="study category index mapping")
+    ]
+    mhd_profiles: Annotated[
+        dict[str, dict[str, MhdProfileInfo]],
+        Field(description="MHD profiles and versions"),
+    ] = {}
     versions: Annotated[
         dict[str, TemplateConfiguration],
         Field(description="MetaboLights template versions"),
