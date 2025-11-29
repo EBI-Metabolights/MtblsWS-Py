@@ -211,7 +211,7 @@ class BaseOntologyValidation(StudyBaseModel):
         ),
     ]
 
-    ontology_validation_type: Annotated[
+    validation_type: Annotated[
         None | OntologyValidationType, Field(description="Validation rule type")
     ] = OntologyValidationType.ANY_ONTOLOGY_TERM
 
@@ -250,10 +250,6 @@ class FieldValueValidation(BaseOntologyValidation):
         EnforcementLevel,
         Field(description="Rule enforcement level for unexpected terms"),
     ] = EnforcementLevel.REQUIRED
-
-    validation_type: Annotated[
-        OntologyValidationType, Field(description="Validation rule type")
-    ] = OntologyValidationType.ANY_ONTOLOGY_TERM
     constraints: Annotated[
         None | dict[ConstraintType, FieldConstraint],
         Field(description="Field constraints"),
@@ -309,18 +305,9 @@ class FieldValueValidation(BaseOntologyValidation):
     @classmethod
     def validate_model(cls, v: Any, handler) -> Self:
         if isinstance(v, dict):
-            enforcement = v.get("enforcementLevel", None)
-            if enforcement:
-                v["termEnforcementLevel"] = enforcement
-            constraints = v.get("constraints", None)
-            if isinstance(constraints, list):
-                new_constraints = {}
-                for item in constraints:
-                    new_constraints[item.get("type")] = item
-                v["constraints"] = new_constraints
-        validation_type = v.get("validationType", None)
-        if validation_type == "check-only-constraints":
-            v["termEnforcementLevel"] = EnforcementLevel.NOT_APPLICABLE
+            validation_type = v.get("validationType", None)
+            if validation_type == "check-only-constraints":
+                v["termEnforcementLevel"] = EnforcementLevel.NOT_APPLICABLE
 
         return handler(v)
 
