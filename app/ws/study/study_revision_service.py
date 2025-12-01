@@ -279,10 +279,9 @@ class StudyRevisionService:
                     .join(Study, StudyRevision.accession_number == Study.acc)
                     .filter(
                         Study.revision_number == StudyRevision.revision_number,
-                        StudyRevision.status
-                        in (
-                            StudyRevisionStatus.INITIATED.value,
-                            StudyRevisionStatus.FAILED.value,
+                        StudyRevision.status.in_(
+                            [ StudyRevisionStatus.INITIATED.value,
+                            StudyRevisionStatus.FAILED.value ]
                         ),
                         StudyRevision.revision_datetime <= ten_minutes_ago,
                     )
