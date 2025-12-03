@@ -2,12 +2,11 @@ import logging
 import os
 import pathlib
 import socket
-import time
 import sys
+import time
 
 import app as current_app
 from app.config import get_settings
-
 from app.tasks.datamover_worker_utils import (
     delete_current_workers,
     delete_queue,

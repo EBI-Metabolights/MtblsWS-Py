@@ -2,8 +2,8 @@ import logging
 import time
 from typing import Any
 
-from celery import chain
 import requests
+from celery import chain
 
 from app.config import get_settings
 from app.tasks.common_tasks.curation_tasks.submission_model import (

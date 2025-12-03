@@ -1,30 +1,21 @@
 import os
 from typing import List, Union
+
 from app.config import get_settings
 from app.services.storage_service.models import (
-    SyncCalculationStatus,
     SyncCalculationTaskResult,
     SyncTaskResult,
-    SyncTaskStatus,
 )
 from app.services.storage_service.remote_worker.remote_file_manager import (
     RemoteFileManager,
 )
 from app.services.storage_service.storage import Storage
-from app.tasks.bash_client import BashExecutionResult
-from app.tasks.hpc_rsync_worker import HpcRsyncWorker
 from app.tasks.hpc_study_rsync_client import (
     StudyFolder,
     StudyFolderLocation,
     StudyFolderType,
     StudyRsyncClient,
 )
-from app.tasks.hpc_worker_bash_runner import (
-    HpcWorkerBashRunner,
-    TaskDescription,
-    BashExecutionTaskStatus,
-)
-from app.tasks.worker import celery
 from app.utils import MetabolightsException
 
 
@@ -48,13 +39,21 @@ class RemoteFtpStorage(Storage):
         ignore_list: List[str] = None,
         **kwargs,
     ):
-        sync_chebi_annotation=False
+        sync_chebi_annotation = False
         study_id = None
         obfuscation_code = None
-        study_id = kwargs['study_id'] if kwargs and "study_id" in kwargs else None
-        obfuscation_code = kwargs['obfuscation_code'] if kwargs and "obfuscation_code" in kwargs else None
-        sync_chebi_annotation = kwargs['sync_chebi_annotation'] if kwargs and "sync_chebi_annotation" in kwargs else None
-            
+        study_id = kwargs["study_id"] if kwargs and "study_id" in kwargs else None
+        obfuscation_code = (
+            kwargs["obfuscation_code"]
+            if kwargs and "obfuscation_code" in kwargs
+            else None
+        )
+        sync_chebi_annotation = (
+            kwargs["sync_chebi_annotation"]
+            if kwargs and "sync_chebi_annotation" in kwargs
+            else None
+        )
+
         if not study_id and target_folder:
             parts = target_folder.split("-")
             study_id = parts[0].upper() if parts else None
@@ -63,7 +62,7 @@ class RemoteFtpStorage(Storage):
             )
 
         if not study_id:
-            raise MetabolightsException(message=f"Study id is not defined.")
+            raise MetabolightsException(message="Study id is not defined.")
 
         client = StudyRsyncClient(study_id=study_id, obfuscation_code=obfuscation_code)
         if sync_chebi_annotation:
@@ -93,12 +92,24 @@ class RemoteFtpStorage(Storage):
         # meta_sync_status,files_sync_status,chebi_sync_status = remote_job_manager.sync_from_studies_folder(target_folder, ignore_list, **kwargs)
         # return meta_sync_status,files_sync_status,chebi_sync_status
 
-    def sync_to_public_ftp(self, source_local_folder: str, target_folder: str, ignore_list: List[str] = None, **kwargs):
+    def sync_to_public_ftp(
+        self,
+        source_local_folder: str,
+        target_folder: str,
+        ignore_list: List[str] = None,
+        **kwargs,
+    ):
         study_id = os.path.basename(source_local_folder)
-        
+
         client = StudyRsyncClient(study_id=study_id, obfuscation_code=None)
-        source = StudyFolder(location=StudyFolderLocation.READONLY_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
-        target = StudyFolder(location=StudyFolderLocation.PUBLIC_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
+        source = StudyFolder(
+            location=StudyFolderLocation.READONLY_STUDY_STORAGE,
+            folder_type=StudyFolderType.METADATA,
+        )
+        target = StudyFolder(
+            location=StudyFolderLocation.PUBLIC_FTP_STORAGE,
+            folder_type=StudyFolderType.METADATA,
+        )
         status = client.rsync(source, target, status_check_only=False)
         return status
         # study_id = target_folder
@@ -121,15 +132,27 @@ class RemoteFtpStorage(Storage):
             return splitted_value[0].upper(), splitted_value[1]
         return None, None
 
-    def sync_from_storage(self, source: str, target_local_path: str, ignore_list: List[str] = None, **kwargs):
+    def sync_from_storage(
+        self,
+        source: str,
+        target_local_path: str,
+        ignore_list: List[str] = None,
+        **kwargs,
+    ):
         return self.sync_from_private_ftp_folder(source, target_local_path)
 
     def sync_from_private_ftp_folder(self, source, target_local_path):
         study_id, obfuscation_code = self.get_study_id_from_private_ftp_path(source)
-        
+
         client = StudyRsyncClient(study_id=study_id, obfuscation_code=obfuscation_code)
-        source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
-        target = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
+        source = StudyFolder(
+            location=StudyFolderLocation.PRIVATE_FTP_STORAGE,
+            folder_type=StudyFolderType.METADATA,
+        )
+        target = StudyFolder(
+            location=StudyFolderLocation.RW_STUDY_STORAGE,
+            folder_type=StudyFolderType.METADATA,
+        )
         status = client.rsync(source, target, status_check_only=False)
         return status
         # task_name = f"sync_metadata_from_private_ftp_to_private_study_folder"
@@ -159,9 +182,17 @@ class RemoteFtpStorage(Storage):
     ) -> SyncCalculationTaskResult:
         status_check_only = False if force else True
         client = StudyRsyncClient(study_id=study_id, obfuscation_code=obfuscation_code)
-        source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
-        target = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
-        status = client.rsync_dry_run(source, target, status_check_only=status_check_only)
+        source = StudyFolder(
+            location=StudyFolderLocation.PRIVATE_FTP_STORAGE,
+            folder_type=StudyFolderType.METADATA,
+        )
+        target = StudyFolder(
+            location=StudyFolderLocation.RW_STUDY_STORAGE,
+            folder_type=StudyFolderType.METADATA,
+        )
+        status = client.rsync_dry_run(
+            source, target, status_check_only=status_check_only
+        )
         return status
         # task_name = f"sync_metadata_from_private_ftp_to_private_study_folder"
         # cluster_private_ftp_root_path = self.get_private_ftp_root_path()
@@ -178,10 +209,18 @@ class RemoteFtpStorage(Storage):
         # )
         # return status
 
-    def check_folder_sync_status(self, study_id: str, obfuscation_code: str, target_local_path: str) -> SyncTaskResult:
+    def check_folder_sync_status(
+        self, study_id: str, obfuscation_code: str, target_local_path: str
+    ) -> SyncTaskResult:
         client = StudyRsyncClient(study_id=study_id, obfuscation_code=obfuscation_code)
-        source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
-        target = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
+        source = StudyFolder(
+            location=StudyFolderLocation.PRIVATE_FTP_STORAGE,
+            folder_type=StudyFolderType.METADATA,
+        )
+        target = StudyFolder(
+            location=StudyFolderLocation.RW_STUDY_STORAGE,
+            folder_type=StudyFolderType.METADATA,
+        )
         status = client.rsync(source, target, status_check_only=True)
         return status
         # task_name = f"sync_metadata_from_private_ftp_to_private_study_folder"

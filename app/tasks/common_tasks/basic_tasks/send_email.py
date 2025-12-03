@@ -1,17 +1,10 @@
-import datetime
 import os
-import re
 from typing import List, Union
+
+from isatools.model import Person, Study
+
 from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
-from app.utils import current_time
-
-from app.ws.db_connection import (
-    get_email,
-    query_study_submitters,
-)
-from app.ws.isaApiClient import IsaApiClient
-from app.ws.study.user_service import UserService
 from app.tasks.worker import (
     MetabolightsTask,
     celery,
@@ -20,27 +13,31 @@ from app.tasks.worker import (
     report_internal_technical_issue,
     send_email,
 )
-from isatools.model import Study, Person
+from app.utils import current_time
+from app.ws.db_connection import (
+    get_email,
+    query_study_submitters,
+)
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.study.user_service import UserService
 
 
 @celery.task(
     base=MetabolightsTask,
     name="app.tasks.common_tasks.basic_tasks.send_email.send_test_email",
 )
-def send_test_email(user_token):
+def send_test_email(email):
     flask_app = get_flask_app()
     with flask_app.app_context():
-        user = UserService.get_instance().validate_user_has_curator_role(user_token)
         email_service = get_email_service(flask_app)
-        user_email = user.username
         time = current_time().isoformat()
         email_service.send_generic_email(
             "Test Email",
             f"This email was sent at {time} from metabolights ws",
             "no-reply@ebi.ac.uk",
-            user_email,
+            email,
         )
-        return {"user_email": user_email, "time": time}
+        return {"user_email": email, "time": time}
 
 
 @celery.task(
@@ -95,7 +92,7 @@ def send_email_for_new_accession_number(
     study_title: str,
     release_date: str,
     additional_cc_emails: Union[None, List[str]] = None,
-    study_contacts: str = ""
+    study_contacts: str = "",
 ):
     flask_app = get_flask_app()
     with flask_app.app_context():
@@ -137,7 +134,7 @@ def send_email_for_new_accession_number(
             previous_ftp_folder=previous_ftp_folder,
             new_ftp_folder=new_ftp_folder,
             additional_cc_emails=additional_cc_emails,
-            study_contacts=study_contacts
+            study_contacts=study_contacts,
         )
 
         return {
@@ -176,7 +173,7 @@ def send_email_on_public(user_token, study_id, release_date):
         )
         study_location = os.path.join(metadata_root_path, study_id)
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
         study: Study = isa_study
         study_title = study.title
@@ -191,7 +188,7 @@ def send_email_on_public(user_token, study_id, release_date):
             publication_doi = "-"
         if not publication_pubmed_id:
             publication_pubmed_id = "-"
-            
+
         additional_cc_emails = get_principal_investigator_emails(study)
         email_service.send_email_on_public(
             study_id,

@@ -19,14 +19,16 @@
 import logging
 
 from flask import request
-from flask_restful import Resource, reqparse
+from flask_restful import Resource
 from flask_restful_swagger import swagger
 
-from app.tasks.datamover_tasks.basic_tasks.file_management import \
-    create_folders
+from app.tasks.datamover_tasks.basic_tasks.file_management import create_folders
 from app.utils import MetabolightsException, metabolights_exception_handler
+from app.ws.auth.permissions import (
+    raise_deprecation_error,
+    validate_user_has_curator_role,
+)
 from app.ws.settings.utils import get_cluster_settings
-from app.ws.study.user_service import UserService
 
 logger = logging.getLogger("wslog")
 
@@ -63,24 +65,30 @@ class DataFolders(Resource):
         ],
         responseMessages=[
             {"code": 200, "message": "OK."},
-            {"code": 400, "message": "Bad Request. Server could not understand the request due to malformed syntax."},
-            {"code": 401, "message": "Unauthorized. Access to the resource requires user authentication."},
-            {"code": 403, "message": "Forbidden. Access to the study is not allowed for this user."},
-            {"code": 404, "message": "Not found. The requested identifier is not valid or does not exist."},
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax.",
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication.",
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user.",
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
             {"code": 417, "message": "Unexpected result."},
         ],
     )
     @metabolights_exception_handler
     def put(self):
+        raise_deprecation_error(request)
+        result = validate_user_has_curator_role(request)
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        user = UserService.get_instance().validate_user_has_curator_role(user_token)
-        
         folder_path = request.args.get("folder_path")
         folder_permission = request.args.get("folder_permission")
         try:
@@ -88,7 +96,11 @@ class DataFolders(Resource):
         except Exception as exc:
             folder_permission_int = 0o700
         try:
-            inputs = {"folder_paths": folder_path, "acl": folder_permission_int, "exist_ok": True}
+            inputs = {
+                "folder_paths": folder_path,
+                "acl": folder_permission_int,
+                "exist_ok": True,
+            }
             task = create_folders.apply_async(kwargs=inputs, expires=60 * 5)
             cluster_settings = get_cluster_settings()
             result = task.get(timeout=cluster_settings.task_get_timeout_in_seconds * 2)
@@ -96,5 +108,7 @@ class DataFolders(Resource):
             return result
         except Exception as ex:
             raise MetabolightsException(
-                http_code=500, message=f"Create folder task submission was failed", exception=ex
+                http_code=500,
+                message="Create folder task submission was failed",
+                exception=ex,
             )

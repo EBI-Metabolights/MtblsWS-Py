@@ -16,11 +16,16 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import os
+
+from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
+
 from app.config import get_settings
+from app.utils import metabolights_exception_handler
+from app.ws.auth.permissions import raise_deprecation_error
 from app.ws.db_connection import mtblc_on_chebi_accession
-import os
 
 
 class EnzymePortalHelper(Resource):
@@ -34,22 +39,20 @@ class EnzymePortalHelper(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
+    @metabolights_exception_handler
     def get(self, chebi_id):
-
+        raise_deprecation_error(request)
         # param validation
         if chebi_id is None:
             abort(404)
@@ -60,6 +63,6 @@ class EnzymePortalHelper(Resource):
 
         mtblc = data[0]
         mtblc_url = get_settings().server.service.ws_app_base_link
-        mtblc_url = mtblc_url + os.sep + mtblc + os.sep + '#biology'
+        mtblc_url = mtblc_url + os.sep + mtblc + os.sep + "#biology"
 
         return {"metabolights_id": data[0], "metabolights_url": mtblc_url}

@@ -1,19 +1,19 @@
+import logging
 import os
 import time
 from typing import List, Tuple, Union
-from app.config import get_settings
 
+from app.config import get_settings
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.models import (
+    CommandOutput,
+    SyncCalculationStatus,
     SyncCalculationTaskResult,
     SyncTaskResult,
-    CommandOutput,
     SyncTaskStatus,
-    SyncCalculationStatus,
 )
 from app.utils import current_time
-from app.ws.cluster_jobs import submit_job, list_jobs
-import logging
+from app.ws.cluster_jobs import list_jobs, submit_job
 from app.ws.settings.utils import get_cluster_settings, get_study_settings
 
 logger = logging.getLogger("wslog_datamover")

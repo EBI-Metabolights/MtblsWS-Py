@@ -2,7 +2,7 @@
     <link rel="stylesheet" type="text/css" href='{{ metabolights_website_url }}/css/ml.css' media="screen" />
   </head>
   <body class="level2">
-    
+
   <div class="ml-header-section-top ml-header clearfix">
     <div class="col-md-12">
         <div class="row">
@@ -46,17 +46,17 @@ You can share the following <b><u>private link</u></b> and <b><u>private FTP fol
 Username : <code> {{ user_name }}</code>  <br/>
 Password : <code> {{ user_password }}</code> </b><br/>
 Server : <code>  {{ ftp_server }}</code> </b><br/>
-Remote folder : <code> {{ new_ftp_folder }}</code> {% if provisional_id != mtbls_accession %} (<b>Please note that the FTP upload folder has been renamed and is now read only.)</b> {% else %} <b>Please note that the FTP upload folder now read only. {% endif %} <br/> <br> 
+Remote folder : <code> {{ new_ftp_folder }}</code> {% if provisional_id != mtbls_accession %} (<b>Please note that the FTP upload folder has been renamed and is now read only.)</b> {% else %} <b>Please note that the FTP upload folder now read only. {% endif %} <br/> <br>
 
 <b>CITATION</b><br/>
 Please add to your manuscript the following sentence (typically in the "Methods" section or just before/in the Acknowledgements): <br/><br/>
 <i>
-    "The metabolomics data have been deposited to MetaboLights[1] repository with the study identifier {{ mtbls_accession }}".<br/> 
+    "The metabolomics data have been deposited to MetaboLights[1] repository with the study identifier {{ mtbls_accession }}".<br/>
     </i><br/>
     MetaboLights reference:<br/>
     [1] Yurekten O, Payne T, Tejera N, Amaladoss FX, Martin C, Williams M, O'Donovan C. MetaboLights: open data repository for metabolomics.
-    Nucleic Acids Res. 2024 Jan 5;52(D1):D640-D646. doi:<a href="https://doi.org/10.1093/nar/gkad1045">10.1093/nar/gkad1045</a>. PMID:37971328.<br/> 
-    
+    Nucleic Acids Res. 2024 Jan 5;52(D1):D640-D646. doi:<a href="https://doi.org/10.1093/nar/gkad1045">10.1093/nar/gkad1045</a>. PMID:37971328.<br/>
+
 <br/>
 We would recommend you to also include this information in a much abridged form into the abstract itself, e.g. "Data are available via MetaboLights with identifier {{ mtbls_accession }}."
 <br/><br/>

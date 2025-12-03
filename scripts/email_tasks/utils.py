@@ -1,12 +1,13 @@
 import datetime
 import logging
 
+from email_validator import validate_email
+
 from app.tasks.worker import get_email_service, get_flask_app
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import StudyTask
 from app.ws.db.types import StudyTaskStatus
 from app.ws.study.study_service import StudyService
-from email_validator import validate_email
 
 logger = logging.getLogger(__name__)
 

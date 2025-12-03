@@ -1,5 +1,5 @@
-from app.tasks.worker import MetabolightsTask, celery
 import app
+from app.tasks.worker import MetabolightsTask, celery
 
 
 @celery.task(

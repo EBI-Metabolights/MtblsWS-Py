@@ -1,12 +1,12 @@
 import json
 import logging
-from app.tasks.datamover_tasks.basic_tasks.ftp_operations import index_study_data_files
 import os
+
 from app.config import get_settings
+from app.tasks.datamover_tasks.basic_tasks.ftp_operations import index_study_data_files
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study
 from app.ws.db.types import StudyRevisionStatus, StudyStatus
-
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 

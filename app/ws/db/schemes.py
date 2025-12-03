@@ -6,12 +6,12 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Numeric,
+    Sequence,
     String,
     Table,
     Text,
     UniqueConstraint,
     text,
-    Sequence,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship

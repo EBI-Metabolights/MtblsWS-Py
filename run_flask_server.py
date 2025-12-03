@@ -1,14 +1,14 @@
 import logging
+
 from app.config import get_settings
+from wsapp import application
+
 logger = logging.getLogger("wslog")
 try:
     server_settings = get_settings().server
 except Exception as ex:
     print("Error while loading settings file.")
     raise ex
-
-import logging.config
-from wsapp import application
 
 logging.getLogger().setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()  # Output to the console (stdout)

@@ -19,27 +19,34 @@
 import json
 import logging
 
-from flask import request, jsonify
+from flask import jsonify, request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from marshmallow import ValidationError
 
-from app.ws.db_connection import create_user, update_user, get_user
+from app.ws.auth.permissions import (
+    auth_endpoint,
+    raise_deprecation_error,
+    validate_user_has_curator_role,
+    validate_user_has_submitter_or_super_user_role,
+)
+from app.ws.db.types import UserRole
+from app.ws.db_connection import create_user, get_user, update_user
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import log_request, val_email, get_new_password_and_api_token
+from app.ws.utils import get_new_password_and_api_token, log_request, val_email
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 iac = IsaApiClient()
 wsc = WsClient()
 
 
 class UserManagement(Resource):
     @swagger.operation(
-        summary='Add a new MetaboLights user account',
-        notes='''Add a new MetaboLights user account<pre><code>
-    { 
-         "user": 
+        summary="Add a new MetaboLights user account",
+        notes="""Add a new MetaboLights user account<pre><code>
+    {
+         "user":
             {
                 "firstName": "Joe",
                 "lastName": "Blogs",
@@ -52,7 +59,7 @@ class UserManagement(Resource):
             }
     }</pre></code>
     </p>
-    Username will be set to the same as the email. A password will be emailed to the email address''',
+    Username will be set to the same as the email. A password will be emailed to the email address""",
         parameters=[
             {
                 "name": "user-token",
@@ -60,57 +67,45 @@ class UserManagement(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             },
             {
                 "name": "user",
-                "description": 'user definition',
+                "description": "user definition",
                 "paramType": "body",
                 "type": "string",
                 "format": "application/json",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+                "message": "Bad Request. Server could not understand the request due to malformed syntax.",
             },
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
-    def post(self,):
+    def post(
+        self,
+    ):
         log_request(request)
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
-
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions('MTBLS1', user_token)
-        if not read_access:
-            abort(403)
+        raise_deprecation_error(request)
+        auth_endpoint(request)
+        validate_user_has_curator_role(request)
 
         first_name = None
         last_name = None
@@ -123,38 +118,52 @@ class UserManagement(Resource):
 
         # body content validation
         try:
-            data_dict = json.loads(request.data.decode('utf-8'))
-            data = data_dict['user']
+            data_dict = json.loads(request.data.decode("utf-8"))
+            data = data_dict["user"]
             try:
-                first_name = data['firstName']
-                last_name = data['lastName']
-                email = data['email']
-                affiliation = data['affiliation']
-                affiliation_url = data['affiliation_url']
-                address = data['address']
-                orcid = data['orcid']
-                metaspace_api_key = data['metaspace_api_key']
+                first_name = data["firstName"]
+                last_name = data["lastName"]
+                email = data["email"]
+                affiliation = data["affiliation"]
+                affiliation_url = data["affiliation_url"]
+                address = data["address"]
+                orcid = data["orcid"]
+                metaspace_api_key = data["metaspace_api_key"]
             except Exception as e:
                 abort(412, message=str(e))
         except (ValidationError, Exception):
-            abort(400, message='Incorrect JSON provided')
+            abort(400, message="Incorrect JSON provided")
 
         password, password_encoded, api_token = get_new_password_and_api_token()
 
         val_email(email)
-        status, message = create_user(first_name, last_name, email, affiliation, affiliation_url,
-                                      address, orcid, api_token, password_encoded, metaspace_api_key)
+        status, message = create_user(
+            first_name,
+            last_name,
+            email,
+            affiliation,
+            affiliation_url,
+            address,
+            orcid,
+            api_token,
+            password_encoded,
+            metaspace_api_key,
+        )
 
         if status:
-            return {"user_name": email, "api_token": str(api_token), "password": str(password)}
+            return {
+                "user_name": email,
+                "api_token": str(api_token),
+                # "password": str(password),
+            }
         else:
             return {"Error": message}
 
     @swagger.operation(
-        summary='Update a MetaboLights user account',
-        notes='''Update/change a MetaboLights user/submitter account<pre><code>
-    { 
-         "user": 
+        summary="Update a MetaboLights user account",
+        notes="""Update/change a MetaboLights user/submitter account<pre><code>
+    {
+         "user":
             {
                 "firstName": "Joe",
                 "lastName": "Blogs",
@@ -168,7 +177,7 @@ class UserManagement(Resource):
             }
     }</pre></code>
     </p>
-    Username will be set to the same as the email.''',
+    Username will be set to the same as the email.""",
         parameters=[
             {
                 "name": "user-token",
@@ -176,7 +185,7 @@ class UserManagement(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             },
             {
                 "name": "existing-user-name",
@@ -184,65 +193,54 @@ class UserManagement(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             },
             {
                 "name": "user",
-                "description": 'user definition',
+                "description": "user definition",
                 "paramType": "body",
                 "type": "string",
                 "format": "application/json",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+                "message": "Bad Request. Server could not understand the request due to malformed syntax.",
             },
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
-    def put(self, ):
+    def put(
+        self,
+    ):
         log_request(request)
+        raise_deprecation_error(request)
+        auth_endpoint(request)
+        result = validate_user_has_curator_role(request)
+        is_curator = result.context.user_role in {
+            UserRole.SYSTEM_ADMIN,
+            UserRole.ROLE_SUPER_USER,
+        }
+        api_token = result.context.user_api_token
+        existing_user_name = request.headers.get("existing_user_name")
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
+        if not existing_user_name:
             abort(401)
-
-        existing_user_name = None
-        if "existing_user_name" in request.headers:
-            existing_user_name = request.headers["existing_user_name"]
-        else:
-            # user id is required
-            abort(401)
-
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions('MTBLS1', user_token)
-        if not read_access:
-            abort(403)
-
         first_name = None
         last_name = None
         email = None
@@ -253,38 +251,53 @@ class UserManagement(Resource):
 
         # body content validation
         try:
-            data_dict = json.loads(request.data.decode('utf-8'))
-            data = data_dict['user']
+            data_dict = json.loads(request.data.decode("utf-8"))
+            data = data_dict["user"]
             try:
-                first_name = data['firstName']
-                last_name = data['lastName']
-                email = data['email']
-                affiliation = data['affiliation']
-                affiliation_url = data['affiliation_url']
-                address = data['address']
-                orcid = data['orcid']
+                first_name = data["firstName"]
+                last_name = data["lastName"]
+                email = data["email"]
+                affiliation = data["affiliation"]
+                affiliation_url = data["affiliation_url"]
+                address = data["address"]
+                orcid = data["orcid"]
                 user_name = email
-                metaspace_api_key = data['metaspace_api_key']
+                metaspace_api_key = data["metaspace_api_key"]
             except Exception as e:
                 abort(412, message=str(e))
         except (ValidationError, Exception):
-            abort(400, message='Incorrect JSON provided')
+            abort(400, message="Incorrect JSON provided")
 
         password, password_encoded, api_token = get_new_password_and_api_token()
 
-        status, message = update_user(first_name, last_name, email, affiliation, affiliation_url,
-                                      address, orcid, api_token, password_encoded, existing_user_name,
-                                      is_curator, metaspace_api_key)
+        status, message = update_user(
+            first_name,
+            last_name,
+            email,
+            affiliation,
+            affiliation_url,
+            address,
+            orcid,
+            api_token,
+            password_encoded,
+            existing_user_name,
+            is_curator,
+            metaspace_api_key,
+        )
 
         if status:
-            return {"user_name": email, "api_token": str(api_token), "password": str(password)}
+            return {
+                "user_name": email,
+                "api_token": str(api_token),
+                # "password": str(password),
+            }
         else:
             return {"Error": message}
 
     @swagger.operation(
         summary="Get all the information associated with a single user.",
         notes="Currently only supports retrieving a user by username. "
-              "Also only supports retrieving just one user at a time. ",
+        "Also only supports retrieving just one user at a time. ",
         parameters=[
             {
                 "name": "username",
@@ -292,7 +305,7 @@ class UserManagement(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user-token",
@@ -300,27 +313,21 @@ class UserManagement(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 400,
-                "message": "Bad Request. The username was not provided in the param string."
+                "message": "Bad Request. The username was not provided in the param string.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
+                "message": "Not found. The requested identifier is not valid or does not exist.",
             },
-            {
-                "code": 500,
-                "message": "Internal server error."
-            }
-        ]
+            {"code": 500, "message": "Internal server error."},
+        ],
     )
     def get(self):
         """
@@ -329,31 +336,19 @@ class UserManagement(Resource):
         """
 
         log_request(request)
-
-        # User authentication
-        user_token = None
-
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
-
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions('MTBLS1', user_token)
-
-        if not read_access:
-            abort(403)
-
-        # pull username from query params.
-        username = None
-        if request.args:
-            username = request.args.get('username')
+        auth_endpoint(request)
+        username = request.args.get("username")
 
         # username has not been properly provided, abort with code 400 (bad request).
         if username is None:
             abort(400)
 
+        result = validate_user_has_submitter_or_super_user_role(request)
+        is_curator = result.context.user_role in {
+            UserRole.ROLE_SUPER_USER,
+            UserRole.ROLE_SUPER_USER,
+        }
+        if not is_curator and username != result.context.username:
+            abort(403)
         # query the database for the user, and return the result of the query.
         return jsonify(get_user(username))
-

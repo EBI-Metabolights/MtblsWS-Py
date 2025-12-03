@@ -22,12 +22,13 @@ import os
 import time
 
 from flask_restful import Resource, abort
-from isatools.isatab import dump
 from isatools import model
-from app.config import get_settings
+from isatools.isatab import dump
+
 from app import application_path
-from app.ws.isaApiClient import IsaApiClient
+from app.config import get_settings
 from app.ws.isa_table_templates import add_new_assay_sheet
+from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import update_correct_sample_file_name
 
@@ -92,7 +93,7 @@ class MetaSpaceIsaApiClient(Resource):
         try:
             # status, message = convert_to_isa(output_dir, study_id)
             isa_study, isa_inv, std_path = isa_api.get_isa_study(
-                study_id, user_token, skip_load_tables=True, study_location=output_dir
+                study_id, None, skip_load_tables=True, study_location=output_dir
             )
         except Exception as e:
             logger.warning(
@@ -124,7 +125,7 @@ class MetaSpaceIsaApiClient(Resource):
                 )
 
             isa_study, isa_inv, std_path = isa_api.get_isa_study(
-                study_id, user_token, skip_load_tables=True, study_location=output_dir
+                study_id, None, skip_load_tables=True, study_location=output_dir
             )
 
             # Create upload folder

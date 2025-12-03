@@ -1,10 +1,9 @@
-from functools import lru_cache
 import json
 import logging
 import re
 import uuid
+from functools import lru_cache
 
-from flask import current_app as app
 from flask import jsonify, make_response, request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
@@ -16,22 +15,23 @@ from app.utils import (
     MetabolightsAuthorizationException,
     MetabolightsException,
     metabolights_exception_handler,
+    ttl_cache,
 )
 from app.ws.auth.auth_manager import AuthenticationManager
-from app.ws.auth.utils import (
-    get_permission_by_obfuscation_code,
-    get_permission_by_study_id,
+from app.ws.auth.permissions import (
+    auth_endpoint,
+    get_auth_data,
+    validate_submission_view,
 )
-from app.ws.db.models import StudyAccessPermission, UserModel
-from app.ws.db.types import StudyStatus, UserRole, UserStatus
+from app.ws.db.models import UserModel
+from app.ws.db.types import UserRole, UserStatus
 from app.ws.db_connection import create_user
 from app.ws.redis.redis import RedisStorage, get_redis_server
 from app.ws.study.user_service import UserService
 
 logger = logging.getLogger("wslog")
 
-
-@lru_cache(1)
+@ttl_cache(1, ttl=60 * 5)
 def get_keycloak_openid() -> KeycloakOpenID:
     settings = get_settings().auth.openid_connect_client
     keycloak_openid = KeycloakOpenID(
@@ -41,6 +41,91 @@ def get_keycloak_openid() -> KeycloakOpenID:
         client_secret_key=settings.client_secret,
     )
     return keycloak_openid
+
+
+@staticmethod
+def verify_token(token: str, email: str):
+    """
+    Verify the given token and return user information.
+    """
+    try:
+        auth_server: KeycloakOpenID = get_keycloak_openid()
+        user_info = auth_server.userinfo(token)
+        if not user_info or not user_info.get("email"):
+            raise MetabolightsAuthenticationException(
+                http_code=401, message="Invalid token"
+            )
+        username = user_info.get("email")
+        if username != email:
+            return make_response(
+                jsonify(
+                    {
+                        "content": "invalid",
+                        "message": "jwt token user and input user is not same",
+                        "err": None,
+                    }
+                ),
+                401,
+            )
+        try:
+            # check user is created
+            UserService.get_instance().get_db_user_by_user_name(username)
+        except MetabolightsAuthorizationException as ex:
+            # user is defined in keycloak but it is not defined in db
+            email_verified = user_info.get("email_verified", False)
+            if not email_verified:
+                raise MetabolightsAuthenticationException(
+                    http_code=401,
+                    message=f"Email address '{username}' is not verified",
+                )
+            orcid = user_info.get("orcid", "") or ""
+            orcid = orcid.replace("https://orcid.org/", "") or None
+            success, message = create_user(
+                first_name=user_info.get("given_name"),
+                last_name=user_info.get("family_name"),
+                email=user_info.get("email"),
+                affiliation=user_info.get("affiliation"),
+                affiliation_url=user_info.get("affiliationUrl"),
+                address=user_info.get("address", {}).get("country", None),
+                orcid=orcid,
+                api_token=str(uuid.uuid4()),
+                password_encoded=str(uuid.uuid4()),
+                metaspace_api_key=None,
+                role=UserRole.ROLE_SUBMITTER.value,
+                status=UserStatus.ACTIVE.value,
+            )
+            if success:
+                logger.info(message)
+            else:
+                logger.warning(message)
+
+        response = make_response(
+            jsonify(
+                {
+                    "content": "true",
+                    "message": "Authentication successful",
+                    "err": None,
+                }
+            ),
+            200,
+        )
+        response.headers["Access-Control-Expose-Headers"] = "Jwt, User"
+        response.headers["jwt"] = token
+        response.headers["user"] = username
+
+        return response, user_info.get("email")
+
+    except KeycloakAuthenticationError as ex:
+        return make_response(
+            jsonify({"content": "invalid", "message": None, "err": None}), 401
+        ), None
+    except Exception as ex:
+        import traceback
+
+        traceback.print_exc()
+        return make_response(
+            jsonify({"content": "invalid", "message": None, "err": None}), 401
+        ), None
 
 
 def validate_token_in_request_body(content):
@@ -161,6 +246,7 @@ class AuthLoginWithToken(Resource):
     )
     @metabolights_exception_handler
     def post(self):
+        auth_endpoint(request)
         try:
             content = request.json
         except:
@@ -256,6 +342,7 @@ class AuthLogin(Resource):
     )
     @metabolights_exception_handler
     def post(self):
+        auth_endpoint(request)
         try:
             content = request.json
         except:
@@ -352,6 +439,7 @@ class AuthValidation(Resource):
     )
     @metabolights_exception_handler
     def post(self):
+        auth_endpoint(request)
         try:
             content = request.json
         except:
@@ -363,7 +451,7 @@ class AuthValidation(Resource):
 
 class OneTimeTokenValidation(Resource):
     @swagger.operation(
-        summary="[Deprecated] Get current JWT token from one time token",
+        summary="Get current JWT token from one time token",
         notes="Get current JWT token from one time token",
         parameters=[
             {
@@ -379,6 +467,7 @@ class OneTimeTokenValidation(Resource):
     )
     @metabolights_exception_handler
     def get(self):
+        auth_endpoint(request)
         one_time_token = None
         if "one_time_token" in request.headers:
             one_time_token = request.headers["one_time_token"]
@@ -420,19 +509,22 @@ class OneTimeTokenCreation(Resource):
     )
     @metabolights_exception_handler
     def get(self):
+        auth_endpoint(request)
         jwt = None
         if "Authorization" in request.headers:
             jwt = request.headers["Authorization"]
         if not jwt:
             raise MetabolightsAuthorizationException(message="invalid token")
         jwt = str(jwt).replace("Bearer ", "")
-
+        user_role = None
         try:
-            AuthenticationManager.get_instance().validate_oauth2_token(token=jwt)
+            user = AuthenticationManager.get_instance().validate_oauth2_token(token=jwt)
+            user_role = UserRole(user.role)
         except Exception as ex:
             raise MetabolightsAuthorizationException(
                 message="User token is not valid or expired"
             )
+
         jwt_key = f"one-time-token-request:jwt:{jwt}"
 
         redis: RedisStorage = get_redis_server()
@@ -467,24 +559,21 @@ class AuthUser(Resource):
     )
     @metabolights_exception_handler
     def post(self):
-        try:
-            content = request.json
-        except:
-            try:
-                content = parse_response_body(request)
-            except Exception as e:
-                logger.warning(str(e))
-                content = {}
-
-        # response = validate_token_in_request_body(content)
-        jwt = request.headers.get("jwt")
+        auth_endpoint(request)
+        auth_data = get_auth_data(request)
+        jwt = auth_data.jwt
         if not jwt:
-            jwt = content.get("jwt")
+            try:
+                content = request.json
+            except:
+                content = parse_response_body(request)
+            filtered_header = {k.lower():v for k, v in content.items() if k and k.lower() in {"user", "jwt"}}
+            jwt = filtered_header.get("jwt")
+            username = request.headers.get("user")
+            if not username:
+                username = filtered_header.get("user")
 
-        username = request.headers.get("user")
-        if not username:
-            username = content.get("user")
-        response, email = AuthUser.verify_token(jwt, username)
+        response, email = verify_token(jwt, username)
         if jwt and email:
             try:
                 # UserService.get_instance().validate_username_with_submitter_or_super_user_role(username)
@@ -505,105 +594,24 @@ class AuthUser(Resource):
                 )
         return response
 
-    @staticmethod
-    def verify_token(token: str, email: str):
-        """
-        Verify the given token and return user information.
-        """
-        try:
-            user_info = get_keycloak_openid().userinfo(token)
-            if not user_info or not user_info.get("email"):
-                raise MetabolightsAuthenticationException(
-                    http_code=401, message="Invalid token"
-                )
-            username = user_info.get("email")
-            if username != email:
-                return make_response(
-                    jsonify(
-                        {
-                            "content": "invalid",
-                            "message": "jwt token user and input user is not same",
-                            "err": None,
-                        }
-                    ),
-                    401,
-                )
-            try:
-                # check user is created
-                UserService.get_instance().get_db_user_by_user_name(username)
-            except MetabolightsAuthorizationException as ex:
-                # user is defined in keycloak but it is not defined in db
-                email_verified = user_info.get("email_verified", False)
-                if not email_verified:
-                    raise MetabolightsAuthenticationException(
-                        http_code=401,
-                        message=f"Email address '{username}' is not verified",
-                    )
-                orcid = user_info.get("orcid", "") or ""
-                orcid = orcid.replace("https://orcid.org/", "") or None
-                success, message = create_user(
-                    first_name=user_info.get("given_name"),
-                    last_name=user_info.get("family_name"),
-                    email=user_info.get("email"),
-                    affiliation=user_info.get("affiliation"),
-                    affiliation_url=user_info.get("affiliationUrl"),
-                    address=user_info.get("address", {}).get("country", None),
-                    orcid=orcid,
-                    api_token=str(uuid.uuid4()),
-                    password_encoded=str(uuid.uuid4()),
-                    metaspace_api_key=None,
-                    role=UserRole.ROLE_SUBMITTER.value,
-                    status=UserStatus.ACTIVE.value
-                )
-                if success:
-                    logger.info(message)
-                else:
-                    logger.warning(message)
-
-            response = make_response(
-                jsonify(
-                    {
-                        "content": "true",
-                        "message": "Authentication successful",
-                        "err": None,
-                    }
-                ),
-                200,
-            )
-            response.headers["Access-Control-Expose-Headers"] = "Jwt, User"
-            response.headers["jwt"] = token
-            response.headers["user"] = username
-
-            return response, user_info.get("email")
-
-        except KeycloakAuthenticationError as ex:
-            return make_response(
-                jsonify({"content": "invalid", "message": None, "err": None}), 401
-            ), None
-        except Exception as ex:
-            import traceback
-
-            traceback.print_exc()
-            return make_response(
-                jsonify({"content": "invalid", "message": None, "err": None}), 401
-            ), None
-
 
 class AuthUserStudyPermissions(Resource):
     @swagger.operation(
         summary="Return study permissions of user.",
         notes="""
-        If user has read permision for study, response contains obfuscation code as well. Example response format: 
+        If user has read permision for study, response contains obfuscation code as well. Example response format:
         {
             "delete": false,
             "edit": false,
             "obfuscationCode": "",
             "studyId": "MTBLS10",
             "studyStatus": "",
+            "partner": false,
             "submitterOfStudy": false,
             "userName": "",
             "userRole": "",
-            "view": false
+            "view": false,
+            "scopes": {"metadata-files": ["read"]}
             }
         """,
         parameters=[
@@ -642,16 +650,11 @@ class AuthUserStudyPermissions(Resource):
     )
     @metabolights_exception_handler
     def get(self, study_id):
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        permission = StudyAccessPermission()
-        if not study_id:
-            return jsonify(permission.model_dump())
-
-        permission = get_permission_by_study_id(study_id, user_token)
-        return jsonify(permission.model_dump())
+        auth_endpoint(request)
+        result = validate_submission_view(
+            request, fail_silently=True, user_required=False
+        )
+        return jsonify(result.permission.model_dump(by_alias=True))
 
 
 class AuthUserStudyPermissions2(Resource):
@@ -693,13 +696,9 @@ class AuthUserStudyPermissions2(Resource):
     )
     @metabolights_exception_handler
     def get(self, obfuscation_code):
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        permission = StudyAccessPermission()
-        if not obfuscation_code:
-            return jsonify(permission.model_dump())
+        auth_endpoint(request)
+        result = validate_submission_view(
+            request, fail_silently=True, user_required=False
+        )
 
-        permission = get_permission_by_obfuscation_code(user_token, obfuscation_code)
-        return jsonify(permission.model_dump())
+        return jsonify(result.permission.model_dump(by_alias=True))

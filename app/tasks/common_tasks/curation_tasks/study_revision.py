@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+
 from app.config import get_settings
 from app.services.cluster.hpc_client import HpcClient
 from app.services.cluster.hpc_utils import get_new_hpc_datamover_client
@@ -10,9 +11,7 @@ from app.tasks.worker import MetabolightsTask, celery
 from app.utils import MetabolightsException, current_time
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, StudyRevision
-
 from app.ws.db.types import StudyRevisionStatus, StudyStatus
-from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 
@@ -28,7 +27,6 @@ logger = logging.getLogger("wslog")
     name="app.tasks.common_tasks.curation_tasks.study_revision.prepare_study_revision",
 )
 def prepare_study_revision(self, study_id: str, user_token: str):
-    settings = get_study_settings()
     with DBManager.get_instance().session_maker() as db_session:
         try:
             query = db_session.query(Study)
@@ -51,14 +49,6 @@ def prepare_study_revision(self, study_id: str, user_token: str):
     folder_status, source_path, created_path = (
         StudyRevisionService.create_revision_folder(study)
     )
-    # data_files_root_path = settings.mounted_paths.study_readonly_files_actual_root_path
-    # study_data_files_path = os.path.join(data_files_root_path, study_id)
-
-    # study_internal_files_root_path = settings.mounted_paths.study_internal_files_root_path
-    # revisions_root_hash_path = os.path.join(study_internal_files_root_path, study_id, "PUBLIC_METADATA", "HASHES")
-    # StudyRevisionService.create_data_file_hashes(study, search_path=study_data_files_path, copy_paths=[revisions_root_hash_path])
-
-    # StudyRevisionService.check_dataset_integrity(study_id, metadata_files_path=created_path, data_files_path=study_data_files_path)
     kwargs = {
         "study_id": study_id,
         "user_token": user_token,
@@ -341,16 +331,25 @@ def sync_public_ftp_folder_with_revisions(
 )
 def check_not_started_study_revisions(self):
     user_token = get_settings().auth.service_account.api_token
-    unstarted_revisions = StudyRevisionService.get_all_non_started_study_revision_tasks()
+    unstarted_revisions = (
+        StudyRevisionService.get_all_non_started_study_revision_tasks()
+    )
     if not unstarted_revisions or len(unstarted_revisions) == 0:
         logger.info("No unstarted revisions found.")
         return
     logger.info(f"Found {len(unstarted_revisions)} unstarted revisions.")
     for result in unstarted_revisions:
-        task = sync_study_revision.apply_async(kwargs={"study_id": result.accession_number, "user_token": user_token, "latest_revision": result.revision_number})
-        logger.info(f"Task {task.id} is created for study {result.accession_number} revision {result.revision_number}.")
+        inputs = {
+            "study_id": result.accession_number,
+            "user_token": user_token,
+            "latest_revision": result.revision_number,
+        }
+        task = sync_study_revision.apply_async(kwargs=inputs)
+        logger.info(
+            f"Task {task.id} is created for study {result.accession_number} revision {result.revision_number}."
+        )
 
-    
+
 if __name__ == "__main__":
     user_token = get_settings().auth.service_account.api_token
     # user = UserService.get_instance().get_db_user_by_user_token(user_token)

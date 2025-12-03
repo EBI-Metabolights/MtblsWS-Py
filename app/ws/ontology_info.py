@@ -17,8 +17,6 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 from __future__ import annotations
 
-from enum import Enum
-from functools import lru_cache
 import json
 import logging
 import os
@@ -26,11 +24,13 @@ import re
 import socket
 import ssl
 import traceback
-from typing import Any, Callable, Dict, List, Set, Union
+from enum import Enum
+from functools import lru_cache
+from typing import Any, Dict, List, Set
 from urllib.parse import quote_plus
 
 import pandas as pd
-from owlready2 import get_ontology, urllib, IRIS
+from owlready2 import get_ontology, urllib
 from owlready2.namespace import Ontology
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
@@ -806,10 +806,10 @@ def get_ontology_search_result(term: str, branch, ontologies, mapping, queryFiel
         temp = """    {
                         "comments": [],
                         "annotationValue": "",
-                        "annotationDefinition": "", 
+                        "annotationDefinition": "",
                         "termAccession": "",
-                        "wormsID": "", 
-                        
+                        "wormsID": "",
+
                         "termSource": {
                             "comments": [],
                             "name": "",
@@ -817,7 +817,7 @@ def get_ontology_search_result(term: str, branch, ontologies, mapping, queryFiel
                             "provenanceName": "",
                             "version": "",
                             "description": ""
-                        }                            
+                        }
                     }"""
 
         d = json.loads(str(temp))

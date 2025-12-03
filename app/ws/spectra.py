@@ -14,9 +14,7 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-import datetime
 import gc
-import json
 import logging
 import os
 import shutil
@@ -25,14 +23,15 @@ import pandas
 from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
-from app.utils import current_time
-from app.config import get_settings
 
+from app.config import get_settings
+from app.utils import current_time
+from app.ws.auth.permissions import validate_user_has_curator_role
 from app.ws.misc_utilities.response_messages import (
     HTTP_200,
-    HTTP_404,
-    HTTP_403,
     HTTP_401,
+    HTTP_403,
+    HTTP_404,
 )
 from app.ws.mtblsWSclient import WsClient
 
@@ -60,22 +59,15 @@ class ZipSpectraFiles(Resource):
         responseMessages=[HTTP_200, HTTP_401, HTTP_403, HTTP_404],
     )
     def post(self):
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        is_curator, __, __, __, study_location, __, __, __ = wsc.get_permissions(
-            "MTBLS1", user_token
-        )
-        if not is_curator:
-            abort(403)
+        validate_user_has_curator_role(request)
 
         reporting_path = os.path.join(
             get_settings().study.mounted_paths.reports_root_path,
             get_settings().report.report_base_folder_name,
             get_settings().report.report_global_folder_name,
+        )
+        study_location = (
+            get_settings().study.mounted_paths.study_metadata_files_root_path
         )
         sz = SpectraZipper(
             study_type="NMR",

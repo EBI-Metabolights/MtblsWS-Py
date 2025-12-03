@@ -1,18 +1,19 @@
 import datetime
 import json
 import logging
+import os
+import pathlib
+from typing import Dict, List, OrderedDict, Union
+
+from celery.result import AsyncResult
+
+from app.config import get_settings
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.models import SyncTaskResult, SyncTaskStatus
 from app.study_folder_utils import FileDescriptor
 from app.tasks.worker import MetabolightsTask, celery
 from app.utils import current_time
-import os
-import pathlib
-from typing import Dict, List, OrderedDict, Union
-from app.config import get_settings
 from app.ws.redis.redis import get_redis_server
-from app.tasks.worker import celery
-from celery.result import AsyncResult
 
 logger = logging.getLogger("wslog")
 
@@ -63,7 +64,7 @@ def index_study_data_files(
         finally:
             if current != Acl.READ_ONLY.value:
                 os.chmod(private_data_files_path, mode=current)
-            
+
         data_files = {}
         for item, descriptor in file_descriptors.items():
             if descriptor.name.endswith(".tsv") and descriptor.name.startswith("m_"):

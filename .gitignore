@@ -60,7 +60,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-*,cover
+# *,cover
 .hypothesis/
 
 # Translations
@@ -71,11 +71,9 @@ coverage.xml
 /*instance*/
 .webassets-cache
 
-# pyenv
-.python-version
-
 # dotenv
 .env*
+.venv*
 
 # virtualenv
 /venv*/
@@ -94,7 +92,7 @@ logs.txt
 ssl/
 
 # files for keeping PID
-*config.yaml
+config.yaml
 .*secrets
 /app*.pid.old
 /app*.pid

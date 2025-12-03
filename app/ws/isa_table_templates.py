@@ -1,12 +1,13 @@
 import logging
 import os
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import Any, Literal, OrderedDict
-from isatools import model
+
 import httpx
-from isatools import model
 import pandas as pd
+from isatools import model
+
 from app.config import get_settings
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
@@ -189,10 +190,10 @@ def create_sample_sheet(
         study_path = os.path.join(studies_path, study_id)
 
     sample_file_name = "s_" + study_id.upper() + ".txt"
-    assay_file_path = os.path.join(study_path, sample_file_name)
+    sample_file_path = os.path.join(study_path, sample_file_name)
     override_file = True
     if not override_current:
-        override_file = is_empty_isa_table_sheet(assay_file_path)
+        override_file = is_empty_isa_table_sheet(sample_file_path)
     if override_file:
         if not sample_type:
             sample_type = settings.study.default_metadata_sample_template_name
@@ -203,9 +204,9 @@ def create_sample_sheet(
         template = get_sample_template(
             template_name=sample_type, template_version=template_version
         )
-        Path(assay_file_path).parent.mkdir(parents=True, exist_ok=True)
-        success = create_file_from_template(assay_file_path, template)
-        logger.info("%s file is created.", assay_file_path)
+        Path(sample_file_path).parent.mkdir(parents=True, exist_ok=True)
+        success = create_file_from_template(sample_file_path, template)
+        logger.info("%s file is created.", sample_file_path)
         return success, sample_file_name
     return False, None
 
@@ -338,13 +339,17 @@ def get_valid_assay_file_name(file_name, study_path):
 
 def update_ontology_sources(isa_inv, ontology_source_references, ontology_source):
     obi_ontology_reference = ontology_source_references.get(ontology_source)
+    if not obi_ontology_reference:
+        obi_ontology_reference = model.OntologySource(
+            name=ontology_source, version="", description="", file=ontology_source
+        )
     item: model.OntologySource = isa_inv.get_ontology_source_reference(ontology_source)
-    obi_ontology = obi_ontology_reference
     if item is None:  # Add the ontology to the investigation
         ontologies = isa_inv.get_ontology_source_references()
         ontologies.append(obi_ontology_reference)
+        obi_ontology = obi_ontology_reference
     else:
-        obi_ontology = item
+        obi_ontology = obi_ontology_reference
         item.name = obi_ontology_reference.name
         item.version = obi_ontology_reference.version
         item.description = obi_ontology_reference.description

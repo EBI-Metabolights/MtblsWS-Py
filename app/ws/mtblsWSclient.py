@@ -19,20 +19,15 @@
 import logging
 from typing import Union
 
-from flask_restful import abort
 from app.config import get_settings
-
 from app.utils import MetabolightsException
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.wsproxy import get_chebi_ws_proxy
 from app.ws.db.dbmanager import DBManager
-from app.ws.db_connection import create_empty_study, \
-    get_release_date_of_study
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.email.email_service import EmailService
 from app.ws.study import commons
-from app.ws.study.user_service import UserService
 
 """
 MetaboLights WS client
@@ -40,7 +35,7 @@ MetaboLights WS client
 Updated from the Java-based REST resources
 """
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 
 
 class WsClient:
@@ -48,29 +43,45 @@ class WsClient:
     email_service: Union[None, EmailService] = None
     elasticsearch_service: Union[None, ElasticsearchService] = None
 
-    def __init__(self, search_manager: Union[None, ChebiSearchManager] = None, email_service: Union[None, EmailService] = None,
-                 elasticsearch_service: Union[None, ElasticsearchService] = None):
-        self.search_manager = search_manager if search_manager else WsClient.default_search_manager
+    def __init__(
+        self,
+        search_manager: Union[None, ChebiSearchManager] = None,
+        email_service: Union[None, EmailService] = None,
+        elasticsearch_service: Union[None, ElasticsearchService] = None,
+    ):
+        self.search_manager = (
+            search_manager if search_manager else WsClient.default_search_manager
+        )
         if not self.search_manager:
             chebi_proxy = get_chebi_ws_proxy()
-            curation_table_file_path = get_settings().chebi.pipeline.curated_metabolite_list_file_location
-            curation_table = CuratedMetaboliteTable.get_instance(curation_table_file_path)
-            chebi_search_manager = ChebiSearchManager(ws_proxy=chebi_proxy, curated_metabolite_table=curation_table)
+            curation_table_file_path = (
+                get_settings().chebi.pipeline.curated_metabolite_list_file_location
+            )
+            curation_table = CuratedMetaboliteTable.get_instance(
+                curation_table_file_path
+            )
+            chebi_search_manager = ChebiSearchManager(
+                ws_proxy=chebi_proxy, curated_metabolite_table=curation_table
+            )
             WsClient.default_search_manager = chebi_search_manager
             self.search_manager = chebi_search_manager
-        
+
         self.email_service = email_service if email_service else WsClient.email_service
-        self.elasticsearch_service = elasticsearch_service if elasticsearch_service else WsClient.elasticsearch_service
+        self.elasticsearch_service = (
+            elasticsearch_service
+            if elasticsearch_service
+            else WsClient.elasticsearch_service
+        )
         if not self.elasticsearch_service:
             db_manager = DBManager.get_instance()
             study_settings = get_settings().study
             elasticsearch_settings = get_settings().elasticsearch
-            self.elasticsearch_service = ElasticsearchService(settings=elasticsearch_settings,
-                                                        db_manager=db_manager, study_settings=study_settings)
+            self.elasticsearch_service = ElasticsearchService(
+                settings=elasticsearch_settings,
+                db_manager=db_manager,
+                study_settings=study_settings,
+            )
             WsClient.elasticsearch_service = self.elasticsearch_service
-            
-    def get_study_location(self, study_id, user_token):
-        return commons.get_study_location(study_id, user_token)
 
     def get_maf_search(self, search_type, search_value):
         # Updated to remove Java WS /genericcompoundsearch/{search_type}/{search_value} dependency
@@ -121,30 +132,26 @@ class WsClient:
 
     @staticmethod
     def create_upload_folder(study_id, obfuscation_code, user_token, send_email=True):
-        # Updated to remove Java WS /study/requestFtpFolderOnApiKey dependency
+        return commons.create_ftp_folder(
+            study_id,
+            obfuscation_code,
+            user_token,
+            email_service=WsClient.email_service,
+            send_email=send_email,
+        )
 
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-
-        return commons.create_ftp_folder(study_id, obfuscation_code, user_token,
-                                         email_service=WsClient.email_service, send_email=send_email)
-
-    def add_empty_study(self, user_token):
-        # Updated to remove Java WS /study/createEmptyStudy dependency
-
-        user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
-
-        study_id = create_empty_study(user_token)
-        if not study_id:
-            raise MetabolightsException("Error while creating new study in db")
-        return study_id
-
-    def reindex_study(self, study_id, user_token, include_validation_results: bool = False, sync: bool = False):
-        # Updated to remove Java WS /study/reindexStudyOnToken dependency
-
-        UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
+    def reindex_study(
+        self,
+        study_id,
+        user_token=None,
+        include_validation_results: bool = False,
+        sync: bool = False,
+    ):
         try:
-            self.elasticsearch_service.reindex_study(study_id, user_token, include_validation_results, sync=sync)
+            self.elasticsearch_service.reindex_study(
+                study_id, user_token, include_validation_results, sync=sync
+            )
             return True, f" {study_id} is successfully indexed"
         except MetabolightsException as e:
-            logger.error(f'{str(e)}')
+            logger.error("%s", e)
             raise e

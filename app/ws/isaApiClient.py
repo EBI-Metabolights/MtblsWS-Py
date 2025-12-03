@@ -25,10 +25,10 @@ import time
 from flask_restful import abort
 from isatools import model
 from isatools.convert import isatab2json
-from isatools.isatab import load, dump
-from app.ws.settings.utils import get_study_settings
+from isatools.isatab import dump, load
 
-from app.ws.study import commons
+from app.ws.settings.utils import get_study_settings
+from app.ws.study.utils import get_study_metadata_path
 from app.ws.utils import copy_file, new_timestamped_folder
 
 """
@@ -45,7 +45,7 @@ class IsaApiClient:
         self.settings = get_study_settings()
 
     @staticmethod
-    def get_isa_json(study_id, api_key, study_location=None):
+    def get_isa_json(study_id, api_key=None, study_location=None):
         """
         Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier
@@ -59,7 +59,7 @@ class IsaApiClient:
             logger.info(
                 "Study location is not set, will have load study from filesystem"
             )
-            path = commons.get_study_location(study_id, api_key)
+            path = get_study_metadata_path(study_id)
         else:
             logger.info("Study location is: " + study_location)
             path = study_location
@@ -115,7 +115,7 @@ class IsaApiClient:
             logger.info(
                 "Study location is not set, will have load study from filesystem"
             )
-            std_path = commons.get_study_location(study_id, api_key)
+            std_path = get_study_metadata_path(study_id)
         else:
             logger.info("Study location is: " + study_location)
             std_path = study_location

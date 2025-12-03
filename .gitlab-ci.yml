@@ -16,11 +16,58 @@ workflow:
   rules:
     - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging"
 stages:
+  - lint
   - build
   - deploy
   - build_sif
   - deploy-datamover-worker
 
+lint:
+  stage: lint
+  image:
+    name: ghcr.io/astral-sh/uv:0.9.1-python3.13-bookworm
+    pull_policy: if-not-present
+  tags:
+  - mtbls
+  - docker
+  script:
+  - echo "-----------------------------------------------------------------------"
+  - echo "CI_BUILDS_DIR $CI_BUILDS_DIR"
+  - echo "CI_REGISTRY_USER $CI_REGISTRY_USER"
+  - echo "CI_REGISTRY $CI_REGISTRY"
+  - echo "BRANCH $CI_COMMIT_REF_NAME"
+  - echo "CI_PIPELINE_ID $CI_PIPELINE_ID"
+  - echo "CI_COMMIT_SHORT_SHA $CI_COMMIT_SHORT_SHA"
+  - echo "CI_REGISTRY_IMAGE CI_REGISTRY_IMAGE"
+  - echo "APP_VERSION $APP_VERSION"
+  - echo "API_VERSION $API_VERSION"
+  - echo "BUILD_NUMBER $BUILD_NUMBER"
+  - echo "IMAGE_TAG $IMAGE_TAG"
+  - echo "IMAGE NAME $IMAGE_NAME"
+  - echo "IMAGE NAME (with latest tag) $LATEST_IMAGE_NAME" 
+  - echo "APPS_ROOT_PATH $APPS_ROOT_PATH"
+  - echo "DEPLOYMENTS_FOLDER $DEPLOYMENTS_FOLDER"
+  - echo "APPS_PROJECT_URL $APPS_PROJECT_URL"
+  - echo "APPS_PROJECT_BRANCH_NAME $APPS_PROJECT_BRANCH_NAME"
+  - echo "MTBLS_NFS_USER_GROUP1_ID $MTBLS_NFS_USER_GROUP1_ID"
+  - echo "MTBLS_NFS_USER_GROUP2_ID $MTBLS_NFS_USER_GROUP2_ID"
+  - echo "MTBLS_NFS_USER_ID $MTBLS_NFS_USER_ID"
+  - echo "-----------------------------------------------------------------------"
+  - apt-get update && apt-get install git -y
+  - git status
+  - ls -al
+  - echo "install dependencies"
+  - uv sync --locked
+  - echo "Run pre-commit tools"
+  - uv run ruff format
+  - uv run ruff check
+  - uv run lint-imports
+  - uv run pre-commit run --all-files
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}-venv
+    paths:
+    - .venv
+  
 build_docker:
   stage: build
   image: 
@@ -35,28 +82,6 @@ build_docker:
     - git reset --hard origin/$APPS_PROJECT_BRANCH_NAME
     - git status
     - ls -al
-    - echo "-----------------------------------------------------------------------"
-    - echo "CI_BUILDS_DIR $CI_BUILDS_DIR"
-    - echo "CI_REGISTRY_USER $CI_REGISTRY_USER"
-    - echo "CI_REGISTRY $CI_REGISTRY"
-    - echo "BRANCH $CI_COMMIT_REF_NAME"
-    - echo "CI_PIPELINE_ID $CI_PIPELINE_ID"
-    - echo "CI_COMMIT_SHORT_SHA $CI_COMMIT_SHORT_SHA"
-    - echo "CI_REGISTRY_IMAGE CI_REGISTRY_IMAGE"
-    - echo "APP_VERSION $APP_VERSION"
-    - echo "API_VERSION $API_VERSION"
-    - echo "BUILD_NUMBER $BUILD_NUMBER"
-    - echo "IMAGE_TAG $IMAGE_TAG"
-    - echo "IMAGE NAME $IMAGE_NAME"
-    - echo "IMAGE NAME (with latest tag) $LATEST_IMAGE_NAME" 
-    - echo "APPS_ROOT_PATH $APPS_ROOT_PATH"
-    - echo "DEPLOYMENTS_FOLDER $DEPLOYMENTS_FOLDER"
-    - echo "APPS_PROJECT_URL $APPS_PROJECT_URL"
-    - echo "APPS_PROJECT_BRANCH_NAME $APPS_PROJECT_BRANCH_NAME"
-    - echo "MTBLS_NFS_USER_GROUP1_ID $MTBLS_NFS_USER_GROUP1_ID"
-    - echo "MTBLS_NFS_USER_GROUP2_ID $MTBLS_NFS_USER_GROUP2_ID"
-    - echo "MTBLS_NFS_USER_ID $MTBLS_NFS_USER_ID"
-    - echo "-----------------------------------------------------------------------"
     - echo "Build number $BUILD_NUMBER, commit name ${CI_COMMIT_REF_NAME}"
     - echo "${BUILD_NUMBER}" > build_number
     - echo  "$APP_VERSION" | xargs > app_version

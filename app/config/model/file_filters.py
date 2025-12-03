@@ -1,9 +1,9 @@
 from typing import List
+
 from pydantic import BaseModel
 
 
 class FileFilters(BaseModel):
-    deleted_samples_prefix_tag: str
     folder_exclusion_list: List[str]
     empty_exclusion_list: List[str]
     ignore_file_list: List[str]

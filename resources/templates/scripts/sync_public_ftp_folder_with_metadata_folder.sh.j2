@@ -13,37 +13,37 @@ STUDY_PRIVATE_FTP_PATH={{ STUDY_PRIVATE_FTP_PATH }}
 #################################
 
 CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-echo "FTP SYNC TASK STARTED at $CURRENT_TIME" 
-echo "STUDY_METADATA_PATH:  $STUDY_METADATA_PATH" 
-echo "STUDY_PUBLIC_FTP_PATH:  $STUDY_PUBLIC_FTP_PATH" 
-echo "STUDY_PRIVATE_FTP_PATH:  $STUDY_PRIVATE_FTP_PATH" 
+echo "FTP SYNC TASK STARTED at $CURRENT_TIME"
+echo "STUDY_METADATA_PATH:  $STUDY_METADATA_PATH"
+echo "STUDY_PUBLIC_FTP_PATH:  $STUDY_PUBLIC_FTP_PATH"
+echo "STUDY_PRIVATE_FTP_PATH:  $STUDY_PRIVATE_FTP_PATH"
 
 
-echo "----------------------------" 
-echo "Cleaning Private FTP content" 
-echo "Cleaning Private FTP Path: ${STUDY_PRIVATE_FTP_PATH}" 
-echo "rm -rf ${STUDY_PRIVATE_FTP_PATH}/*" 
+echo "----------------------------"
+echo "Cleaning Private FTP content"
+echo "Cleaning Private FTP Path: ${STUDY_PRIVATE_FTP_PATH}"
+echo "rm -rf ${STUDY_PRIVATE_FTP_PATH}/*"
 rm -rf ${STUDY_PRIVATE_FTP_PATH}/*
 
-echo "chmod -R 755 ${STUDY_PRIVATE_FTP_PATH}" 
+echo "chmod -R 755 ${STUDY_PRIVATE_FTP_PATH}"
 chmod -R 755 ${STUDY_PRIVATE_FTP_PATH}
 
-echo "----------------------------" 
+echo "----------------------------"
 CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-echo "$CURRENT_TIME: Syncing Study files to Public" 
-echo "${STUDY_PUBLIC_FTP_PATH} is now being synced." 
-echo "mkdir -p ${STUDY_PUBLIC_FTP_PATH}" 
+echo "$CURRENT_TIME: Syncing Study files to Public"
+echo "${STUDY_PUBLIC_FTP_PATH} is now being synced."
+echo "mkdir -p ${STUDY_PUBLIC_FTP_PATH}"
 mkdir -p ${STUDY_PUBLIC_FTP_PATH}
 
-echo "rsync from ${STUDY_METADATA_PATH}/ to ${STUDY_PUBLIC_FTP_PATH}" 
-echo "rsync -a -L --delete-after --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' ${STUDY_METADATA_PATH}/ ${STUDY_PUBLIC_FTP_PATH}" 
+echo "rsync from ${STUDY_METADATA_PATH}/ to ${STUDY_PUBLIC_FTP_PATH}"
+echo "rsync -a -L --delete-after --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' ${STUDY_METADATA_PATH}/ ${STUDY_PUBLIC_FTP_PATH}"
 rsync -a -L --delete-after --exclude 'AUDIT_FILES' --exclude 'INTERNAL_FILES' --chmod=+rx ${STUDY_METADATA_PATH}/ ${STUDY_PUBLIC_FTP_PATH}
 RETURN=$?
 CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-echo "$CURRENT_TIME: Exit code: $RETURN" 
+echo "$CURRENT_TIME: Exit code: $RETURN"
 
 
-echo "----------------------------" 
-echo "Changing permissions" 
-echo "chmod -R 755 ${STUDY_PUBLIC_FTP_PATH}" 
+echo "----------------------------"
+echo "Changing permissions"
+echo "chmod -R 755 ${STUDY_PUBLIC_FTP_PATH}"
 chmod -R 755 ${STUDY_PUBLIC_FTP_PATH}

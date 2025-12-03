@@ -6,10 +6,12 @@ from typing import Any, Dict, List, Set
 from app.config import get_settings
 from app.config.model.worker import HostWorkerConfiguration
 from app.tasks.bash_client import BashClient
-from app.tasks.system_monitor_tasks.utils import check_and_get_monitor_session, generate_random_name
+from app.tasks.system_monitor_tasks.utils import (
+    check_and_get_monitor_session,
+    generate_random_name,
+)
 from app.tasks.worker import celery
 from app.ws.redis.redis import get_redis_server
-from app.ws.settings.utils import get_cluster_settings
 
 logger = logging.getLogger("beat")
 
@@ -19,13 +21,13 @@ def maintain_vm_workers(
 ) -> Dict[str, str]:
     settings = get_settings()
     common_message_key = f"{host.hostname}_common"
-    
+
     results: Dict[str, List[str]] = {common_message_key: []}
     cluster_settings = settings.hpc_cluster.configuration
     worker_settings = settings.workers.vm_workers
 
     monitor_task_status_key = worker_settings.monitor_task_status_key_prefix
-    monitor_task_timeout =  worker_settings.monitor_task_timeout
+    monitor_task_timeout = worker_settings.monitor_task_timeout
     key = f"{monitor_task_status_key}:{host.hostname}"
     locked = check_and_get_monitor_session(key, monitor_task_timeout)
     if not locked:
@@ -45,7 +47,7 @@ def maintain_vm_workers(
         current_worker_names = set()
         current_workers: List[str] = []
         current_workers_map: Dict[str, Dict[str, Any]] = {}
-        for worker in registered_workers:   
+        for worker in registered_workers:
             if worker.startswith(worker_name_prefix) and worker.endswith(hostname):
                 results[worker] = ["Worker is up and runnning"]
                 current_workers.append(worker)
@@ -57,18 +59,23 @@ def maintain_vm_workers(
                     current_workers_map[worker] = {}
         initiated_vm_workers = get_initiated_vm_workers(hostname)
         activated_workers = initiated_vm_workers.union(current_worker_names)
-        
+
         if len(activated_workers) < number_of_workers:
-            start_vm_worker(host, current_names=current_worker_identifiers, results=results)
+            start_vm_worker(
+                host, current_names=current_worker_identifiers, results=results
+            )
 
         return results
     finally:
         redis = get_redis_server()
         redis.set_value(key, "0", ex=monitor_task_timeout)
 
+
 def get_initiated_vm_workers(hostname: str) -> Set[str]:
     settings = get_settings()
-    initiate_vm_worker_key_prefix = settings.workers.vm_workers.initiate_vm_worker_key_prefix
+    initiate_vm_worker_key_prefix = (
+        settings.workers.vm_workers.initiate_vm_worker_key_prefix
+    )
 
     worker_name_prefix = f"{settings.hpc_cluster.datamover.job_prefix}_vm_worker"
     redis = get_redis_server()
@@ -82,8 +89,13 @@ def get_initiated_vm_workers(hostname: str) -> Set[str]:
             if status and status.decode() == "1":
                 initiated_vm_workers.add(key.replace(pattern_prefix, ""))
     return initiated_vm_workers
-    
-def start_vm_worker(host: HostWorkerConfiguration, current_names: Set[str], results: Dict[str, List[str]]):
+
+
+def start_vm_worker(
+    host: HostWorkerConfiguration,
+    current_names: Set[str],
+    results: Dict[str, List[str]],
+):
     settings = get_settings()
     cluster_settings = settings.hpc_cluster.configuration
     worker_settings = settings.workers.vm_workers
@@ -104,9 +116,11 @@ def start_vm_worker(host: HostWorkerConfiguration, current_names: Set[str], resu
             "worker_name": name,
             "worker_queue": host.worker_queue_names,
             "conda_environment": host.conda_environment,
-            "server_port": port
+            "server_port": port,
         }
-        template = get_settings().workers.vm_workers.start_vm_worker_script_template_name
+        template = (
+            get_settings().workers.vm_workers.start_vm_worker_script_template_name
+        )
         file_path = BashClient.prepare_script_from_template(template, **paramters)
         localhost = socket.gethostname()
         success = False
@@ -116,21 +130,26 @@ def start_vm_worker(host: HostWorkerConfiguration, current_names: Set[str], resu
         else:
             username = settings.hpc_cluster.datamover.connection.username
             identity_file = settings.hpc_cluster.datamover.connection.identity_file
-            ssh_command = BashClient.build_ssh_command(hostname, username=username, identity_file=identity_file)
+            ssh_command = BashClient.build_ssh_command(
+                hostname, username=username, identity_file=identity_file
+            )
             result = BashClient.execute_command(f"{ssh_command} bash < {file_path}")
         success = True if result and result.returncode == 0 else False
         if success:
             redis.set_value(redis_key, "1", ex=initiate_vm_worker_wait_timeout)
             results[name] = ["Worker was started."]
         else:
-            results[name] = [f"Worker was not initiated. Err: {', '.join(result.stdout)}"]
+            results[name] = [
+                f"Worker was not initiated. Err: {', '.join(result.stdout)}"
+            ]
         try:
             os.remove(file_path)
         except Exception as exc:
             logger.warning(f"Error while deleting temp file {file_path}")
-    
+
         return success
     return False
+
 
 if __name__ == "__main__":
     # check_additional_vm_workers()

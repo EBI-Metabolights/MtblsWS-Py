@@ -30,28 +30,33 @@ import re
 import shutil
 import string
 import time
-from typing import Any, List, Tuple
 import uuid
-from os.path import normpath, basename
+from os.path import basename, normpath
+from typing import Tuple
+from urllib import request as urllib_request
 
 import numpy as np
 import pandas as pd
 import psycopg2
 import requests
-
-from urllib import request as urllib_request
-from flask_restful import abort
+from email_validator import EmailNotValidError, validate_email
 from flask import request
-from isatools.model import Protocol, ProtocolParameter, OntologySource
+from flask_restful import abort
+from isatools.model import (
+    OntologyAnnotation,
+    OntologySource,
+    Protocol,
+    ProtocolParameter,
+)
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
 from pandas import Series
+
+from app import application_path
 from app.config import get_settings
 from app.config.utils import get_host_internal_url
 from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files
 from app.utils import current_time
-from app import application_path
-from app.ws.mm_models import OntologyAnnotation
 from app.ws.settings.utils import get_study_settings
 
 """
@@ -133,182 +138,6 @@ def copy_file(source, destination):
     except Exception as e:
         logger.error("Could not copy file for study: " + str(e))
         raise
-
-
-def copytree(
-    src,
-    dst,
-    symlinks=False,
-    ignore=None,
-    include_raw_data=False,
-    include_investigation_file=True,
-):
-    try:
-        if not os.path.exists(dst):
-            logger.info("Creating a new folder for the study, %s", dst)
-            os.makedirs(dst, exist_ok=True)
-
-        file_list = {}
-        for item in os.listdir(src):
-            source = os.path.join(src, item)
-            destination = os.path.join(dst, item)
-
-            if (
-                item.endswith(".partial")
-                or item.endswith(".aspera-ckpt")
-                or item.endswith(".aspx")
-            ):
-                logger.info("Do NOT copy any aspera files")
-                continue
-
-            if not include_investigation_file and item.startswith("i_"):
-                logger.info(
-                    "Do NOT copy any i_Investigation files from the upload folder"
-                )
-                continue
-
-            if (
-                item.startswith("i_")
-                or item.startswith("s_")
-                or item.startswith("a_")
-                or item.startswith("m_")
-            ):
-                try:
-                    source_file_time = int(get_single_file_information(source))
-                    desc_file_time = 0
-                    if os.path.isfile(destination):
-                        desc_file_time = int(get_single_file_information(destination))
-                    diff = source_file_time - desc_file_time
-                except Exception as e:
-                    diff = 1  # if there is no destination file (in the study folder) then copy the file
-                    logger.error(
-                        "Error copying metadata file %s to %s. Error %s",
-                        source,
-                        destination,
-                        str(e),
-                    )
-
-                if diff > 0:
-                    logger.info("Will copy files")
-                    copy_file(source, destination)
-            else:
-                if include_raw_data:
-                    if os.path.isdir(source):
-                        logger.info(source + " is a directory")
-                        try:
-                            if os.path.isdir(destination):
-                                sync(
-                                    source,
-                                    destination,
-                                    "sync",
-                                    purge=False,
-                                    logger=logger,
-                                )
-                            else:
-                                shutil.copytree(
-                                    source,
-                                    destination,
-                                    symlinks=symlinks,
-                                    ignore=ignore,
-                                )
-                            logger.info("Copied file %s to %s", source, destination)
-                        except FileExistsError as e:
-                            logger.error(
-                                "Folder already exists! Can not copy %s to %s: %s",
-                                source,
-                                destination,
-                                str(e),
-                            )
-                        except OSError as e:
-                            logger.error(
-                                "Does the folder already exists? Can not copy %s to %s: %s",
-                                source,
-                                destination,
-                                str(e),
-                            )
-                        except Exception as e:
-                            logger.error(
-                                "Other error! Can not copy %s to %s: %s",
-                                source,
-                                destination,
-                                str(e),
-                            )
-                    else:  # elif not os.path.exists(destination):
-                        logger.info(source + " is not a directory")
-                        try:
-                            if os.path.isfile(destination):
-                                upload_file_time = os.path.getmtime(source)
-                                study_file_time = os.path.getmtime(destination)
-                                if upload_file_time > study_file_time:
-                                    logger.info("Do sync")
-                                    shutil.copy2(
-                                        source, destination
-                                    )  # Should retain all file metadata, ie. timestamps
-                                    logger.info(
-                                        "Copied file %s to %s", source, destination
-                                    )
-                                else:
-                                    logger.info(
-                                        "Destination file with later timestamp, So not copying"
-                                    )
-                            else:
-                                shutil.copy2(source, destination)
-                        except FileExistsError as e:
-                            logger.error(
-                                "File already exists! Can not copy %s to %s %s",
-                                source,
-                                destination,
-                                str(e),
-                            )
-                        except OSError as e:
-                            logger.error(
-                                "Does the file already exists? Can not copy %s to %s %s",
-                                source,
-                                destination,
-                                str(e),
-                            )
-                        except Exception as e:
-                            logger.error(
-                                "Other error! Can not copy %s to %s: %s",
-                                source,
-                                destination,
-                                str(e),
-                            )
-    except Exception as e:
-        logger.error(str(e))
-        raise
-
-
-def remove_samples_from_isatab(std_path):
-    # dest folder name is a timestamp
-    settings = get_study_settings()
-    update_path = os.path.join(
-        std_path, settings.audit_files_symbolic_link_name, settings.audit_folder_name
-    )
-    dest_path = new_timestamped_folder(update_path)
-    # check for all samples
-    for sample_file in glob.glob(os.path.join(std_path, "s_*.txt")):
-        src_file = sample_file
-        filename = os.path.basename(sample_file)
-        dest_file = os.path.join(dest_path, filename)
-        logger.info("Moving %s to %s", src_file, dest_file)
-        shutil.move(src_file, dest_file)
-
-        # remove tagged lines
-        tag = get_settings().file_filters.deleted_samples_prefix_tag
-        backup_file = dest_file.replace(".txt", ".bak")
-        removed_lines = 0
-        with open(dest_file, "r") as infile:
-            with open(src_file, "w+") as outfile:
-                for line in infile:
-                    if tag in line:
-                        with open(backup_file, "a+") as backupfile:
-                            backupfile.write(line)
-                            removed_lines += 1
-                    else:
-                        outfile.write(line)
-
-    return removed_lines
 
 
 def get_single_file_information(file_name):
@@ -415,8 +244,6 @@ def delete_column_from_tsv_file(file_df: pd.DataFrame, column_name: str):
         return False
 
 
-
-
 def get_table_header(table_df):
     # Get an indexed header row
     df_header = pd.DataFrame(list(table_df))  # Get the header row only
@@ -430,9 +257,6 @@ def get_legacy_assay_mapping(df_header) -> dict[str,]:
     for i in range(0, len(df_header["index"])):
         mapping[df_header[0][i]] = df_header["index"][i]
     return mapping
-
-
-
 
 
 def validate_row(table_header_df, row, http_type):
@@ -910,8 +734,8 @@ def update_ontolgies_in_isa_tab_sheets(
     ontology_type, old_value, new_value, study_location, isa_study
 ):
     try:
-        """ 
-        Update column header in sample and assay file(s). The column will look like 'Factor Value[<factor name>]' or 
+        """
+        Update column header in sample and assay file(s). The column will look like 'Factor Value[<factor name>]' or
         'Characteristics[<characteristics name>']
         """
 
@@ -1015,7 +839,7 @@ def delete_remote_file(root_path: str, file_path: str) -> Tuple[bool, str]:
         cluster_settings = get_settings().hpc_cluster.configuration
         output = task.get(timeout=cluster_settings.task_get_timeout_in_seconds * 2)
     except Exception as exc:
-        return False, "No response from server."
+        return False, f"No response from server. {str(exc)}"
 
     if not output:
         return False, "No response from server."
@@ -1376,7 +1200,7 @@ def is_file_referenced(
         isa_tab_file = os.path.join(directory, isa_tab_file_to_check)
         for ref_file_name in glob.glob(isa_tab_file):
             """ The filename we pass in is found referenced in the metadata (ref_file_name)
-            One possible problem here is of the maf is found in an old assay file, then we will report it as 
+            One possible problem here is of the maf is found in an old assay file, then we will report it as
             current """
             try:
                 logger.info(
@@ -1490,8 +1314,9 @@ def safe_str(obj):
 
 
 def val_email(email=None):
-    email_username_pattern = r"^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
-    if not email or not re.search(email_username_pattern, email):
+    try:
+        validate_email(email)
+    except EmailNotValidError:
         abort(406, message="Incorrect email " + email)
 
 
@@ -1709,7 +1534,6 @@ def get_organisms(studyID, sample_file_name):
 
 
 def get_studytype(studyID=None):
-    print("getting study types ... ")
     study_type = {"targeted": [], "untargeted": [], "targeted_untargeted": []}
 
     if not studyID:

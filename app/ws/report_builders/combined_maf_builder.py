@@ -1,15 +1,16 @@
 import logging
 import os
-import pandas
-
 from typing import List
+
+import pandas
 from flask_restful import abort
+
 from app.config import get_settings
 from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 from app.ws.settings.utils import get_study_settings
 from app.ws.utils import totuples
 
-logger = logging.getLogger('builder')
+logger = logging.getLogger("builder")
 
 
 class CombinedMafBuilder:
@@ -19,7 +20,7 @@ class CombinedMafBuilder:
 
     def __init__(self, studies_to_combine: List[str], method: str):
         self.studies_to_combine = studies_to_combine
-        
+
         self.method = method
         self.unopenable_maf_register = []
         self.missing_maf_register = []
@@ -37,26 +38,29 @@ class CombinedMafBuilder:
         for maf_as_dict in maf_generator:
             list_of_mafs.extend(maf_as_dict)
         settings = get_study_settings()
-        
-        reporting_path = os.path.join(settings.mounted_paths.reports_root_path, get_settings().report.report_base_folder_name, get_settings().report.report_global_folder_name)
+
+        reporting_path = os.path.join(
+            settings.mounted_paths.reports_root_path,
+            get_settings().report.report_base_folder_name,
+            get_settings().report.report_global_folder_name,
+        )
         combined_maf = None
         try:
             combined_maf = pandas.DataFrame(list_of_mafs)
         except Exception as e:
-            logger.error(f'Problem creating dataframe from list of dicts: {str(e)}')
+            logger.error(f"Problem creating dataframe from list of dicts: {str(e)}")
         try:
             combined_maf.to_csv(
-                    os.path.join(reporting_path, f'{self.method}_combined_maf.tsv'),
-                    sep="\t",
-                    encoding='utf-8',
-                    index='false'
-                )
+                os.path.join(reporting_path, f"{self.method}_combined_maf.tsv"),
+                sep="\t",
+                encoding="utf-8",
+                index="false",
+            )
         except Exception as e:
             # bad practice here catching base exception, but the pandas documentation did not reveal what errors or
             # exceptions to expect
-            logger.error(f'Problem writing the combined maf file to csv:{str(e)}')
+            logger.error(f"Problem writing the combined maf file to csv:{str(e)}")
             abort(500)
-
 
     def get_dataframe(self):
         """
@@ -69,27 +73,38 @@ class CombinedMafBuilder:
         """
         for i, study_id in enumerate(self.studies_to_combine):
             # copy = repr(self.original_study_location).strip("'")
-            study_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, study_id)
+            study_location = os.path.join(
+                get_study_settings().mounted_paths.study_metadata_files_root_path,
+                study_id,
+            )
 
             for maf in self.sort_mafs(study_location, study_id):
                 maf_temp = None
                 try:
-                    maf_temp = pandas.read_csv(os.path.join(study_location, maf), sep="\t", header=0, encoding='unicode_escape')
+                    maf_temp = pandas.read_csv(
+                        os.path.join(study_location, maf),
+                        sep="\t",
+                        header=0,
+                        encoding="unicode_escape",
+                    )
                 except pandas.errors.EmptyDataError as e:
-                    logger.error(f'EmptyDataError Issue with opening maf file {maf}: {str(e)}')
+                    logger.error(
+                        f"EmptyDataError Issue with opening maf file {maf}: {str(e)}"
+                    )
                     self.unopenable_maf_register.append(maf)
                     continue
                 except Exception as e:
-                    logger.error(f'Issue with opening maf file {maf}, cause of error unclear: {str(e)}')
+                    logger.error(
+                        f"Issue with opening maf file {maf}, cause of error unclear: {str(e)}"
+                    )
                     self.unopenable_maf_register.append(maf)
                     continue
 
-                cleanup_function = getattr(DataFrameUtils, f'{self.method}_maf_cleanup')
+                cleanup_function = getattr(DataFrameUtils, f"{self.method}_maf_cleanup")
                 maf_temp = cleanup_function(maf_temp, study_id, maf)
-                maf_as_dict = totuples(df=maf_temp, text='dict')['dict']
+                maf_as_dict = totuples(df=maf_temp, text="dict")["dict"]
 
                 yield maf_as_dict
-
 
     def sort_mafs(self, study_location: str, study_id: str):
         """
@@ -100,20 +115,23 @@ class CombinedMafBuilder:
         """
         filtered_maf_list = []
         tokens = {
-            'NMR': ['NMR', 'spectroscopy'],
-            'LCMS': ['LC', 'LC-MS', 'LCMS', 'spectrometry']
+            "NMR": ["NMR", "spectroscopy"],
+            "LCMS": ["LC", "LC-MS", "LCMS", "spectrometry"],
         }
         maf_file_list = None
 
         try:
-            maf_file_list = [file for file in os.listdir(study_location) if
-                             file.startswith('m_') and file.endswith('.tsv')]
+            maf_file_list = [
+                file
+                for file in os.listdir(study_location)
+                if file.startswith("m_") and file.endswith(".tsv")
+            ]
         except FileNotFoundError as e:
-            logger.error(f'FileNotFoundError: {str(e)}')
+            logger.error(f"FileNotFoundError: {str(e)}")
         except NotADirectoryError as e:
-            logger.error(f'NotADirectoryError: {str(e)}')
+            logger.error(f"NotADirectoryError: {str(e)}")
         except Exception as e:
-            logger.error(f'Unexpected error: {str(e)}')
+            logger.error(f"Unexpected error: {str(e)}")
         finally:
             if maf_file_list is None:
                 self.missing_study_directory_register.append(study_location)
@@ -124,9 +142,12 @@ class CombinedMafBuilder:
 
         if len(maf_file_list) == 1:
             filtered_maf_list = maf_file_list
-         
-        filtered_maf_list = [file for file in maf_file_list if
-                             any(token.upper() in file.upper() for token in tokens[self.method])]
+
+        filtered_maf_list = [
+            file
+            for file in maf_file_list
+            if any(token.upper() in file.upper() for token in tokens[self.method])
+        ]
         if len(filtered_maf_list) == 0:
             self.no_relevant_maf_register.append(study_id)
 

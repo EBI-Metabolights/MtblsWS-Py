@@ -1,18 +1,17 @@
 import glob
 import hashlib
-import io
 import json
 import logging
 import os
 import pathlib
 import re
 import shutil
-import chardet
 import time
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, OrderedDict, Set, Union
 
+import chardet
 import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -20,8 +19,9 @@ from isatools import isatab
 from isatools import model as isatools_model
 from pydantic import BaseModel
 from unidecode import unidecode
-from app.config import get_settings
+
 from app import application_path
+from app.config import get_settings
 from app.config.model.hpc_cluster import HpcClusterConfiguration
 from app.config.model.study import StudySettings
 from app.file_utils import make_dir_with_chmod
@@ -639,7 +639,7 @@ class StudyFolderMaintenanceTask(object):
                             item=target_path,
                             action=MaintenanceAction.RENAME,
                             parameters={"target": target_path},
-                            message=f"",
+                            message="",
                             command=f'mv "{target_path}"" "{renamed_path}"',
                         )
 
@@ -654,7 +654,7 @@ class StudyFolderMaintenanceTask(object):
                         item=current_path,
                         action=MaintenanceAction.RENAME,
                         parameters={"target": target_path},
-                        message=f"",
+                        message="",
                         command=f'mv "{current_path}" "{target_path}"',
                     )
                     self.future_actions.append(action_log)
@@ -684,7 +684,7 @@ class StudyFolderMaintenanceTask(object):
                         item=current_path,
                         action=MaintenanceAction.COMPRESS,
                         parameters={"target": target_path},
-                        message=f"",
+                        message="",
                         command=f"cd '{current_dirname}' && zip -0 -r '{target_path}' '{current_basename}' && cd -",
                     )
                     self.future_actions.append(action_log)
@@ -721,7 +721,7 @@ class StudyFolderMaintenanceTask(object):
                         item=current_path,
                         action=MaintenanceAction.RECOMPRESS,
                         parameters={"target": target_path},
-                        message=f"",
+                        message="",
                     )
                     self.future_actions.append(action_log)
                     updated_file_names[key] = new_basename
@@ -1243,7 +1243,7 @@ class StudyFolderMaintenanceTask(object):
                             item=file_path,
                             action=MaintenanceAction.ERROR_MESSAGE,
                             parameters={
-                                "summary": f"File encoding is not detected and file is not converted to utf-8"
+                                "summary": "File encoding is not detected and file is not converted to utf-8"
                             },
                             message=f"{study_id} ({status.name}): {file_path}. File encoding is not detected and file is not converted to utf-8",
                             successful=False,
@@ -1511,7 +1511,7 @@ class StudyFolderMaintenanceTask(object):
         rows = []
 
         rows.append(
-            f"STUDY ID\tSTUDY STATUS\tEXECUTED\tSUCCESS\tACTION\tITEM\tMESSAGE\tPARAMETERS\tCOMMAND\n"
+            "STUDY ID\tSTUDY STATUS\tEXECUTED\tSUCCESS\tACTION\tITEM\tMESSAGE\tPARAMETERS\tCOMMAND\n"
         )
         for action in self.actions:
             success = action.successful
@@ -1582,7 +1582,7 @@ class StudyFolderMaintenanceTask(object):
         summary_list.sort()
 
         rows = []
-        rows.append(f"HASH:SHA256\tFILE TYPE\tEXISTENCE\tSTATUS\tMODIFIED\tFILE NAME\n")
+        rows.append("HASH:SHA256\tFILE TYPE\tEXISTENCE\tSTATUS\tMODIFIED\tFILE NAME\n")
         for file in summary_list:
             file_path = os.path.join(self.study_metadata_files_path, file)
             status = (
@@ -3122,7 +3122,7 @@ class StudyFolderMaintenanceTask(object):
                         + str(e)
                     )
                     print(
-                        f"Invalid UTF-8 file was converted to UTF with ignore errors option: "
+                        "Invalid UTF-8 file was converted to UTF with ignore errors option: "
                         + file_path
                     )
                 else:

@@ -1,6 +1,7 @@
 import datetime
 import logging
 from typing import OrderedDict
+
 from isatools import model
 from pydantic import BaseModel
 
@@ -65,6 +66,7 @@ def update_mhd_comments(
     mhd_accession: None | str = None,
     sample_template: None | str = None,
     template_version: None | str = None,
+    study_template: None | str = None,
     characteristic_definitions: None | list[CharacteristicDescription] = None,
 ) -> list[str]:
     old_comments = {}
@@ -100,9 +102,12 @@ def update_mhd_comments(
     mhd_comments_map["sample template"] = model.Comment(
         name="Sample Template", value=str(sample_template or "")
     )
+    mhd_comments_map["study template"] = model.Comment(
+        name="Study Template", value=str(study_template or "")
+    )
 
     if mhd_model_version:
-        mhd_comments_map["sample template"] = model.Comment(
+        mhd_comments_map["mhd model version"] = model.Comment(
             name="MHD Model Version", value=str(mhd_model_version)
         )
 
@@ -127,6 +132,7 @@ def update_mhd_comments(
         if comment_name.lower() not in {
             "study category",
             "sample template",
+            "study template",
             "mhd accession",
             "mhd model version",
             "template version",

@@ -1,20 +1,18 @@
 import json
-import os
 
 import pytest
 from flask import Flask
 
 from app.utils import MetabolightsException
-from app.ws.db_connection import get_email, execute_query_with_parameter, study_submitters
 from app.ws.mtblsWSclient import WsClient
 from tests.fixtures import SensitiveDatastorage
 from tests.ws.test_data.utils import delete_test_study_from_db
 
 
 class TestWebServiceClient(object):
-
-
-    def test_get_maf_search_1(self, flask_app: Flask, email_service_isolated_ws_client: WsClient):
+    def test_get_maf_search_1(
+        self, flask_app: Flask, email_service_isolated_ws_client: WsClient
+    ):
         with flask_app.app_context():
             ws_client = email_service_isolated_ws_client
 
@@ -28,7 +26,9 @@ class TestWebServiceClient(object):
             assert "databaseId" in data["content"][0]
             assert expected_value == data["content"][0]["databaseId"]
 
-    def test_get_maf_search_2(self, flask_app: Flask, email_service_isolated_ws_client: WsClient):
+    def test_get_maf_search_2(
+        self, flask_app: Flask, email_service_isolated_ws_client: WsClient
+    ):
         with flask_app.app_context():
             ws_client = email_service_isolated_ws_client
 
@@ -43,7 +43,9 @@ class TestWebServiceClient(object):
             assert "databaseId" in data["content"][0]
             assert expected_value == data["content"][0]["databaseId"]
 
-    def test_get_maf_search_3(self, flask_app: Flask, email_service_isolated_ws_client: WsClient):
+    def test_get_maf_search_3(
+        self, flask_app: Flask, email_service_isolated_ws_client: WsClient
+    ):
         with flask_app.app_context():
             ws_client = email_service_isolated_ws_client
 
@@ -58,7 +60,9 @@ class TestWebServiceClient(object):
             assert "databaseId" in data["content"][0]
             assert expected_value == data["content"][0]["databaseId"]
 
-    def test_get_maf_search_4_name(self, flask_app: Flask, email_service_isolated_ws_client: WsClient):
+    def test_get_maf_search_4_name(
+        self, flask_app: Flask, email_service_isolated_ws_client: WsClient
+    ):
         with flask_app.app_context():
             ws_client = email_service_isolated_ws_client
 
@@ -73,52 +77,45 @@ class TestWebServiceClient(object):
             assert "databaseId" in data["content"][0]
             assert expected_value == data["content"][0]["databaseId"]
 
-    def test_get_all_studies_for_user_1(self, flask_app: Flask,
-                                        email_service_isolated_ws_client: WsClient,
-                                        sensitive_data: SensitiveDatastorage):
+    def test_get_all_studies_for_user_1(
+        self,
+        flask_app: Flask,
+        email_service_isolated_ws_client: WsClient,
+        sensitive_data: SensitiveDatastorage,
+    ):
         with flask_app.app_context():
             ws_client = email_service_isolated_ws_client
 
-            result = ws_client.get_all_studies_for_user(sensitive_data.invalid_user_token_001)
+            result = ws_client.get_all_studies_for_user(
+                sensitive_data.invalid_user_token_001
+            )
             assert result is not None
             data = json.loads(result)
             assert len(data) == 0
 
-    def test_get_all_studies_for_user_2(self, flask_app: Flask,
-                                        email_service_isolated_ws_client: WsClient,
-                                        sensitive_data: SensitiveDatastorage):
+    def test_get_all_studies_for_user_2(
+        self,
+        flask_app: Flask,
+        email_service_isolated_ws_client: WsClient,
+        sensitive_data: SensitiveDatastorage,
+    ):
         with flask_app.app_context():
             ws_client = email_service_isolated_ws_client
 
-            result = ws_client.get_all_studies_for_user(sensitive_data.submitter_token_001)
+            result = ws_client.get_all_studies_for_user(
+                sensitive_data.submitter_token_001
+            )
             assert result is not None
             data = json.loads(result)
             assert len(data) > 0
 
-    def test_add_empty_study_1(self, flask_app: Flask,
-                               email_service_isolated_ws_client: WsClient,
-                               sensitive_data: SensitiveDatastorage):
-        with flask_app.app_context():
-            ws_client = email_service_isolated_ws_client
-            study_id = None
-            user_token = sensitive_data.super_user_token_001
-            try:
-                actual = ws_client.add_empty_study(user_token)
-                study_id = actual
-                assert actual is not None
-                ws_client.email_service.send_email.assert_called()
-
-            finally:
-                if study_id:
-                    user_email = get_email(user_token)
-                    study_submitters(study_id, user_email, "delete")
-                    sql = "delete from STUDIES where acc = %(acc)s;"
-                    params = {"acc": study_id}
-                    execute_query_with_parameter(sql, params)
-
-    def test_reindex_1(self, flask_app: Flask,
-                       email_service_isolated_ws_client: WsClient,
-                       sensitive_data: SensitiveDatastorage, mocker):
+    def test_reindex_1(
+        self,
+        flask_app: Flask,
+        email_service_isolated_ws_client: WsClient,
+        sensitive_data: SensitiveDatastorage,
+        mocker,
+    ):
         with flask_app.app_context():
             ws_client = email_service_isolated_ws_client
             study_id = None
@@ -135,10 +132,13 @@ class TestWebServiceClient(object):
                 if study_id:
                     delete_test_study_from_db(study_id)
 
-
-    def test_reindex_unauthorized_1(self, flask_app: Flask,
-                                    email_service_isolated_ws_client: WsClient,
-                                    sensitive_data: SensitiveDatastorage, mocker):
+    def test_reindex_unauthorized_1(
+        self,
+        flask_app: Flask,
+        email_service_isolated_ws_client: WsClient,
+        sensitive_data: SensitiveDatastorage,
+        mocker,
+    ):
         with flask_app.app_context():
             ws_client = email_service_isolated_ws_client
             study_id = None

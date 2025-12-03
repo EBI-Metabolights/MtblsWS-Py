@@ -1,12 +1,12 @@
 import datetime
-import traceback
-from typing import Union
-from flask import make_response
 import re
-from functools import lru_cache, update_wrapper
-from typing import Callable, Any
-from math import floor
 import time
+import traceback
+from functools import lru_cache, update_wrapper
+from math import floor
+from typing import Any, Callable, Union
+
+from flask import make_response
 
 
 def ttl_cache(maxsize: int = 128, typed: bool = False, ttl: int = -1):
@@ -17,13 +17,15 @@ def ttl_cache(maxsize: int = 128, typed: bool = False, ttl: int = -1):
 
     def wrapper(func: Callable) -> Callable:
         @lru_cache(maxsize, typed)
-        def ttl_func(ttl_hash,  *args, **kwargs):
+        def ttl_func(ttl_hash, *args, **kwargs):
             return func(*args, **kwargs)
 
         def wrapped(*args, **kwargs) -> Any:
             th = next(hash_gen)
             return ttl_func(th, *args, **kwargs)
+
         return update_wrapper(wrapped, func)
+
     return wrapper
 
 
@@ -32,16 +34,18 @@ def _ttl_hash_gen(seconds: int):
 
     while True:
         yield floor((time.time() - start_time) / seconds)
-        
-        
+
+
 def current_time(utc_timezone: bool = True) -> datetime.datetime:
     if utc_timezone:
         return datetime.datetime.now(datetime.timezone.utc)
     else:
         return datetime.datetime.now()
 
+
 def current_utc_time_without_timezone():
     return current_time().replace(tzinfo=None)
+
 
 def metabolights_exception_handler(func):
     def exception_handler(*args, **kwargs):
@@ -53,7 +57,11 @@ def metabolights_exception_handler(func):
             traceback.print_exc()
             return response
         except Exception as e:
-            data = {"content": None, "message": "Error while procession data", "err": str(e)}
+            data = {
+                "content": None,
+                "message": "Error while procession data",
+                "err": str(e),
+            }
             response = make_response(data, 400)
             traceback.print_exc()
             return response
@@ -62,7 +70,9 @@ def metabolights_exception_handler(func):
 
 
 class MetabolightsException(Exception):
-    def __init__(self, message: str = "", exception: Union[None, Exception] = None, http_code=400):
+    def __init__(
+        self, message: str = "", exception: Union[None, Exception] = None, http_code=400
+    ):
         super(MetabolightsException, self).__init__()
         self.message = message
         self.exception = exception
@@ -75,14 +85,27 @@ class MetabolightsException(Exception):
             return f"{str(self.__class__.__name__)}: {self.message}, http_code: {self.http_code}"
 
 
+class DeprecationError(RuntimeError):
+    """Used for deprecated methods and functions."""
+
+    def __init__(self, message="This feature has been deprecated."):
+        super().__init__(message)
+
+
 class MetabolightsDBException(MetabolightsException):
-    def __init__(self, message: str, exception: Union[None, Exception] = None, http_code=401):
+    def __init__(
+        self, message: str, exception: Union[None, Exception] = None, http_code=401
+    ):
         super(MetabolightsDBException, self).__init__(message, exception, http_code)
 
 
 class MetabolightsFileOperationException(MetabolightsException):
-    def __init__(self, message: str, exception: Union[None, Exception] = None, http_code=400):
-        super(MetabolightsFileOperationException, self).__init__(message, exception, http_code)
+    def __init__(
+        self, message: str, exception: Union[None, Exception] = None, http_code=400
+    ):
+        super(MetabolightsFileOperationException, self).__init__(
+            message, exception, http_code
+        )
 
 
 class MetabolightsAuthenticationException(MetabolightsException):
@@ -130,7 +153,7 @@ class ValueMaskUtility(object):
         "consumer_key": "uuid",
         "bearer": "uuid",
         "client_id": "uuid",
-        "access_key": "secret"
+        "access_key": "secret",
     }
 
     @classmethod

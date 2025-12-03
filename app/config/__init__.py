@@ -2,6 +2,7 @@ import datetime
 import logging
 from typing import Union
 
+from app.config.base import ApplicationBaseSettings
 from app.config.model.auth import AuthSettings
 from app.config.model.bioportal import BioportalSettings
 from app.config.model.celery import CelerySettings
@@ -22,10 +23,10 @@ from app.config.model.redis_cache import RedisSettings
 from app.config.model.report import ReportSettings
 from app.config.model.server import ServerSettings
 from app.config.model.study import StudySettings
-from app.config.base import ApplicationBaseSettings
 from app.config.model.worker import WorkerSettings
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
+
 
 class ApplicationSettings(ApplicationBaseSettings):
     flask: FlaskConfiguration
@@ -55,22 +56,24 @@ class ApplicationSettings(ApplicationBaseSettings):
 
 
 _application_settings: Union[None, ApplicationSettings] = None
-_last_update_check_timestamp: int = 0 
+_last_update_check_timestamp: int = 0
 
 
 def get_settings() -> ApplicationSettings:
     global _application_settings
     global _last_update_check_timestamp
-    
+
     update_check_time_delta = 60
     if _application_settings:
-        update_check_time_delta = _application_settings.server.service.config_file_check_period_in_seconds    
+        update_check_time_delta = (
+            _application_settings.server.service.config_file_check_period_in_seconds
+        )
     now = int(datetime.datetime.now(datetime.UTC).timestamp())
     current_settings = _application_settings
     if now - _last_update_check_timestamp > update_check_time_delta:
         _application_settings = None
         _last_update_check_timestamp = now
-    
+
     if not _application_settings:
         # print("Configuration file will be updated.")
         try:
@@ -80,5 +83,5 @@ def get_settings() -> ApplicationSettings:
             print(ex)
             logger.error(ex)
             _application_settings = current_settings
-    
+
     return _application_settings
