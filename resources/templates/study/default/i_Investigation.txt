@@ -1,8 +1,8 @@
 ONTOLOGY SOURCE REFERENCE
-Term Source Name	
-Term Source File	
-Term Source Version	
-Term Source Description	
+Term Source Name
+Term Source File
+Term Source Version
+Term Source Description
 INVESTIGATION
 Investigation Identifier	"MOE"
 Investigation Title	"Investigation"
@@ -40,8 +40,8 @@ Study Public Release Date	""
 Study File Name	"s_Sample.txt"
 Comment[License]	CC0 1.0 Universal
 Comment[Sample Template]	minimum
-Comment[Study Category]	other							
-Comment[Template Version]	2.0								
+Comment[Study Category]	other
+Comment[Template Version]	2.0
 STUDY DESIGN DESCRIPTORS
 Study Design Type	""
 Study Design Type Term Accession Number	""

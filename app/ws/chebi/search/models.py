@@ -30,7 +30,13 @@ class CompoundSearchResultModel(BaseModel):
     search_resource: Union[None, SearchResource] = None
 
     def is_complete(self):
-        if self.name and self.inchi and self.formula and self.smiles and self.databaseId:
+        if (
+            self.name
+            and self.inchi
+            and self.formula
+            and self.smiles
+            and self.databaseId
+        ):
             return True
         return False
 
@@ -52,15 +58,21 @@ class CompoundSearchResultModel(BaseModel):
 
 
 class CompoundSearchResponseModel(BaseModel):
-    content: List[CompoundSearchResultModel] = Field([],
-                                                     description="""
+    content: List[CompoundSearchResultModel] = Field(
+        [],
+        description="""
                          This field contains data of service result
-                         """)
-    message: Union[None, str] = Field(None,
-                         description="""
+                         """,
+    )
+    message: Union[None, str] = Field(
+        None,
+        description="""
                          This field contains message about content and service result
-                         """)
-    err: Union[None, str] = Field(None,
-                     description="""
+                         """,
+    )
+    err: Union[None, str] = Field(
+        None,
+        description="""
                      This field contains error message details, if service returns error code
-                     """)
+                     """,
+    )

@@ -1,15 +1,15 @@
-import datetime
-from enum import Enum
 import os
+from enum import Enum
 from typing import List, Union
+
 from pydantic import BaseModel
+
 from app.config import get_settings
 from app.services.storage_service.models import (
     SyncCalculationTaskResult,
     SyncTaskResult,
 )
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
-
 from app.utils import MetabolightsException, current_time
 
 

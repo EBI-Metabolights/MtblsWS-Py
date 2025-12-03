@@ -1,15 +1,11 @@
 import datetime
 import glob
 import os
-from pathlib import Path
 import sys
 import time
 from typing import Dict, List, Union
-from app.config import get_settings
-from app.tasks.bash_client import BashClient
-from app.tasks.hpc_rsync_worker import HpcRsyncWorker
 
-from app.tasks.worker import get_flask_app
+from app.config.model.study import StudySettings
 from app.ws.db.schemes import Study
 from app.ws.db.types import StudyStatus
 from app.ws.folder_maintenance import (
@@ -17,7 +13,6 @@ from app.ws.folder_maintenance import (
     MaintenanceException,
     StudyFolderMaintenanceTask,
 )
-from app.config.model.study import StudySettings
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_service import StudyService
 
@@ -58,7 +53,7 @@ def update_readonly_storage_folders(
     future_action_log_file_path = output_summary_report
 
     with open(future_action_log_file_path, "w") as fa:
-        header = f"STUDY_ID\tSTUDY STATUS\tSTATUS\tCOMMAND\tACTION\tITEM\tMESSAGE\tPARAMETERS\n"
+        header = "STUDY_ID\tSTUDY STATUS\tSTATUS\tCOMMAND\tACTION\tITEM\tMESSAGE\tPARAMETERS\n"
         fa.writelines([header])
         for study_id in study_id_list:
             study: Study = StudyService.get_instance().get_study_by_acc(

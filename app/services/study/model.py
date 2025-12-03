@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 from typing import Union
 
 from pydantic import BaseModel
@@ -22,13 +21,13 @@ class StudyPaths(BaseModel):
 
 class StudyManagedFiles(BaseModel):
     validation_report: Union[Path, None] = None
-    
-    
+
+
 class StudyManagedFolders(BaseModel):
     files_link: Union[Path, None] = None
     internal_files_link: Union[Path, None] = None
     audit_files_link: Union[Path, None] = None
-    
+
     rw_audit_folder: Union[Path, None] = None
     rw_logs_folder: Union[Path, None] = None
     rw_temp_folder: Union[Path, None] = None

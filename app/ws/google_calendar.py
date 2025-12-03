@@ -21,34 +21,34 @@ import os.path
 import pickle
 
 from flask import request
-from flask_restful import Resource, abort
+from flask_restful import Resource
 from flask_restful_swagger import swagger
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from app.config import get_settings
 
+from app.config import get_settings
+from app.ws.auth.permissions import validate_user_has_curator_role
 from app.ws.db_connection import get_all_studies
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study.user_service import UserService
 from app.ws.utils import safe_str
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 wsc = WsClient()
 
 
 def get_google_calendar_events():
-    resource_folder = os.path.join('.', 'resources')
-    pickle_file = os.path.join(resource_folder, 'token.pickle')
+    resource_folder = os.path.join(".", "resources")
+    pickle_file = os.path.join(resource_folder, "token.pickle")
     # https://developers.google.com/calendar/quickstart/python
-    SCOPES = ['https://www.googleapis.com/auth/calendar']
+    SCOPES = ["https://www.googleapis.com/auth/calendar"]
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is created automatically
     # when the authorization flow completes for the first time.
     logger.info("Looking for Google Calendar credentials " + pickle_file)
     if os.path.exists(pickle_file):
         logger.info("Reading Google Calendar credentials " + pickle_file)
-        with open(pickle_file, 'rb') as token:
+        with open(pickle_file, "rb") as token:
             creds = pickle.load(token)
     # If there are no (valid) credentials available, let the user log in.
     # Run this locally to get a new pickle file
@@ -62,72 +62,95 @@ def get_google_calendar_events():
             flow = InstalledAppFlow.from_client_secrets_file(cal_token, SCOPES)
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
-        with open(pickle_file, 'wb') as token:
-            logger.info("Writing new Google Calendar credentials pickle file " + pickle_file)
+        with open(pickle_file, "wb") as token:
+            logger.info(
+                "Writing new Google Calendar credentials pickle file " + pickle_file
+            )
             pickle.dump(creds, token)
-    service = build('calendar', 'v3', credentials=creds)
+    service = build("calendar", "v3", credentials=creds)
 
     calendar_id = get_settings().google.services.google_calendar_id
-    
+
     logger.info("Reading Google Calendar events for calendar id " + calendar_id)
     events = service.events().list(calendarId=calendar_id, maxResults=2500).execute()
 
     return service, events
 
 
-def add_calendar_event(events, service, study_id=None, study_status=None, due_date=None):
-    if study_status.lower() == 'private':
-        add_google_calendar_event(events, service, event_text=study_id, event_date=due_date, delete_only=False)
+def add_calendar_event(
+    events, service, study_id=None, study_status=None, due_date=None
+):
+    if study_status.lower() == "private":
+        add_google_calendar_event(
+            events, service, event_text=study_id, event_date=due_date, delete_only=False
+        )
     else:
-        add_google_calendar_event(events, service, event_text=study_id, event_date=due_date, delete_only=True)
+        add_google_calendar_event(
+            events, service, event_text=study_id, event_date=due_date, delete_only=True
+        )
 
 
-def add_google_calendar_event(events, service,  event_text=None, event_date=None, delete_only=False):
+def add_google_calendar_event(
+    events, service, event_text=None, event_date=None, delete_only=False
+):
     # Refer to the Python quickstart on how to setup the environment:
     # https://developers.google.com/calendar/quickstart/python
     # Change the scope to 'https://www.googleapis.com/auth/calendar' and delete any
     # stored credentials.
 
     _event = {
-        'summary': event_text,
-        'start': {
-            'date': event_date
-        },
-        'end': {
-            'date': event_date
-        },
-        'reminders': {
-            'useDefault': False,
-            'overrides': [
-                {'method': 'email', 'minutes': 24 * 60},
-                {'method': 'popup', 'minutes': 10},
+        "summary": event_text,
+        "start": {"date": event_date},
+        "end": {"date": event_date},
+        "reminders": {
+            "useDefault": False,
+            "overrides": [
+                {"method": "email", "minutes": 24 * 60},
+                {"method": "popup", "minutes": 10},
             ],
         },
     }
 
     # events = None
     calendar_id = get_settings().google.services.google_calendar_id
-    for existing_event in events['items']:
-        existing_id = existing_event['summary']
-        existing_date = existing_event['start']['date']
+    for existing_event in events["items"]:
+        existing_id = existing_event["summary"]
+        existing_date = existing_event["start"]["date"]
         if event_text == existing_id:  # and event_date != existing_date:
-            msg = 'Event already exists, deleting: ' + \
-                  event_text + ' ' + event_date + ' ' + existing_event.get('id')
+            msg = (
+                "Event already exists, deleting: "
+                + event_text
+                + " "
+                + event_date
+                + " "
+                + existing_event.get("id")
+            )
             logger.info(msg)
             print(msg)
-            service.events().delete(calendarId=calendar_id, eventId=existing_event['id']).execute()
+            service.events().delete(
+                calendarId=calendar_id, eventId=existing_event["id"]
+            ).execute()
 
     # Add new event
     if not delete_only:
         try:
-            new_event = service.events().insert(calendarId=calendar_id, body=_event).execute()
-            created_text = 'Event created: ' + event_text + ' ' + event_date
+            new_event = (
+                service.events().insert(calendarId=calendar_id, body=_event).execute()
+            )
+            created_text = "Event created: " + event_text + " " + event_date
             logger.info(created_text)
             print(created_text)
         except Exception as e:
-            error_text = 'Event ' + event_text + ' could not be created on the ' + event_date + '. Error: ' + str(e)
+            error_text = (
+                "Event "
+                + event_text
+                + " could not be created on the "
+                + event_date
+                + ". Error: "
+                + str(e)
+            )
             logger.error(error_text)
-            print('Error: ' + error_text)
+            print("Error: " + error_text)
 
 
 class GoogleCalendar(Resource):
@@ -140,51 +163,39 @@ class GoogleCalendar(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
+                "allowMultiple": False,
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 401,
                 "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a study id and a valid user token"
+                "Please provide a study id and a valid user token",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     def post(self):
-        user_token = None
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if user_token is None:
-            abort(401)
-        UserService.get_instance().validate_user_has_curator_role(user_token)
-
-
+        result = validate_user_has_curator_role(request)
+        user_token = result.context.user_api_token
         status, message = update_or_create_calendar_entries(user_token=user_token)
 
         if status:
-            return {'Success': message}
+            return {"Success": message}
         else:
-            return {'Error': message}
+            return {"Error": message}
 
 
 def update_or_create_calendar_entries(user_token=None):
     try:
-
         studies = get_all_studies(user_token)
         service, events = get_google_calendar_events()
 
@@ -212,15 +223,36 @@ def update_or_create_calendar_entries(user_token=None):
             # date is 'YYYY-MM-DD HH24:MI'
             due_date = status_change[:10]
 
-            logger.info('Updating Google Calendar for ' + study_id + '. Values: ' +
-                        user_name + '|' + release_date + '|' + update_date + '|' + study_status + '|' +
-                        curator + '|' + status_change + '|' + due_date)
+            logger.info(
+                "Updating Google Calendar for "
+                + study_id
+                + ". Values: "
+                + user_name
+                + "|"
+                + release_date
+                + "|"
+                + update_date
+                + "|"
+                + study_status
+                + "|"
+                + curator
+                + "|"
+                + status_change
+                + "|"
+                + due_date
+            )
 
-            add_calendar_event(events, service, study_id=study_id, study_status=study_status, due_date=due_date)
+            add_calendar_event(
+                events,
+                service,
+                study_id=study_id,
+                study_status=study_status,
+                due_date=due_date,
+            )
 
-            logger.info('Updated Google Calendar for study ' + study_id)
-            print('Updated Google Calendar for study ' + study_id)
+            logger.info("Updated Google Calendar for study " + study_id)
+            print("Updated Google Calendar for study " + study_id)
     except Exception as e:
         logger.error("Google Calendar update failed for " + study_id + ". " + str(e))
-        return False, 'Google Calendar update failed: ' + str(e)
-    return True, 'Google Calendar entries updated successfully'
+        return False, "Google Calendar update failed: " + str(e)
+    return True, "Google Calendar entries updated successfully"

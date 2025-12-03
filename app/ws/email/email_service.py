@@ -4,10 +4,9 @@ from typing import List, Set, Union
 
 from flask_mail import Mail, Message
 from jinja2 import Environment, PackageLoader, select_autoescape
-from app.config import get_settings
-import urllib.parse
-from app.config.model.email import EmailSettings
 
+from app.config import get_settings
+from app.config.model.email import EmailSettings
 
 logger = logging.getLogger("wslog")
 

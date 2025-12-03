@@ -1,8 +1,7 @@
-from enum import Enum
 import enum
 
 
-class UserRole(Enum):
+class UserRole(enum.IntEnum):
     ROLE_SUBMITTER = 0
     ROLE_SUPER_USER = 1
     ANONYMOUS = 2
@@ -13,25 +12,45 @@ class UserRole(Enum):
     def from_name(name: str):
         if not name:
             return UserRole.ANONYMOUS
-        if name.upper() == "ROLE_SUBMITTER":
+        if name.upper() in {"ROLE_SUBMITTER", "SUBMITTER"}:
             return UserRole.ROLE_SUBMITTER
-        elif name.upper() == "ROLE_SUPER_USER":
+        if name.upper() in {"ROLE_SUPER_USER", "CURATOR"}:
             return UserRole.ROLE_SUPER_USER
-        elif name.upper() == "REVIEWER":
+        if name.upper() == "REVIEWER":
             return UserRole.REVIEWER
-        elif name.upper() == "SYSTEM_ADMIN":
+        if name.upper() in {"SYSTEM_ADMIN", "ADMIN"}:
             return UserRole.SYSTEM_ADMIN
         return UserRole.ANONYMOUS
 
+    def to_name(self):
+        if self.name == "ROLE_SUBMITTER":
+            return "submitter"
+        if self.name == "ROLE_SUPER_USER":
+            return "curator"
+        if self.name == "REVIEWER":
+            return "reviewer"
+        if self.name == "SYSTEM_ADMIN":
+            return "admin"
+        return "anonymous"
 
-class CurationRequest(int, Enum):
+
+ActiveUserRoles: set[UserRole] = {
+    UserRole.ROLE_SUBMITTER,
+    UserRole.ROLE_SUPER_USER,
+    UserRole.SYSTEM_ADMIN,
+}
+
+
+class CurationRequest(enum.IntEnum):
     MANUAL_CURATION = 0
     NO_CURATION = 1
     SEMI_AUTOMATED_CURATION = 2
 
     @staticmethod
-    def from_name(name: str):
+    def from_name(name: str, fail_for_invalid_value: bool = False):
         if not name:
+            if fail_for_invalid_value:
+                raise ValueError(None)
             return None
         if name.upper() == "Manual Curation".upper():
             return CurationRequest.MANUAL_CURATION
@@ -39,6 +58,8 @@ class CurationRequest(int, Enum):
             return CurationRequest.NO_CURATION
         elif name.upper() == "Semi-automated Curation".upper():
             return CurationRequest.SEMI_AUTOMATED_CURATION
+        if fail_for_invalid_value:
+            raise ValueError(None)
         return None
 
     def to_camel_case_str(self):
@@ -51,7 +72,7 @@ class CurationRequest(int, Enum):
         return "Manual Curation"
 
 
-class UserStatus(Enum):
+class UserStatus(enum.IntEnum):
     NEW = 0
     VERIFIED = 1
     ACTIVE = 2
@@ -72,7 +93,7 @@ class UserStatus(Enum):
         return UserStatus.FROZEN
 
 
-class StudyStatus(Enum):
+class StudyStatus(enum.IntEnum):
     PROVISIONAL = 0
     PRIVATE = 1
     INREVIEW = 2
@@ -80,8 +101,10 @@ class StudyStatus(Enum):
     DORMANT = 4
 
     @staticmethod
-    def from_name(name: str):
+    def from_name(name: str, fail_for_invalid_value: bool = False):
         if not name:
+            if fail_for_invalid_value:
+                raise ValueError(name)
             return StudyStatus.PROVISIONAL
         if name.replace(" ", "").upper() == "PROVISIONAL":
             return StudyStatus.PROVISIONAL
@@ -91,6 +114,10 @@ class StudyStatus(Enum):
             return StudyStatus.INREVIEW
         elif name.replace(" ", "").upper() == "PUBLIC":
             return StudyStatus.PUBLIC
+        elif name.replace(" ", "").upper() == "DORMANT":
+            return StudyStatus.DORMANT
+        if fail_for_invalid_value:
+            raise ValueError(name)
         return StudyStatus.DORMANT
 
     @staticmethod
@@ -142,14 +169,14 @@ class StudyCategory(enum.IntEnum):
         return self.name.lower().replace("_", "-")
 
 
-class StudyTaskStatus(str, Enum):
+class StudyTaskStatus(enum.StrEnum):
     NOT_EXECUTED = "NOT_EXECUTED"
     EXECUTING = "EXECUTING"
     EXECUTION_SUCCESSFUL = "EXECUTION_SUCCESSFUL"
     EXECUTION_FAILED = "EXECUTION_FAILED"
 
 
-class StudyTaskName(str, Enum):
+class StudyTaskName(enum.StrEnum):
     REINDEX = "REINDEX"
     SEND_TWEET = "SEND_TWEET"
     SEND_EMAIL = "SEND_EMAIL"

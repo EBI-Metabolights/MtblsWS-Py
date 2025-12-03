@@ -15,7 +15,6 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-import datetime
 import fnmatch
 import glob
 import json
@@ -25,41 +24,50 @@ import pathlib
 import re
 import shutil
 import time
-from typing import Dict, List, OrderedDict, Set
+from typing import Dict, OrderedDict
 
 from flask import request
 from flask.json import jsonify
-from flask_restful import abort, Resource, reqparse
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from jsonschema.exceptions import ValidationError
-import pandas as pd
-from pydantic import BaseModel
+
 from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
-
 from app.services.storage_service.storage_service import StorageService
 from app.study_folder_utils import FileDescriptor, FileDifference
 from app.tasks.datamover_tasks.basic_tasks.file_management import list_directory
 from app.tasks.datamover_tasks.curation_tasks import data_file_operations
 from app.utils import (
-    MetabolightsAuthorizationException,
     MetabolightsException,
     current_time,
     metabolights_exception_handler,
 )
+from app.ws.auth.permissions import (
+    raise_deprecation_error,
+    validate_data_files_upload,
+    validate_metadata_files_delete,
+    validate_submission_update,
+    validate_submission_view,
+    validate_user_has_curator_role,
+)
+from app.ws.db.permission_scopes import (
+    PermisionScopeDict,
+    StudyResource,
+    StudyResourceScope,
+)
+from app.ws.db.types import UserRole
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.redis.redis import get_redis_server
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import (
-    get_all_files_from_filesystem,
     get_all_files,
+    get_all_files_from_filesystem,
     write_audit_files,
 )
-from app.ws.study.study_service import StudyService, identify_study_id
-from app.ws.study.user_service import UserService
+from app.ws.study.study_service import StudyService
+from app.ws.study.utils import get_study_metadata_path
 from app.ws.study_folder_utils import (
-    FileMetadata,
     LiteFileSearchResult,
     evaluate_files,
     get_directory_files,
@@ -69,8 +77,8 @@ from app.ws.study_folder_utils import (
 from app.ws.utils import (
     delete_remote_file,
     get_assay_file_list,
-    remove_file,
     log_request,
+    remove_file,
 )
 
 logger = logging.getLogger("wslog")
@@ -128,50 +136,22 @@ class StudyFiles(Resource):
         ],
     )
     def get(self, study_id: str):
-        # param validation
-        if study_id is None:
-            abort(404)
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
+        obfuscation_code = result.context.obfuscation_code
 
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # If false, only sync ISA-Tab metadata files
-        # query validation        include_raw_data = False
-        directory = None
-
-        if request.args:
-            include_raw_data = (
-                False
-                if request.args.get("include_raw_data").lower() != "true"
-                else True
-            )
-            directory = (
-                request.args.get("directory") if request.args.get("directory") else None
-            )
+        include_raw_data = (
+            False
+            if request.args.get("include_raw_data", "").lower() != "true"
+            else True
+        )
+        directory = request.args.get("directory", None)
 
         if directory and directory.startswith(os.sep):
             abort(
                 401, message="You can only specify folders in the current study folder"
             )
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
-
         study_files, upload_files, upload_diff, upload_location, latest_update_time = (
             get_all_files_from_filesystem(
                 study_id,
@@ -183,12 +163,17 @@ class StudyFiles(Resource):
                 static_validation_file=False,
             )
         )
-
-        relative_studies_root_path = get_private_ftp_relative_root_path()
-        folder_name = f"{study_id.lower()}-{obfuscation_code}"
-        upload_path = os.path.join(
-            os.sep, relative_studies_root_path.lstrip(os.sep), folder_name
-        )
+        is_owner_or_curator = result.context.owner or result.context.user_role in {
+            UserRole.ROLE_SUPER_USER,
+            UserRole.SYSTEM_ADMIN,
+        }
+        upload_path = ""
+        if is_owner_or_curator:
+            relative_studies_root_path = get_private_ftp_relative_root_path()
+            folder_name = f"{study_id.lower()}-{obfuscation_code}"
+            upload_path = os.path.join(
+                os.sep, relative_studies_root_path.lstrip(os.sep), folder_name
+            )
 
         return jsonify(
             {
@@ -196,7 +181,7 @@ class StudyFiles(Resource):
                 "latest": [],
                 "private": [],
                 "uploadPath": upload_path,
-                "obfuscationCode": obfuscation_code,
+                "obfuscationCode": obfuscation_code if is_owner_or_curator else "",
             }
         )
 
@@ -206,14 +191,14 @@ class StudyFiles(Resource):
         summary="Delete files from a given folder",
         nickname="Delete files",
         notes="""Delete files and folders from the study and/or upload folder<pre><code>
-{    
+{
     "files": [
         {"name": "a_MTBLS123_LC-MS_positive_hilic_metabolite_profiling.txt"},
         {"name": "Raw-File-001.raw"}
     ]
-}</pre></code></br> 
+}</pre></code></br>
 "file_location" is one of: "study" (study folder), "upload" (upload folder) or "both". </br>
-Please note you can not delete <b>active</b> metadata files (i_*.txt, s_*.txt, a_*.txt and m_*.tsv) 
+Please note you can not delete <b>active</b> metadata files (i_*.txt, s_*.txt, a_*.txt and m_*.tsv)
 without setting the "force" parameter to True""",
         parameters=[
             {
@@ -279,36 +264,21 @@ without setting the "force" parameter to True""",
         ],
     )
     def post(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
-        study_id = study_id.upper()
+        result = validate_submission_update(request, user_required=True)
+        study_id = result.context.study_id
+        obfuscation_code = result.context.obfuscation_code
+        study_location = get_study_metadata_path(study_id)
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        files = request.args.get("files") if request.args.get("files") else None
+        file_location = request.args.get("location", "study")
 
-        # query validation
-        file_location = "study"
-        files = None
-        always_remove = False
-
-        # If false, only sync ISA-Tab metadata files
-        if request.args:
-            files = request.args.get("files") if request.args.get("files") else None
-            file_location = (
-                request.args.get("location")
-                if request.args.get("location")
-                else "study"
-            )
-            always_remove = (
-                False if request.args.get("force").lower() != "true" else True
-            )
+        always_remove = (
+            False if request.args.get("force", "").lower() != "true" else True
+        )
 
         if file_location not in ["study", "upload"]:
             abort(400, message="Location is invalid")
-        # body content validation
+
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
             data = data_dict["files"]
@@ -318,24 +288,16 @@ without setting the "force" parameter to True""",
         except (ValidationError, Exception):
             abort(400, message="Incorrect JSON provided")
 
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403, message="Not authorized")
-
         errors = []
 
         deleted_files = []
         if file_location == "study":
+            result = validate_metadata_files_delete(request)
+            is_curator = result.context.user_role in {
+                UserRole.SYSTEM_ADMIN,
+                UserRole.ROLE_SUPER_USER,
+            }
+
             pattern = re.compile(r"([asi]_.*\.txt)|(m_.*\.tsv)")
             metadata_update = False
             for file in files:
@@ -389,6 +351,9 @@ without setting the "force" parameter to True""",
 
             return {"errors": errors, "deleted_files": deleted_files}
         else:
+            result = validate_data_files_upload(request)
+            obfuscation_code = result.context.obfuscation_code
+
             ftp_root_path = get_settings().hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path
             for file in files:
                 try:
@@ -421,7 +386,7 @@ class StudyRawAndDerivedDataFiles(Resource):
     @swagger.operation(
         summary="Search raw and derived data files in the study",
         notes="""
-        Search data files in in the study. 
+        Search data files in in the study.
         """,
         parameters=[
             {
@@ -483,59 +448,38 @@ class StudyRawAndDerivedDataFiles(Resource):
     )
     @metabolights_exception_handler
     def get(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404)
+        # Validate user has submmission view permission
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
 
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # If false, only sync ISA-Tab metadata files
-        # query validation
         settings = get_study_settings()
 
         data_files_subfolder = settings.readonly_files_symbolic_link_name
         search_pattern = f"{data_files_subfolder}/*"
         file_match = False
         folder_match = False
-        if request.args:
-            file_match = (
-                True if request.args.get("file_match").lower() == "true" else False
-            )
-            folder_match = (
-                True if request.args.get("folder_match").lower() == "true" else False
-            )
-            if not folder_match and not file_match:
-                raise MetabolightsException(
-                    http_code=401,
-                    message="At least one of them should be True: file_match, folder_match",
-                )
-            search_pattern = (
-                request.args.get("search_pattern")
-                if request.args.get("search_pattern")
-                else search_pattern
-            )
-
-            if (
-                ".." + os.path.sep in search_pattern
-                or "." + os.path.sep in search_pattern
-            ):
-                raise MetabolightsException(
-                    http_code=401,
-                    message="Relative folder search patterns (., ..) are not allowed",
-                )
-            search_pattern_prefix = f"{data_files_subfolder}/"
-            if not search_pattern.startswith(search_pattern_prefix):
-                search_pattern = f"FILES/{search_pattern}"
-
-        UserService.get_instance().validate_user_has_read_access(
-            user_token, study_id, None
+        file_match = (
+            True if request.args.get("file_match", "").lower() == "true" else False
         )
-        StudyService.get_instance().get_study_by_acc(study_id)
+        folder_match = (
+            True if request.args.get("folder_match", "").lower() == "true" else False
+        )
+        if not folder_match and not file_match:
+            raise MetabolightsException(
+                http_code=401,
+                message="At least one of them should be True: file_match, folder_match",
+            )
+        search_pattern = request.args.get("search_pattern", search_pattern)
+
+        if ".." + os.path.sep in search_pattern or "." + os.path.sep in search_pattern:
+            raise MetabolightsException(
+                http_code=401,
+                message="Relative folder search patterns (., ..) are not allowed",
+            )
+        search_pattern_prefix = f"{data_files_subfolder}/"
+        if not search_pattern.startswith(search_pattern_prefix):
+            search_pattern = f"FILES/{search_pattern}"
+
         study_data_file_index_path = os.path.join(
             settings.mounted_paths.study_internal_files_root_path,
             study_id,
@@ -577,63 +521,6 @@ class StudyRawAndDerivedDataFiles(Resource):
         final_result.sort(key=lambda x: x["name"])
         return {"files": final_result}
 
-        # study_folder = os.path.join(
-        #     settings.mounted_paths.study_metadata_files_root_path, study_id
-        # )
-        # search_subfolder = os.path.join(
-        #     settings.mounted_paths.study_metadata_files_root_path,
-        #     study_id,
-        #     data_files_subfolder,
-        # )
-        # search_path = os.path.join(
-        #     settings.mounted_paths.study_metadata_files_root_path,
-        #     study_id,
-        #     search_pattern,
-        # )
-        # ignore_list = self.get_ignore_list(study_folder)
-
-        # glob_search_result = glob.glob(search_path, recursive=True)
-        # search_results = [
-        #     os.path.abspath(file)
-        #     for file in glob_search_result
-        #     if (file_match and os.path.isfile(file))
-        #     or (folder_match and os.path.isdir(file))
-        # ]
-        # excluded_folders = get_settings().file_filters.folder_exclusion_list
-
-        # excluded_folder_set = set(
-        #     [
-        #         os.path.basename(os.path.abspath(os.path.join(study_folder, file)))
-        #         for file in excluded_folders
-        #     ]
-        # )
-        # filtered_result = []
-        # warning_occurred = False
-        # for item in search_results:
-        #     is_in_study_folder = (
-        #         item.startswith(search_subfolder + os.path.sep)
-        #         and ".." + os.path.sep not in item
-        #     )
-        #     if is_in_study_folder:
-        #         relative_path = item.replace(
-        #             search_subfolder + os.path.sep, f"{search_pattern_prefix}"
-        #         )
-        #         sub_path = relative_path.split(os.path.sep)
-        #         if sub_path and sub_path[0] not in excluded_folder_set:
-        #             filtered_result.append(relative_path)
-        #     else:
-        #         if not warning_occurred:
-        #             message = f"{search_pattern} pattern results for {study_id} are not allowed: {item}"
-        #             logger.warning(message)
-        #             warning_occurred = True
-
-        # files = [file for file in filtered_result if file not in ignore_list]
-        # files.sort()
-
-        # result = [{"name": file.replace(search_path + "/", "")} for file in files]
-
-        # return jsonify({"files": result})
-
     def get_ignore_list(self, search_path):
         ignore_list = []
 
@@ -651,12 +538,12 @@ class StudyRawAndDerivedDataFiles(Resource):
         summary="Move raw and drived data files to RAW_FILES, DERIVED_FILES, SUPPLEMENTARY_FILES or RECYCLE_BIN folder",
         nickname="Move files",
         notes="""Move files to RAW_FILES, DERIVED_FILES, SUPPLEMENTARY_FILES or RECYCLE_BIN folder. <pre><code>
-{    
+{
     "files": [
         {"name": "FILES/Sample/data.d"},
         {"name": "FILES/Raw-File-001.raw"}
     ]
-}</pre></code></br> 
+}</pre></code></br>
 """,
         parameters=[
             {
@@ -729,17 +616,8 @@ class StudyRawAndDerivedDataFiles(Resource):
     )
     @metabolights_exception_handler
     def put(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # query validation
+        result = validate_user_has_curator_role(request)
+        study_id = result.context.study_id
 
         target_location = None
         files = None
@@ -780,7 +658,6 @@ class StudyRawAndDerivedDataFiles(Resource):
         except (ValidationError, Exception):
             raise MetabolightsException(http_code=412, message="Incorrect JSON")
 
-        UserService.get_instance().validate_user_has_curator_role(user_token)
         StudyService.get_instance().get_study_by_acc(study_id)
         files_input = [
             {"name": str(x["name"])} for x in files if "name" in x and x["name"]
@@ -805,7 +682,7 @@ class StudyRawAndDerivedDataFiles(Resource):
         except Exception as ex:
             raise MetabolightsException(
                 http_code=500,
-                message=f"Move files task submission was failed",
+                message="Move files task submission was failed",
                 exception=ex,
             )
 
@@ -851,48 +728,14 @@ class StudyRawAndDerivedDataFolder(Resource):
         ],
     )
     def get(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # If false, only sync ISA-Tab metadata files
-        # query validation        search_pattern = "*"
-
-        if request.args:
-            search_pattern = (
-                request.args.get("search_pattern")
-                if request.args.get("search_pattern")
-                else "*"
+        result = validate_user_has_curator_role(request)
+        study_id = result.context.study_id
+        search_pattern = request.args.get("search_pattern", "*")
+        if "." + os.path.sep in search_pattern:
+            abort(
+                401, message="Relative folder search patterns (., ..) are not allowed"
             )
-            if (
-                ".." + os.path.sep in search_pattern
-                or "." + os.path.sep in search_pattern
-            ):
-                abort(
-                    401,
-                    message="Relative folder search patterns (., ..) are not allowed",
-                )
 
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not is_curator:
-            abort(403, message="User has no curator role")
         study_settings = get_study_settings()
 
         study_folder = os.path.join(
@@ -949,12 +792,12 @@ class StudyRawAndDerivedDataFolder(Resource):
         summary="Move raw and drived data folders into RAW_FILES, DERIVED_FILES, SUPPLEMENTARY_FILES or RECYCLE_BIN folder",
         nickname="Move folders",
         notes="""Move folders to RAW_FILES, DERIVED_FILES, SUPPLEMENTARY_FILES or RECYCLE_BIN folder<pre><code>
-{    
+{
     "folders": [
         {"name": "POS"},
         {"name": "Method_2"}
     ]
-}</pre></code></br> 
+}</pre></code></br>
 """,
         parameters=[
             {
@@ -1026,37 +869,16 @@ class StudyRawAndDerivedDataFolder(Resource):
         ],
     )
     def put(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # query validation
+        result = validate_data_files_upload(request)
+        study_id = result.context.study_id
 
         target_location = None
         folders = None
         override = False
         # If false, only sync ISA-Tab metadata files
-        if request.args:
-            folders = (
-                request.args.get("folders") if request.args.get("folders") else None
-            )
-            target_location = (
-                request.args.get("target_location")
-                if request.args.get("target_location")
-                else None
-            )
-            override = (
-                True
-                if request.args.get("override")
-                and request.args.get("override").lower() == "true"
-                else False
-            )
+        folders = request.args.get("folders", None)
+        target_location = request.args.get("target_location", None)
+        override = True if request.args.get("override", "").lower() == "true" else False
 
         if not target_location or target_location not in (
             "RAW_FILES",
@@ -1075,19 +897,6 @@ class StudyRawAndDerivedDataFolder(Resource):
         except (ValidationError, Exception):
             abort(400, message="Incorrect JSON provided")
 
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
         studies_folder = (
             get_settings().study.mounted_paths.study_metadata_files_root_path
         )
@@ -1279,117 +1088,45 @@ class StudyFilesReuse(Resource):
         ],
     )
     def get(self, study_id: str):
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
         readonly_mode = True
-        obfuscation_code = None
-        if "obfuscation_code" in request.headers:
-            obfuscation_code = request.headers["obfuscation_code"]
 
         include_internal_files = True
-        if request.args:
-            readonly_mode = (
-                True
-                if not request.args.get("readonlyMode")
-                or request.args.get("readonlyMode").lower() == "true"
-                else False
-            )
-            if request.args.get("include_internal_files"):
-                include_internal_files = (
-                    True
-                    if request.args.get("include_internal_files", "true").lower()
-                    == "true"
-                    else False
-                )
-        study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
-
-        UserService.get_instance().validate_user_has_read_access(
-            user_token=user_token, obfuscationcode=obfuscation_code, study_id=study_id
+        readonly_mode = (
+            True if request.args.get("readonlyMode", "").lower() == "true" else False
+        )
+        include_internal_files = (
+            True
+            if request.args.get("include_internal_files", "true").lower() == "true"
+            else False
         )
         location = ["study"]
         if not readonly_mode:
             location.append("upload")
+
         return get_study_metadata_and_data_files(
-            user_token,
             study_id,
-            obfuscation_code,
             location,
             include_internal_files,
             directory="",
             include_sub_dir=False,
+            scopes=result.permission.scopes,
         )
-
-
-def update_files_list_schema(
-    study_id,
-    obfuscation_code,
-    study_location,
-    files_list_json_file,
-    include_internal_files: bool = False,
-    include_sub_dir=None,
-):
-    study_files, upload_files, upload_diff, upload_location, latest_update_time = (
-        get_all_files_from_filesystem(
-            study_id,
-            obfuscation_code,
-            study_location,
-            directory=None,
-            include_raw_data=True,
-            assay_file_list=get_assay_file_list(study_location),
-            static_validation_file=False,
-            include_sub_dir=include_sub_dir,
-        )
-    )
-    if not include_internal_files:
-        study_files = [
-            item
-            for item in study_files
-            if "type" in item and item["type"] != "internal_mapping"
-        ]
-
-    relative_studies_root_path = get_private_ftp_relative_root_path()
-    folder_name = f"{study_id.lower()}-{obfuscation_code}"
-    upload_path = os.path.join(
-        os.sep, relative_studies_root_path.lstrip(os.sep), folder_name
-    )
-    files_list_schema = {
-        "study": study_files,
-        "latest": upload_diff,
-        "private": upload_files,
-        "uploadPath": upload_path,
-        "obfuscationCode": obfuscation_code,
-    }
-
-    logger.info(" Writing Files list schema to a file for studyid - %s ", study_id)
-    try:
-        with open(files_list_json_file, "w", encoding="utf-8") as f:
-            json.dump(files_list_schema, f, ensure_ascii=False)
-    except Exception as e:
-        logger.error("Error writing Files schema file: " + str(e))
-
-    return jsonify(files_list_schema)
 
 
 class CopyFilesFolders(Resource):
     @swagger.operation(
         summary="[Deprecated] Copy files from upload folder to study folder",
         nickname="Copy from upload folder",
-        notes="""Copies files/folder from the upload directory to the study directory</p> 
+        notes="""Copies files/folder from the upload directory to the study directory</p>
         Note that MetaboLights curators will also trigger a copy of any new investigation file!</p>
-        </p><pre><code>If you only want to copy, or rename, a specific file please use the files field: </p> 
-    { 
+        </p><pre><code>If you only want to copy, or rename, a specific file please use the files field: </p>
+    {
         "files": [
-            { 
-                "from": "filename2.ext", 
-                "to": "filename.ext" 
+            {
+                "from": "filename2.ext",
+                "to": "filename.ext"
             }
         ]
     }
@@ -1458,21 +1195,16 @@ class CopyFilesFolders(Resource):
         ],
     )
     def post(self, study_id):
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        raise_deprecation_error(request)
+        result = validate_user_has_curator_role(request, study_required=True)
+        study_id = result.context.study_id
+        obfuscation_code = result.context.obfuscation_code
+        study_location = get_study_metadata_path(study_id)
 
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-
-        study = StudyService.get_instance().get_study_by_acc(study_id)
-        study_path = os.path.join(
-            get_settings().study.mounted_paths.study_metadata_files_root_path, study_id
-        )
         storage = StorageService.get_ftp_private_storage()
 
         result = storage.check_folder_sync_status(
-            study_id, study.obfuscationcode, study_path
+            study_id, obfuscation_code, study_location
         )
         return jsonify(result.model_dump())
 
@@ -1525,15 +1257,11 @@ class SyncFolder(Resource):
     )
     def post(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        raise_deprecation_error(request)
+        result = validate_user_has_curator_role(request, study_required=True)
+        study_location = get_study_metadata_path(study_id)
+        study_id = result.context.study_id
+        obfuscation_code = result.context.obfuscation_code
 
         # query validation
 
@@ -1541,20 +1269,6 @@ class SyncFolder(Resource):
         # If false, only sync ISA-Tab metadata files
         if request.args:
             directory_name = request.args.get("directory_name")
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
 
         if directory_name:
             if directory_name == os.sep:
@@ -1628,32 +1342,9 @@ class SampleStudyFiles(Resource):
         ],
     )
     def get(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
-
-        upload_location = study_id.lower() + "-" + obfuscation_code
+        result = validate_submission_view(request)
+        study_location = get_study_metadata_path(study_id)
+        study_id = result.context.study_id
 
         # Get all unique file names
         all_files_in_study_location = get_all_files(
@@ -1669,7 +1360,6 @@ class SampleStudyFiles(Resource):
         try:
             isa_study, isa_inv, std_path = iac.get_isa_study(
                 study_id,
-                user_token,
                 skip_load_tables=False,
                 study_location=study_location,
             )
@@ -1728,7 +1418,7 @@ class UnzipFiles(Resource):
         summary="Unzip files in the study folder",
         nickname="Unzip files",
         notes="""Unzip files in the study folder<pre><code>
-    {    
+    {
         "files": [
             {"name": "Raw_files1.zip"},
             {"name": "Folders.zip"}
@@ -1792,23 +1482,14 @@ class UnzipFiles(Resource):
     )
     @metabolights_exception_handler
     def post(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # query validation        files = None
-        remove_zip = False
+        result = validate_user_has_curator_role(request)
+        study_id = result.context.study_id
 
         # If false, only sync ISA-Tab metadata files
-        if request.args:
-            files = request.args.get("files") if request.args.get("files") else None
-            remove_zip = False if request.args.get("force").lower() != "true" else True
+        files = request.args.get("files")
+        remove_zip = (
+            False if request.args.get("force", "true").lower() != "true" else True
+        )
 
         # body content validation
         try:
@@ -1816,14 +1497,13 @@ class UnzipFiles(Resource):
             data = data_dict["files"]
             if data is None:
                 raise MetabolightsException(
-                    http_code=400, message=f"files parameter is invalid"
+                    http_code=400, message="files parameter is invalid"
                 )
             files = data
         except (ValidationError, Exception):
             raise MetabolightsException(
-                http_code=400, message=f"files parameter is invalid"
+                http_code=400, message="files parameter is invalid"
             )
-        UserService.get_instance().validate_user_has_curator_role(user_token)
         StudyService.get_instance().get_study_by_acc(study_id)
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
         files_input = [
@@ -1836,7 +1516,7 @@ class UnzipFiles(Resource):
             inputs = {
                 "study_metadata_path": study_metadata_path,
                 "files": files_input,
-                "remove_zip_files": True,
+                "remove_zip_files": remove_zip,
                 "override": True,
             }
             result = data_file_operations.unzip_folders.apply_async(
@@ -1851,7 +1531,7 @@ class UnzipFiles(Resource):
             return result
         except Exception as ex:
             raise MetabolightsException(
-                http_code=500, message=f"Unzip task submission was failed", exception=ex
+                http_code=500, message="Unzip task submission was failed", exception=ex
             )
 
 
@@ -1962,96 +1642,48 @@ class StudyFilesTree(Resource):
     )
     @metabolights_exception_handler
     def get(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404)
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
 
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        obfuscation_code = None
-        if "obfuscation_code" in request.headers:
-            obfuscation_code = request.headers["obfuscation_code"]
-
-        # if not obfuscation_code and not user_token:
-        #     abort(401, message="At least one of them is requred: user token or obfuscation code.")
-        # If false, only sync ISA-Tab metadata files
-        # query validation
-        UserService.get_instance().validate_user_has_read_access(
-            user_token=user_token, study_id=study_id, obfuscationcode=obfuscation_code
+        include_sub_dir = (
+            False if request.args.get("include_sub_dir", "").lower() != "true" else True
         )
-        include_sub_dir = False
-        directory = None
-        location = "study"
-        include_internal_files = True
-        if request.args:
-            if request.args.get("include_sub_dir"):
-                include_sub_dir = (
-                    False
-                    if request.args.get("include_sub_dir").lower() != "true"
-                    else True
-                )
-            location = (
-                request.args.get("location")
-                if request.args.get("location")
-                else "study"
-            )
-            directory = (
-                request.args.get("directory") if request.args.get("directory") else None
-            )
-            if request.args.get("include_internal_files"):
-                include_internal_files = (
-                    True
-                    if request.args.get("include_internal_files", "true").lower()
-                    == "true"
-                    else False
-                )
+        location = request.args.get("location", "study")
+        directory = request.args.get("directory", None)
+
+        include_internal_files = (
+            True
+            if request.args.get("include_internal_files", "true").lower() == "true"
+            else False
+        )
+
         if location not in ["study", "upload"]:
             abort(401, message="Study location is not valid")
         if directory and directory.startswith(os.sep):
             abort(
                 401, message="You can only specify folders in the current study folder"
             )
-        # check for access rights
-        UserService.get_instance().validate_user_has_read_access(
-            user_token, study_id=study_id, obfuscationcode=obfuscation_code
-        )
         return get_study_metadata_and_data_files(
-            user_token,
             study_id,
-            obfuscation_code,
             [location],
             include_internal_files,
             directory,
             include_sub_dir,
+            scopes=result.permission.scopes,
         )
 
 
 def get_study_metadata_and_data_files(
-    user_token,
     study_id,
-    obfuscation_code,
     location,
     include_internal_files,
     directory,
     include_sub_dir,
+    scopes: None | PermisionScopeDict = None,
 ):
     settings = get_settings()
-    study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
-
-    rw_authorized_user = False
-    try:
-        if user_token:
-            UserService.get_instance().validate_user_has_write_access(
-                user_token=user_token, study_id=study_id
-            )
-            rw_authorized_user = True
-    except (MetabolightsException, MetabolightsAuthorizationException):
-        pass
+    if not scopes:
+        scopes = {}
 
     study = StudyService.get_instance().get_study_by_acc(study_id)
     upload_folder = study_id.lower() + "-" + study.obfuscationcode
@@ -2075,8 +1707,19 @@ def get_study_metadata_and_data_files(
             exclude_list.add(
                 os.path.join(settings.readonly_files_symbolic_link_name, item)
             )
-        if not include_internal_files or not rw_authorized_user:
+        audit_files_view = (
+            True
+            if StudyResourceScope.VIEW in scopes.get(StudyResource.AUDIT_FILES, [])
+            else False
+        )
+        internal_files_view = (
+            True
+            if StudyResourceScope.VIEW in scopes.get(StudyResource.INTERNAL_FILES, [])
+            else False
+        )
+        if not include_internal_files or not audit_files_view:
             exclude_list.add(settings.internal_files_symbolic_link_name)
+        if not include_internal_files or not internal_files_view:
             exclude_list.add(settings.audit_files_symbolic_link_name)
 
         include_metadata_files = True
@@ -2167,9 +1810,13 @@ def get_study_metadata_and_data_files(
         # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
         # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
         search_result = evaluate_files(directory_files, referenced_files)
-
+    data_files_index_view = (
+        True
+        if StudyResourceScope.VIEW in scopes.get(StudyResource.DATA_FILES_INDEX, [])
+        else False
+    )
     if "upload" in location:
-        if rw_authorized_user:
+        if data_files_index_view:
             try:
                 settings = get_settings()
                 ftp_root_path = settings.hpc_cluster.datamover.mounted_paths.cluster_private_ftp_root_path
@@ -2183,14 +1830,16 @@ def get_study_metadata_and_data_files(
                     include_sub_dir, settings, ftp_folder_path
                 )
                 if search_result:
+                    search_result.privateFtpAccessible = (
+                        ftp_search_result.privateFtpAccessible
+                    )
                     search_result.latest = ftp_search_result.study
-                    search_result.privateFtpAccessible = ftp_search_result.privateFtpAccessible
                 else:
                     search_result = ftp_search_result
                 # search_result.latest = search_result.study
                 # search_result.study = []
             except Exception as exc:
-                logger.error("Error for study %s: %s", study.acc, exc)
+                logger.error("Error for study {study.acc}: {str(exc)}")
                 raise MetabolightsException(
                     "Search failed.", exception=exc, http_code=500
                 )
@@ -2200,90 +1849,30 @@ def get_study_metadata_and_data_files(
         sortFileMetadataList(search_result.study)
     if search_result.latest:
         sortFileMetadataList(search_result.latest)
-    if rw_authorized_user:
+    data_files_upload = (
+        True
+        if StudyResourceScope.UPLOAD in scopes.get(StudyResource.DATA_FILES, [])
+        else False
+    )
+    if data_files_upload:
         search_result.uploadPath = upload_path
         search_result.obfuscationCode = study.obfuscationcode
     return search_result.model_dump(serialize_as_any=True)
 
 
-def get_private_ftp_files(include_sub_dir, settings, ftp_folder_path) -> LiteFileSearchResult:
-    status_key = "private_ftp_connection:status"
-    update_time_key = "private_ftp_connection:last_update_time"
-    status_check_in_progress_key = "private_ftp_connection:status_check_in_progress"
-    update_check_time_delta = 60
-    call_async_task = False
-    in_progress = False
-    accessible = False
-    last_check_timestamp: None | int = None
-    redis_available = False
-    try:
-        redis = get_redis_server()
-        value = redis.get_value(update_time_key)
-        if not value:
-            call_async_task = True
-        else:
-            last_check_timestamp = int(value.decode())
-            current = int(current_time(utc_timezone=True).timestamp())
-            if not current or (
-                current - last_check_timestamp > update_check_time_delta
-            ):
-                call_async_task = True
-            else:
-                status_value = redis.get_value(status_key)
-                if status_value:
-                    accessible = bool(status_value.decode())
-                    if accessible:
-                        call_async_task = True
-        if not accessible and call_async_task:
-            in_progress_value = redis.get_value(status_check_in_progress_key)
-            in_progress = bool(in_progress_value.decode()) if in_progress_value else False
-        redis_available = True
-    except Exception as ex:
-        logger.warning("Cache server FTP status check error: %s", ex)
-
-    if not call_async_task:
-        return LiteFileSearchResult(privateFtpAccessible=False)
-    if in_progress:
-        logger.debug("Private FTP status check in progress...")
-        return LiteFileSearchResult(privateFtpAccessible=False)
-    if redis_available:
-        try:
-            get_redis_server().set_value(
-                status_check_in_progress_key, "1", ex=update_check_time_delta
-            )
-        except Exception as ex:
-            logger.debug("Redis server access error: ex", ex)
-
+def get_private_ftp_files(include_sub_dir, settings, ftp_folder_path):
     timeout = settings.hpc_cluster.configuration.task_get_timeout_in_seconds
-    status_result = False
+    # status_result = False
     try:
         inputs = {"path": ftp_folder_path, "recursive": include_sub_dir}
         task = list_directory.apply_async(kwargs=inputs, expires=timeout)
         output = task.get(timeout=timeout)
         ftp_search_result = LiteFileSearchResult.model_validate(output)
-        status_result = True
+        # status_result = True
         return ftp_search_result
     except Exception as ex:
         logger.warning("Private FTP is not accessible: %s", ex)
         return LiteFileSearchResult(privateFtpAccessible=False)
-    finally:
-        if redis_available:
-            try:
-                current = int(current_time(utc_timezone=True).timestamp())
-                if current - last_check_timestamp > 10:
-                    redis = get_redis_server()
-                    redis.set_value(
-                        status_key, "1" if status_result else "0", ex=update_check_time_delta
-                    )
-                    redis.set_value(
-                        status_check_in_progress_key, "0", ex=update_check_time_delta
-                    )
-                    
-                    redis.set_value(
-                        update_time_key, str(current), ex=update_check_time_delta
-                    )
-            except Exception as ex:
-                logger.debug("Redis server access error: ex", ex)
 
 
 class FileList(Resource):
@@ -2332,27 +1921,10 @@ class FileList(Resource):
         ],
     )
     def get(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        obfuscation_code = None
-        if "obfuscation_code" in request.headers:
-            obfuscation_code = request.headers["obfuscation_code"]
-
-        if not obfuscation_code and not user_token:
-            abort(
-                401,
-                message="At least one of them is requred: user token or obfuscation code.",
-            )
-
+        raise_deprecation_error(request)
+        result = validate_user_has_curator_role(request, study_required=True)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
 
         directory_name = ""
@@ -2360,19 +1932,6 @@ class FileList(Resource):
         if request.args:
             directory_name = request.args.get("directory_name")
 
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
         source = study_location
         if directory_name:
             source = os.path.join(study_location, directory_name)
@@ -2429,22 +1988,10 @@ class DeleteAsperaFiles(Resource):
     )
     @metabolights_exception_handler
     def delete(self, study_id):
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        result = validate_user_has_curator_role(request, study_required=True)
+        study_id = result.context.study_id
 
-        if not user_token:
-            abort(404)
-
-        if user_token is None or study_id is None:
-            abort(401)
-
-        study_id = study_id.upper()
-        UserService.get_instance().validate_user_has_curator_role(user_token)
-        StudyService.get_instance().get_study_by_acc(study_id)
-
-        logger.info("Deleting aspera files from study " + study_id)
+        logger.info("Deleting aspera files from study %s", study_id)
 
         inputs = {"study_id": study_id}
         result = data_file_operations.delete_aspera_files_from_data_files.apply_async(

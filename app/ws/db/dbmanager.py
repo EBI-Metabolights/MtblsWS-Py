@@ -4,9 +4,9 @@ from urllib.parse import quote
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
 from app.config import get_settings
 from app.config.model.database import DatabaseConnection
-
 
 
 class DBManager(object):
@@ -15,7 +15,9 @@ class DBManager(object):
         self.db_url = self._get_db_url()
 
         self._engine = create_engine(self.db_url)
-        self.session_maker = sessionmaker(autocommit=False, autoflush=False, bind=self._engine)
+        self.session_maker = sessionmaker(
+            autocommit=False, autoflush=False, bind=self._engine
+        )
 
     instance = None
 

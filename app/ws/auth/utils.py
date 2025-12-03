@@ -1,104 +1,88 @@
+import hashlib
+from typing import Union
+
+import jwt
+from sqlalchemy import func
+
+from app.config import get_settings
+from app.config.model.auth import AuthConfiguration
+from app.utils import MetabolightsAuthorizationException, current_time
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.models import StudyAccessPermission
-from app.ws.db.schemes import Study, User
-from app.ws.db.types import StudyStatus, UserRole, UserStatus
-from app.ws.study.user_service import UserService
+from app.ws.db.models import SimplifiedUserModel
+from app.ws.db.schemes import User
+from app.ws.db.types import UserStatus
 
 
-def get_permission_by_study_id(study_id, user_token) -> StudyAccessPermission:
-    filter_clause = lambda query: query.filter(Study.acc == study_id)
-    return get_study_permission(user_token, filter_clause, obfuscation_code=None)
+def validate_jwt_token(
+    token: str,
+    config: None | AuthConfiguration = None,
+    audience: Union[None, str] = None,
+    issuer_name: Union[None, str] = None,
+    db_session=None,
+) -> SimplifiedUserModel:
+    user = None
+    try:
+        if not config:
+            config = get_settings().auth.configuration
+        if not audience:
+            audience = config.access_token_allowed_audience
+        if not issuer_name:
+            issuer_name = config.access_token_issuer_name
 
+        options = {
+            "verify_signature": False,
+            "verify_exp": True,
+            "verify_jti": True,
+            "verify_sub": True,
+            "verify_iss": True,
+        }
+        payload = jwt.decode(
+            token,
+            key=config.application_secret_key,
+            algorithms=[config.access_token_hash_algorithm],
+            audience=audience,
+            issuer=issuer_name,
+            options=options,
+        )
+        exp = payload.get("exp")
+        now = int(current_time().timestamp())
+        if now > exp:
+            raise MetabolightsAuthorizationException(
+                message="Autantication token is expired"
+            )
+        jti = payload.get("jti")
+        key = hashlib.sha256(
+            bytes(f"{config.application_secret_key}-{jti}", "utf-8")
+        ).hexdigest()
+        payload = jwt.decode(
+            token,
+            key=key,
+            algorithms=[config.access_token_hash_algorithm],
+            audience=audience,
+            issuer=issuer_name,
+        )
+        username: str = payload.get("sub")
+        if username is None:
+            raise MetabolightsAuthorizationException(
+                message="Could not validate credentials or no username"
+            )
+        if not db_session:
+            db_session = DBManager.get_instance().session_maker()
 
-def get_permission_by_obfuscation_code(user_token, obfuscation_code) -> StudyAccessPermission:
-    filter_clause = lambda query: query.filter(
-        Study.obfuscationcode == obfuscation_code
-    )
-    return get_study_permission(
-        user_token, filter_clause, obfuscation_code=obfuscation_code
-    )
+        with db_session:
+            query = db_session.query(User)
+            db_user = query.filter(
+                func.lower(User.username) == username.lower()
+            ).first()
+        if not db_user:
+            raise MetabolightsAuthorizationException(
+                message="Could not validate credentials or no username"
+            )
+        user = SimplifiedUserModel.model_validate(db_user)
+    except Exception as e:
+        raise e
 
+    if UserStatus(user.status) != UserStatus.ACTIVE:
+        raise MetabolightsAuthorizationException(message="Not an active user")
 
-def get_study_permission(
-    user_token,
-    filter_clause,
-    obfuscation_code=None
-) -> StudyAccessPermission:
-    permission: StudyAccessPermission = StudyAccessPermission()
-    with DBManager.get_instance().session_maker() as db_session:
-        query = db_session.query(Study.acc, Study.status, Study.obfuscationcode)
-        study = filter_clause(query).first()
-        if not study:
-            return permission
-        study_id = study["acc"]
-        permission.studyId = study_id
-
-        if (
-            obfuscation_code
-            and obfuscation_code == study["obfuscationcode"]
-            and StudyStatus(study["status"]) in (StudyStatus.INREVIEW, StudyStatus.PRIVATE)
-        ):
-            permission.studyStatus = StudyStatus(study["status"]).name
-            permission.obfuscationCode = study["obfuscationcode"]
-            permission.view = True
-            permission.edit = False
-            permission.delete = False
-            return permission
-
-        anonymous_user = True
-        try:
-            user = None
-            if user_token:
-                user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(
-                    user_token
-                )
-            if user:
-                anonymous_user = False
-        except Exception:
-            pass
-
-        if anonymous_user:
-            if StudyStatus(study["status"]) == StudyStatus.PUBLIC:
-                permission.studyStatus = StudyStatus(study["status"]).name
-                permission.view = True
-                permission.edit = False
-                permission.delete = False
-                return permission
-            else:
-                return permission
-
-        permission.userName = user["username"]
-        base_query = db_session.query(User.id, User.username, User.role, User.status)
-        query = base_query.join(Study, User.studies)
-        owner = query.filter(
-            Study.acc == study_id,
-            User.apitoken == user["apitoken"],
-            User.status == UserStatus.ACTIVE.value,
-        ).first()
-
-        if owner:
-            permission.submitterOfStudy = True
-
-        permission.studyStatus = StudyStatus(study["status"]).name
-        permission.userRole = UserRole(user["role"]).name
-        if UserRole(user["role"]) == UserRole.ROLE_SUPER_USER:
-            permission.obfuscationCode = study["obfuscationcode"]
-            permission.view = True
-            permission.edit = True
-            permission.delete = True
-            return permission
-
-        if owner:
-            permission.obfuscationCode = study["obfuscationcode"]
-            permission.view = True
-            permission.edit = True
-            permission.delete = True
-            return permission
-        else:
-            if StudyStatus(study["status"]) == StudyStatus.PUBLIC:
-                permission.view = True
-                permission.edit = False
-                permission.delete = False
-                return permission
-            else:
-                return permission
+    return user

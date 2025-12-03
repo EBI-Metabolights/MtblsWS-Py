@@ -1,6 +1,6 @@
-from typing import List, Any, Union
+from typing import Any, List, Union
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CommentDataItem(BaseModel):

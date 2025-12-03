@@ -19,18 +19,17 @@ import glob
 import logging
 import os
 
-from lxml import etree
-
-from flask import request, jsonify
+from flask import jsonify, request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
-from app.config import get_settings
+from lxml import etree
 
+from app.config import get_settings
 from app.utils import metabolights_exception_handler
+from app.ws.auth.permissions import validate_user_has_curator_role
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.settings.utils import get_study_settings
-from app.ws.study.user_service import UserService
+from app.ws.study.utils import get_study_metadata_path
 from app.ws.utils import convert_to_isa
 
 logger = logging.getLogger("wslog")
@@ -80,30 +79,9 @@ class Convert2ISAtab(Resource):
         ],
     )
     def post(self, study_id):
-        user_token = None
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if user_token is None or study_id is None:
-            abort(401)
-
-        study_id = study_id.upper()
-
-        # param validation
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
+        result = validate_user_has_curator_role(request, study_required=True)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         status, message = convert_to_isa(study_location, study_id)
 
         if not status:
@@ -117,7 +95,7 @@ class ValidateMzML(Resource):
 
     @swagger.operation(
         summary="Validate mzML files",
-        notes="""Validating mzML file structure. 
+        notes="""Validating mzML file structure.
         This method will validate mzML files in both the study folder.
         Validated files in the study upload location will be moved to the study location""",
         parameters=[
@@ -156,30 +134,8 @@ class ValidateMzML(Resource):
         ],
     )
     def post(self, study_id):
-        user_token = None
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if user_token is None or study_id is None:
-            abort(401)
-
-        study_id = study_id.upper()
-
-        # param validation
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
+        result = validate_user_has_curator_role(request, study_required=True)
+        study_id = result.context.study_id
         return self.validate_mzml_files(study_id)
 
     @swagger.operation(
@@ -222,17 +178,8 @@ class ValidateMzML(Resource):
     )
     @metabolights_exception_handler
     def get(self, study_id):
-        user_token = None
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if user_token is None or study_id is None:
-            abort(401)
-
-        study_id = study_id.upper()
-
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+        result = validate_user_has_curator_role(request, study_required=True)
+        study_id = result.context.study_id
         return self.validate_mzml_files(study_id)
 
     def validate_mzml_files(self, study_id):
@@ -315,6 +262,6 @@ class ValidateMzML(Resource):
             if not xmlschema:
                 return False, "Schema is not defined", ""
             xmlschema.assertValid(doc)
-            return True, f" Valid XML file'", None
+            return True, " Valid XML file'", None
         except etree.DocumentInvalid as e:
             return False, "Schema validation is failed", e

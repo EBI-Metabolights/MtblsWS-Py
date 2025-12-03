@@ -19,12 +19,12 @@
 from setuptools import setup
 
 setup(
-    name='app',
-    version='1.7.4',
-    packages=['app', 'app.ws', 'tests'],
-    url='https://github.com/EBI-Metabolights/MtblsWS-Py',
-    license='http://www.apache.org/licenses/LICENSE-2.0',
-    author='Metabolights',
-    author_email='metabolights-help@ebi.ac.uk',
-    description='metabolights python based webservices '
+    name="app",
+    version="1.7.4",
+    packages=["app", "app.ws", "tests"],
+    url="https://github.com/EBI-Metabolights/MtblsWS-Py",
+    license="http://www.apache.org/licenses/LICENSE-2.0",
+    author="Metabolights",
+    author_email="metabolights-help@ebi.ac.uk",
+    description="metabolights python based webservices ",
 )

@@ -25,11 +25,10 @@ import pathlib
 import re
 import shutil
 import time
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
-from flask import current_app as app
 from flask import request
-from flask_restful import Resource, abort
+from flask_restful import Resource
 from flask_restful_swagger import swagger
 from isatools import model
 from pydantic import BaseModel
@@ -51,7 +50,13 @@ from app.utils import (
     current_time,
     metabolights_exception_handler,
 )
-from app.ws.db import schemes, types
+from app.ws.auth.permissions import (
+    validate_submission_update,
+    validate_submission_view,
+    validate_user_has_curator_role,
+)
+from app.ws.db import types
+from app.ws.db.permission_scopes import StudyPermissionContext
 from app.ws.db.types import CurationRequest, StudyRevisionStatus, UserRole
 from app.ws.db_connection import (
     reserve_mtbls_accession,
@@ -72,7 +77,7 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.study.comment_utils import update_license, update_mhd_comments
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
-from app.ws.study.user_service import UserService
+from app.ws.study.utils import get_study_metadata_path
 
 logger = logging.getLogger("wslog")
 
@@ -121,15 +126,8 @@ class StudyModificationTime(Resource):
     )
     @metabolights_exception_handler
     def put(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        UserService.get_instance().validate_user_has_curator_role(user_token)
+        result = validate_user_has_curator_role(request)
+        study_id = result.context.study_id
         try:
             current_time_value = current_time()
             update_modification_time(study_id, current_time_value)
@@ -198,18 +196,8 @@ class StudyCurationType(Resource):
     )
     @metabolights_exception_handler
     def put(self, study_id: str):
-        # param validation
-        if study_id is None:
-            raise MetabolightsException(
-                message="Please provide valid parameter for study identifier"
-            )
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_curator_role(user_token)
+        result = validate_user_has_curator_role(request)
+        study_id = result.context.study_id
 
         # User authentication
         curation_type_str = None
@@ -239,9 +227,8 @@ class StudyStatus(Resource):
         summary="Change study status",
         nickname="Change study status",
         notes="""Change study status from 'Provisional' to 'Private' or 'Private' to 'Provisional'.<br>
-        Please note a *minimum* of 28 days is required for curation, this will be added to the release date</p>
-                <pre><code>Curators can change status to any of: 'Provisional', 'Private', 'In Review', 'Public' or 'Dormant'. curation_request is optional and can get the values: 'Manual Curation', 'No Curation', 'Semi-automated Curation'
-                <p>Example: { "status": "Private" }   {"status": "Private", "curation_request": "No Curation"}
+                <pre><code>Curators can change status to any of: 'Provisional', 'Private', 'In Review', 'Public' or 'Dormant'.
+                <p>Example: { "status": "Private" }   {"status": "Private"}
                 </code></pre>""",
         parameters=[
             {
@@ -291,106 +278,69 @@ class StudyStatus(Resource):
     )
     @metabolights_exception_handler
     def put(self, study_id: str):
-        # param validation
-        if study_id is None:
-            raise MetabolightsException(
-                message="Please provide valid parameter for study identifier"
-            )
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
 
-        study_status: str = ""
-        curation_request_str: str = None
+        new_study_status: str = ""
+        data_dict = {}
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
-            study_status = data_dict["status"]
-            if "curation_request" in data_dict:
-                curation_request_str = data_dict["curation_request"]
+            new_study_status = types.StudyStatus.from_name(
+                data_dict["status"], fail_for_invalid_value=True
+            )
         except Exception:
-            pass
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if not study_status or study_status.upper() not in [
-            x.upper()
-            for x in ["Provisional", "Private", "In Review", "Public", "Dormant"]
-        ]:
-            raise MetabolightsException(
-                message="Please provide study status: 'provisional', 'Private', 'In Review', 'Public' or 'Dormant'"
-            )
-
-        if curation_request_str and curation_request_str.upper() not in [
-            x.upper()
-            for x in ["Manual Curation", "No Curation", "Semi-automated Curation"]
-        ]:
-            raise MetabolightsException(
-                message="Please provide curation request: 'Manual Curation', 'No Curation' or 'Semi-automated Curation'"
-            )
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        study: schemes.Study = StudyService.get_instance().get_study_by_acc(study_id)
+            raise MetabolightsException(message="Please provide a valid study status ")
         if (
-            study.status == types.StudyStatus.PUBLIC.value
-            and study_status.upper() != "PUBLIC"
+            result.context.study_status == types.StudyStatus.PUBLIC
+            and new_study_status != types.StudyStatus.PUBLIC
         ):
             raise MetabolightsException(
                 message="Public studies can not be updated. Please contact MetaboLights team for any changes."
             )
 
-        if study.revision_number > 0:
+        if result.context.revision_number > 0:
             revision = StudyRevisionService.get_study_revision(
-                study_id, study.revision_number
+                study_id, result.context.revision_number
             )
             if not revision:
                 raise Exception(
-                    f"Study revision {study.revision_number} is not defined. Fix the revision."
+                    f"Study revision {result.context.revision_number} is not defined. Fix the revision."
                 )
             if revision.status != StudyRevisionStatus.COMPLETED:
                 raise Exception(
-                    f"Latest study revision {study.revision_number} task is still in progress."
+                    f"Latest study revision {result.context.revision_number} task is still in progress."
                 )
 
         return self.update_status_m2(
-            study=study,
-            user_token=user_token,
-            study_id=study_id,
-            study_status=study_status,
-            curation_request_str=curation_request_str,
+            permission_context=result.context, new_study_status=new_study_status
         )
 
     def update_status_m2(
-        self,
-        study: schemes.Study,
-        user_token: str,
-        study_id: str,
-        study_status: str,
-        curation_request_str: str,
+        self, context: StudyPermissionContext, new_study_status: types.StudyStatus
     ):
-        if study_status.upper() == "PUBLIC":
+        if new_study_status == types.StudyStatus.PUBLIC:
             raise MetabolightsException(
                 message="Please use the 'revisions' endpoint to release a study"
             )
-        curation_request = (
-            CurationRequest.from_name(curation_request_str)
-            if curation_request_str
-            else None
+        # curation_request = new_curation_request or None
+        # db_user = UserService.get_instance().get_db_user_by_user_token(user_token)
+        is_curator = context.user_role in {
+            UserRole.ROLE_SUPER_USER,
+            UserRole.SYSTEM_ADMIN,
+        }
+        obfuscation_code = context.obfuscation_code
+        # db_study_status = types.StudyStatus.from_int(study.status).name
+        # release_date = context .releasedate.strftime("%Y-%m-%d")
+        first_public_date_baseline: None | datetime.datetime = context.first_public_date
+        first_private_date_baseline: None | datetime.datetime = (
+            context.first_private_date
         )
-        db_user = UserService.get_instance().get_db_user_by_user_token(user_token)
-        is_curator = db_user.role == UserRole.ROLE_SUPER_USER.value
-        obfuscation_code = study.obfuscationcode
-        db_study_status = types.StudyStatus.from_int(study.status).name
-        release_date = study.releasedate.strftime("%Y-%m-%d")
-        first_public_date_baseline: datetime.datetime = study.first_public_date
-        first_private_date_baseline: datetime.datetime = study.first_private_date
         # check for access rights
         # _, _, _, _, _, _, _, _ = wsc.get_permissions(study_id, user_token)
-        study_location = os.path.join(
-            get_settings().study.mounted_paths.study_metadata_files_root_path, study_id
-        )
-        status_updated = (
-            False
-            if study_status.replace(" ", "").upper() == db_study_status.upper()
-            else True
-        )
+        study_id = context.study_id
+        study_location = get_study_metadata_path(study_id)
+        status_updated = context.study_status != new_study_status
+
         now = current_time()
         #     raise MetabolightsException(message=f"Status is already {str(study_status)} so there is nothing to change")
         ftp_private_storage = StorageService.get_ftp_private_storage()
@@ -399,7 +349,7 @@ class StudyStatus(Resource):
             # Update the last status change date field
             status_date_logged = update_study_status_change_date(study_id, now)
             if not status_date_logged:
-                logger.error("Could not update the status_date column for " + study_id)
+                logger.error("Could not update the status_date column for %s", study_id)
         inv_file_path = os.path.join(
             study_location, get_settings().study.investigation_file_name
         )
@@ -407,22 +357,21 @@ class StudyStatus(Resource):
             raise MetabolightsException(message="There is no investigation file.")
 
         isa_study_item, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
         isa_study: model.Study = isa_study_item
         if status_updated:
-            update_license(
-                isa_study, dataset_license=study.dataset_license
-            )
+            update_license(isa_study, dataset_license=context.dataset_license)
             update_mhd_comments(
                 isa_study,
-                study_category=study.study_category,
-                sample_template=study.sample_type,
-                mhd_accession=study.mhd_accession,
-                mhd_model_version=study.mhd_model_version,
-                template_version=study.template_version
+                study_category=context.study_category,
+                sample_template=context.sample_template,
+                mhd_accession=context.mhd_accession,
+                mhd_model_version=context.mhd_model_version,
+                template_version=context.template_version,
+                study_template=context.study_template,
             )
-        if study_status.lower() in {"public", "in review", "private"}:
+        if new_study_status in {types.StudyStatus.PUBLIC, types.StudyStatus.PRIVATE}:
             updated_submission_date = (
                 first_private_date_baseline.strftime("%Y-%m-%d")
                 if first_private_date_baseline
@@ -432,13 +381,13 @@ class StudyStatus(Resource):
             isa_study.submission_date = updated_submission_date
 
         new_date = now.strftime("%Y-%m-%d")
-        if study_status.lower() == "public":
+        if new_study_status == types.StudyStatus.PUBLIC:
             isa_inv.public_release_date = new_date
             isa_study.public_release_date = new_date
             submission = (
-                study.first_private_date.strftime("%Y-%m-%d")
-                if study.first_private_date
-                else study.submissiondate.strftime("%Y-%m-%d")
+                context.first_private_date.strftime("%Y-%m-%d")
+                if context.first_private_date
+                else context.submissiondate.strftime("%Y-%m-%d")
             )
             isa_inv.submission_date = submission
             isa_study.submission_date = submission
@@ -447,42 +396,41 @@ class StudyStatus(Resource):
             is_curator
         ):  # User is a curator, so just update status without any further checks
             if status_updated:
-                if study_status.lower() == "public":
+                if new_study_status == types.StudyStatus.PUBLIC:
                     isa_inv.public_release_date = new_date
                     isa_study.public_release_date = new_date
                     release_date = new_date
                 self.update_status(
                     study_id,
-                    study_status,
+                    new_study_status.to_camel_case_str(),
                     first_public_date=first_public_date_baseline,
                     first_private_date=first_private_date_baseline,
                 )
-            update_curation_request(study_id, curation_request)
+            # update_curation_request(study_id, curation_request)
         else:
             if not status_updated:
                 raise MetabolightsException(
                     http_code=403,
                     message="Current status and requested status are same.",
                 )
-            if db_study_status.lower() in {"public"}:
+            if context.study_status == types.StudyStatus.PUBLIC:
                 raise MetabolightsException(
                     http_code=403,
                     message="Public studies can not be updated.",
                 )
             logger.debug(
-                f"Current status: {db_study_status.lower()}, Requested status: {study_status.lower()}"
+                "Current status: %s, Requested status: %s",
+                context.study_status.to_camel_case_str(),
+                new_study_status.to_camel_case_str(),
             )
             status_levels = {
-                "dormant": 0,
-                "provisional": 0,
-                "private": 1,
-                "in review": 1,
-                "public": 2,
+                types.StudyStatus.DORMANT: 0,
+                types.StudyStatus.PROVISIONAL: 0,
+                types.StudyStatus.PRIVATE: 1,
+                types.StudyStatus.INREVIEW: 1,
+                types.StudyStatus.PUBLIC: 2,
             }
-            if (
-                status_levels[study_status.lower()]
-                > status_levels[db_study_status.lower()]
-            ):
+            if status_levels[new_study_status] > status_levels[context.study_status]:
                 validated, message = self.has_validated(study_id)
                 if not validated:
                     if "not ready" in message:
@@ -503,24 +451,24 @@ class StudyStatus(Resource):
 
             self.update_status(
                 study_id,
-                study_status,
+                new_study_status.to_camel_case_str(),
                 first_public_date=first_public_date_baseline,
                 first_private_date=first_private_date_baseline,
             )
-        current_study_status = types.StudyStatus.from_int(study.status)
-        requested_study_status = types.StudyStatus.from_name(study_status.upper())
+        # current_study_status = types.StudyStatus.from_int(study.status)
+        # requested_study_status = types.StudyStatus.from_name(study_status.upper())
 
         updated_study_id = self.update_db_study_id(
             study_id,
-            current_study_status,
-            requested_study_status,
-            study.reserved_accession,
+            context.study_status,
+            new_study_status,
+            context.reserved_accession,
         )
-
+        user_token = context.user_api_token
         if study_id != updated_study_id:
             iac.write_isa_study(
                 isa_inv,
-                user_token,
+                None,
                 study_location,
                 save_investigation_copy=True,
                 save_assays_copy=True,
@@ -528,7 +476,7 @@ class StudyStatus(Resource):
             )
 
             self.refactor_study_folder(
-                study, study_location, user_token, study_id, updated_study_id
+                context, study_location, None, study_id, updated_study_id
             )
             ElasticsearchService.get_instance()._delete_study_index(
                 study_id, ignore_errors=True
@@ -573,12 +521,12 @@ class StudyStatus(Resource):
             "study_table_id": study.id,
         }
         # Explictly changing the FTP folder permission for Private and Provisional state
-        if db_study_status.lower() != study_status.lower():
-            if study_status.lower() in (
-                "private",
-                "public",
-                "in review",
-                "dormant",
+        if context.study_status != new_study_status:
+            if new_study_status in (
+                types.StudyStatus.PRIVATE,
+                types.StudyStatus.PUBLIC,
+                types.StudyStatus.INREVIEW,
+                types.StudyStatus.DORMANT,
             ):
                 if ftp_private_storage.remote.does_folder_exist(
                     ftp_private_study_folder
@@ -587,7 +535,7 @@ class StudyStatus(Resource):
                         ftp_private_study_folder, Acl.AUTHORIZED_READ
                     )
 
-            if study_status.lower() == "provisional":
+            if new_study_status == types.StudyStatus.PROVISIONAL:
                 if ftp_private_storage.remote.does_folder_exist(
                     ftp_private_study_folder
                 ):
@@ -595,21 +543,12 @@ class StudyStatus(Resource):
                         ftp_private_study_folder, Acl.AUTHORIZED_READ_WRITE
                     )
 
-            # if study_status.lower() == "public" and not first_public_date_baseline:
-            #     release_date = study.releasedate
-            #     inputs = {
-            #         "user_token": user_token,
-            #         "study_id": updated_study_id,
-            #         "release_date": new_date,
-            #     }
-            #     send_email_on_public.apply_async(kwargs=inputs)
-
             response.update(
                 {
                     "Success": "Status updated from '"
-                    + db_study_status
+                    + context.study_status.to_camel_case_str()
                     + "' to '"
-                    + study_status
+                    + new_study_status.to_camel_case_str()
                     + "'"
                 }
             )
@@ -618,9 +557,9 @@ class StudyStatus(Resource):
             response.update(
                 {
                     "Success": "Status updated from '"
-                    + db_study_status
+                    + context.study_status.to_camel_case_str()
                     + "' to '"
-                    + study_status
+                    + new_study_status.to_camel_case_str()
                     + "'"
                 }
             )
@@ -723,7 +662,7 @@ class StudyStatus(Resource):
                     pathlib.Path(result_file).read_text(encoding="utf-8")
                 )
                 start_time = datetime.datetime.fromisoformat(
-                    content["start_time"]
+                    content["startTime"]
                 ).timestamp()
                 # 1 sec threshold
                 if start_time < last_modified:
@@ -732,7 +671,7 @@ class StudyStatus(Resource):
                         "Metadata files are updated after the last validation. Re-run validation.",
                     )
 
-                if not content["study_id"]:
+                if not content["resourceId"]:
                     return (
                         False,
                         "Validation file content is not valid. Study id is different.",
@@ -752,7 +691,7 @@ class StudyStatus(Resource):
 
     def refactor_study_folder(
         self,
-        study: schemes.Study,
+        context: StudyPermissionContext,
         study_location: str,
         user_token,
         study_id: str,
@@ -763,26 +702,26 @@ class StudyStatus(Resource):
         task_name = "ASSIGN_ACCESSION_NUMBER"
         maintenance_task = StudyFolderMaintenanceTask(
             updated_study_id,
-            types.StudyStatus(study.status),
-            study.releasedate,
-            study.submissiondate,
+            context.study_status,
+            context.first_public_date,
+            context.first_private_date,
             task_name=task_name,
-            obfuscationcode=study.obfuscationcode,
+            obfuscationcode=context.obfuscation_code,
             delete_unreferenced_metadata_files=False,
             settings=get_settings().study,
             apply_future_actions=True,
-            mhd_accession=study.mhd_accession,
-            mhd_model_version=study.mhd_model_version,
-            study_category=study.study_category,
-            sample_template=study.sample_type,
-            dataset_license=study.dataset_license
+            mhd_accession=context.mhd_accession,
+            mhd_model_version=context.mhd_model_version,
+            study_category=context.study_category,
+            sample_template=context.sample_template,
+            dataset_license=context.dataset_license,
         )
         date_format = "%Y-%m-%d_%H-%M-%S"
         folder_name = time.strftime(date_format) + "_" + task_name
         maintenance_task.create_audit_folder(folder_name=folder_name, stage=None)
 
         isa_study_item, isa_inv, _ = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
         # update investigation file
         isa_inv.identifier = updated_study_id
@@ -797,7 +736,7 @@ class StudyStatus(Resource):
                 assay.filename = assay.filename.replace(study_id, updated_study_id, 1)
             iac.write_isa_study(
                 isa_inv,
-                user_token,
+                None,
                 study_location,
                 save_investigation_copy=False,
                 save_assays_copy=False,
@@ -805,7 +744,7 @@ class StudyStatus(Resource):
             )
         else:
             logger.error(
-                f"i_Investigation.txt file on {study_location} does not exist."
+                "i_Investigation.txt file on %s does not exist.", study_location
             )
 
         # update assay file (maf file references) and rename all metadata files
@@ -857,7 +796,7 @@ class StudyStatus(Resource):
         inputs = {
             "updated_study_id": updated_study_id,
             "study_id": study_id,
-            "obfuscation_code": study.obfuscationcode,
+            "obfuscation_code": context.obfuscation_code,
         }
         rename_folder_on_private_storage.apply_async(kwargs=inputs)
 
@@ -953,22 +892,14 @@ class ToggleAccess(Resource):
     )
     @metabolights_exception_handler
     def put(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        return toogle_ftp_folder_permission(app, study_id)
+        result = validate_user_has_curator_role(request)
+        study_id = result.context.study_id
+        return toogle_ftp_folder_permission(study_id)
 
 
 class ToggleAccessGet(Resource):
     @swagger.operation(
-        summary="[Deprecated] Get Study FTP folder permission",
+        summary="Get Study FTP folder permission",
         nickname="Get FTP study permission",
         parameters=[
             {
@@ -1006,14 +937,6 @@ class ToggleAccessGet(Resource):
     )
     @metabolights_exception_handler
     def get(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        return get_ftp_folder_access_status(app, study_id)
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        return get_ftp_folder_access_status(study_id)

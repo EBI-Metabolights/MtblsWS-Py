@@ -2,7 +2,6 @@ from app.ws.chebi.search import utils
 
 
 class TestUtils(object):
-
     def test_decode_compound_name_updated_1(self):
         input_data = "__a__b__"
         expected = "/a/b/"
@@ -132,7 +131,7 @@ class TestUtils(object):
         assert expected == output[0]
 
     def test_safe_split_string_with_split_char_at_end(self):
-        input_data = 'gibberellina98|'
+        input_data = "gibberellina98|"
         expected = "gibberellina98"
         expected_size = 1
         output = utils.safe_split_string(input_data)
@@ -140,7 +139,7 @@ class TestUtils(object):
         assert expected == output[0]
 
     def test_safe_split_string_with_split_char_at_start_and_end_1(self):
-        input_data = '|gibberellina98|'
+        input_data = "|gibberellina98|"
         expected = "gibberellina98"
         expected_size = 1
         output = utils.safe_split_string(input_data)
@@ -148,7 +147,7 @@ class TestUtils(object):
         assert expected == output[0]
 
     def test_safe_split_string_with_split_char_at_start_and_end_2(self):
-        input_data = '|gibberellina98|test|'
+        input_data = "|gibberellina98|test|"
         expected = "gibberellina98"
         expected_size = 2
         output = utils.safe_split_string(input_data)
@@ -156,21 +155,21 @@ class TestUtils(object):
         assert expected == output[0]
 
     def test_find_term_index_in_source_01(self):
-        input_data = '|gibberellina98|test|'
+        input_data = "|gibberellina98|test|"
         input_match = "test"
         expected = 1
         output = utils.find_term_index_in_source(input_data, input_match)
         assert expected == output
 
     def test_find_term_index_in_source_02(self):
-        input_data = 'gibberellina98'
+        input_data = "gibberellina98"
         input_match = "gibberellina98"
         expected = 0
         output = utils.find_term_index_in_source(input_data, input_match)
         assert expected == output
 
     def test_find_term_index_in_source_03(self):
-        input_data = 'gibberellina98|etst|test2'
+        input_data = "gibberellina98|etst|test2"
         input_match = "test2"
         expected = 2
         output = utils.find_term_index_in_source(input_data, input_match)
@@ -184,49 +183,49 @@ class TestUtils(object):
         assert expected == output
 
     def test_find_term_index_in_source_not_found_01(self):
-        input_data = 'gibberellina98'
+        input_data = "gibberellina98"
         input_match = "gibberellina98x"
         expected = -1
         output = utils.find_term_index_in_source(input_data, input_match)
         assert expected == output
 
     def test_get_term_in_source_1(self):
-        input_data = 'gibberellina98|etst|test2'
+        input_data = "gibberellina98|etst|test2"
         input_index = 2
         expected = "test2"
         output = utils.get_term_in_source(input_data, input_index)
         assert expected == output
 
     def test_get_term_in_source_2(self):
-        input_data = '|gibberellina98|etst|test2|'
+        input_data = "|gibberellina98|etst|test2|"
         input_index = 2
         expected = "test2"
         output = utils.get_term_in_source(input_data, input_index)
         assert expected == output
 
     def test_get_term_in_source_3(self):
-        input_data = '|gibberellina98|etst|test2|'
+        input_data = "|gibberellina98|etst|test2|"
         input_index = 0
         expected = "gibberellina98"
         output = utils.get_term_in_source(input_data, input_index)
         assert expected == output
 
     def test_get_term_in_source_4(self):
-        input_data = '|gibberellina98|'
+        input_data = "|gibberellina98|"
         input_index = 0
         expected = "gibberellina98"
         output = utils.get_term_in_source(input_data, input_index)
         assert expected == output
 
     def test_get_term_in_source_5(self):
-        input_data = 'gibberellina98'
+        input_data = "gibberellina98"
         input_index = 0
         expected = "gibberellina98"
         output = utils.get_term_in_source(input_data, input_index)
         assert expected == output
 
     def test_get_term_in_source_6(self):
-        input_data = 'gibberellina98'
+        input_data = "gibberellina98"
         input_index = 1
         output = utils.get_term_in_source(input_data, input_index)
         assert output is None

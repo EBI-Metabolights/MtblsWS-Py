@@ -10,9 +10,9 @@ import pandas as pd
 from app.config import get_settings
 from app.tasks.worker import (
     MetabolightsTask,
+    celery,
     report_internal_technical_issue,
     send_email,
-    celery,
 )
 from app.utils import MetabolightsDBException, current_time
 from app.ws.db.dbmanager import DBManager
@@ -37,11 +37,12 @@ def create_study_folders(
         study_id = study.acc
         study_status = StudyStatus(study.status)
 
+        if maintain_metadata_storage:
+            maintenance_task.maintain_study_rw_storage_folders()
+
         if maintain_private_ftp_storage:
             maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
 
-        if maintain_metadata_storage:
-            maintenance_task.maintain_study_rw_storage_folders()
         rows = []
         for action_log in maintenance_task.actions:
             success = action_log.successful
@@ -88,7 +89,6 @@ def create_study_folders(
     name="app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance.delete_study_folders",
 )
 def delete_study_folders(
-    user_token: str,
     study_id: Union[None, str] = None,
     force_to_maintain=False,
     delete_metadata_storage_folders=True,
@@ -97,14 +97,7 @@ def delete_study_folders(
     task_name=None,
 ):
     try:
-        UserService.get_instance().validate_user_has_curator_role(user_token)
         with DBManager.get_instance().session_maker() as db_session:
-            user = (
-                db_session.query(User.email).filter(User.apitoken == user_token).first()
-            )
-            if not user:
-                raise MetabolightsDBException("No user")
-
             study: Study = db_session.query(Study).filter(Study.acc == study_id).first()
 
             if not study:
@@ -128,7 +121,7 @@ def delete_study_folders(
                 study_category=study.study_category,
                 sample_template=study.sample_type,
                 dataset_license=study.dataset_license,
-                template_version=study.template_version
+                template_version=study.template_version,
             )
             all_results = []
             if delete_metadata_storage_folders:
@@ -140,8 +133,8 @@ def delete_study_folders(
                 all_results,
                 study,
                 maintenance_task,
-                maintain_metadata_storage=True,
-                maintain_private_ftp_storage=True,
+                maintain_metadata_storage=delete_metadata_storage_folders,
+                maintain_private_ftp_storage=delete_private_ftp_storage_folders,
                 failing_gracefully=failing_gracefully,
             )
 
@@ -319,7 +312,7 @@ def maintain_storage_study_folders(
                     study_category=study.study_category,
                     sample_template=study.sample_type,
                     dataset_license=study.dataset_license,
-                    template_version=study.template_version
+                    template_version=study.template_version,
                 )
 
                 if maintain_metadata_storage:

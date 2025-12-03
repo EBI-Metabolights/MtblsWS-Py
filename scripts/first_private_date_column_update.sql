@@ -4,7 +4,7 @@
 alter table studies add first_private_date timestamp;
 
 -- update first_private_date values from status date for in curation studies;
-update studies set first_private_date=status_date where status = 1;  
+update studies set first_private_date=status_date where status = 1;
 
 
 -- update first_private_date values from submission date for in review - no way to know when it was first private (in curation)

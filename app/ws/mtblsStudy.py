@@ -18,21 +18,22 @@
 
 
 import glob
-import json
 import logging
 import os
+import re
 from datetime import datetime
 from typing import Union
-import re
-from flask import jsonify, request, send_file, make_response
-from app.services.external.eb_eye_search import EbEyeSearchService
-from flask_restful import Resource, abort, reqparse
-from flask_restful_swagger import swagger
-from app.config import get_settings
 
-from app.file_utils import make_dir_with_chmod
-from app.services.storage_service.models import SyncTaskResult, SyncTaskStatus
-from app.services.storage_service.storage_service import StorageService
+from flask import jsonify, make_response, request, send_file
+from flask_restful import Resource, abort
+from flask_restful_swagger import swagger
+
+from app.config import get_settings
+from app.services.external.eb_eye_search import EbEyeSearchService
+from app.services.storage_service.models import SyncTaskResult
+from app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization import (
+    sync_studies_on_es_and_db,
+)
 from app.tasks.common_tasks.basic_tasks.elasticsearch import (
     delete_study_index,
     reindex_all_public_studies,
@@ -43,15 +44,12 @@ from app.tasks.common_tasks.basic_tasks.send_email import (
     send_email_for_new_provisional_study,
     send_technical_issue_email,
 )
-from app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization import (
-    sync_studies_on_es_and_db,
+from app.tasks.common_tasks.report_tasks.eb_eye_search import (
+    build_studies_for_europe_pmc,
+    eb_eye_build_public_studies,
 )
 from app.tasks.datamover_tasks.basic_tasks.ftp_operations import (
     sync_private_ftp_data_files,
-)
-from app.tasks.common_tasks.report_tasks.eb_eye_search import (
-    eb_eye_build_public_studies,
-    build_studies_for_europe_pmc,
 )
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import (
     delete_study_folders,
@@ -64,18 +62,29 @@ from app.tasks.hpc_study_rsync_client import (
     StudyFolderType,
     StudyRsyncClient,
 )
-
 from app.utils import (
     MetabolightsDBException,
     MetabolightsException,
-    current_time,
     current_utc_time_without_timezone,
     metabolights_exception_handler,
 )
-from app.ws import db_connection as db_proxy
+from app.ws.auth.permissions import (
+    public_endpoint,
+    raise_deprecation_error,
+    validate_audit_files_update,
+    validate_audit_files_view,
+    validate_data_files_upload,
+    validate_study_index_delete,
+    validate_study_index_update,
+    validate_submission_update,
+    validate_submission_view,
+    validate_user_has_curator_role,
+    validate_user_has_submitter_or_super_user_role,
+)
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyTaskModel
-from app.ws.db.schemes import Study, StudyTask, User
+from app.ws.db.permission_scopes import StudyResource, StudyResourceScope
+from app.ws.db.schemes import Study, StudyTask
 from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus, UserRole
 from app.ws.db.wrappers import (
     create_study_model_from_db_study,
@@ -98,6 +107,7 @@ from app.ws.study import identifier_service
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
+from app.ws.study.utils import get_study_metadata_path
 from app.ws.utils import log_request
 
 logger = logging.getLogger("wslog")
@@ -119,6 +129,7 @@ class MtblsStudies(Resource):
     )
     def get(self):
         log_request(request)
+        public_endpoint(request)
         pub_list = wsc.get_public_studies()
         return jsonify(pub_list)
 
@@ -163,11 +174,9 @@ class EbEyeStudies(Resource):
     )
     def get(self, consumer: str):
         log_request(request)
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        result = validate_user_has_curator_role(request)
+        user_token = result.context.user_api_token
 
-        UserService.get_instance().validate_user_has_curator_role(user_token)
         if consumer == "ebi":
             inputs = {"user_token": user_token, "thomson_reuters": False}
             task = eb_eye_build_public_studies.apply_async(
@@ -227,12 +236,7 @@ class MtblsPrivateStudies(Resource):
     @metabolights_exception_handler
     def get(self):
         log_request(request)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_curator_role(user_token)
+        validate_user_has_curator_role(request)
 
         priv_list = wsc.get_private_studies()
         return jsonify(priv_list)
@@ -252,6 +256,8 @@ class MtblsStudiesWithMethods(Resource):
     )
     def get(self):
         log_request(request)
+        public_endpoint(request)
+
         logger.info("Getting all public studies (with methods)")
         study_list = get_public_studies_with_methods()
         studies = []
@@ -262,7 +268,7 @@ class MtblsStudiesWithMethods(Resource):
 
 class MyMtblsStudies(Resource):
     @swagger.operation(
-        summary="[Deprecated] Get all private studies for a user",
+        summary="Get all private studies for a user",
         notes="Get a list of all private studies for a user.",
         parameters=[
             {
@@ -284,11 +290,9 @@ class MyMtblsStudies(Resource):
     )
     def get(self):
         log_request(request)
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        raise_deprecation_error(request)
+        result = validate_user_has_submitter_or_super_user_role(request)
+        user_token = result.context.user_api_token
 
         user_studies = get_all_private_studies_for_user(user_token)
         return jsonify({"data": user_studies})
@@ -318,11 +322,8 @@ class MyMtblsStudiesDetailed(Resource):
     )
     def get(self):
         log_request(request)
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        result = validate_user_has_submitter_or_super_user_role(request)
+        user_token = result.context.user_api_token
 
         user_studies = get_all_studies_for_user(user_token)
 
@@ -378,34 +379,14 @@ class IsaTabInvestigationFile(Resource):
     )
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(401, message="Missing study_id")
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
 
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if user_token is None:
-            abort(401, message="Missing user_token")
-
-        # query validation        study_version = None
         inv_filename = None
         study_version = None
-        if request.args:
-            inv_filename = (
-                request.args.get("investigation_filename").lower()
-                if request.args.get("investigation_filename")
-                else None
-            )
-            study_version = (
-                request.args.get("version").lower()
-                if request.args.get("version")
-                else None
-            )
+        inv_filename = request.args.get("investigation_filename", "").lower() or None
+
+        study_version = request.args.get("version", "").lower() or None
         if not inv_filename:
             logger.warning(
                 "Missing Investigation filename. Using default i_Investigation.txt"
@@ -413,27 +394,12 @@ class IsaTabInvestigationFile(Resource):
             inv_filename = "i_Investigation.txt"
 
         if study_version:
-            logger.info("Loading version " + study_version + " of the metadata")
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(
-                403,
-                message="Study does not exist or your do not have access to this study",
-            )
+            logger.info("Loading version %s of the metadata", study_version)
+
         settings = get_study_settings()
 
         logger.info("Getting ISA-Tab Investigation file for %s", study_id)
-        location = study_location
+        location = get_study_metadata_path(study_id)
         if study_version:
             location = os.path.join(
                 settings.mounted_paths.study_audit_files_root_path,
@@ -510,49 +476,16 @@ class IsaTabSampleFile(Resource):
     )
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user-token" in request.headers:
-            user_token = request.headers["user-token"]
-
-        if user_token is None:
-            abort(401)
-
-        # query validation
-
-        sample_filename = None
-        if request.args:
-            sample_filename = request.args.get("sample_filename")
-            # sample_filename = request.args.get("sample_filename")
-            # sample_filename = sample_filename.lower() if request.args.get('sample_filename') else None
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        location = get_study_metadata_path(study_id)
+        sample_filename = request.args.get("sample_filename")
         if not sample_filename:
             logger.warning("Missing Sample filename.")
             abort(404, message="Missing Sample filename.")
 
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(
-                401,
-                message="Study does not exist or your do not have access to this study.",
-            )
-
         logger.info("Getting ISA-Tab Sample file %s for %s", sample_filename, study_id)
-        location = study_location
+
         files = glob.glob(os.path.join(location, sample_filename))
         if files:
             file_path = files[0]
@@ -616,20 +549,9 @@ class IsaTabAssayFile(Resource):
     )
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if user_token is None:
-            abort(401)
-
-        # query validation
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        location = get_study_metadata_path(study_id)
 
         assay_filename = None
         if request.args:
@@ -642,26 +564,7 @@ class IsaTabAssayFile(Resource):
             logger.warning("Missing Assay filename.")
             abort(404, message="Missing Assay filename.")
 
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(
-                401,
-                message="Study does not exist or your do not have access to this study.",
-            )
-
         logger.info("Getting ISA-Tab Assay file for %s", study_id)
-        location = study_location
-
         files = glob.glob(os.path.join(location, assay_filename))
         if files:
             file_path = files[0]
@@ -681,7 +584,7 @@ class CloneAccession(Resource):
     @swagger.operation(
         summary="[Deprecated] Create a new study and upload folder",
         notes="""This will clone the default template LC-MS study if no "study_id" parameter is given
-        If a "to_study_id" (destination study id) is provided, <b>data will be copied into this *existing* study. 
+        If a "to_study_id" (destination study id) is provided, <b>data will be copied into this *existing* study.
         Please be aware that data in the destination study will be replaced with metadata files from "study_id"</b>.""",
         parameters=[
             {
@@ -740,152 +643,7 @@ class CloneAccession(Resource):
         ],
     )
     def post(self):
-        # # User authentication
-        # user_token = None
-        # include_raw_data = False
-        # bypass = False
-        # lcms_default_study = "MTBLS121"  # This is the standard LC-MS study. This is private but safe for all to clone
-
-        # if "user_token" in request.headers:
-        #     user_token = request.headers["user_token"]
-
-        # if user_token is None:
-        #     abort(401)
-
-        # if "include_raw_data" in request.headers and request.headers["include_raw_data"].lower() == "true":
-        #     include_raw_data = True
-
-        #
-        #
-        #
-        # study_id = None
-        # to_study_id = None
-
-        # if request.args:
-        #
-        #     study_id = request.args.get("study_id")
-        #     to_study_id = request.args.get("to_study_id")
-
-        # # param validation
-        # if study_id is None:
-        #     study_id = lcms_default_study
-
-        # if study_id is lcms_default_study:
-        #     bypass = True  # Users can safely clone this study, even when passing in MTBLS121
-
-        # # Can the user read the study requested?
-        # (
-        #     is_curator,
-        #     read_access,
-        #     write_access,
-        #     obfuscation_code,
-        #     study_location,
-        #     release_date,
-        #     submission_date,
-        #     study_status,
-        # ) = wsc.get_permissions(study_id, user_token)
-
-        # if not bypass:
-        #     if not read_access:
-        #         abort(401, message="Study does not exist or your do not have access to this study.")
-
-        # study_id = study_id.upper()
-
-        # # This is the existing study
-        # study_to_clone = study_location
-
-        # # If the user did not provide an existing study id to clone into, we create a new study
-        # if to_study_id is None:
-        #     study_date = get_year_plus_one()
-        #     logger.info("Creating a new MTBLS Study (cloned from %s) with release date %s", study_id, study_date)
-        #     new_folder_name = user_token + "~~" + study_date + "~" + "new_study_requested_" + get_timestamp()
-
-        #     # study_to_clone = study_location
-        #     queue_folder = wsc.get_queue_folder_removec()
-        #     existing_studies = wsc.get_all_studies_for_user(user_token)
-        #     logger.info("Found the following studies: " + existing_studies)
-
-        #     logger.info(
-        #         "Adding " + study_to_clone + ", using name " + new_folder_name + ", to the queue folder " + queue_folder
-        #     )
-        #     # copy the study onto the queue folder
-        #     try:
-        #         logger.info(
-        #             "Attempting to copy "
-        #             + study_to_clone
-        #             + " to MetaboLights queue folder "
-        #             + os.path.join(queue_folder, new_folder_name)
-        #         )
-        #         if include_raw_data:
-        #             copy_tree(
-        #                 study_to_clone, os.path.join(queue_folder, new_folder_name)
-        #             )  # copy the folder to the queue
-        #             # There is a bug in copy_tree which prevents you to use the same destination folder twice
-        #         else:
-        #             copy_files_and_folders(
-        #                 study_to_clone,
-        #                 os.path.join(queue_folder, new_folder_name),
-        #                 include_raw_data=include_raw_data,
-        #                 include_investigation_file=True,
-        #             )
-        #     except:
-        #         return {"error": "Could not add study into the MetaboLights queue"}
-
-        #     logger.info("Folder successfully added to the queue")
-        #     # get a list of the users private studies to see if a new study has been created
-        #     new_studies = wsc.get_all_studies_for_user(user_token)
-        #     number = 0
-        #     while existing_studies == new_studies:
-        #         number = number + 1
-        #         if number == 20:  # wait for 20 secounds for the MetaboLights queue to process the study
-        #             logger.info("Waited to long for the MetaboLights queue, waiting for email now")
-        #             abort(408)
-
-        #         logger.info("Checking if the new study has been processed by the queue")
-        #         time.sleep(3)  # Have to check every so many secounds to see if the queue has finished
-        #         new_studies = wsc.get_all_studies_for_user(user_token)
-
-        #     logger.info("Ok, now there is a new private study for the user")
-
-        #     # Tidy up the response strings before converting to lists
-        #     new_studies_list = new_studies.replace("[", "").replace("]", "").replace('"', "").split(",")
-        #     existing_studies_list = existing_studies.replace("[", "").replace("]", "").replace('"', "").split(",")
-
-        #     logger.info("returning the new study, %s", user_token)
-        #     # return the new entry, i.e. difference between the two lists
-        #     diff = list(set(new_studies_list) - set(existing_studies_list))
-
-        #     study_id = diff[0]
-        # else:  # User proved an existing study to clone into
-        #     # Can the user read the study requested?
-        #     (
-        #         is_curator,
-        #         read_access,
-        #         write_access,
-        #         obfuscation_code,
-        #         study_location,
-        #         release_date,
-        #         submission_date,
-        #         study_status,
-        #     ) = wsc.get_permissions(to_study_id, user_token)
-
-        #     # Can the user write into the given study?
-        #     if not write_access:
-        #         abort(403)
-
-        #     copy_files_and_folders(
-        #         study_to_clone, study_location, include_raw_data=include_raw_data, include_investigation_file=True
-        #     )
-
-        #     study_id = to_study_id  # Now we need to work with the new folder, not the study to clone from
-
-        # make_dir_with_chmod(log_path, 0o777)
-
-        # # Create an upload folder for all studies anyway
-        # status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
-        # upload_location = status["upload_location"]
-        # return {"new_study": study_id, "upload_location": upload_location}
-        raise MetabolightsException(message="Not implemented")
+        raise_deprecation_error(request)
 
 
 class CreateUploadFolder(Resource):
@@ -928,34 +686,10 @@ class CreateUploadFolder(Resource):
         ],
     )
     def post(self, study_id):
-        user_token = None
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if user_token is None or study_id is None:
-            abort(401)
-
-        study_id = study_id.upper()
-
-        # param validation
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(
-                401,
-                message="Unauthorized. Access to the resource requires user authentication. "
-                "Please provide a study id and a valid user token",
-            )
-
+        result = validate_data_files_upload(request)
+        study_id = result.context.study_id
+        obfuscation_code = result.context.obfuscation_code
+        user_token = result.context.user_api_token
         logger.info("Creating a new study upload folder for study %s", study_id)
         status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
         return status
@@ -1000,34 +734,9 @@ class AuditFiles(Resource):
         ],
     )
     def post(self, study_id):
-        user_token = None
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if user_token is None or study_id is None:
-            abort(404)
-
-        study_id = study_id.upper()
-
-        # param validation
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(
-                401,
-                message="Unauthorized. Write access to the resource requires user authentication. "
-                "Please provide a study id and a valid user token",
-            )
-
+        result = validate_audit_files_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         logger.info("Creating a new study audit folder for study %s", study_id)
         status, dest_path = write_audit_files(study_location)
 
@@ -1074,32 +783,9 @@ class AuditFiles(Resource):
         ],
     )
     def get(self, study_id):
-        user_token = None
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if user_token is None or study_id is None:
-            abort(404)
-        study_id = study_id.upper()
-
-        # param validation
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(
-                401,
-                message="Unauthorized. Read access to the resource requires user authentication. "
-                "Please provide a study id and a valid user token",
-            )
+        result = validate_audit_files_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
         return jsonify(get_audit_files(study_location))
 
@@ -1136,9 +822,9 @@ class PublicStudyDetail(Resource):
     @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
-
-        if not study_id:
-            abort(401)
+        result = validate_submission_view(request)
+        if result.context.study_status != StudyStatus.PUBLIC:
+            raise MetabolightsException(message="Not valid request", http_code=403)
 
         with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
@@ -1166,7 +852,7 @@ class CreateAccession(Resource):
     @swagger.operation(
         summary="Create a new study",
         notes="""Create a new study, with upload folder</br>
-        Please note that this includes an empty sample file, which will require at least 
+        Please note that this includes an empty sample file, which will require at least
         one additional data row to be ISA-Tab compliant""",
         parameters=[
             {
@@ -1204,17 +890,12 @@ class CreateAccession(Resource):
     )
     @metabolights_exception_handler
     def get(self):
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        user: User = (
-            UserService.get_instance().validate_user_has_submitter_or_super_user_role(
-                user_token
-            )
-        )
-        studies = UserService.get_instance().get_user_studies(user.apitoken)
+        result = validate_user_has_submitter_or_super_user_role(request)
+        user_token = result.context.user_api_token
+        user_role = result.context.user_role
+        partner_user = result.context.partner_user
+        username = result.context.username
+        studies = UserService.get_instance().get_user_studies(user_token)
         provisional_studies = []
         last_study_datetime = datetime.fromtimestamp(0)
         for study in studies:
@@ -1228,7 +909,7 @@ class CreateAccession(Resource):
             now - last_study_datetime
         ).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
             logger.warning(
-                f"New study creation request from user {user.username} in {study_settings.min_study_creation_interval_in_mins} mins"
+                f"New study creation request from user {username} in {study_settings.min_study_creation_interval_in_mins} mins"
             )
             raise MetabolightsException(
                 message="Submitter can create only one study in five minutes.",
@@ -1237,12 +918,12 @@ class CreateAccession(Resource):
 
         if (
             len(provisional_studies) >= study_settings.max_study_in_provisional_status
-            and user.role != UserRole.ROLE_SUPER_USER.value
-            and user.role != UserRole.SYSTEM_ADMIN.value
-            and user.partner == 0
+            and user_role != UserRole.ROLE_SUPER_USER
+            and user_role != UserRole.SYSTEM_ADMIN
+            and not partner_user
         ):
             logger.warning(
-                f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_provisional_status} study in Provisional status."
+                f"New study creation request from user {username}. User has already {study_settings.max_study_in_provisional_status} study in Provisional status."
             )
             raise MetabolightsException(
                 message="The user can have at most two studies in Provisional status. Please complete and update status of your current studies.",
@@ -1250,7 +931,7 @@ class CreateAccession(Resource):
             )
 
         logger.info(
-            f"Step 1: New study creation request is received from user {user.username}"
+            f"Step 1: New study creation request is received from user {username}"
         )
         new_accession_number = True
         study_acc: Union[None, str] = None
@@ -1260,7 +941,7 @@ class CreateAccession(Resource):
             if study_acc:
                 new_accession_number = False
                 logger.warning(
-                    f"A previous study creation request from the user {user.username}. The study {study_acc} will be created."
+                    f"A previous study creation request from the user {username}. The study {study_acc} will be created."
                 )
 
         try:
@@ -1276,7 +957,7 @@ class CreateAccession(Resource):
         except Exception as exc:
             inputs = {
                 "subject": "Study id creation on DB was failed.",
-                "body": f"Study id on db creation was failed: folder: {study_acc}, user: {user.username} <p> {str(exc)}",
+                "body": f"Study id on db creation was failed: folder: {study_acc}, user: {username} <p> {str(exc)}",
             }
             send_technical_issue_email.apply_async(kwargs=inputs)
             logger.error(
@@ -1322,7 +1003,9 @@ class CreateAccession(Resource):
         )
         logger.info(
             "Step 4.3: 'Create study FTP folders' task has been started for study "
-            f"{study_acc} with task id: {create_ftp_folders_task.id}"
+            "%s with task id: %s",
+            study_acc,
+            create_ftp_folders_task.id,
         )
 
         if new_accession_number:
@@ -1334,9 +1017,9 @@ class CreateAccession(Resource):
                 "folder_name": ftp_folder_name,
             }
             send_email_for_new_provisional_study.apply_async(kwargs=inputs)
-            logger.info(f"Step 5: Sending FTP folder email for the study {study_acc}")
+            logger.info("Step 5: Sending FTP folder email for the study %s", study_acc)
         else:
-            logger.info(f"Step 5: Skipping FTP folder email for the study {study_acc}")
+            logger.info("Step 5: Skipping FTP folder email for the study %s", study_acc)
 
         # # Start ftp folder creation task
         # Start reindex task
@@ -1399,7 +1082,7 @@ class CreateAccession(Resource):
 class DeleteStudy(Resource):
     @swagger.operation(
         summary="Delete an existing study (curator only)",
-        notes="""Please note that deleting a study will release the accession number back to be reused. 
+        notes="""Please note that deleting a study will release the accession number back to be reused.
         This will be available for the MetaboLights team as a placeholder""",
         parameters=[
             {
@@ -1436,26 +1119,12 @@ class DeleteStudy(Resource):
         ],
     )
     def delete(self, study_id):
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if not user_token:
-            abort(404)
-
-        if user_token is None or study_id is None:
-            abort(401)
-
-        study_id = study_id.upper()
-
-        UserService.get_instance().validate_user_has_curator_role(user_token)
-        study: Study = StudyService.get_instance().get_study_by_acc(study_id)
-        status = StudyStatus(study.status)
+        result = validate_user_has_curator_role(request)
+        status = result.context.study_status
         if status == StudyStatus.PUBLIC:
             abort(401, message="It is not allowed to delete a public study")
 
-        logger.info("Deleting study " + study_id)
+        logger.info("Deleting study %s", study_id)
 
         # Remove the submitter from the study
         submitter_emails = query_study_submitters(study_id)
@@ -1467,16 +1136,27 @@ class DeleteStudy(Resource):
         mtbls_email = get_settings().auth.service_account.email
         add_placeholder_flag(study_id)
         study_submitters(study_id, mtbls_email, "add")
+        delete_study_folders(
+            study_id=study_id,
+            force_to_maintain=True,
+            delete_private_ftp_storage_folders=False,
+            delete_metadata_storage_folders=True,
+            task_name=f"DELETE_STUDY_{study_id}",
+            failing_gracefully=False,
+        )
+
         inputs = {
-            "user_token": user_token,
             "study_id": study_id,
-            "task_name": "DELETE_STUDY",
+            "task_name": f"DELETE_STUDY_{study_id}",
+            "force_to_maintain": True,
+            "delete_private_ftp_storage_folders": True,
+            "delete_metadata_storage_folders": False,
         }
         cluster_settings = get_cluster_settings()
         task = delete_study_folders.apply_async(kwargs=inputs)
-        output = task.get(timeout=cluster_settings.task_get_timeout_in_seconds * 2)
+        task.get(timeout=cluster_settings.task_get_timeout_in_seconds * 2)
 
-        status, message = wsc.reindex_study(study_id, user_token)
+        status, message = wsc.reindex_study(study_id)
         if not status:
             abort(500, error="Could not reindex the study")
 
@@ -1489,8 +1169,9 @@ def get_audit_files(study_location):
     audit_path = os.path.join(study_location, settings.audit_files_symbolic_link_name)
 
     try:
-        folder_list = os.listdir(os.path.join(audit_path))
-    except:
+        folder_list = os.listdir(audit_path)
+    except Exception as ex:
+        logger.error("List dir error: %s, %s", audit_path, ex)
         return folder_list
     return folder_list
 
@@ -1547,42 +1228,18 @@ class ReindexStudy(Resource):
     )
     @metabolights_exception_handler
     def post(self, study_id):
-        user_token = None
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if user_token is None or study_id is None:
-            abort(404)
-
-        study_id = study_id.upper()
-
-        include_validation_results = True
-        if request.args:
-            include_validation_results = (
-                True
-                if request.args.get("include_validation_results").lower() == "true"
-                else False
-            )
-
-        # param validation
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(401)
-
+        result = validate_study_index_update(request)
+        study_id = result.context.study_id
+        study_index_scopes = result.permission.scopes.get(StudyResource.STUDY_INDEX)
+        read_access = StudyResourceScope.VIEW in study_index_scopes
+        write_access = (
+            StudyResourceScope.CREATE in study_index_scopes
+            and StudyResourceScope.UPDATE in study_index_scopes
+        )
         status, message = wsc.reindex_study(
             study_id,
-            user_token,
-            include_validation_results=include_validation_results,
+            user_token=None,
+            include_validation_results=False,
             sync=True,
         )
 
@@ -1634,19 +1291,12 @@ class ReindexStudy(Resource):
     @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
-        if not study_id:
-            logger.info("No study_id given")
-            abort(404)
-        compound_id = study_id.upper()
+        result = validate_study_index_delete(request)
+        study_id = result.context.study_id
 
-        # User authentication
-        user_token = ""
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        logger.info("Deleting a study index")
 
-        logger.info("Deleting a compound")
-
-        result = delete_study_index(user_token, compound_id)
+        result = delete_study_index(user_token=None, study_id=study_id)
 
         result = {"content": result, "message": None, "err": None}
         return result
@@ -1686,12 +1336,7 @@ class UnindexedStudy(Resource):
     )
     @metabolights_exception_handler
     def get(self):
-        user_token = None
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_curator_role(user_token)
+        validate_user_has_curator_role(request)
         try:
             with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(StudyTask)
@@ -1750,12 +1395,7 @@ class RetryReindexStudies(Resource):
     )
     @metabolights_exception_handler
     def post(self):
-        user_token = None
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_curator_role(user_token)
+        validate_user_has_curator_role(request)
         try:
             with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(StudyTask)
@@ -1775,7 +1415,7 @@ class RetryReindexStudies(Resource):
                     print(f"{index}/{total} Indexing {task.study_acc}")
                     try:
                         logger.info(f"{index}/{total} Indexing {task.study_acc}")
-                        wsc.reindex_study(task.study_acc, user_token)
+                        wsc.reindex_study(task.study_acc, None)
                         indexed_studies.append(task.study_acc)
                         logger.info(f"Indexed study {task.study_acc}")
                     except Exception as e:
@@ -1829,12 +1469,9 @@ class MtblsPublicStudiesIndexAll(Resource):
     @metabolights_exception_handler
     def post(self):
         log_request(request)
+        result = validate_user_has_curator_role(request)
+        user_token = result.context.user_api_token
 
-        # User authentication
-        user_token = ""
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        UserService.get_instance().validate_user_has_curator_role(user_token)
         logger.info("Indexing public studies")
         inputs = {"user_token": user_token, "send_email_to_submitter": True}
         try:
@@ -1889,13 +1526,10 @@ class MtblsStudiesIndexAll(Resource):
     @metabolights_exception_handler
     def post(self):
         log_request(request)
+        result = validate_user_has_curator_role(request)
+        user_token = result.context.user_api_token
 
-        # User authentication
-        user_token = ""
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        logger.info(f"Indexing studies.")
+        logger.info("Indexing studies.")
         inputs = {"user_token": user_token, "send_email_to_submitter": True}
         try:
             result = reindex_all_studies.apply_async(kwargs=inputs, expires=60 * 5)
@@ -1947,11 +1581,8 @@ class MtblsStudiesIndexSync(Resource):
     @metabolights_exception_handler
     def post(self):
         log_request(request)
-
-        # User authentication
-        user_token = ""
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        result = validate_user_has_curator_role(request)
+        user_token = result.context.user_api_token
 
         logger.info("Indexing missing/out-of-date studies.")
         inputs = {"user_token": user_token, "send_email_to_submitter": True}
@@ -2049,11 +1680,8 @@ class MtblsStudyFolders(Resource):
     @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-
-        # User authentication
-        user_token = ""
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        result = validate_submission_update(request)
+        user_token = result.context.user_api_token
 
         target_folder = ""
         if "target_folder" in request.headers:
@@ -2201,7 +1829,27 @@ class StudyFolderSynchronization(Resource):
     @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-        return self.proces_rsync_request(study_id, request, start_new_task=True)
+        headers = request.headers
+        sync_type = headers.get("sync_type", "").lower()
+        source_staging_area = headers.get("source_staging_area", "private-ftp")
+        target_staging_area = headers.get("target_staging_area", "rw_study")
+        dry_run = True if headers.get("dry_run", "true").lower() == "true" else False
+
+        if source_staging_area == "private-ftp" and (
+            (sync_type == "data" and target_staging_area == "readonly-study")
+            or (sync_type == "metadata" and target_staging_area == "rw-study")
+        ):
+            validate_data_files_upload(request)
+        else:
+            validate_user_has_curator_role(request)
+        return self.process_rsync_request(
+            study_id,
+            dry_run=dry_run,
+            sync_type=sync_type,
+            source_staging_area=source_staging_area,
+            target_staging_area=target_staging_area,
+            start_new_task=True,
+        )
 
     @swagger.operation(
         summary="(Curator Only) Returns current rsync task status.",
@@ -2296,37 +1944,38 @@ class StudyFolderSynchronization(Resource):
     @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
-        return self.proces_rsync_request(study_id, request, start_new_task=False)
+        headers = request.headers
+        sync_type = headers.get("sync_type", "").lower()
+        source_staging_area = headers.get("source_staging_area", "private-ftp")
+        target_staging_area = headers.get("target_staging_area", "rw_study")
+        dry_run = True if headers.get("dry_run", "true").lower() == "true" else False
 
-    def proces_rsync_request(
-        self, study_id: str, request, start_new_task: bool = False
+        if source_staging_area == "private-ftp" and (
+            (sync_type == "data" and target_staging_area == "readonly-study")
+            or (sync_type == "metadata" and target_staging_area == "rw-study")
+        ):
+            validate_data_files_upload(request)
+        else:
+            validate_user_has_curator_role(request)
+
+        return self.process_rsync_request(
+            study_id,
+            dry_run=dry_run,
+            sync_type=sync_type,
+            source_staging_area=source_staging_area,
+            target_staging_area=target_staging_area,
+            start_new_task=False,
+        )
+
+    def process_rsync_request(
+        self,
+        study_id: str,
+        dry_run,
+        sync_type,
+        source_staging_area,
+        target_staging_area,
+        start_new_task: bool = False,
     ):
-        # param validation
-        if study_id is None:
-            raise MetabolightsException(
-                message="Please provide valid parameter for study identifier"
-            )
-        study_id = study_id.upper()
-        sync_type = "metadata"
-
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        dry_run = True
-        if "dry_run" in request.headers:
-            dry_run = True if request.headers["dry_run"].lower() == "true" else False
-
-        if "sync_type" in request.headers:
-            sync_type = request.headers["sync_type"].lower()
-
-        source_staging_area = "private-ftp"
-        if "source_staging_area" in request.headers:
-            source_staging_area = request.headers["source_staging_area"]
-
-        target_staging_area = "rw_study"
-        if "target_staging_area" in request.headers:
-            target_staging_area = request.headers["target_staging_area"]
         if target_staging_area == source_staging_area:
             raise MetabolightsException(
                 message="Source and target staging areas should be different."
@@ -2348,19 +1997,6 @@ class StudyFolderSynchronization(Resource):
 
         if target_staging_area not in staging_areas:
             raise MetabolightsException(message="Target staging area is invalid.")
-
-        if source_staging_area == "private-ftp" and (
-            (sync_type == "data" and target_staging_area == "readonly-study")
-            or (sync_type == "metadata" and target_staging_area == "rw-study")
-        ):
-            study = StudyService.get_instance().get_study_by_acc(study_id)
-            UserService.get_instance().validate_user_has_write_access(
-                user_token, study_id
-            )
-            if StudyStatus(study.status) != StudyStatus.PROVISIONAL:
-                UserService.get_instance().validate_user_has_curator_role(user_token)
-        else:
-            UserService.get_instance().validate_user_has_curator_role(user_token)
 
         folder_type = StudyFolderType(sync_type.replace("-", "_").upper())
         source_location = StudyFolderLocation(
@@ -2456,35 +2092,9 @@ class DragAndDropFolder(Resource):
         ],
     )
     def post(self, study_id):
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
         try:
-            user_token = None
-            # User authentication
-            if "user_token" in request.headers:
-                user_token = request.headers["user_token"]
-
-            if user_token is None or study_id is None:
-                abort(404)
-
-            study_id = study_id.upper()
-
-            # param validation
-            (
-                is_curator,
-                read_access,
-                write_access,
-                obfuscation_code,
-                study_location,
-                release_date,
-                submission_date,
-                study_status,
-            ) = wsc.get_permissions(study_id, user_token)
-            if not write_access:
-                abort(
-                    401,
-                    message="Unauthorized. Write access to the resource requires user authentication. "
-                    "Please provide a study id and a valid user token",
-                )
-
             logger.info("Upload metadata files against study id: %s", study_id)
             if "file" not in request.files:
                 return {"error": "No file part in the request"}, 400
@@ -2520,5 +2130,5 @@ class DragAndDropFolder(Resource):
                 "message": f"File '{file.filename}' uploaded successfully to study '{study_id}'"
             }, 200
         except Exception as exc:
-            logger.error(f"Error in DragAndDropFolder.post: {str(exc)}")
+            logger.error("Error in DragAndDropFolder.post: %s", exc)
             return {"error": f"An unexpected error occurred: {str(exc)}"}, 500

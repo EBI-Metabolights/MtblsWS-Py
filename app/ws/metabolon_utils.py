@@ -712,7 +712,7 @@ def create_sample_file(
     final_sample_file_data["Characteristics[Cell type]"] = ""
     final_sample_file_data["Term Source REF.3"] = ""
     final_sample_file_data["Term Accession Number.3"] = ""
-    
+
     final_sample_file_data["Characteristics[Disease]"] = ""
     final_sample_file_data["Term Source REF.4"] = ""
     final_sample_file_data["Term Accession Number.4"] = ""

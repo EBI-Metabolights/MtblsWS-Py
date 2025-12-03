@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 from typing import Union
 
 from app.config import ApplicationSettings, get_settings

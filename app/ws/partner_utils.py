@@ -20,18 +20,15 @@ import logging
 import os
 
 from flask import request
-from flask.json import jsonify
-from flask_restful import Resource, abort
+from flask_restful import Resource
 from flask_restful_swagger import swagger
+
 from app.config import get_settings
 from app.tasks.datamover_tasks.curation_tasks.metabolon import metabolon_confirm
 from app.utils import MetabolightsException
-
+from app.ws.auth.permissions import validate_user_has_curator_role
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.settings.utils import get_study_settings
-from app.ws.study.study_service import StudyService
-from app.ws.study.user_service import UserService
 
 wsc = WsClient()
 iac = IsaApiClient()
@@ -43,7 +40,7 @@ class Metabolon(Resource):
         summary="Confirm all files are uploaded",
         notes="""Confirm that all raw/mzML files has been uploaded to this studies upload folder. </br>
         Files uploaded for clients will be added to the final study before templates are applied</br>
-        </P> 
+        </P>
         This may take some time as mzML validation and conversion to ISA-Tab will now take place""",
         parameters=[
             {
@@ -85,24 +82,13 @@ class Metabolon(Resource):
         ],
     )
     def post(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        user = UserService.get_instance().validate_user_has_curator_role(user_token)
-        study = StudyService.get_instance().get_study_by_acc(study_id)
-        email = user["username"]
+        result = validate_user_has_curator_role(request, study_required=True)
+        email = result.context.username
 
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
         study_location = os.path.join(
             mounted_paths.cluster_private_ftp_root_path,
-            f"{study.acc.lower()}-{study.obfuscationcode}",
+            f"{result.context.study_id.lower()}-{result.context.obfuscation_code}",
         )
 
         try:
@@ -123,6 +109,6 @@ class Metabolon(Resource):
         except Exception as ex:
             raise MetabolightsException(
                 http_code=500,
-                message=f"Metabolon confirm task submission was failed",
+                message="Metabolon confirm task submission was failed",
                 exception=ex,
             )

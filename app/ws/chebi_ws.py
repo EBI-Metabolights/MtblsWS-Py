@@ -1,55 +1,50 @@
+import io
 import json
 import logging
 import os
-import io
+
 import requests
-from flask import request, Response
+from flask import Response, request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
-from app.config import get_settings
 
+from app.config import get_settings
+from app.ws.auth.permissions import public_endpoint, raise_deprecation_error
 from app.ws.chebi.chebi_utils import chebi_search_v2, get_complete_chebi_entity_v2
 from app.ws.chebi.wsproxy import ChebiWsException
-from app.ws.utils import log_request
 from app.ws.chebi_pipeline_utils import get_all_ontology_children_in_path
+from app.ws.utils import log_request
 
 logger = logging.getLogger(__file__)
 
 
 responseMessages = [
-    {
-        "code": 200,
-        "message": "OK."
-    },
+    {"code": 200, "message": "OK."},
     {
         "code": 400,
-        "message": "Bad Request. Server could not understand the request due to malformed syntax."
+        "message": "Bad Request. Server could not understand the request due to malformed syntax.",
     },
     {
         "code": 404,
-        "message": "Not found. The requested identifier is not valid or does not exist."
+        "message": "Not found. The requested identifier is not valid or does not exist.",
     },
-    {
-        "code": 501,
-        "message": "Server error."
-    },
+    {"code": 501, "message": "Server error."},
 ]
 
 
 class ChebiLiteEntity(Resource):
-
     @swagger.operation(
         summary="Get Chebi ID with InchiKey",
         nickname="Get Chebi ID with InchiKey",
-        notes='''Add a new MetaboLights user account<pre><code>
-    { 
-         "query": 
+        notes="""Add a new MetaboLights user account<pre><code>
+    {
+         "query":
             {
                 "inchi_keys": ["RYYVLZVUVIJVGH-UHFFFAOYSA-N","RZVAJINKPMORJF-UHFFFAOYSA-N"],
                 "names":["paracetamol","caffeine","4-acetamidophenol"]
             }
     }</pre></code>
-    </p>For the names you can pass Chebi name, compound name, synonym, IUPAC NAME,  brand name''',
+    </p>For the names you can pass Chebi name, compound name, synonym, IUPAC NAME,  brand name""",
         parameters=[
             {
                 "name": "query",
@@ -58,34 +53,39 @@ class ChebiLiteEntity(Resource):
                 "allowMultiple": False,
                 "paramType": "body",
                 "type": "string",
-                "format": "application/json"
+                "format": "application/json",
             }
         ],
-        responseMessages=responseMessages
+        responseMessages=responseMessages,
     )
     def post(self):
         log_request(request)
+        public_endpoint(request)
         try:
             inchi_key_result = []
             name_search_result = []
-            data_dict = json.loads(request.data.decode('utf-8'))
-            query = data_dict['query']
+            data_dict = json.loads(request.data.decode("utf-8"))
+            query = data_dict["query"]
             if query:
-                inchi_keys = query['inchi_keys']
+                inchi_keys = query["inchi_keys"]
                 if inchi_keys:
                     for inchi_key in inchi_keys:
                         search_result = chebi_search_v2(search_term=inchi_key)
-                        inchi_key_result.append({inchi_key:search_result})
-                names = query['names']
+                        inchi_key_result.append({inchi_key: search_result})
+                names = query["names"]
                 if names:
                     for name in names:
                         search_result = chebi_search_v2(search_term=name)
-                        name_search_result.append({name:search_result})
-                
+                        name_search_result.append({name: search_result})
+
         except ChebiWsException as e:
             abort(501, message="Remote server error")
-        result = {"search_results": inchi_key_result,"name_search_result":name_search_result}
+        result = {
+            "search_results": inchi_key_result,
+            "name_search_result": name_search_result,
+        }
         return result
+
 
 class ChebiEntity(Resource):
     @swagger.operation(
@@ -99,14 +99,14 @@ class ChebiEntity(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             }
         ],
-        responseMessages=responseMessages
+        responseMessages=responseMessages,
     )
     def get(self, chebi_id):
         log_request(request)
-
+        public_endpoint(request)
         if not chebi_id:
             abort(400, message="Invalid ChEBI id")
         try:
@@ -116,6 +116,7 @@ class ChebiEntity(Resource):
             return complete_entity
         except ChebiWsException as e:
             abort(501, message=f"Remote server error {e.message}")
+
 
 class ChebiOntologyChildren(Resource):
     @swagger.operation(
@@ -129,8 +130,8 @@ class ChebiOntologyChildren(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
-            }, 
+                "dataType": "string",
+            },
             {
                 "name": "relation",
                 "description": "Ontology relation",
@@ -139,10 +140,19 @@ class ChebiOntologyChildren(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["has_functional_parent", "has_parent_hydride", "has_part",
-                         "has_role", "is_a", "is_conjugate_acid_of",
-                         "is_conjugate_base_of", "is_enantiomer_of", "is_part_of", "is_substituent_group_from",
-                         "is_tautomer_of"]
+                "enum": [
+                    "has_functional_parent",
+                    "has_parent_hydride",
+                    "has_part",
+                    "has_role",
+                    "is_a",
+                    "is_conjugate_acid_of",
+                    "is_conjugate_base_of",
+                    "is_enantiomer_of",
+                    "is_part_of",
+                    "is_substituent_group_from",
+                    "is_tautomer_of",
+                ],
             },
             {
                 "name": "three_star_only",
@@ -153,29 +163,35 @@ class ChebiOntologyChildren(Resource):
                 "paramType": "query",
                 "type": "string",
                 "defaultValue": "false",
-                "enum": ["true","false"]
-            }
+                "enum": ["true", "false"],
+            },
         ],
-        responseMessages=responseMessages
+        responseMessages=responseMessages,
     )
     def get(self, acid_chebi_id):
         log_request(request)
-
+        public_endpoint(request)
         if not acid_chebi_id:
             abort(400, message="Invalid ChEBI id")
-        relation = request.args.get('relation')
+        relation = request.args.get("relation")
         relation = relation.strip()
-        three_star_only = request.args.get('three_star_only')
+        three_star_only = request.args.get("three_star_only")
         try:
-            chebi_ids = get_all_ontology_children_in_path(acid_chebi_id=acid_chebi_id, relation=relation, three_star_only=three_star_only)
+            chebi_ids = get_all_ontology_children_in_path(
+                acid_chebi_id=acid_chebi_id,
+                relation=relation,
+                three_star_only=three_star_only,
+            )
             if not chebi_ids:
-                return abort(404, message=f"Children not found for ChEBI id {acid_chebi_id}")
+                return abort(
+                    404, message=f"Children not found for ChEBI id {acid_chebi_id}"
+                )
             return chebi_ids
         except ChebiWsException as e:
             abort(501, message=f"Remote server error {e.message}")
 
-class ChebiImageProxy(Resource):
 
+class ChebiImageProxy(Resource):
     @swagger.operation(
         summary="[Deprecated] Get image by chebi id",
         nickname="Get image by chebi id",
@@ -187,30 +203,33 @@ class ChebiImageProxy(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             }
         ],
-        responseMessages=responseMessages
+        responseMessages=responseMessages,
     )
     def get(self, chebiIdentifier: str):
+        raise_deprecation_error(request)
         image_name = chebiIdentifier
         chebiIdentifier = chebiIdentifier.replace(".png", "")
-        
+
         if not chebiIdentifier.isnumeric() or len(chebiIdentifier) > 8:
-            abort(404,message= "invalid chebi id")
+            abort(404, message="invalid chebi id")
         chebi_url = "https://www.ebi.ac.uk/chebi/displayImage.do"
-        default_params = "defaultImage=true&imageIndex=0&dimensions=500&scaleMolecule=false"
+        default_params = (
+            "defaultImage=true&imageIndex=0&dimensions=500&scaleMolecule=false"
+        )
         chebi_id_param = f"chebiId=CHEBI:{chebiIdentifier}"
         settings = get_settings()
         url = f"{chebi_url}?{default_params}&{chebi_id_param}"
         img_root_path = settings.chebi.caches.images_cache_path
         image_path = os.path.join(img_root_path, image_name)
-        try: 
+        try:
             with requests.get(url, stream=True) as r:
                 with open(image_path, "wb") as f:
                     f.write(r.content)
                 bytes = io.BytesIO(r.content)
-                
+
                 return Response(bytes, mimetype="image/png", direct_passthrough=True)
 
         except Exception as exc:

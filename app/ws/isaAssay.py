@@ -19,28 +19,35 @@
 import json
 import logging
 from typing import Dict, Set, Tuple
+
 from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from isatools.model import (
-    OntologyAnnotation,
     Assay,
+    OntologyAnnotation,
     Protocol,
-    Study,
     ProtocolParameter,
+    Study,
 )
-from app.utils import metabolights_exception_handler
 
+from app.utils import metabolights_exception_handler
+from app.ws.auth.permissions import validate_submission_update, validate_submission_view
+from app.ws.db.types import UserRole
+from app.ws.isa_table_templates import (
+    add_new_assay_sheet,
+    get_assay_type_from_file_name,
+    get_protocol_descriptions,
+)
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.isa_table_templates import add_new_assay_sheet, get_assay_type_from_file_name, get_protocol_descriptions
 from app.ws.mm_models import AssaySchema
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.isa_table_models import NumericValue, OntologyValue
-from app.ws.study.user_service import UserService
+from app.ws.study.utils import get_study_metadata_path
 from app.ws.utils import (
-    remove_file,
     get_maf_name_from_assay_name,
     log_request,
+    remove_file,
 )
 
 logger = logging.getLogger("wslog")
@@ -66,7 +73,7 @@ def get_assay(assay_list, filename):
 class StudyAssayDelete(Resource):
     @swagger.operation(
         summary="Delete an assay",
-        notes='''Remove an assay from your study. Use the full assay file name, 
+        notes='''Remove an assay from your study. Use the full assay file name,
         like this: "a_MTBLS123_LC-MS_positive_hilic_metabolite_profiling.txt"''',
         parameters=[
             {
@@ -131,37 +138,17 @@ class StudyAssayDelete(Resource):
     )
     def delete(self, study_id: str, assay_file_name: str):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        if assay_file_name is None:
-            abort(404)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        is_curator = result.context.user_role in {
+            UserRole.SYSTEM_ADMIN,
+            UserRole.ROLE_SUPER_USER,
+        }
+        study_location = get_study_metadata_path(study_id)
+        assay_file_name = assay_file_name or ""
         assay_file_name = assay_file_name.strip()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
-
-        # query validation
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
+        if not assay_file_name:
+            abort(404)
 
         # check if we should be keeping copies of the metadata
         save_audit_copy = True
@@ -179,7 +166,6 @@ class StudyAssayDelete(Resource):
 
         study, isa_inv, std_path = iac.get_isa_study(
             study_id=study_id,
-            api_key=user_token,
             skip_load_tables=True,
             study_location=study_location,
         )
@@ -200,16 +186,6 @@ class StudyAssayDelete(Resource):
             assay_type = get_assay_type_from_file_name(assay.filename)
 
             if assay_type not in assay_type_protocols:
-                # (
-                #     tidy_header_row,
-                #     tidy_data_row,
-                #     protocols,
-                #     assay_desc,
-                #     assay_data_type,
-                #     assay_file_type,
-                #     assay_mandatory_type,
-                # ) = get_assay_headers_and_protocols(assay_type)
-                # get_assay_protocols(assay_type)
                 protocol_descriptions = get_protocol_descriptions(assay_type=assay_type)
                 protocols = protocol_descriptions.get("protocols", [])
 
@@ -267,7 +243,7 @@ class StudyAssayDelete(Resource):
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
             isa_inv,
-            user_token,
+            None,
             std_path,
             save_investigation_copy=save_audit_copy,
             save_assays_copy=save_audit_copy,
@@ -353,17 +329,9 @@ class StudyAssay(Resource):
     )
     @metabolights_exception_handler
     def get(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404)
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        # query validation
-
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         filename = None
 
         list_only = True
@@ -378,22 +346,9 @@ class StudyAssay(Resource):
             )
 
         logger.info("Getting Assay %s for %s", filename, study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=False, study_location=study_location
+            study_id, None, skip_load_tables=False, study_location=study_location
         )
 
         obj_list = isa_study.assays
@@ -416,8 +371,8 @@ class StudyAssay(Resource):
     @swagger.operation(
         summary="Add a new assay",
         notes="""Add a new assay to a study<pre><code>
-{ 
- "assay": {        
+{
+ "assay": {
     "type": "LC-MS",
     "template_version": "1.0",
     "columns": [
@@ -441,8 +396,8 @@ Accepted values for:</br>
 - <b>(optional)</b> "polarity" - "positive", "negative" or "alternating"</br>
 - <b>(optional)</b> "column type"  - "hilic", "reverse phase" or "direct infusion"</br>
 </br>
-<b>Acronyms:</b>  Diode array detection (LC-DAD), Tandem MS (GCxGC-MS), Flame ionisation detector (GC-FID), 
-Direct infusion (DI-MS), Flow injection analysis (FIA-MS), Capillary electrophoresis (CE-MS), 
+<b>Acronyms:</b>  Diode array detection (LC-DAD), Tandem MS (GCxGC-MS), Flame ionisation detector (GC-FID),
+Direct infusion (DI-MS), Flow injection analysis (FIA-MS), Capillary electrophoresis (CE-MS),
 Matrix-assisted laser desorption-ionisation imaging mass spectrometry (MALDI-MS), Nuclear magnetic resonance (NMR),
 Mass spec spectrometry (MSImaging)
 </p>
@@ -512,26 +467,14 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
     @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
-
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         # check if we should be keeping copies of the metadata
         save_audit_copy = False
         save_msg_str = "NOT be"
-        if (
-            "save_audit_copy" in request.headers
-            and request.headers["save_audit_copy"].lower() == "true"
-        ):
+        if request.headers.get("save_audit_copy", "").lower() == "true":
             save_audit_copy = True
             save_msg_str = "be"
 

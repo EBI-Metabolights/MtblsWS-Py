@@ -1,9 +1,9 @@
 import glob
-import os.path
 import logging
-from pathlib import Path
+import os.path
 import re
 import shutil
+from pathlib import Path
 
 from app.config import get_settings
 from app.ws.db.dbmanager import DBManager
@@ -11,9 +11,7 @@ from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus
 from app.ws.study.study_folder_service import StudyFolderService
 from app.ws.study.study_revision_service import StudyRevisionService
-
 from app.ws.study.user_service import UserService
-
 
 logger = logging.getLogger("wslog")
 

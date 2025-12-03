@@ -1,13 +1,9 @@
-import datetime
 import json
 import logging
 import os
-import pathlib
-from app.config import get_settings
+
 from app.tasks.worker import MetabolightsTask, celery, send_email
-
 from app.utils import current_time
-
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.metabolon_utils import (
     check_input_files,
@@ -73,7 +69,9 @@ def metabolon_confirm(
         validation_message = "Could not validate all the mzML files"
         validation_success = False
         try:
-            validation_success, validation_message = validate_mzml_files(study_id, study_location)
+            validation_success, validation_message = validate_mzml_files(
+                study_id, study_location
+            )
             logger.info(
                 "%s on %s validate mzml task is successfull", study_id, study_location
             )

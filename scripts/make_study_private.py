@@ -3,7 +3,6 @@ from app.tasks.common_tasks.curation_tasks.submission_model import (
 )
 from app.tasks.common_tasks.curation_tasks.submission_pipeline import make_study_private
 
-
 if __name__ == "__main__":
     params = MakeStudyPrivateParameters(
         study_id="MTBLS9776",

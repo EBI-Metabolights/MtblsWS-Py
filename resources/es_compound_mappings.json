@@ -1,212 +1,212 @@
 {
-    "_timestamp": {
-        "enabled": true,
-        "store": true,
-        "format": "dateOptionalTime"
+  "_timestamp": {
+    "enabled": true,
+    "store": true,
+    "format": "dateOptionalTime"
+  },
+  "properties": {
+    "ObjectType": {
+      "type": "string"
     },
-    "properties": {
+    "accession": {
+      "type": "string",
+      "index": "not_analyzed"
+    },
+    "chebiId": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "formula": {
+      "type": "string"
+    },
+    "hasLiterature": {
+      "type": "boolean"
+    },
+    "hasMS": {
+      "type": "boolean"
+    },
+    "hasNMR": {
+      "type": "boolean"
+    },
+    "hasPathways": {
+      "type": "boolean"
+    },
+    "hasReactions": {
+      "type": "boolean"
+    },
+    "hasSpecies": {
+      "type": "boolean"
+    },
+    "id": {
+      "type": "long"
+    },
+    "inchi": {
+      "type": "string"
+    },
+    "inchikey": {
+      "type": "string"
+    },
+    "iupacNames": {
+      "type": "string"
+    },
+    "metSpecies": {
+      "properties": {
         "ObjectType": {
-            "type": "string"
+          "type": "string"
         },
-        "accession": {
-            "type": "string",
-            "index": "not_analyzed"
-        },
-        "chebiId": {
-            "type": "string"
-        },
-        "description": {
-            "type": "string"
-        },
-        "formula": {
-            "type": "string"
-        },
-        "hasLiterature": {
-            "type": "boolean"
-        },
-        "hasMS": {
-            "type": "boolean"
-        },
-        "hasNMR": {
-            "type": "boolean"
-        },
-        "hasPathways": {
-            "type": "boolean"
-        },
-        "hasReactions": {
-            "type": "boolean"
-        },
-        "hasSpecies": {
-            "type": "boolean"
-        },
-        "id": {
-            "type": "long"
-        },
-        "inchi": {
-            "type": "string"
-        },
-        "inchikey": {
-            "type": "string"
-        },
-        "iupacNames": {
-            "type": "string"
-        },
-        "metSpecies": {
-            "properties": {
+        "crossReference": {
+          "properties": {
+            "ObjectType": {
+              "type": "string"
+            },
+            "accession": {
+              "type": "string"
+            },
+            "db": {
+              "properties": {
                 "ObjectType": {
-                    "type": "string"
-                },
-                "crossReference": {
-                    "properties": {
-                        "ObjectType": {
-                            "type": "string"
-                        },
-                        "accession": {
-                            "type": "string"
-                        },
-                        "db": {
-                            "properties": {
-                                "ObjectType": {
-                                    "type": "string"
-                                },
-                                "id": {
-                                    "type": "long"
-                                },
-                                "name": {
-                                    "type": "string"
-                                }
-                            }
-                        },
-                        "id": {
-                            "type": "long"
-                        }
-                    }
+                  "type": "string"
                 },
                 "id": {
-                    "type": "long"
-                },
-                "species": {
-                    "properties": {
-                        "ObjectType": {
-                            "type": "string"
-                        },
-                        "description": {
-                            "type": "string"
-                        },
-                        "id": {
-                            "type": "long"
-                        },
-                        "species": {
-                            "type": "string"
-                        },
-                        "speciesMember": {
-                            "properties": {
-                                "ObjectType": {
-                                    "type": "string"
-                                },
-                                "id": {
-                                    "type": "long"
-                                },
-                                "parentMemberId": {
-                                    "type": "long"
-                                },
-                                "speciesGroup": {
-                                    "properties": {
-                                        "ObjectType": {
-                                            "type": "string"
-                                        },
-                                        "id": {
-                                            "type": "long"
-                                        },
-                                        "name": {
-                                            "type": "string"
-                                        },
-                                        "parentId": {
-                                            "type": "long"
-                                        }
-                                    }
-                                },
-                                "taxon": {
-                                    "type": "string"
-                                },
-                                "taxonDesc": {
-                                    "type": "string"
-                                }
-                            }
-                        },
-                        "taxon": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "metSpectras": {
-            "properties": {
-                "ObjectType": {
-                    "type": "string"
-                },
-                "attributes": {
-                    "properties": {
-                        "ObjectType": {
-                            "type": "string"
-                        },
-                        "attributeDefinition": {
-                            "properties": {
-                                "ObjectType": {
-                                    "type": "string"
-                                },
-                                "description": {
-                                    "type": "string"
-                                },
-                                "id": {
-                                    "type": "long"
-                                },
-                                "name": {
-                                    "type": "string"
-                                }
-                            }
-                        },
-                        "id": {
-                            "type": "long"
-                        },
-                        "value": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "id": {
-                    "type": "long"
+                  "type": "long"
                 },
                 "name": {
-                    "type": "string"
-                },
-                "pathToJsonSpectra": {
-                    "type": "string"
-                },
-                "spectraType": {
-                    "type": "string"
+                  "type": "string"
                 }
+              }
+            },
+            "id": {
+              "type": "long"
             }
+          }
+        },
+        "id": {
+          "type": "long"
+        },
+        "species": {
+          "properties": {
+            "ObjectType": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "id": {
+              "type": "long"
+            },
+            "species": {
+              "type": "string"
+            },
+            "speciesMember": {
+              "properties": {
+                "ObjectType": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "long"
+                },
+                "parentMemberId": {
+                  "type": "long"
+                },
+                "speciesGroup": {
+                  "properties": {
+                    "ObjectType": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "long"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "parentId": {
+                      "type": "long"
+                    }
+                  }
+                },
+                "taxon": {
+                  "type": "string"
+                },
+                "taxonDesc": {
+                  "type": "string"
+                }
+              }
+            },
+            "taxon": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "metSpectras": {
+      "properties": {
+        "ObjectType": {
+          "type": "string"
+        },
+        "attributes": {
+          "properties": {
+            "ObjectType": {
+              "type": "string"
+            },
+            "attributeDefinition": {
+              "properties": {
+                "ObjectType": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "long"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            },
+            "id": {
+              "type": "long"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        "id": {
+          "type": "long"
         },
         "name": {
-            "type": "string"
+          "type": "string"
         },
-        "organism": {
-            "properties": {
-                "organismName": {
-                    "type": "string",
-                    "index": "not_analyzed"
-                }
-            }
+        "pathToJsonSpectra": {
+          "type": "string"
         },
-        "studyStatus": {
-            "type": "string",
-            "index": "not_analyzed"
-        },
-        "updatedDate": {
-            "type": "date",
-            "format": "dateOptionalTime"
+        "spectraType": {
+          "type": "string"
         }
+      }
+    },
+    "name": {
+      "type": "string"
+    },
+    "organism": {
+      "properties": {
+        "organismName": {
+          "type": "string",
+          "index": "not_analyzed"
+        }
+      }
+    },
+    "studyStatus": {
+      "type": "string",
+      "index": "not_analyzed"
+    },
+    "updatedDate": {
+      "type": "date",
+      "format": "dateOptionalTime"
     }
+  }
 }
