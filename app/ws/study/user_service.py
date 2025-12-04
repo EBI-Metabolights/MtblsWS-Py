@@ -1,10 +1,10 @@
 import logging
-from typing import Any, List, Union
+from typing import Any, List, Self, Union
 
 from sqlalchemy import func
 
 from app.utils import MetabolightsAuthorizationException, MetabolightsException
-from app.ws.auth.utils import validate_jwt_token
+from app.ws.auth.service import AbstractAuthManager
 from app.ws.db import permission_scopes as scopes
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import SimplifiedUserModel, UserModel
@@ -12,6 +12,7 @@ from app.ws.db.schemes import Study, User
 from app.ws.db.types import (
     ActiveUserRoles,
     CurationRequest,
+    StudyCategory,
     StudyStatus,
     UserRole,
     UserStatus,
@@ -23,16 +24,22 @@ logger = logging.getLogger(__name__)
 
 
 class UserService(object):
-    instance = None
+    instances: dict[Any, Any] = {}
     db_manager = None
     study_settings = None
 
+    def __init__(self, auth_manager: None | AbstractAuthManager = None):
+        self.auth_manager = auth_manager
+
     @classmethod
-    def get_instance(cls):
-        if not cls.instance:
-            cls.instance = UserService()
+    def get_instance(cls, auth_manager: AbstractAuthManager) -> Self:
+        input_hash = hash(auth_manager)
+        instance = cls.instances.get(input_hash)
+        if not instance:
+            cls.instances[input_hash] = UserService(auth_manager)
             cls.study_settings = get_study_settings()
-        return cls.instance
+
+        return cls.instances.get(input_hash)
 
     def get_user_studies(self, user_token):
         try:
@@ -71,10 +78,15 @@ class UserService(object):
         username: None | str = None
         messages = []
         if jwt:
+            if not self.auth_manager:
+                raise MetabolightsException("Authentication manager is not defined.")
             try:
-                user = validate_jwt_token(jwt)
-                username = user.userName
+                user = self.auth_manager.validate_oauth2_token(jwt)
+                username = user.email
+                email_verified = UserStatus(user.status) == UserStatus.ACTIVE
                 permission_context.validated_jwt = jwt
+                permission_context.username = username
+                permission_context.email_verified = email_verified
             except Exception as ex:
                 messages.append(f"Invalid JWT token: {str(ex)}")
 
@@ -83,12 +95,12 @@ class UserService(object):
                 filters = []
                 if study_id:
                     filters.append(Study.acc == study_id)
-                elif obfuscation_code:
+                if obfuscation_code:
                     filters.append(Study.obfuscationcode == obfuscation_code)
 
                 query = db_session.query(Study)
                 study: Study = query.filter(*filters).first()
-                if study:
+                if study and obfuscation_code in {study.obfuscationcode, None}:
                     permission_context.obfuscation_code = study.obfuscationcode
                     permission_context.study_id = study.acc
                     permission_context.reserved_accession = study.reserved_accession
@@ -97,7 +109,9 @@ class UserService(object):
                     )
                     permission_context.mhd_accession = study.mhd_accession
                     permission_context.mhd_model_version = study.mhd_model_version
-                    permission_context.study_category = study.study_category
+                    permission_context.study_category = StudyCategory(
+                        study.study_category
+                    )
                     permission_context.sample_template = study.sample_type
                     permission_context.template_version = study.template_version
 
@@ -362,12 +376,16 @@ class UserService(object):
             self.copy_scopes(permission, scopes.STUDY_PAGE_EMPTY_SCOPES)
             return permission
         curator_roles = {UserRole.ROLE_SUPER_USER, UserRole.SYSTEM_ADMIN}
-
+        category = (
+            context.study_category.name.lower().replace("_", "-")
+            if context.study_category
+            else None
+        )
         if not context.owner and context.user_role not in curator_roles:
             if context.study_status == StudyStatus.PUBLIC:
                 permission.study_id = context.study_id
                 permission.study_status = context.study_status.name
-                permission.study_category = context.study_category
+                permission.study_category = category
                 permission.reason = "reason-03"
                 self.copy_scopes(permission, scopes.PUBLIC_STUDY_PAGE_SCOPES)
                 return permission
@@ -375,7 +393,7 @@ class UserService(object):
                 permission.study_id = context.study_id
                 permission.study_status = context.study_status.name
                 permission.obfuscation_code = context.obfuscation_code
-                permission.study_category = context.study_category
+                permission.study_category = category
                 self.copy_scopes(
                     permission, scopes.REVIEWER_PROVISION_STUDY_PAGE_SCOPES
                 )
@@ -389,7 +407,7 @@ class UserService(object):
         permission.study_id = context.study_id
         permission.study_status = context.study_status.name
         permission.obfuscation_code = context.obfuscation_code
-        permission.study_category = context.study_category
+        permission.study_category = category
         if context.user_role in curator_roles:
             if context.study_status == StudyStatus.PUBLIC:
                 self.copy_scopes(permission, scopes.CURATOR_PUBLIC_STUDY_PAGE_SCOPES)

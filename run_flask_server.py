@@ -7,7 +7,7 @@ logger = logging.getLogger("wslog")
 try:
     server_settings = get_settings().server
 except Exception as ex:
-    print("Error while loading settings file.")
+    print(f"Error while loading settings file. {str(ex)}")
     raise ex
 
 logging.getLogger().setLevel(logging.DEBUG)

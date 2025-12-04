@@ -5,7 +5,7 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel, to_pascal
 
-from app.ws.db.types import CurationRequest, StudyStatus, UserRole
+from app.ws.db.types import CurationRequest, StudyCategory, StudyStatus, UserRole
 
 
 class BaseScopeModel(BaseModel):
@@ -19,7 +19,7 @@ class BaseScopeModel(BaseModel):
     )
 
 
-class AuthData(BaseModel):
+class AuthInputData(BaseModel):
     user_token: None | str = None
     jwt: None | str = None
     study_id: None | str = None
@@ -118,7 +118,7 @@ class StudyPermissionContext(BaseScopeModel):
     template_version: None | str = None
     sample_template: None | str = None
     study_template: None | str = None
-    study_category: None | str = None
+    study_category: None | StudyCategory = None
     reserved_submission_id: None | str = None
     reserved_accession: None | str = None
     mhd_accession: None | str = None
@@ -136,6 +136,7 @@ class StudyPermissionContext(BaseScopeModel):
     validated_jwt: None | str = None
     partner_user: None | bool = None
     owner: None | bool = None
+    email_verified: None | bool = None
 
 
 class RoleEvaluationResult(BaseScopeModel):

@@ -352,7 +352,6 @@ def check_not_started_study_revisions(self):
 
 if __name__ == "__main__":
     user_token = get_settings().auth.service_account.api_token
-    # user = UserService.get_instance().get_db_user_by_user_token(user_token)
 
     studies = []
     with DBManager.get_instance().session_maker() as db_session:

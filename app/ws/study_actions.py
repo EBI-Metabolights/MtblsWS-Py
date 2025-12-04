@@ -323,7 +323,6 @@ class StudyStatus(Resource):
                 message="Please use the 'revisions' endpoint to release a study"
             )
         # curation_request = new_curation_request or None
-        # db_user = UserService.get_instance().get_db_user_by_user_token(user_token)
         is_curator = context.user_role in {
             UserRole.ROLE_SUPER_USER,
             UserRole.SYSTEM_ADMIN,

@@ -3,6 +3,7 @@ from typing import Union
 from app.config import ApplicationSettings
 from app.services.study.lite_study_configuration import LiteStudyConfiguration
 from app.utils import MetabolightsException
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.db.types import StudyStatus
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
@@ -36,8 +37,9 @@ class StudyConfiguration(LiteStudyConfiguration):
             self.study_service = StudyService.get_instance()
 
         self.user_service = user_service
+        auth_manager = AuthenticationManager.get_instance()
         if not self.user_service:
-            self.user_service = UserService.get_instance()
+            self.user_service = UserService.get_instance(auth_manager)
 
     def check_db_consistency(self):
         if self.db_metadata.acc != self.study_id:

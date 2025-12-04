@@ -11,6 +11,7 @@ from app.utils import (
     MetabolightsException,
     metabolights_exception_handler,
 )
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.auth.permissions import (
     auth_endpoint,
     raise_deprecation_error,
@@ -104,12 +105,10 @@ class UserAccounts(Resource):
                     filter_clause = lambda query: query.filter(User.email == email)
                 elif user_id:
                     filter_clause = lambda query: query.filter(User.id == user_id)
-
-                user: UserModel = (
-                    UserService.get_instance().get_db_user_by_filter_clause(
-                        filter_clause
-                    )
-                )
+                auth_manager = AuthenticationManager.get_instance()
+                user: UserModel = UserService.get_instance(
+                    auth_manager
+                ).get_db_user_by_filter_clause(filter_clause)
                 if user:
                     if (
                         user.role == UserRole.ROLE_SUPER_USER.value
@@ -123,9 +122,10 @@ class UserAccounts(Resource):
                     {"content": user.model_dump(), "message": None, "error": None}
                 )
             else:
-                users: List[UserModel] = (
-                    UserService.get_instance().get_db_users_by_filter_clause()
-                )
+                auth_manager = AuthenticationManager.get_instance()
+                users: List[UserModel] = UserService.get_instance(
+                    auth_manager
+                ).get_db_users_by_filter_clause()
                 user_dict = []
                 for user in users:
                     if user:

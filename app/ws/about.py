@@ -79,7 +79,16 @@ class AboutServer(Resource):
     @swagger.operation(
         summary="Name of the Web Service host.",
         nickname="Web server host name",
-        parameters=[],
+        parameters=[
+            {
+                "name": "user-token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False,
+            },
+        ],
         responseMessages=[
             {"code": 200, "message": "OK."},
             {

@@ -10,6 +10,7 @@ from app.tasks.common_tasks.basic_tasks.execute_commands import (
 from app.tasks.datamover_tasks.basic_tasks.file_management import get_permission
 from app.tasks.system_monitor_tasks.integrity_tests.utils import check_result
 from app.utils import current_time
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.redis.redis import RedisStorage, get_redis_server
 from app.ws.study.user_service import UserService
@@ -18,7 +19,8 @@ from app.ws.study.user_service import UserService
 @check_result(category="database")
 def check_postgresql():
     mtbls_submitter_user = get_settings().auth.service_account.email
-    user = UserService.get_instance().get_simplified_user_by_username(
+    auth_manager = AuthenticationManager.get_instance()
+    user = UserService.get_instance(auth_manager).get_simplified_user_by_username(
         mtbls_submitter_user
     )
     return user.userName

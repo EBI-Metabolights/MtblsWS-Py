@@ -75,12 +75,18 @@ t_study_user = Table(
     Column("userid", ForeignKey("users.id"), primary_key=True, nullable=False),
     Column("studyid", ForeignKey("studies.id"), primary_key=True, nullable=False),
 )
+hibernate_sequence = Sequence("hibernate_sequence", metadata=metadata)
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(BigInteger, primary_key=True)
+    id = Column(
+        BigInteger,
+        hibernate_sequence,
+        primary_key=True,
+        server_default=hibernate_sequence.next_value(),
+    )
     address = Column(String(255))
     affiliation = Column(String(255))
     affiliationurl = Column(String(255))

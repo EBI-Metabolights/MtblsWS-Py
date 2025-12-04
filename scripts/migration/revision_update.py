@@ -6,6 +6,7 @@ import shutil
 from pathlib import Path
 
 from app.config import get_settings
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus
@@ -40,7 +41,10 @@ def prepare_revisions():
                 get_settings().study.mounted_paths.study_internal_files_root_path
             )
             user_token = get_settings().auth.service_account.api_token
-            user = UserService.get_instance().get_db_user_by_user_token(user_token)
+            auth_manager = AuthenticationManager.get_instance()
+            user = UserService.get_instance(auth_manager).get_db_user_by_user_token(
+                user_token
+            )
 
         except Exception as e:
             db_session.rollback()

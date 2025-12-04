@@ -15,6 +15,7 @@ from app.tasks.worker import (
     send_email,
 )
 from app.utils import MetabolightsDBException, current_time
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus
@@ -266,14 +267,15 @@ def maintain_storage_study_folders(
     studies = []
     try:
         with DBManager.get_instance().session_maker() as db_session:
+            auth_manager = AuthenticationManager.get_instance()
             if study_id:
-                user: User = UserService.get_instance().validate_user_has_write_access(
-                    user_token, study_id=study_id
-                )
+                user: User = UserService.get_instance(
+                    auth_manager
+                ).validate_user_has_write_access(user_token, study_id=study_id)
             else:
-                user: User = UserService.get_instance().validate_user_has_curator_role(
-                    user_token
-                )
+                user: User = UserService.get_instance(
+                    auth_manager
+                ).validate_user_has_curator_role(user_token)
 
             if not user:
                 raise MetabolightsDBException("No user")

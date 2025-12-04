@@ -6,6 +6,7 @@ from typing import Union
 from app.config.utils import get_private_ftp_relative_root_path
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.db_connection import (
     check_access_rights,
     get_all_non_public_studies,
@@ -179,7 +180,10 @@ def create_ftp_folder(
                 submitter[0] for submitter in submitter_emails if submitter
             ]
         submitter_email = submitters_email_list[0]
-        user = UserService.get_instance().get_db_user_by_user_name(submitter_email)
+        auth_manager = AuthenticationManager.get_instance()
+        user = UserService.get_instance(auth_manager).get_db_user_by_user_name(
+            submitter_email
+        )
         submitter_fullname = user.fullName
 
         email_service.send_email_for_new_provisional_study(

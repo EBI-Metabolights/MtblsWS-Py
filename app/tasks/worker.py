@@ -12,6 +12,7 @@ from app.config.model.celery import CelerySettings
 from app.config.model.redis_cache import RedisConnection
 from app.tasks.logging_filter import CeleryWorkerLogFilter
 from app.utils import MetabolightsException, ValueMaskUtility
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.email.email_service import EmailService
 from app.ws.study.user_service import UserService
 
@@ -207,9 +208,10 @@ class MetabolightsTask(celery.Task):
             username = kwargs.get("email")
             user_token = kwargs.get("user_token")
             if not username and user_token:
-                user = UserService.get_instance().get_simplified_user_by_token(
-                    user_token
-                )
+                auth_manager = AuthenticationManager.get_instance()
+                user = UserService.get_instance(
+                    auth_manager
+                ).get_simplified_user_by_token(user_token)
                 if user:
                     username = user.userName
 

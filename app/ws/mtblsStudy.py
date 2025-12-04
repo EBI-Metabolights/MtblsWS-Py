@@ -68,6 +68,7 @@ from app.utils import (
     current_utc_time_without_timezone,
     metabolights_exception_handler,
 )
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.auth.permissions import (
     public_endpoint,
     raise_deprecation_error,
@@ -895,7 +896,8 @@ class CreateAccession(Resource):
         user_role = result.context.user_role
         partner_user = result.context.partner_user
         username = result.context.username
-        studies = UserService.get_instance().get_user_studies(user_token)
+        auth_manager = AuthenticationManager.get_instance()
+        studies = UserService.get_instance(auth_manager).get_user_studies(user_token)
         provisional_studies = []
         last_study_datetime = datetime.fromtimestamp(0)
         for study in studies:
@@ -1049,7 +1051,10 @@ class CreateAccession(Resource):
                 % study_id_prefix,
             )
         # Rule 2
-        UserService.get_instance().validate_user_has_curator_role(user_token)
+        auth_manager = AuthenticationManager.get_instance()
+        UserService.get_instance(auth_manager).validate_user_has_curator_role(
+            user_token
+        )
         # Rule 3
         # disable this rule for provisional id
         # Rule 4
