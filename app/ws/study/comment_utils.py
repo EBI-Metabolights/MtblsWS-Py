@@ -67,6 +67,7 @@ def update_mhd_comments(
     sample_template: None | str = None,
     template_version: None | str = None,
     study_template: None | str = None,
+    created_at: None | datetime.datetime = None,
     characteristic_definitions: None | list[CharacteristicDescription] = None,
 ) -> list[str]:
     old_comments = {}
@@ -92,7 +93,8 @@ def update_mhd_comments(
             study_category_name = category.get_label()
 
     mhd_comments_map: OrderedDict[str, model.Comment] = OrderedDict()
-
+    created = created_at.isoformat() if created_at else ""
+    mhd_comments_map["created at"] = model.Comment(name="Created At", value=created)
     mhd_comments_map["study category"] = model.Comment(
         name="Study Category", value=str(study_category_name or "")
     )
@@ -130,6 +132,7 @@ def update_mhd_comments(
     updated_comments: OrderedDict[str, model.Comment] = OrderedDict()
     for comment_name, comment in old_comments.items():
         if comment_name.lower() not in {
+            "created at",
             "study category",
             "sample template",
             "study template",

@@ -184,6 +184,7 @@ def maintain_folders(
                 sample_template=study.sample_type,
                 dataset_license=study.dataset_license,
                 template_version=study.template_version,
+                study_template=study.study_template,
             )
             study_settings = get_settings().study
             released_version = "PUBLIC_VERSION_1.0"

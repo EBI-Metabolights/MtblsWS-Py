@@ -37,6 +37,7 @@ from app.ws.mm_models import PersonSchema
 from app.ws.models import Investigation_api_model, serialize_investigation
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.utils import get_study_metadata_path
+from app.ws.study_templates.utils import get_validation_configuration
 from app.ws.utils import (
     add_ontology_to_investigation,
     delete_column_from_tsv_file,
@@ -3375,7 +3376,7 @@ class StudyPublications(Resource):
 
         # Check that the ontology is referenced in the investigation
         new_status = updated_publication.status
-        # term_source = new_status.term_source
+        term_source = new_status.term_source
 
         found = False
         for index, publication in enumerate(isa_study.publications):
@@ -3388,7 +3389,30 @@ class StudyPublications(Resource):
                 break
         if not found:
             abort(404)
-        # if term_source:
+        new_source_name = ""
+        if updated_publication and new_status:
+            new_source = updated_publication.status.term_source.name.lower()
+        selected_ontology_source_ref = None
+        if new_source_name and isa_inv.ontology_source_references:
+            for ref in isa_inv.ontology_source_references:
+                if (ref.name or "").lower() == new_source:
+                    selected_ontology_source_ref = ref
+                    break
+        if not selected_ontology_source_ref and new_source_name:
+            config = get_validation_configuration()
+            term_source = updated_publication.status.term_source
+            if config:
+                refs = config.templates.ontology_source_reference_templates
+                if refs and new_source_name.upper() in refs:
+                    item = refs[new_source_name.upper()]
+                    term_source = model.OntologySource(
+                        name=str(item.source_name),
+                        version=str(item.version),
+                        file=str(item.name),
+                        description=str(item.description),
+                    )
+            isa_inv.ontology_source_references.append(term_source)
+        # if new_source:
         #     add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
         #                                   term_source.file, term_source.description)
         logger.info("A copy of the previous files will %s saved", save_msg_str)

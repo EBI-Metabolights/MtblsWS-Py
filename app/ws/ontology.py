@@ -47,12 +47,12 @@ from app.ws.auth.permissions import (
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import (
-    MetaboLightsOntology,
     get_ontology_name,
     get_ontology_search_result,
     getOnto_info,
-    load_ontology_file,
 )
+from app.ws.study_templates.models import ValidationConfiguration
+from app.ws.study_templates.utils import get_validation_configuration
 from app.ws.utils import log_request
 
 logger = logging.getLogger("wslog")
@@ -112,14 +112,11 @@ class MtblsControlLists(Resource):
     def get(self):
         log_request(request)
         public_endpoint(request)
-        name = request.args.get("name").strip() if request.args.get("name") else None
-        filepath = convert_relative_to_real_path(
-            get_settings().file_resources.mtbls_ontology_file
-        )
-        mtbl_ontology: MetaboLightsOntology = load_ontology_file(filepath)
-        return jsonify(mtbl_ontology.get_default_control_lists(name))
-
-
+        
+        configuration: ValidationConfiguration = get_validation_configuration()
+        return jsonify({"controlLists": configuration.model_dump(by_alias=True)})
+        
+        
 class Ontology(Resource):
     @swagger.operation(
         summary="Get ontology onto_information.",

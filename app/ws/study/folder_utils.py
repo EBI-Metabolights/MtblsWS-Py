@@ -508,6 +508,7 @@ def write_audit_files(study_location_or_study_id):
             sample_template=study.sample_type,
             dataset_license=study.dataset_license,
             template_version=study.template_version,
+            study_template=study.study_template,
         )
         last_metadata_signature = maintenance_task.read_hash_file()
         metadata_files_signature, _ = maintenance_task.calculate_metadata_files_hash()

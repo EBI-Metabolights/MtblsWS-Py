@@ -51,6 +51,7 @@ dependencies = [
     "pronto>=2.7.2",
     "mzml2isa>=1.1.1",
     "python-keycloak>=5.8.1",
+    "cachetools~=6.2.2"
 ]
 
 [project.optional-dependencies]

@@ -369,6 +369,7 @@ class StudyStatus(Resource):
                 mhd_model_version=context.mhd_model_version,
                 template_version=context.template_version,
                 study_template=context.study_template,
+                created_at=context.created_at,
             )
         if new_study_status in {types.StudyStatus.PUBLIC, types.StudyStatus.PRIVATE}:
             updated_submission_date = (
@@ -714,6 +715,8 @@ class StudyStatus(Resource):
             study_category=context.study_category,
             sample_template=context.sample_template,
             dataset_license=context.dataset_license,
+            template_version=context.template_version,
+            study_template=context.study_template,
         )
         date_format = "%Y-%m-%d_%H-%M-%S"
         folder_name = time.strftime(date_format) + "_" + task_name

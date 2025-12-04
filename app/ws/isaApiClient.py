@@ -20,6 +20,7 @@ import glob
 import io
 import logging
 import os
+import re
 import time
 
 from flask_restful import abort
@@ -90,6 +91,34 @@ class IsaApiClient:
             )
             return isa_json
 
+    ASSAY_TYPES = {
+        "LC-MS",
+        "GC-MS",
+        "GCxGC-MS",
+        "MALDI-MS",
+        "FIA-MS",
+        "DI-MS",
+        "CE-MS",
+        "MS",
+        "NMR",
+        "MRImaging",
+        "MSImaging",
+        "GC-FID",
+        "LC-DAD",
+    }
+
+    def find_assay_type_and_identifier(self, assay: model.Assay) -> tuple[str, None]:
+        file_name = assay.filename or ""
+        parts = file_name.split("_")
+        if len(parts) > 3:
+            match = re.match(r"^(.+?)(?:-(\d+))?$", parts[2])
+            if match:
+                candidate = match.groups()[0]
+                identifier = match.groups()[1]
+                if candidate in self.ASSAY_TYPES:
+                    return candidate, parts[2] if identifier else None
+        return None
+
     def get_isa_study(
         self,
         study_id,
@@ -117,7 +146,7 @@ class IsaApiClient:
             )
             std_path = get_study_metadata_path(study_id)
         else:
-            logger.info("Study location is: " + study_location)
+            logger.info("Study location is: %s", study_location)
             std_path = study_location
 
         try:
@@ -126,7 +155,40 @@ class IsaApiClient:
             # loading tables also load Samples and Assays
             isa_inv = load(fp, skip_load_tables)
             # ToDo. Add MAF to isa_study
-            isa_study = isa_inv.studies[0]
+            isa_study: model.Study = isa_inv.studies[0]
+            if isa_inv.studies and isa_study.assays:
+                for item in isa_study.assays:
+                    assay: model.Assay = item
+                    assay_type = None
+                    identifier = None
+                    assay_type_labels = [
+                        x.value
+                        for x in assay.comments
+                        if x.name == "Assay Type Label" and x.value
+                    ]
+                    if len(assay_type_labels) == 1:
+                        assay_type = assay_type_labels[0]
+                    assay_identifiers = [
+                        x.value
+                        for x in assay.comments
+                        if x.name == "Assay Identifier" and x.value
+                    ]
+                    if len(assay_identifiers) == 1:
+                        identifier = assay_identifiers[0]
+                    if assay_type and assay_type in self.ASSAY_TYPES and identifier:
+                        continue
+                    assay_type, identifier = self.find_assay_type_and_identifier(assay)
+                    new_comments = [
+                        model.Comment(name="Assay Identifier", value=identifier or ""),
+                        model.Comment(name="Assay Type Label", value=assay_type or "")
+                    ]
+                    new_comments.extend([
+                        x
+                        for x in assay.comments
+                        if x.name not in {"Assay Type Label", "Assay Identifier"}
+                    ])
+                    assay.comments = new_comments
+
         except IndexError as e:
             logger.exception(
                 "Failed to find Investigation file %s from %s", study_id, std_path

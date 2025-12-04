@@ -80,6 +80,7 @@ def update_readonly_storage_folders(
                 sample_template=study.sample_type,
                 dataset_license=study.dataset_license,
                 template_version=study.template_version,
+                study_template=study.study_template,
             )
 
             maintenance_task_list[study_id] = maintenance_task

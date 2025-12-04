@@ -138,8 +138,9 @@ query_studies_user = """
     s.mhd_accession,
     s.mhd_model_version,
     s.dataset_license,
-    s.template_version
-    from studies s, users u, study_user su
+    s.template_version,
+    s.created_at
+    from studies s, users u, study_user su 
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
 
@@ -149,17 +150,23 @@ query_provisional_study_ids_for_user = """
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(user_token)s and s.status=0;
     """
 
-insert_study_with_provisional_id = """
-    insert into studies (id, obfuscationcode, releasedate, status, studysize, submissiondate,
-    updatedate, validations, validation_status, reserved_submission_id, acc)
-    values (
+insert_study_with_provisional_id = """   
+    insert into studies (id, obfuscationcode, releasedate, status, studysize, submissiondate, 
+    updatedate, validations, validation_status, reserved_submission_id, acc, study_category, 
+    template_version, sample_type, study_template
+    ) 
+    values ( 
         %(new_unique_id)s,
         %(obfuscationcode)s,
         %(releasedate)s,
         0, 0, %(current_time)s,
         %(current_time)s, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error',
         %(req_id)s,
-        %(req_id)s
+        %(req_id)s,
+        %(study_category)s,
+        %(template_version)s,
+        %(sample_template_name)s,
+        %(study_template_name)s
         );
     insert into study_user(userid, studyid) values (%(userid)s, %(new_unique_id)s);
 """
@@ -595,6 +602,7 @@ def get_all_studies_for_user(user_token):
         mhd_model_version = row[13] if row[13] else None
         dataset_license = row[14] if row[14] else None
         template_version = row[15] if row[15] else ""
+        created_at = row[16].isoformat() if row[16] else None
         complete_list.append(
             {
                 "accession": study_id,
@@ -622,6 +630,7 @@ def get_all_studies_for_user(user_token):
                 "mhdModelVersion": mhd_model_version,
                 "datasetLicense": dataset_license,
                 "templateVersion": template_version,
+                "createdAt": created_at,
             }
         )
     return complete_list
@@ -1152,7 +1161,15 @@ def get_provisional_study_ids_for_user(user_token):
     return complete_list
 
 
-def create_empty_study(user_token, study_id=None, obfuscationcode=None):
+def create_empty_study(
+    user_token,
+    template_version="1.0",
+    study_category_name="other",
+    sample_template_name="minimum",
+    study_template_name="minimum",
+    study_id=None,
+    obfuscationcode=None,
+):
     email = get_email(user_token)
     # val_email(email)
     email = email.lower()
@@ -1188,7 +1205,7 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
             req_id = identifier_service.default_provisional_identifier.get_id(
                 new_unique_id, current_time
             )
-
+        study_category = StudyCategory.from_name(study_category_name)
         content = {
             "req_id": req_id,
             "obfuscationcode": obfuscationcode,
@@ -1197,6 +1214,10 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
             "new_unique_id": new_unique_id,
             "userid": user_id,
             "current_time": current_time,
+            "template_version": template_version,
+            "sample_template_name": sample_template_name,
+            "study_category": study_category,
+            "study_template_name": study_template_name,
         }
         cursor.execute(insert_study_with_provisional_id, content)
         conn.commit()

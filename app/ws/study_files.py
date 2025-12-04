@@ -1839,7 +1839,7 @@ def get_study_metadata_and_data_files(
                 # search_result.latest = search_result.study
                 # search_result.study = []
             except Exception as exc:
-                logger.error("Error for study {study.acc}: {str(exc)}")
+                logger.error(f"Error for study {study.acc}: {str(exc)}")
                 raise MetabolightsException(
                     "Search failed.", exception=exc, http_code=500
                 )
@@ -1862,7 +1862,6 @@ def get_study_metadata_and_data_files(
 
 def get_private_ftp_files(include_sub_dir, settings, ftp_folder_path):
     timeout = settings.hpc_cluster.configuration.task_get_timeout_in_seconds
-    # status_result = False
     try:
         inputs = {"path": ftp_folder_path, "recursive": include_sub_dir}
         task = list_directory.apply_async(kwargs=inputs, expires=timeout)
