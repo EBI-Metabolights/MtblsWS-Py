@@ -1,6 +1,7 @@
 from app.utils import DeprecationError
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.db.permission_scopes import (
-    AuthData,
+    AuthInputData,
     PermissionFilter,
     RoleEvaluationResult,
     ScopeFilter,
@@ -261,7 +262,8 @@ def validate_user_has_role(
     study_required: bool = False,
 ) -> RoleEvaluationResult:
     auth_data = get_auth_data(request)
-    return UserService.get_instance().validate_user_roles(
+    auth_manager = AuthenticationManager.get_instance()
+    return UserService.get_instance(auth_manager).validate_user_roles(
         roles=roles,
         user_token=auth_data.user_token,
         jwt=auth_data.jwt,
@@ -272,7 +274,7 @@ def validate_user_has_role(
     )
 
 
-def get_auth_data(request) -> AuthData:
+def get_auth_data(request) -> AuthInputData:
     user_token = request.headers.get("user_token", None) or None
 
     obfuscation_code = request.headers.get("obfuscation_code", None) or None
@@ -291,7 +293,7 @@ def get_auth_data(request) -> AuthData:
     if not study_id:
         study_id = request.headers.get("study_id", None) or None
 
-    return AuthData(
+    return AuthInputData(
         user_token=user_token,
         jwt=jwt,
         study_id=study_id,
@@ -306,8 +308,8 @@ def validate_permissions(
 
     if not auth_data.study_id and not auth_data.obfuscation_code:
         raise ValueError("study is is not defined")
-
-    return UserService.get_instance().validate_permissions(
+    auth_manager = AuthenticationManager.get_instance()
+    return UserService.get_instance(auth_manager).validate_permissions(
         study_id=auth_data.study_id,
         permissions=permissions,
         user_token=auth_data.user_token,

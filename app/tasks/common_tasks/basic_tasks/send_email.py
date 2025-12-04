@@ -14,6 +14,7 @@ from app.tasks.worker import (
     send_email,
 )
 from app.utils import current_time
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.db_connection import (
     get_email,
     query_study_submitters,
@@ -61,7 +62,10 @@ def send_email_for_new_provisional_study(user_token, study_id, folder_name):
         if not submitters_email_list:
             return
         submitter_email = submitters_email_list[0]
-        user = UserService.get_instance().get_db_user_by_user_name(submitter_email)
+        auth_manager = AuthenticationManager.get_instance()
+        user = UserService.get_instance(auth_manager).get_db_user_by_user_name(
+            submitter_email
+        )
         submitter_fullname = user.fullName
         email_service = get_email_service(flask_app)
         email_service.send_email_for_new_provisional_study(
@@ -106,7 +110,10 @@ def send_email_for_new_accession_number(
         if not submitters_email_list:
             return
         submitter_email = submitters_email_list[0]
-        user = UserService.get_instance().get_db_user_by_user_name(submitter_email)
+        auth_manager = AuthenticationManager.get_instance()
+        user = UserService.get_instance(auth_manager).get_db_user_by_user_name(
+            submitter_email
+        )
         submitter_fullname = user.fullName
 
         ftp_user_home = (
@@ -164,7 +171,10 @@ def send_email_on_public(user_token, study_id, release_date):
             return
 
         submitter_email = submitters_email_list[0]
-        user = UserService.get_instance().get_db_user_by_user_name(submitter_email)
+        auth_manager = AuthenticationManager.get_instance()
+        user = UserService.get_instance(auth_manager).get_db_user_by_user_name(
+            submitter_email
+        )
         submitter_fullname = user.fullName
         email_service = get_email_service(flask_app)
         iac = IsaApiClient()
@@ -227,7 +237,10 @@ def get_study_contacts(study: Study):
             return
         users = []
         for submitter_email in submitters_email_list:
-            user = UserService.get_instance().get_db_user_by_user_name(submitter_email)
+            auth_manager = AuthenticationManager.get_instance()
+            user = UserService.get_instance(auth_manager).get_db_user_by_user_name(
+                submitter_email
+            )
             users.append(user.fullName)
         study_contacts = ", ".join(users)
     return study_contacts

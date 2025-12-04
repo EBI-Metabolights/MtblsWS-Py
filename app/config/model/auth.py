@@ -1,4 +1,20 @@
+from typing import Literal
+
 from pydantic import BaseModel
+
+
+class OpenIdConnnectClient(BaseModel):
+    server_url: str
+    realm_name: str
+    client_id: str
+    client_secret: str
+
+
+class OpenIdConnnectAdmin(BaseModel):
+    server_url: str
+    username: str
+    password: str
+    realm_name: str = "metabolights"
 
 
 class AuthConfiguration(BaseModel):
@@ -9,27 +25,16 @@ class AuthConfiguration(BaseModel):
     access_token_issuer_name: str = "Metabolights PythonWS"
     application_secret_key: str
     one_time_token_expires_in_seconds: int = 300
+    openid_connect_client: OpenIdConnnectClient
+    openid_connect_admin: OpenIdConnnectAdmin
+    active_authentication_service: Literal["standalone", "keycloak"] = "keycloak"
 
 
 class MetabolightsServiceAccount(BaseModel):
     api_token: str
     email: str
 
-class OpenIdConnnectClient(BaseModel):
-    server_url: str
-    realm_name: str
-    client_id: str
-    client_secret: str
 
-class OpenIdConnnectAdmin(BaseModel):
-    server_url: str
-    username: str
-    password: str
-    realm_name: str = "metabolights"
-
-        
 class AuthSettings(BaseModel):
     configuration: AuthConfiguration
     service_account: MetabolightsServiceAccount
-    openid_connect_client: OpenIdConnnectClient
-    openid_connect_admin: OpenIdConnnectAdmin

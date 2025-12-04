@@ -8,6 +8,8 @@ from typing import Any, Callable, Union
 
 from flask import make_response
 
+from app.config import get_settings
+
 
 def ttl_cache(maxsize: int = 128, typed: bool = False, ttl: int = -1):
     if ttl <= 0:
@@ -51,6 +53,15 @@ def metabolights_exception_handler(func):
     def exception_handler(*args, **kwargs):
         try:
             return func(*args, **kwargs)
+        except (
+            MetabolightsAuthenticationException,
+            MetabolightsAuthorizationException,
+        ) as e:
+            data = {"content": None, "message": e.message}
+            response = make_response(data, e.http_code)
+            if get_settings().flask.DEBUG:
+                traceback.print_exc()
+            return response
         except MetabolightsException as e:
             data = {"content": None, "message": e.message, "err": str(e)}
             response = make_response(data, e.http_code)

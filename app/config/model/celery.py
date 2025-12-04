@@ -21,4 +21,6 @@ class CeleryPeriodicTaskConfiguration(BaseModel):
 class CelerySettings(BaseModel):
     broker: RedisConnection
     configuration: CeleryConfiguration = CeleryConfiguration()
-    periodic_task_configuration: CeleryPeriodicTaskConfiguration = CeleryPeriodicTaskConfiguration()
+    periodic_task_configuration: CeleryPeriodicTaskConfiguration = (
+        CeleryPeriodicTaskConfiguration()
+    )

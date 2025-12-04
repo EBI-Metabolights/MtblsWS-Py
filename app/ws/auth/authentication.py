@@ -1,21 +1,16 @@
-import json
 import logging
 import re
 import uuid
-from functools import lru_cache
 
 from flask import jsonify, make_response, request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
-from keycloak import KeycloakAuthenticationError, KeycloakOpenID
 
 from app.config import get_settings
 from app.utils import (
-    MetabolightsAuthenticationException,
     MetabolightsAuthorizationException,
     MetabolightsException,
     metabolights_exception_handler,
-    ttl_cache,
 )
 from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.auth.permissions import (
@@ -24,116 +19,15 @@ from app.ws.auth.permissions import (
     validate_submission_view,
 )
 from app.ws.db.models import UserModel
-from app.ws.db.types import UserRole, UserStatus
-from app.ws.db_connection import create_user
+from app.ws.db.types import UserRole
 from app.ws.redis.redis import RedisStorage, get_redis_server
 from app.ws.study.user_service import UserService
 
 logger = logging.getLogger("wslog")
 
-@ttl_cache(1, ttl=60 * 5)
-def get_keycloak_openid() -> KeycloakOpenID:
-    settings = get_settings().auth.openid_connect_client
-    keycloak_openid = KeycloakOpenID(
-        server_url=settings.server_url,
-        realm_name=settings.realm_name,
-        client_id=settings.client_id,
-        client_secret_key=settings.client_secret,
-    )
-    return keycloak_openid
-
-
-@staticmethod
-def verify_token(token: str, email: str):
-    """
-    Verify the given token and return user information.
-    """
-    try:
-        auth_server: KeycloakOpenID = get_keycloak_openid()
-        user_info = auth_server.userinfo(token)
-        if not user_info or not user_info.get("email"):
-            raise MetabolightsAuthenticationException(
-                http_code=401, message="Invalid token"
-            )
-        username = user_info.get("email")
-        if username != email:
-            return make_response(
-                jsonify(
-                    {
-                        "content": "invalid",
-                        "message": "jwt token user and input user is not same",
-                        "err": None,
-                    }
-                ),
-                401,
-            )
-        try:
-            # check user is created
-            UserService.get_instance().get_db_user_by_user_name(username)
-        except MetabolightsAuthorizationException as ex:
-            # user is defined in keycloak but it is not defined in db
-            email_verified = user_info.get("email_verified", False)
-            if not email_verified:
-                raise MetabolightsAuthenticationException(
-                    http_code=401,
-                    message=f"Email address '{username}' is not verified",
-                )
-            orcid = user_info.get("orcid", "") or ""
-            orcid = orcid.replace("https://orcid.org/", "") or None
-            success, message = create_user(
-                first_name=user_info.get("given_name"),
-                last_name=user_info.get("family_name"),
-                email=user_info.get("email"),
-                affiliation=user_info.get("affiliation"),
-                affiliation_url=user_info.get("affiliationUrl"),
-                address=user_info.get("address", {}).get("country", None),
-                orcid=orcid,
-                api_token=str(uuid.uuid4()),
-                password_encoded=str(uuid.uuid4()),
-                metaspace_api_key=None,
-                role=UserRole.ROLE_SUBMITTER.value,
-                status=UserStatus.ACTIVE.value,
-            )
-            if success:
-                logger.info(message)
-            else:
-                logger.warning(message)
-
-        response = make_response(
-            jsonify(
-                {
-                    "content": "true",
-                    "message": "Authentication successful",
-                    "err": None,
-                }
-            ),
-            200,
-        )
-        response.headers["Access-Control-Expose-Headers"] = "Jwt, User"
-        response.headers["jwt"] = token
-        response.headers["user"] = username
-
-        return response, user_info.get("email")
-
-    except KeycloakAuthenticationError as ex:
-        return make_response(
-            jsonify({"content": "invalid", "message": None, "err": None}), 401
-        ), None
-    except Exception as ex:
-        import traceback
-
-        traceback.print_exc()
-        return make_response(
-            jsonify({"content": "invalid", "message": None, "err": None}), 401
-        ), None
-
 
 def validate_token_in_request_body(content):
-    if (
-        not content
-        or ("jwt" not in content and "Jwt" not in content)
-        or ("user" not in content and "User" not in content)
-    ):
+    if not content or "jwt" not in content:
         return make_response(
             jsonify(
                 {
@@ -144,42 +38,23 @@ def validate_token_in_request_body(content):
             ),
             400,
         )
-    jwt_token = ""
-    username = ""
-    for key in content:
-        if key.lower() == "jwt":
-            jwt_token = content[key]
-        elif key.lower() == "user":
-            username = content[key]
+    jwt_token = content.get("jwt")
+    username = content.get("user") or ""
 
     try:
-        user_in_token = AuthenticationManager.get_instance().validate_oauth2_token(
-            token=jwt_token
-        )
+        AuthenticationManager.get_instance().validate_oauth2_token(token=jwt_token)
     except MetabolightsAuthorizationException as e:
         return make_response(
-            jsonify({"content": "invalid", "message": e.message, "err": e}), 401
+            jsonify({"content": "invalid", "message": e.message, "err": str(e)}), 401
         )
     except MetabolightsException as e:
         return make_response(
-            jsonify({"content": "invalid", "message": e.message, "err": e}), 401
+            jsonify({"content": "invalid", "message": e.message, "err": str(e)}), 401
         )
     except Exception as e:
         return make_response(
             jsonify(
-                {"content": "invalid", "message": "Authenticaion Failed", "err": e}
-            ),
-            401,
-        )
-
-    if not user_in_token or user_in_token.userName != username:
-        return make_response(
-            jsonify(
-                {
-                    "content": "invalid",
-                    "message": "Not a valid token for user",
-                    "err": None,
-                }
+                {"content": "invalid", "message": "Authenticaion Failed", "err": str(e)}
             ),
             401,
         )
@@ -265,11 +140,10 @@ class AuthLoginWithToken(Resource):
             )
 
         api_token = content["token"]
-        user = (
-            UserService.get_instance().validate_user_has_submitter_or_super_user_role(
-                api_token
-            )
-        )
+        auth_manager = AuthenticationManager.get_instance()
+        user = UserService.get_instance(
+            auth_manager
+        ).validate_user_has_submitter_or_super_user_role(api_token)
         settings = get_settings().auth.configuration
         if UserRole(user["role"]) == UserRole.ROLE_SUPER_USER:
             exp = settings.admin_jwt_token_expires_in_mins
@@ -284,7 +158,7 @@ class AuthLoginWithToken(Resource):
             )
         except MetabolightsException as e:
             return make_response(
-                jsonify({"content": "invalid", "message": e.message, "err": e}),
+                jsonify({"content": "invalid", "message": e.message, "err": str(e)}),
                 e.http_code,
             )
         except Exception as e:
@@ -298,30 +172,6 @@ class AuthLoginWithToken(Resource):
                 ),
                 403,
             )
-
-        if not token:
-            return make_response(
-                jsonify(
-                    {
-                        "content": "invalid",
-                        "message": "Authentication failed",
-                        "err": None,
-                    }
-                ),
-                403,
-            )
-
-        resp = make_response(
-            jsonify(
-                {"content": True, "message": "Authentication successful", "err": None}
-            ),
-            200,
-        )
-        resp.headers["Access-Control-Expose-Headers"] = "Jwt, User"
-        resp.headers["jwt"] = token
-        resp.headers["user"] = user.username
-
-        return resp
 
 
 class AuthLogin(Resource):
@@ -362,7 +212,7 @@ class AuthLogin(Resource):
 
         username = content["email"]
         password = content["secret"]
-
+        token = None
         try:
             token = AuthenticationManager.get_instance().create_oauth2_token(
                 username, password
@@ -400,8 +250,10 @@ class AuthLogin(Resource):
                 ),
                 403,
             )
-
-        user: UserModel = UserService.get_instance().get_db_user_by_user_name(username)
+        auth_manager = AuthenticationManager.get_instance()
+        user: UserModel = UserService.get_instance(
+            auth_manager
+        ).get_db_user_by_user_name(username)
 
         resp = make_response(
             jsonify(
@@ -444,8 +296,23 @@ class AuthValidation(Resource):
             content = request.json
         except:
             content = parse_response_body(request)
-
-        response = validate_token_in_request_body(content)
+        response = None
+        content = content or {}
+        jwt_content = {
+            k.lower(): v
+            for k, v in content.items()
+            if k and k.lower() in {"jwt", "user"}
+        }
+        jwt_token = jwt_content.get("jwt")
+        username = jwt_content.get("user")
+        response = validate_token_in_request_body(jwt_content)
+        if not response:
+            return make_response(
+                jsonify({"content": "invalid", "message": "", "err": ""}), 401
+            )
+        response.headers["Access-Control-Expose-Headers"] = "Jwt, User"
+        response.headers["jwt"] = jwt_token
+        response.headers["user"] = username
         return response
 
 
@@ -562,37 +429,47 @@ class AuthUser(Resource):
         auth_endpoint(request)
         auth_data = get_auth_data(request)
         jwt = auth_data.jwt
+        username = None
         if not jwt:
             try:
                 content = request.json
             except:
                 content = parse_response_body(request)
-            filtered_header = {k.lower():v for k, v in content.items() if k and k.lower() in {"user", "jwt"}}
+            filtered_header = {
+                k.lower(): v
+                for k, v in content.items()
+                if k and k.lower() in {"user", "jwt"}
+            }
             jwt = filtered_header.get("jwt")
             username = request.headers.get("user")
             if not username:
                 username = filtered_header.get("user")
-
-        response, email = verify_token(jwt, username)
-        if jwt and email:
-            try:
-                # UserService.get_instance().validate_username_with_submitter_or_super_user_role(username)
-
-                m_user = UserService.get_instance().get_simplified_user_by_username(
-                    email
-                )
-                response_data = {
-                    "content": json.dumps({"owner": m_user.model_dump()}),
-                    "message": None,
-                    "err": None,
-                }
-                response = make_response(response_data, 200)
-                response.headers["Access-Control-Allow-Origin"] = "*"
-            except Exception as e:
-                return make_response(
-                    jsonify({"content": "invalid", "message": None, "err": None}), 401
-                )
-        return response
+        if not jwt:
+            return make_response(
+                jsonify({"content": "invalid jwt", "message": None, "err": ""}),
+                401,
+            ), None
+        try:
+            user = AuthenticationManager.get_instance().validate_oauth2_token(jwt)
+            resp = make_response(
+                jsonify(
+                    {
+                        "content": user.model_dump(),
+                        "message": "Authentication successful",
+                        "err": None,
+                    }
+                ),
+                200,
+            )
+            resp.headers["Access-Control-Expose-Headers"] = "Jwt, User"
+            resp.headers["Jwt"] = jwt
+            resp.headers["User"] = user.userName
+            return resp
+        except Exception as ex:
+            return make_response(
+                jsonify({"content": "invalid jwt", "message": None, "err": str(ex)}),
+                401,
+            )
 
 
 class AuthUserStudyPermissions(Resource):
