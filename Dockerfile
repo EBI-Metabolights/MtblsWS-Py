@@ -9,6 +9,7 @@ RUN apt-get -y update \
         unrar-free p7zip-full bzip2 pigz pbzip2 \
         zstd rsync openssh-client \
         libglib2.0-0 libsm6 libxrender1 libxext6 libpq-dev \
+        build-essential python3-dev pkg-config libssl-dev libffi-dev \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get -y autoremove --purge
 

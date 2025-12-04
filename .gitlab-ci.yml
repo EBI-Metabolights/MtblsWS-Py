@@ -44,7 +44,7 @@ lint:
   - echo "BUILD_NUMBER $BUILD_NUMBER"
   - echo "IMAGE_TAG $IMAGE_TAG"
   - echo "IMAGE NAME $IMAGE_NAME"
-  - echo "IMAGE NAME (with latest tag) $LATEST_IMAGE_NAME" 
+  - echo "IMAGE NAME (with latest tag) $LATEST_IMAGE_NAME"
   - echo "APPS_ROOT_PATH $APPS_ROOT_PATH"
   - echo "DEPLOYMENTS_FOLDER $DEPLOYMENTS_FOLDER"
   - echo "APPS_PROJECT_URL $APPS_PROJECT_URL"
@@ -57,7 +57,7 @@ lint:
   - git status
   - ls -al
   - echo "install dependencies"
-  - uv sync --locked
+  - uv sync --locked --extra dev
   - echo "Run pre-commit tools"
   - uv run ruff format
   - uv run ruff check
@@ -67,10 +67,10 @@ lint:
     key: ${CI_COMMIT_REF_SLUG}-venv
     paths:
     - .venv
-  
+
 build_docker:
   stage: build
-  image: 
+  image:
     name: ${CICD_GITLAB_REGISTRY}docker:28.5.1-dind
   tags:
     - docker
@@ -96,7 +96,7 @@ build_docker:
 
 build_sif:
   stage: build_sif
-  image: 
+  image:
     name: ${CICD_GITLAB_REGISTRY}mtbls/singularity:4.0.0
   tags:
     - docker
@@ -106,7 +106,7 @@ build_sif:
     - echo "$SIF_FILE_URL"
     - |-
       curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $SIF_FILE_NAME "$SIF_FILE_URL"
-    - echo "$SIF_LATEST_FILE_URL" 
+    - echo "$SIF_LATEST_FILE_URL"
     - |-
       curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $SIF_FILE_NAME "$SIF_LATEST_FILE_URL"
 
@@ -120,7 +120,7 @@ deploy_metablsws_py:
   variables:
     CHART_NAME: metablsws-py
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging" 
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging"
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
@@ -152,7 +152,7 @@ deploy_datamover_proxy:
   variables:
     CHART_NAME: metablsws-py-datamover-proxy
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging" 
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging"
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
