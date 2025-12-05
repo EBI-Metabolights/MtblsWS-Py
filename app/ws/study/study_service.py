@@ -70,6 +70,7 @@ class StudyService(object):
     def get_study_by_req_or_mtbls_id(self, identifier) -> Study:
         try:
             with DBManager.get_instance().session_maker() as db_session:
+                
                 query = db_session.query(Study)
                 result = query.filter(
                     or_(

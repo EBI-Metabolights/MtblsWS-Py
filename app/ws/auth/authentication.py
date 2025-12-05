@@ -2,6 +2,7 @@ import logging
 import re
 
 import jwt
+import jwt
 from flask import jsonify, make_response, request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
@@ -351,10 +352,7 @@ class RefreshToken(Resource):
                 )
                 email = payload.get("email", "")
 
-            except (
-                MetabolightsAuthorizationException,
-                MetabolightsAuthenticationException,
-            ) as e:
+            except MetabolightsAuthorizationException as e:
                 return make_response(
                     jsonify(
                         {"content": "invalid", "message": e.message, "err": str(e)}

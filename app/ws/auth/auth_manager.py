@@ -4,6 +4,7 @@ import logging
 import uuid
 from datetime import timedelta
 from typing import Any, List, Union
+from typing import Any, List, Union
 
 import jwt
 from keycloak import KeycloakAuthenticationError, KeycloakOpenID
@@ -239,14 +240,8 @@ class AuthenticationManager(AbstractAuthManager):
                 scopes=scopes,
                 exp_period_in_mins=exp_period_in_mins,
             )
-        except (
-            MetabolightsAuthorizationException,
-            MetabolightsAuthenticationException,
-            Exception,
-        ) as ex:
-            if isinstance(ex, MetabolightsAuthenticationException):
-                raise ex
-            raise MetabolightsAuthenticationException(
+        except Exception as ex:
+            raise MetabolightsAuthorizationException(
                 message=f"Refresh token task failed. {str(ex)}"
             )
 
@@ -328,8 +323,8 @@ class AuthenticationManager(AbstractAuthManager):
                 message="Authorization with user name is not supported"
             )
         if not username:
-            raise MetabolightsAuthenticationException(
-                message="Invalid user or credential"
+            raise MetabolightsAuthorizationException(
+                http_code=400, message="Invalid user or credential"
             )
         if not audience:
             audience = self.settings.access_token_allowed_audience
