@@ -180,13 +180,15 @@ class IsaApiClient:
                     assay_type, identifier = self.find_assay_type_and_identifier(assay)
                     new_comments = [
                         model.Comment(name="Assay Identifier", value=identifier or ""),
-                        model.Comment(name="Assay Type Label", value=assay_type or "")
+                        model.Comment(name="Assay Type Label", value=assay_type or ""),
                     ]
-                    new_comments.extend([
-                        x
-                        for x in assay.comments
-                        if x.name not in {"Assay Type Label", "Assay Identifier"}
-                    ])
+                    new_comments.extend(
+                        [
+                            x
+                            for x in assay.comments
+                            if x.name not in {"Assay Type Label", "Assay Identifier"}
+                        ]
+                    )
                     assay.comments = new_comments
 
         except IndexError as e:

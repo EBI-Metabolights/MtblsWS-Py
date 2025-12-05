@@ -37,4 +37,13 @@ class AbstractAuthManager:
         db_session=None,
         scopes: list[str] = [],
         exp_period_in_mins: int = -1,
-    ) -> str: ...
+    ) -> tuple[str, str]: ...
+
+    def refresh_token(
+        self,
+        token: str,
+        audience: None | str = None,
+        db_session: None | str = None,
+        scopes: list[str] = [],
+        exp_period_in_mins: int = -1,
+    ) -> tuple[str, str]: ...

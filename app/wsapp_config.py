@@ -38,6 +38,7 @@ from app.ws.auth.authentication import (
     AuthValidation,
     OneTimeTokenCreation,
     OneTimeTokenValidation,
+    RefreshToken,
 )
 from app.ws.biostudies import BioStudies, BioStudiesFromMTBLS
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
@@ -311,6 +312,7 @@ def initialize_app(flask_app):
     api.add_resource(About, res_path)
     api.add_resource(AboutServer, res_path + "/ebi-internal/server-info")
     api.add_resource(AuthLogin, res_path + "/auth/login")
+    api.add_resource(RefreshToken, res_path + "/auth/refresh-token")
     api.add_resource(AuthLoginWithToken, res_path + "/auth/login-with-token")
     api.add_resource(AuthValidation, res_path + "/auth/validate-token")
     api.add_resource(AuthUser, res_path + "/auth/user")

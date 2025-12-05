@@ -112,11 +112,11 @@ class MtblsControlLists(Resource):
     def get(self):
         log_request(request)
         public_endpoint(request)
-        
+
         configuration: ValidationConfiguration = get_validation_configuration()
         return jsonify({"controlLists": configuration.model_dump(by_alias=True)})
-        
-        
+
+
 class Ontology(Resource):
     @swagger.operation(
         summary="Get ontology onto_information.",

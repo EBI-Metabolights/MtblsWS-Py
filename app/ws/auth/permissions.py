@@ -1,5 +1,6 @@
 from app.utils import DeprecationError
 from app.ws.auth.auth_manager import AuthenticationManager
+from app.ws.auth.one_time_token import get_jwt_with_one_time_token
 from app.ws.db.permission_scopes import (
     AuthInputData,
     PermissionFilter,
@@ -48,6 +49,7 @@ def validate_user_has_submitter_or_super_user_role(
             UserRole.SYSTEM_ADMIN,
         ],
         fail_silently=fail_silently,
+        study_required=study_required,
     )
 
 
@@ -288,6 +290,12 @@ def get_auth_data(request) -> AuthInputData:
             parts = auth.split(maxsplit=1)
             if len(parts) == 2 and parts[0].lower() == "bearer":
                 jwt = parts[1]
+            else:
+                # backward compatibility. Use current token as bearer token
+                jwt = auth
+    if not jwt:
+        passcode = request.args.get("passcode", None)
+        jwt = get_jwt_with_one_time_token(passcode)
 
     study_id = request.view_args.get("study_id", "").upper() or None
     if not study_id:

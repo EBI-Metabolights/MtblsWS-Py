@@ -230,7 +230,7 @@ class StudyRevisionService:
             mhd_accession=study.mhd_accession,
             mhd_model_version=study.mhd_model_version,
             template_version=study.template_version,
-            created_at=study.created_at
+            created_at=study.created_at,
         )
         update_license(isa_study, study.dataset_license)
 
@@ -285,8 +285,10 @@ class StudyRevisionService:
                     .filter(
                         Study.revision_number == StudyRevision.revision_number,
                         StudyRevision.status.in_(
-                            [ StudyRevisionStatus.INITIATED.value,
-                            StudyRevisionStatus.FAILED.value ]
+                            [
+                                StudyRevisionStatus.INITIATED.value,
+                                StudyRevisionStatus.FAILED.value,
+                            ]
                         ),
                         StudyRevision.revision_datetime <= ten_minutes_ago,
                     )

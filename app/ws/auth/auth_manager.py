@@ -3,7 +3,7 @@ import hashlib
 import logging
 import uuid
 from datetime import timedelta
-from typing import List, Union
+from typing import Any, List, Union
 
 import jwt
 from keycloak import KeycloakAuthenticationError, KeycloakOpenID
@@ -55,6 +55,20 @@ class KeycloakAuthService:
             return self.set_auth_user_info(token.get("access_token"), auth_token)
         except KeycloakAuthenticationError:
             message = f"Authentication error for user {username}"
+            logger.error(message)
+            raise MetabolightsAuthenticationException(message=message)
+
+    def refresh_token(self, refresh_token: str) -> AuthToken:
+        try:
+            auth_server: KeycloakOpenID = self.get_keycloak_openid()
+            token = auth_server.refresh_token(refresh_token)
+            auth_token = AuthToken(
+                access_token=token.get("access_token"),
+                refresh_token=token.get("refresh_token"),
+            )
+            return self.set_auth_user_info(token.get("access_token"), auth_token)
+        except KeycloakAuthenticationError:
+            message = "Authentication error"
             logger.error(message)
             raise MetabolightsAuthenticationException(message=message)
 
@@ -193,6 +207,41 @@ class AuthenticationManager(AbstractAuthManager):
             cls.instance = AuthenticationManager()
         return cls.instance
 
+    def refresh_token(
+        self,
+        token: str,
+        audience: None | str = None,
+        db_session: None | str = None,
+        scopes: list[str] = [],
+        exp_period_in_mins: int = -1,
+    ) -> tuple[str, str]:
+        if self.external_auth_service:
+            auth_token = self.external_auth_service.refresh_token(token)
+            return auth_token.access_token, auth_token.refresh_token
+
+        try:
+            user = self.validate_standalone_jwt_token(token)
+            additional_data = {
+                "name": user.userName,
+                "role": UserRole(user.role) if user.role else "",
+                "email": user.userName,
+                "given_name": user.firstName,
+                "family_name": user.lastName,
+                "partner": user.partner == 1,
+            }
+            return self.create_oauth2_token_by_user(
+                user.userName,
+                additional_data=additional_data,
+                audience=audience,
+                db_session=db_session,
+                scopes=scopes,
+                exp_period_in_mins=exp_period_in_mins,
+            )
+        except Exception as ex:
+            raise MetabolightsAuthorizationException(
+                message=f"Refresh token task failed. {str(ex)}"
+            )
+
     def create_oauth2_token(
         self,
         username,
@@ -204,11 +253,20 @@ class AuthenticationManager(AbstractAuthManager):
     ):
         if self.external_auth_service:
             auth_token = self.external_auth_service.authenticate(username, password)
-            return auth_token.access_token
+            return auth_token.access_token, auth_token.refresh_token
 
         user = self.authenticate_user(username, password, db_session=db_session)
+        additional_data = {
+            "name": user["username"],
+            "role": UserRole(user["role"]) if user["role"] else "",
+            "email": user["username"],
+            "given_name": user["firstname"],
+            "family_name": user["lastname"],
+            "partner": user["partner"] == 1,
+        }
         return self.create_oauth2_token_by_user(
-            user,
+            user["username"],
+            additional_data,
             audience,
             db_session,
             scopes=scopes,
@@ -230,8 +288,17 @@ class AuthenticationManager(AbstractAuthManager):
         user = UserService.get_instance(
             self
         ).validate_user_has_submitter_or_super_user_role(token)
+        additional_data = {
+            "name": user["username"],
+            "role": UserRole(user["role"]) if user["role"] else "",
+            "email": user["username"],
+            "given_name": user["firstname"],
+            "family_name": user["lastname"],
+            "partner": user["partner"] == 1,
+        }
         return self.create_oauth2_token_by_user(
-            user,
+            user["username"],
+            additional_data,
             audience,
             db_session,
             scopes=scopes,
@@ -240,17 +307,19 @@ class AuthenticationManager(AbstractAuthManager):
 
     def create_oauth2_token_by_user(
         self,
-        user,
+        username,
+        additional_data: None | dict[str, Any] = None,
         audience=None,
         db_session=None,
         scopes: List[str] = [],
         exp_period_in_mins: int = -1,
+        refresh_token_exp_period_in_mins: int = -1,
     ):
         if self.external_auth_service:
             raise MetabolightsAuthorizationException(
                 http_code=400, message="Authorization with user name is not supported"
             )
-        if not user:
+        if not username:
             raise MetabolightsAuthorizationException(
                 http_code=400, message="Invalid user or credential"
             )
@@ -268,19 +337,30 @@ class AuthenticationManager(AbstractAuthManager):
         if not scopes:
             scopes = ["login"]
         token_base_data = {
-            "sub": user.username,
+            "sub": username,
             "scopes": scopes,
-            "role": UserRole(user.role).name,
             "iss": issuer_name,
             "aud": audience,
-            "name": user.username,
             "jti": jti,
         }
-
+        if additional_data:
+            token_base_data.update(additional_data)
         access_token = self._create_jwt_token(
             data=token_base_data, expires_delta=access_token_expires
         )
-        return access_token
+
+        if refresh_token_exp_period_in_mins > 0:
+            refresh_token_token_expires = timedelta(minutes=exp_period_in_mins)
+        else:
+            refresh_token_token_expires = timedelta(
+                minutes=self.settings.refresh_jwt_token_expires_in_mins
+            )
+        refresh_token_scopes = token_base_data.copy()
+        refresh_token_scopes["scopes"] = ["refresh"]
+        refresh_token = self._create_jwt_token(
+            data=token_base_data, expires_delta=refresh_token_token_expires
+        )
+        return access_token, refresh_token
 
     def create_user_in_db(self, auth_user: AuthToken):
         orcid = auth_user.orcid.replace("https://orcid.org/", "") or None
@@ -384,6 +464,8 @@ class AuthenticationManager(AbstractAuthManager):
                     "apitoken": user.apiToken,
                     "password": "",
                     "partner": "partner" in auth_token.roles,
+                    "firstname": user.firstName,
+                    "lastname": user.lastName,
                 }
             except KeycloakAuthenticationError:
                 raise MetabolightsAuthorizationException(
@@ -404,9 +486,9 @@ class AuthenticationManager(AbstractAuthManager):
     ):
         to_encode = data.copy()
         if expires_delta:
-            expire = current_time() + expires_delta
+            expire = current_time(utc_timezone=True) + expires_delta
         else:
-            expire = current_time() + timedelta(
+            expire = current_time(utc_timezone=True) + timedelta(
                 minutes=self.settings.access_token_expires_delta
             )
         to_encode.update({"exp": expire})

@@ -312,7 +312,7 @@ class StudyStatus(Resource):
                 )
 
         return self.update_status_m2(
-            permission_context=result.context, new_study_status=new_study_status
+            context=result.context, new_study_status=new_study_status
         )
 
     def update_status_m2(
@@ -329,7 +329,7 @@ class StudyStatus(Resource):
         }
         obfuscation_code = context.obfuscation_code
         # db_study_status = types.StudyStatus.from_int(study.status).name
-        # release_date = context .releasedate.strftime("%Y-%m-%d")
+        release_date = context.release_date.strftime("%Y-%m-%d")
         first_public_date_baseline: None | datetime.datetime = context.first_public_date
         first_private_date_baseline: None | datetime.datetime = (
             context.first_private_date
@@ -489,13 +489,14 @@ class StudyStatus(Resource):
                 study_title = isa_study.title
                 additional_cc_emails = get_principal_investigator_emails(isa_study)
                 study_contacts = get_study_contacts(isa_study)
+                expected_release_date = context.expected_release_date
                 inputs = {
                     "user_token": user_token,
                     "provisional_id": study_id,
                     "study_id": updated_study_id,
                     "obfuscation_code": obfuscation_code,
                     "study_title": study_title,
-                    "release_date": release_date,
+                    "release_date": expected_release_date,
                     "additional_cc_emails": additional_cc_emails,
                     "study_contacts": study_contacts,
                 }

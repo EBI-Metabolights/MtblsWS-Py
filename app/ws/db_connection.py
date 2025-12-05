@@ -140,7 +140,7 @@ query_studies_user = """
     s.dataset_license,
     s.template_version,
     s.created_at
-    from studies s, users u, study_user su 
+    from studies s, users u, study_user su
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
 
@@ -150,12 +150,12 @@ query_provisional_study_ids_for_user = """
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(user_token)s and s.status=0;
     """
 
-insert_study_with_provisional_id = """   
-    insert into studies (id, obfuscationcode, releasedate, status, studysize, submissiondate, 
-    updatedate, validations, validation_status, reserved_submission_id, acc, study_category, 
+insert_study_with_provisional_id = """
+    insert into studies (id, obfuscationcode, releasedate, status, studysize, submissiondate,
+    updatedate, validations, validation_status, reserved_submission_id, acc, study_category,
     template_version, sample_type, study_template
-    ) 
-    values ( 
+    )
+    values (
         %(new_unique_id)s,
         %(obfuscationcode)s,
         %(releasedate)s,

@@ -123,10 +123,9 @@ class UserService(object):
                     permission_context.revision_datetime = study.revision_datetime
                     permission_context.first_private_date = study.first_private_date
                     permission_context.first_public_date = study.first_public_date
-                    permission_context.created_at = study.dataset_license
-                    # TODO: enable after merge
-                    # permission_context.study_template = study.study_template
-                    # permission_context.created_at = study.created_at
+                    permission_context.study_template = study.study_template
+                    permission_context.created_at = study.created_at
+                    permission_context.expected_release_date = study.releasedate
 
             if username or user_token:
                 base_query = db_session.query(User)
@@ -314,7 +313,7 @@ class UserService(object):
                 return result
             else:
                 raise MetabolightsAuthorizationException(
-                    message="User has not permission to execute."
+                    message="User has no permission to execute."
                 )
         if permissions.decision == scopes.DecisionType.NONE:
             if all([True if not x else False for x in matches]):
@@ -638,6 +637,8 @@ class UserService(object):
                     User.apitoken,
                     User.password,
                     User.partner,
+                    User.firstname,
+                    User.lastname,
                 )
                 db_user = filter_clause(query).first()
         except Exception as e:
