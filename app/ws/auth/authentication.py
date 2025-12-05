@@ -1,7 +1,7 @@
 import logging
 import re
-import uuid
 
+import jwt
 from flask import jsonify, make_response, request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
@@ -13,14 +13,18 @@ from app.utils import (
     metabolights_exception_handler,
 )
 from app.ws.auth.auth_manager import AuthenticationManager
+from app.ws.auth.one_time_token import (
+    create_one_time_token,
+    get_jwt_with_one_time_token,
+)
 from app.ws.auth.permissions import (
     auth_endpoint,
     get_auth_data,
     validate_submission_view,
+    validate_user_has_submitter_or_super_user_role,
 )
 from app.ws.db.models import UserModel
 from app.ws.db.types import UserRole
-from app.ws.redis.redis import RedisStorage, get_redis_server
 from app.ws.study.user_service import UserService
 
 logger = logging.getLogger("wslog")
@@ -66,8 +70,8 @@ def validate_token_in_request_body(content):
         200,
     )
     response.headers["Access-Control-Expose-Headers"] = "Jwt, User"
-    response.headers["jwt"] = jwt_token
-    response.headers["user"] = username
+    response.headers["Jwt"] = jwt_token
+    response.headers["User"] = username
     return response
 
 
@@ -151,7 +155,7 @@ class AuthLoginWithToken(Resource):
             exp = settings.access_token_expires_delta
 
         try:
-            token = (
+            token, refresh_token = (
                 AuthenticationManager.get_instance().create_oauth2_token_by_api_token(
                     api_token, exp_period_in_mins=exp
                 )
@@ -172,6 +176,20 @@ class AuthLoginWithToken(Resource):
                 ),
                 403,
             )
+        resp = make_response(
+            jsonify(
+                {
+                    "content": user.model_dump(),
+                    "message": "Authentication successful",
+                    "err": None,
+                }
+            ),
+            200,
+        )
+        resp.headers["Access-Control-Expose-Headers"] = "Jwt, User, Refresh-Token"
+        resp.headers["Jwt"] = token
+        resp.headers["Refresh-Token"] = refresh_token
+        resp.headers["User"] = user["username"]
 
 
 class AuthLogin(Resource):
@@ -213,9 +231,12 @@ class AuthLogin(Resource):
         username = content["email"]
         password = content["secret"]
         token = None
+        refresh_token = None
         try:
-            token = AuthenticationManager.get_instance().create_oauth2_token(
-                username, password
+            token, refresh_token = (
+                AuthenticationManager.get_instance().create_oauth2_token(
+                    username, password
+                )
             )
         except MetabolightsAuthorizationException as e:
             return make_response(
@@ -265,11 +286,93 @@ class AuthLogin(Resource):
             ),
             200,
         )
-        resp.headers["Access-Control-Expose-Headers"] = "Jwt, User"
-        resp.headers["jwt"] = token
-        resp.headers["user"] = username
+        resp.headers["Access-Control-Expose-Headers"] = "Jwt, User, Refresh-Token"
+        resp.headers["Jwt"] = token
+        resp.headers["Refresh-Token"] = refresh_token
+        resp.headers["User"] = username
 
         return resp
+
+
+class RefreshToken(Resource):
+    @swagger.operation(
+        summary="Create new JWT token with valid refresh token",
+        notes="Create new JWT token with valid refresh token",
+        parameters=[
+            {
+                "name": "Authentication token",
+                "description": 'Registered user  and login token {"Jwt":"jwt token", "User":"email here"}',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False,
+            }
+        ],
+        responseMessages=response_messages,
+    )
+    @metabolights_exception_handler
+    def post(self):
+        auth_endpoint(request)
+        try:
+            content = request.json
+        except:
+            content = parse_response_body(request)
+        response = None
+        content = content or {}
+        jwt_content = {
+            k.lower(): v
+            for k, v in content.items()
+            if k and k.lower() in {"jwt", "user"}
+        }
+        jwt_token = jwt_content.get("jwt")
+        username = jwt_content.get("user")
+        response = validate_token_in_request_body(jwt_content)
+        access_token = None
+        refresh_token = None
+        email = None
+        if response.status_code == 200:
+            try:
+                access_token, refresh_token = (
+                    AuthenticationManager.get_instance().refresh_token(jwt_token)
+                )
+                options = {"verify_signature": False}
+                payload = jwt.decode(
+                    access_token,
+                    options=options,
+                )
+                email = payload.get("email", "")
+
+            except MetabolightsAuthorizationException as e:
+                return make_response(
+                    jsonify(
+                        {"content": "invalid", "message": e.message, "err": str(e)}
+                    ),
+                    e.http_code,
+                )
+            except MetabolightsException as e:
+                return make_response(
+                    jsonify(
+                        {"content": "invalid", "message": e.message, "err": str(e)}
+                    ),
+                    e.http_code,
+                )
+            except Exception as e:
+                return make_response(
+                    jsonify(
+                        {
+                            "content": "invalid",
+                            "message": "Authenticaion Failed",
+                            "err": str(e),
+                        }
+                    ),
+                    401,
+                )
+        response.headers["Access-Control-Expose-Headers"] = "Jwt, User, Refresh-Token"
+        response.headers["Jwt"] = access_token
+        response.headers["Refresh-Token"] = refresh_token
+        response.headers["User"] = email
+        return response
 
 
 class AuthValidation(Resource):
@@ -340,22 +443,10 @@ class OneTimeTokenValidation(Resource):
             one_time_token = request.headers["one_time_token"]
         if not one_time_token:
             raise MetabolightsAuthorizationException(message="invalid token")
-
-        try:
-            redis: RedisStorage = get_redis_server()
-            token_key = f"one-time-token-request:token:{one_time_token}"
-
-            jwt = redis.get_value(token_key)
-            if not jwt:
-                raise MetabolightsAuthorizationException(message="invalid token")
-            jwt = jwt.decode("utf-8")
-            jwt_key = f"one-time-token-request:jwt:{jwt}"
-            redis.delete_value(token_key)
-            redis.delete_value(jwt_key)
-
-            return jsonify({"jwt": jwt})
-        except Exception as ex:
-            raise ex
+        jwt = get_jwt_with_one_time_token(one_time_token)
+        if not jwt:
+            raise MetabolightsException(message="Not valid JWT or token", http_code=404)
+        return jsonify({"jwt": jwt})
 
 
 class OneTimeTokenCreation(Resource):
@@ -377,34 +468,12 @@ class OneTimeTokenCreation(Resource):
     @metabolights_exception_handler
     def get(self):
         auth_endpoint(request)
-        jwt = None
-        if "Authorization" in request.headers:
-            jwt = request.headers["Authorization"]
-        if not jwt:
-            raise MetabolightsAuthorizationException(message="invalid token")
-        jwt = str(jwt).replace("Bearer ", "")
-        user_role = None
-        try:
-            user = AuthenticationManager.get_instance().validate_oauth2_token(token=jwt)
-            user_role = UserRole(user.role)
-        except Exception as ex:
-            raise MetabolightsAuthorizationException(
-                message="User token is not valid or expired"
-            )
-
-        jwt_key = f"one-time-token-request:jwt:{jwt}"
-
-        redis: RedisStorage = get_redis_server()
-        token = redis.get_value(jwt_key)
-        if token:
-            token_key = f"one-time-token-request:token:{token}"
-            redis.delete_value(token_key)
-        token = str(uuid.uuid4())
-        token_key = f"one-time-token-request:token:{token}"
-        ex = get_settings().auth.configuration.one_time_token_expires_in_seconds
-        redis.set_value(jwt_key, token, ex=ex)
-        redis.set_value(token_key, jwt, ex=ex)
-        return jsonify({"one_time_token": token})
+        result = validate_user_has_submitter_or_super_user_role(request)
+        jwt = result.context.validated_jwt
+        one_time_token = create_one_time_token(jwt)
+        if not one_time_token:
+            raise MetabolightsException(message="One time token is not created.")
+        return jsonify({"one_time_token": one_time_token})
 
 
 class AuthUser(Resource):

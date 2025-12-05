@@ -21,12 +21,10 @@ import logging
 import os
 import time
 
-from flask_restful import Resource, abort
+from flask_restful import Resource
 from isatools import model
 from isatools.isatab import dump
 
-from app import application_path
-from app.config import get_settings
 from app.ws.isa_table_templates import add_new_assay_sheet
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -89,8 +87,6 @@ class MetaSpaceIsaApiClient(Resource):
             )
 
         if not isa_inv:
-            # TODO Not implemented
-
             isa_study, isa_inv, std_path = isa_api.get_isa_study(
                 study_id, None, skip_load_tables=True, study_location=output_dir
             )

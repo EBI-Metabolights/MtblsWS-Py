@@ -203,6 +203,14 @@ class SendFilesPrivate(Resource):
                 "dataType": "string",
             },
             {
+                "name": "passcode",
+                "description": "One time token to access private study data files.",
+                "paramType": "query",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False,
+            },
+            {
                 "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",

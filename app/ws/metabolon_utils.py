@@ -36,12 +36,10 @@ from pandas import DataFrame
 from app.config import get_settings
 from app.utils import current_time
 from app.ws.db_connection import update_release_date
-from app.ws.isaApiClient import IsaApiClient
 from app.ws.isa_table_templates import create_investigation_file, create_maf_sheet
+from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.utils import (
-    copy_file,
-    get_absolute_path,
     get_year_plus_one,
     read_tsv,
     write_tsv,

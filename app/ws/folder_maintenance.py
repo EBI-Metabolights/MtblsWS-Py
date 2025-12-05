@@ -20,7 +20,6 @@ from isatools import model as isatools_model
 from pydantic import BaseModel
 from unidecode import unidecode
 
-from app import application_path
 from app.config import get_settings
 from app.config.model.hpc_cluster import HpcClusterConfiguration
 from app.config.model.study import StudySettings

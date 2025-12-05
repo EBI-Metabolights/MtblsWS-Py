@@ -226,8 +226,10 @@ class IsaInvestigation(Resource):
         response["mtblsStudy"]["mhdModelVersion"] = study.mhd_model_version or ""
         response["mtblsStudy"]["datasetLicense"] = study.dataset_license or ""
         response["mtblsStudy"]["templateVersion"] = study.template_version or ""
-        response["mtblsStudy"]["createdAt"] = study.created_at.isoformat() if study.created_at else ""
-        
+        response["mtblsStudy"]["createdAt"] = (
+            study.created_at.isoformat() if study.created_at else ""
+        )
+
         # ToDo: Make sure this date is formatted YYYY-MM-DD and update the isa_inv, isa_study before returning
         # response['mtblsStudy']['release_date'] = release_date
         # isa_inv.public_release_date = release_date

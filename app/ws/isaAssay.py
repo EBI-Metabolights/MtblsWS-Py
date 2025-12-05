@@ -40,11 +40,6 @@ from app.ws.isa_table_templates import (
     get_protocol_descriptions,
 )
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.isa_table_templates import (
-    add_new_assay_sheet,
-    get_assay_type_from_file_name,
-    get_protocol_descriptions,
-)
 from app.ws.mm_models import AssaySchema
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.isa_table_models import NumericValue, OntologyValue
@@ -220,17 +215,10 @@ class StudyAssayDelete(Resource):
             assay_type = get_assay_type_from_file_name(assay.filename)
 
             if assay_type not in assay_type_protocols:
-                # (
-                #     tidy_header_row,
-                #     tidy_data_row,
-                #     protocols,
-                #     assay_desc,
-                #     assay_data_type,
-                #     assay_file_type,
-                #     assay_mandatory_type,
-                # ) = get_assay_headers_and_protocols(assay_type)
-                # get_assay_protocols(assay_type)
-
+                study = StudyService.get_instance().get_study_by_req_or_mtbls_id(
+                    study_id
+                )
+                template_version = study.template_version
                 protocol_description = get_protocol_descriptions(
                     assay_type=assay_type, template_version=template_version
                 )
@@ -536,7 +524,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             columns = data.get("columns", [])
             if assay_type is None:
                 abort(412)
-        
+
         except Exception:
             abort(400, message="Incorrect JSON provided")
         study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
@@ -585,8 +573,12 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                 column_default_values[name] = default_value
 
         success, assay_file_name, maf_filename = add_new_assay_sheet(
-            study_id, assay_type, polarity, column_type, column_default_values, 
-            template_version=study.template_version
+            study_id,
+            assay_type,
+            polarity,
+            column_type,
+            column_default_values,
+            template_version=study.template_version,
         )
 
         if success:

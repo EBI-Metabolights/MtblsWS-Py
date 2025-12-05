@@ -137,6 +137,7 @@ class StudyPermissionContext(BaseScopeModel):
     partner_user: None | bool = None
     owner: None | bool = None
     email_verified: None | bool = None
+    expected_release_date: None | datetime.datetime = None
 
 
 class RoleEvaluationResult(BaseScopeModel):
