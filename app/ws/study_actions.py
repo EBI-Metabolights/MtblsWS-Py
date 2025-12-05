@@ -331,6 +331,7 @@ class StudyStatus(Resource):
 
         return self.update_status_m2(
             context=result.context, new_study_status=new_study_status
+            context=result.context, new_study_status=new_study_status
         )
 
     def update_status_m2(
@@ -347,11 +348,7 @@ class StudyStatus(Resource):
         }
         obfuscation_code = context.obfuscation_code
         # db_study_status = types.StudyStatus.from_int(study.status).name
-        release_date = (
-            context.expected_release_date.strftime("%Y-%m-%d")
-            if context.expected_release_date
-            else ""
-        )
+        release_date = context.release_date.strftime("%Y-%m-%d")
         first_public_date_baseline: None | datetime.datetime = context.first_public_date
         first_private_date_baseline: None | datetime.datetime = (
             context.first_private_date

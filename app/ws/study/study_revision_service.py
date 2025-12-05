@@ -230,7 +230,7 @@ class StudyRevisionService:
             mhd_accession=study.mhd_accession,
             mhd_model_version=study.mhd_model_version,
             template_version=study.template_version,
-            created_at=study.created_at
+            created_at=study.created_at,
         )
         update_license(isa_study, study.dataset_license)
 
