@@ -8,6 +8,7 @@ from flask_restful_swagger import swagger
 
 from app.config import get_settings
 from app.utils import (
+    MetabolightsAuthenticationException,
     MetabolightsAuthorizationException,
     MetabolightsException,
     metabolights_exception_handler,
@@ -47,13 +48,17 @@ def validate_token_in_request_body(content):
 
     try:
         AuthenticationManager.get_instance().validate_oauth2_token(token=jwt_token)
-    except MetabolightsAuthorizationException as e:
+    except (
+        MetabolightsAuthorizationException,
+        MetabolightsAuthenticationException,
+    ) as e:
         return make_response(
-            jsonify({"content": "invalid", "message": e.message, "err": str(e)}), 401
+            jsonify({"content": "invalid", "message": e.message, "err": str(e)}),
+            e.http_code,
         )
     except MetabolightsException as e:
         return make_response(
-            jsonify({"content": "invalid", "message": e.message, "err": str(e)}), 401
+            jsonify({"content": "invalid", "message": e.message, "err": str(e)}), 400
         )
     except Exception as e:
         return make_response(
@@ -238,7 +243,10 @@ class AuthLogin(Resource):
                     username, password
                 )
             )
-        except MetabolightsAuthorizationException as e:
+        except (
+            MetabolightsAuthorizationException,
+            MetabolightsAuthenticationException,
+        ) as e:
             return make_response(
                 jsonify({"content": "invalid", "message": e.message, "err": str(e)}),
                 e.http_code,
@@ -343,7 +351,10 @@ class RefreshToken(Resource):
                 )
                 email = payload.get("email", "")
 
-            except MetabolightsAuthorizationException as e:
+            except (
+                MetabolightsAuthorizationException,
+                MetabolightsAuthenticationException,
+            ) as e:
                 return make_response(
                     jsonify(
                         {"content": "invalid", "message": e.message, "err": str(e)}

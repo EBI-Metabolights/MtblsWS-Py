@@ -142,7 +142,7 @@ class MetabolightsAuthenticationException(MetabolightsException):
 
 class MetabolightsAuthorizationException(MetabolightsAuthenticationException):
     def __init__(
-        self, message: str = "", exception: Union[None, Exception] = None, http_code=401
+        self, message: str = "", exception: Union[None, Exception] = None, http_code=403
     ):
         super(MetabolightsAuthorizationException, self).__init__(
             message, exception, http_code
