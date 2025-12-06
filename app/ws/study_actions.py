@@ -348,7 +348,11 @@ class StudyStatus(Resource):
         }
         obfuscation_code = context.obfuscation_code
         # db_study_status = types.StudyStatus.from_int(study.status).name
-        release_date = context.release_date.strftime("%Y-%m-%d")
+        release_date = (
+            context.expected_release_date.strftime("%Y-%m-%d")
+            if context.expected_release_date
+            else ""
+        )
         first_public_date_baseline: None | datetime.datetime = context.first_public_date
         first_private_date_baseline: None | datetime.datetime = (
             context.first_private_date
