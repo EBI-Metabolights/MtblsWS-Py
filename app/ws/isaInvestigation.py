@@ -44,6 +44,10 @@ from app.ws.utils import log_request
 logger = logging.getLogger("wslog")
 iac = IsaApiClient()
 wsc = WsClient()
+LICENSE_URLS = {
+    "CC0 1.0 UNIVERSAL": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "EMBL-EBI TERMS OF USE": "https://www.ebi.ac.uk/about/terms-of-use/",
+}
 
 
 class IsaInvestigation(Resource):
@@ -222,9 +226,12 @@ class IsaInvestigation(Resource):
         response["mtblsStudy"]["studyCategory"] = StudyCategory(
             study.study_category
         ).get_label()
+        license = study.dataset_license or ""
+        dataset_license_url = LICENSE_URLS.get(license.upper(), "")
         response["mtblsStudy"]["mhdAccession"] = study.mhd_accession or ""
         response["mtblsStudy"]["mhdModelVersion"] = study.mhd_model_version or ""
-        response["mtblsStudy"]["datasetLicense"] = study.dataset_license or ""
+        response["mtblsStudy"]["datasetLicense"] = license
+        response["mtblsStudy"]["datasetLicenseUrl"] = dataset_license_url
         response["mtblsStudy"]["templateVersion"] = study.template_version or ""
         response["mtblsStudy"]["createdAt"] = (
             study.created_at.isoformat() if study.created_at else ""
