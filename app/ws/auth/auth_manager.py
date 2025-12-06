@@ -165,6 +165,7 @@ class AuthenticationManager(AbstractAuthManager):
             now = int(current_time().timestamp())
             if now > exp:
                 raise MetabolightsAuthenticationException(
+                raise MetabolightsAuthenticationException(
                     message="Autantication token is expired"
                 )
             jti = payload.get("jti")
@@ -240,8 +241,14 @@ class AuthenticationManager(AbstractAuthManager):
                 scopes=scopes,
                 exp_period_in_mins=exp_period_in_mins,
             )
-        except Exception as ex:
-            raise MetabolightsAuthorizationException(
+        except (
+            MetabolightsAuthorizationException,
+            MetabolightsAuthenticationException,
+            Exception,
+        ) as ex:
+            if isinstance(ex, MetabolightsAuthenticationException):
+                raise ex
+            raise MetabolightsAuthenticationException(
                 message=f"Refresh token task failed. {str(ex)}"
             )
 
@@ -286,7 +293,7 @@ class AuthenticationManager(AbstractAuthManager):
     ):
         if self.external_auth_service:
             raise MetabolightsAuthenticationException(
-                message="Authorization with user token is not supported"
+                http_code=400, message="Authorization with user token is not supported"
             )
         user = UserService.get_instance(
             self
@@ -323,8 +330,8 @@ class AuthenticationManager(AbstractAuthManager):
                 message="Authorization with user name is not supported"
             )
         if not username:
-            raise MetabolightsAuthorizationException(
-                http_code=400, message="Invalid user or credential"
+            raise MetabolightsAuthenticationException(
+                message="Invalid user or credential"
             )
         if not audience:
             audience = self.settings.access_token_allowed_audience
