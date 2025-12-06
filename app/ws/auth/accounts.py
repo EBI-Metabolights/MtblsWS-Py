@@ -6,7 +6,7 @@ from flask_restful import Resource
 from flask_restful_swagger import swagger
 
 from app.utils import (
-    MetabolightsAuthorizationException,
+    MetabolightsAuthenticationException,
     MetabolightsDBException,
     MetabolightsException,
     metabolights_exception_handler,
@@ -91,7 +91,7 @@ class UserAccounts(Resource):
             UserRole.SYSTEM_ADMIN,
         }:
             if not user_name or result.context.username not in {user_name, email}:
-                raise MetabolightsAuthorizationException(
+                raise MetabolightsAuthenticationException(
                     message="User has not permission"
                 )
 

@@ -161,7 +161,7 @@ class AuthenticationManager(AbstractAuthManager):
             exp = payload.get("exp")
             now = int(current_time().timestamp())
             if now > exp:
-                raise MetabolightsAuthorizationException(
+                raise MetabolightsAuthenticationException(
                     message="Autantication token is expired"
                 )
             jti = payload.get("jti")
@@ -177,7 +177,7 @@ class AuthenticationManager(AbstractAuthManager):
             )
             username: str = payload.get("sub")
             if username is None:
-                raise MetabolightsAuthorizationException(
+                raise MetabolightsAuthenticationException(
                     message="Could not validate credentials or no username"
                 )
             if not db_session:
@@ -189,7 +189,7 @@ class AuthenticationManager(AbstractAuthManager):
                     func.lower(User.username) == username.lower()
                 ).first()
             if not db_user:
-                raise MetabolightsAuthorizationException(
+                raise MetabolightsAuthenticationException(
                     message="Could not validate credentials or no username"
                 )
             user = SimplifiedUserModel.model_validate(db_user)
@@ -197,7 +197,7 @@ class AuthenticationManager(AbstractAuthManager):
             raise e
 
         if UserStatus(user.status) != UserStatus.ACTIVE:
-            raise MetabolightsAuthorizationException(message="Not an active user")
+            raise MetabolightsAuthenticationException(message="Not an active user")
 
         return user
 
@@ -237,8 +237,14 @@ class AuthenticationManager(AbstractAuthManager):
                 scopes=scopes,
                 exp_period_in_mins=exp_period_in_mins,
             )
-        except Exception as ex:
-            raise MetabolightsAuthorizationException(
+        except (
+            MetabolightsAuthorizationException,
+            MetabolightsAuthenticationException,
+            Exception,
+        ) as ex:
+            if isinstance(ex, MetabolightsAuthenticationException):
+                raise ex
+            raise MetabolightsAuthenticationException(
                 message=f"Refresh token task failed. {str(ex)}"
             )
 
@@ -282,7 +288,7 @@ class AuthenticationManager(AbstractAuthManager):
         exp_period_in_mins: int = -1,
     ):
         if self.external_auth_service:
-            raise MetabolightsAuthorizationException(
+            raise MetabolightsAuthenticationException(
                 http_code=400, message="Authorization with user token is not supported"
             )
         user = UserService.get_instance(
@@ -316,12 +322,12 @@ class AuthenticationManager(AbstractAuthManager):
         refresh_token_exp_period_in_mins: int = -1,
     ):
         if self.external_auth_service:
-            raise MetabolightsAuthorizationException(
-                http_code=400, message="Authorization with user name is not supported"
+            raise MetabolightsAuthenticationException(
+                message="Authorization with user name is not supported"
             )
         if not username:
-            raise MetabolightsAuthorizationException(
-                http_code=400, message="Invalid user or credential"
+            raise MetabolightsAuthenticationException(
+                message="Invalid user or credential"
             )
         if not audience:
             audience = self.settings.access_token_allowed_audience
@@ -468,7 +474,7 @@ class AuthenticationManager(AbstractAuthManager):
                     "lastname": user.lastName,
                 }
             except KeycloakAuthenticationError:
-                raise MetabolightsAuthorizationException(
+                raise MetabolightsAuthenticationException(
                     message="Invalid user or credential"
                 )
 
@@ -476,7 +482,7 @@ class AuthenticationManager(AbstractAuthManager):
             self
         ).validate_username_with_submitter_or_super_user_role(username)
         if not self._verify_password(password, user.password):
-            raise MetabolightsAuthorizationException(
+            raise MetabolightsAuthenticationException(
                 message="Invalid user or credential"
             )
         return user
