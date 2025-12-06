@@ -231,19 +231,19 @@ def validate_study_index_delete(
     )
 
 
-def validate_db_metadata_create_revision(
-    request, fail_silently: bool = False, user_required=True
+def validate_resource_scopes(
+    request,
+    resource: StudyResource,
+    scopes: list[StudyResourceDbScope | StudyResourceScope],
+    fail_silently: bool = False,
+    user_required=True,
 ) -> StudyPermissionEvaluationResult:
     return validate_permissions(
         request,
         permissions=PermissionFilter(
             filters=[
                 ScopeFilter(
-                    scopes={
-                        StudyResource.DB_METADATA: [
-                            StudyResourceDbScope.CREATE_REVISION
-                        ],
-                    },
+                    scopes={resource: scopes},
                 )
             ]
         ),
