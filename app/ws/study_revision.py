@@ -19,11 +19,12 @@ from app.tasks.common_tasks.curation_tasks.study_revision import (
 )
 from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.auth.permissions import (
-    validate_db_metadata_create_revision,
+    validate_resource_scopes,
     validate_submission_view,
     validate_user_has_curator_role,
 )
 from app.ws.db.models import StudyRevisionModel
+from app.ws.db.permission_scopes import StudyResource, StudyResourceDbScope
 from app.ws.db.schemes import Study
 from app.ws.db.types import StudyRevisionStatus, StudyStatus, UserRole
 from app.ws.study.study_revision_service import StudyRevisionService
@@ -85,7 +86,12 @@ class StudyRevisions(Resource):
     )
     @metabolights_exception_handler
     def post(self, study_id: str):
-        result = validate_db_metadata_create_revision(request)
+        result = validate_resource_scopes(
+            request,
+            StudyResource.DB_METADATA,
+            [StudyResourceDbScope.CREATE_REVISION],
+            user_required=True,
+        )
         study_id = result.context.study_id
         user_role = result.context.user_role
         username = result.context.username
@@ -310,7 +316,12 @@ class StudyRevisions(Resource):
     )
     @metabolights_exception_handler
     def get(self, study_id: str):
-        result = validate_db_metadata_create_revision(request)
+        result = validate_resource_scopes(
+            request,
+            StudyResource.DB_METADATA,
+            [StudyResourceDbScope.CREATE_REVISION],
+            user_required=True,
+        )
         study_id = result.context.study_id
 
         revisions = StudyRevisionService.get_study_revisions(study_id)

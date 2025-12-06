@@ -51,12 +51,16 @@ from app.utils import (
     metabolights_exception_handler,
 )
 from app.ws.auth.permissions import (
-    validate_submission_update,
+    validate_resource_scopes,
     validate_submission_view,
     validate_user_has_curator_role,
 )
 from app.ws.db import types
-from app.ws.db.permission_scopes import StudyPermissionContext
+from app.ws.db.permission_scopes import (
+    StudyPermissionContext,
+    StudyResource,
+    StudyResourceDbScope,
+)
 from app.ws.db.types import CurationRequest, StudyRevisionStatus, UserRole
 from app.ws.db_connection import (
     reserve_mtbls_accession,
@@ -278,10 +282,7 @@ class StudyStatus(Resource):
     )
     @metabolights_exception_handler
     def put(self, study_id: str):
-        result = validate_submission_update(request)
-        study_id = result.context.study_id
-
-        new_study_status: str = ""
+        new_study_status: None | types.StudyStatus = None
         data_dict = {}
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
@@ -290,6 +291,23 @@ class StudyStatus(Resource):
             )
         except Exception:
             raise MetabolightsException(message="Please provide a valid study status ")
+        permission = None
+        if new_study_status == types.StudyStatus.PROVISIONAL:
+            permission = StudyResourceDbScope.MAKE_PROVISIONAL
+        elif new_study_status == types.StudyStatus.PUBLIC:
+            permission = StudyResourceDbScope.CREATE_REVISION
+        elif new_study_status == types.StudyStatus.PRIVATE:
+            permission = StudyResourceDbScope.MAKE_PRIVATE
+        if not permission:
+            raise MetabolightsException(
+                message=f"Study status update to {new_study_status.to_camel_case_str()} is not allowed."
+            )
+        result = validate_resource_scopes(
+            request, StudyResource.DB_METADATA, [permission], user_required=True
+        )
+
+        study_id = result.context.study_id
+
         if (
             result.context.study_status == types.StudyStatus.PUBLIC
             and new_study_status != types.StudyStatus.PUBLIC
@@ -329,7 +347,11 @@ class StudyStatus(Resource):
         }
         obfuscation_code = context.obfuscation_code
         # db_study_status = types.StudyStatus.from_int(study.status).name
-        release_date = context.release_date.strftime("%Y-%m-%d")
+        release_date = (
+            context.expected_release_date.strftime("%Y-%m-%d")
+            if context.expected_release_date
+            else ""
+        )
         first_public_date_baseline: None | datetime.datetime = context.first_public_date
         first_private_date_baseline: None | datetime.datetime = (
             context.first_private_date
@@ -386,7 +408,7 @@ class StudyStatus(Resource):
             submission = (
                 context.first_private_date.strftime("%Y-%m-%d")
                 if context.first_private_date
-                else context.submissiondate.strftime("%Y-%m-%d")
+                else context.created_at.strftime("%Y-%m-%d")
             )
             isa_inv.submission_date = submission
             isa_study.submission_date = submission
