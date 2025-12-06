@@ -352,7 +352,10 @@ class RefreshToken(Resource):
                 )
                 email = payload.get("email", "")
 
-            except MetabolightsAuthorizationException as e:
+            except (
+                MetabolightsAuthorizationException,
+                MetabolightsAuthenticationException,
+            ) as e:
                 return make_response(
                     jsonify(
                         {"content": "invalid", "message": e.message, "err": str(e)}
