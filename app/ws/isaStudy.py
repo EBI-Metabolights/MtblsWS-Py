@@ -29,6 +29,7 @@ from isatools import model
 from marshmallow import ValidationError
 
 from app.tasks.common_tasks.basic_tasks.elasticsearch import reindex_study
+from app.utils import metabolights_exception_handler
 from app.ws import mm_models
 from app.ws.auth.permissions import validate_submission_update, validate_submission_view
 from app.ws.db_connection import study_submitters, update_release_date
@@ -2440,6 +2441,7 @@ class StudyDescriptors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -2562,6 +2564,7 @@ class StudyDescriptors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         result = validate_submission_view(request)
@@ -2661,6 +2664,7 @@ class StudyDescriptors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -2788,6 +2792,7 @@ class StudyDescriptors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
