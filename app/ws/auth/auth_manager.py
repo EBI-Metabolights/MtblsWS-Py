@@ -109,7 +109,9 @@ class KeycloakAuthService:
         except (KeycloakAuthenticationError, MetabolightsAuthenticationException) as ex:
             message = f"JWT token is not validated: {ex}"
             logger.error(message)
-            raise MetabolightsAuthenticationException(message=message)
+            if isinstance(ex, MetabolightsAuthenticationException):
+                raise ex
+            raise MetabolightsAuthenticationException(message=message, exception=ex)
 
 
 class AuthenticationManager(AbstractAuthManager):
@@ -289,7 +291,7 @@ class AuthenticationManager(AbstractAuthManager):
     ):
         if self.external_auth_service:
             raise MetabolightsAuthenticationException(
-                http_code=400, message="Authorization with user token is not supported"
+                message="Authorization with user token is not supported"
             )
         user = UserService.get_instance(
             self

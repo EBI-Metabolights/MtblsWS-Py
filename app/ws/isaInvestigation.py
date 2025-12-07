@@ -233,6 +233,7 @@ class IsaInvestigation(Resource):
         response["mtblsStudy"]["datasetLicense"] = license
         response["mtblsStudy"]["datasetLicenseUrl"] = dataset_license_url
         response["mtblsStudy"]["templateVersion"] = study.template_version or ""
+        response["mtblsStudy"]["studyPermission"] = result.permission.model_dump(by_alias=True)
         response["mtblsStudy"]["createdAt"] = (
             study.created_at.isoformat() if study.created_at else ""
         )
@@ -246,6 +247,7 @@ class IsaInvestigation(Resource):
         response["isaInvestigation"] = IsaInvestigationSchema().dump(isa_inv).data
         response["validation"]["errors"] = []
         response["validation"]["warnings"] = []
+        
 
         return response
 
