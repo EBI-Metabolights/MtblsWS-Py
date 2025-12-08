@@ -85,6 +85,7 @@ class SendFiles(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         result = validate_submission_view(request)
         study_id = result.context.study_id

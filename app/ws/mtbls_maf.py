@@ -97,8 +97,8 @@ class MtblsMAFSearch(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, query_type):
-        raise_deprecation_error(request)
         public_endpoint(request)
         # param validation
         if query_type is None:

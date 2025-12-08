@@ -25,7 +25,7 @@ from flask_restful_swagger import swagger
 
 from app.config import get_settings
 from app.tasks.datamover_tasks.curation_tasks.metabolon import metabolon_confirm
-from app.utils import MetabolightsException
+from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.auth.permissions import validate_user_has_curator_role
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -81,6 +81,7 @@ class Metabolon(Resource):
             {"code": 417, "message": "Unexpected result."},
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         result = validate_user_has_curator_role(request, study_required=True)
         email = result.context.username

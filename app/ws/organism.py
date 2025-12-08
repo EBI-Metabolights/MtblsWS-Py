@@ -25,6 +25,7 @@ from flask_restful_swagger import swagger
 from isatools.model import OntologySource
 from marshmallow import ValidationError
 
+from app.utils import metabolights_exception_handler
 from app.ws.auth.permissions import validate_submission_update, validate_submission_view
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -146,6 +147,7 @@ class Organism(Resource):
             {"code": 412, "message": "The JSON provided can not be parsed properly."},
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -282,6 +284,7 @@ class Organism(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         result = validate_submission_view(request)

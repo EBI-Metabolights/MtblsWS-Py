@@ -306,18 +306,28 @@ def log_request(request_obj):
     if not request_obj:
         logger.error("REQUEST OBJECT is NONE")
         return
-    if get_settings().server.log.log_headers:
-        logger.debug("REQUEST HEADERS -> %s", request_obj.headers)
-    if get_settings().server.log.log_body:
-        logger.debug("REQUEST BODY    -> %s", request_obj.data)
-    if get_settings().server.log.log_json:
-        if request_obj.is_json:
-            try:
-                logger.debug("REQUEST JSON    -> %s", request_obj.json)
-            except Exception as ex:
-                logger.debug("REQUEST JSON    -> Not Correct format")
-        else:
-            logger.debug("REQUEST JSON    -> EMPTY")
+    try:
+        if get_settings().server.log.log_headers:
+            logger.debug("REQUEST HEADERS -> %s", request_obj.headers)
+
+    except Exception as ex:
+        logger.error(ex)
+    try:
+        if get_settings().server.log.log_body:
+            logger.debug("REQUEST BODY    -> %s", request_obj.data)
+    except Exception as ex:
+        logger.error(ex)
+    try:
+        if get_settings().server.log.log_json:
+            if request_obj.is_json:
+                try:
+                    logger.debug("REQUEST JSON    -> %s", request_obj.json)
+                except Exception as ex:
+                    logger.debug("REQUEST JSON    -> Not Correct format")
+            else:
+                logger.debug("REQUEST JSON    -> EMPTY")
+    except Exception as ex:
+        logger.error(ex)
 
 
 def read_tsv(file_name, col_names=None, sep="\t", **kwargs):
