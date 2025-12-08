@@ -78,6 +78,7 @@ class Convert2ISAtab(Resource):
             {"code": 417, "message": "Unexpected result."},
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         result = validate_user_has_curator_role(request, study_required=True)
         study_id = result.context.study_id
@@ -133,6 +134,7 @@ class ValidateMzML(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         result = validate_user_has_curator_role(request, study_required=True)
         study_id = result.context.study_id

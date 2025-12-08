@@ -25,6 +25,7 @@ from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from metaspace.sm_annotation_utils import SMInstance
 
+from app.utils import metabolights_exception_handler
 from app.ws.auth.permissions import raise_deprecation_error, validate_submission_update
 from app.ws.metaspace_utils import annotate_metaspace, import_metaspace
 from app.ws.study.utils import get_study_metadata_path
@@ -95,6 +96,7 @@ class MetaspacePipeLine(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         raise_deprecation_error(request)
         log_request(request)

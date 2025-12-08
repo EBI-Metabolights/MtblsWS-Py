@@ -173,6 +173,7 @@ class EbEyeStudies(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, consumer: str):
         log_request(request)
         result = validate_user_has_curator_role(request)
@@ -378,6 +379,7 @@ class IsaTabInvestigationFile(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         result = validate_submission_view(request)
@@ -475,6 +477,7 @@ class IsaTabSampleFile(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         result = validate_submission_view(request)
@@ -548,6 +551,7 @@ class IsaTabAssayFile(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         result = validate_submission_view(request)
@@ -686,6 +690,7 @@ class CreateUploadFolder(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         result = validate_data_files_upload(request)
         study_id = result.context.study_id
@@ -734,6 +739,7 @@ class AuditFiles(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         result = validate_audit_files_update(request)
         study_id = result.context.study_id
@@ -783,6 +789,7 @@ class AuditFiles(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         result = validate_audit_files_view(request)
         study_id = result.context.study_id
@@ -1135,6 +1142,7 @@ class DeleteStudy(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         result = validate_user_has_curator_role(request)
         status = result.context.study_status
@@ -2108,6 +2116,7 @@ class DragAndDropFolder(Resource):
             {"code": 400, "message": "Invalid request or file too large"},
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         result = validate_submission_update(request)
         study_id = result.context.study_id

@@ -137,6 +137,7 @@ class StudyAssayDelete(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id: str, assay_file_name: str):
         log_request(request)
         result = validate_submission_update(request)

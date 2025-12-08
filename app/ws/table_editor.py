@@ -176,6 +176,7 @@ class SimpleColumns(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id, file_name):
         result = validate_submission_update(request, user_required=True)
         study_id = result.context.study_id
@@ -299,6 +300,7 @@ class ComplexColumns(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id, file_name):
         result = validate_submission_update(request, user_required=True)
         study_id = result.context.study_id
@@ -451,6 +453,7 @@ class ComplexColumns(Resource):
             {"code": 417, "message": "Incorrect parameters provided"},
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id, file_name):
         result = validate_submission_update(request)
         study_id = result.context.study_id
@@ -795,6 +798,7 @@ class AddRows(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id, file_name):
         log_request(request)
         result = validate_submission_update(request, user_required=True)
@@ -980,6 +984,7 @@ class AddRows(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id, file_name):
         result = validate_submission_update(request, user_required=True)
         study_id = result.context.study_id
@@ -1125,6 +1130,7 @@ class AddRows(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id, file_name):
         result = validate_submission_update(request, user_required=True)
         study_id = result.context.study_id
@@ -1229,6 +1235,7 @@ class AddRows(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id, file_name):
         result = validate_submission_view(request)
         study_id = result.context.study_id

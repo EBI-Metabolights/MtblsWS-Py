@@ -105,6 +105,7 @@ class IsaJsonStudy(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     @marshal_with(Investigation_api_model, envelope="investigation")
     def get(self, study_id):
         log_request(request)
@@ -165,6 +166,7 @@ class StudyTitle(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         result = validate_submission_view(request)
@@ -245,6 +247,7 @@ class StudyTitle(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -354,6 +357,7 @@ class StudyReleaseDate(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -445,6 +449,7 @@ class StudyMetaInfo(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         result = validate_submission_view(request)
@@ -508,6 +513,7 @@ class StudyDescription(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         result = validate_submission_view(request)
@@ -585,6 +591,7 @@ class StudyDescription(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -747,6 +754,7 @@ class StudyContacts(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -959,6 +967,7 @@ class StudyContacts(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         result = validate_submission_view(request)
@@ -1106,6 +1115,7 @@ class StudyContacts(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -1238,6 +1248,7 @@ class StudyContacts(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -1379,6 +1390,7 @@ class StudyProtocols(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -1483,6 +1495,7 @@ class StudyProtocols(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         result = validate_submission_view(request)
@@ -1596,6 +1609,7 @@ class StudyProtocols(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -1761,6 +1775,7 @@ class StudyProtocols(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -1898,6 +1913,7 @@ class StudyFactors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -2023,6 +2039,7 @@ class StudyFactors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         result = validate_submission_view(request)
@@ -2123,6 +2140,7 @@ class StudyFactors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -2278,6 +2296,7 @@ class StudyFactors(Resource):
             {"code": 412, "message": "The JSON provided can not be parsed properly."},
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -2944,6 +2963,7 @@ class StudyPublications(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -3112,6 +3132,7 @@ class StudyPublications(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         result = validate_submission_view(request)
@@ -3210,6 +3231,7 @@ class StudyPublications(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -3338,6 +3360,7 @@ class StudyPublications(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -3497,6 +3520,7 @@ class StudySubmitters(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         result = validate_submission_update(request)
@@ -3584,6 +3608,7 @@ class StudySubmitters(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
         result = validate_submission_update(request)

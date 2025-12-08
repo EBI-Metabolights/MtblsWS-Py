@@ -135,6 +135,7 @@ class StudyFiles(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id: str):
         result = validate_submission_view(request)
         study_id = result.context.study_id
@@ -263,6 +264,7 @@ without setting the "force" parameter to True""",
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         result = validate_submission_update(request, user_required=True)
         study_id = result.context.study_id
@@ -727,6 +729,7 @@ class StudyRawAndDerivedDataFolder(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         result = validate_user_has_curator_role(request)
         study_id = result.context.study_id
@@ -868,6 +871,7 @@ class StudyRawAndDerivedDataFolder(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         result = validate_data_files_upload(request)
         study_id = result.context.study_id
@@ -1087,6 +1091,7 @@ class StudyFilesReuse(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id: str):
         result = validate_submission_view(request)
         study_id = result.context.study_id
@@ -1194,6 +1199,7 @@ class CopyFilesFolders(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         raise_deprecation_error(request)
         result = validate_user_has_curator_role(request, study_required=True)
@@ -1255,6 +1261,7 @@ class SyncFolder(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         raise_deprecation_error(request)
@@ -1341,6 +1348,7 @@ class SampleStudyFiles(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         result = validate_submission_view(request)
         study_location = get_study_metadata_path(study_id)
@@ -1480,6 +1488,7 @@ class UnzipFiles(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     @metabolights_exception_handler
     def post(self, study_id):
         result = validate_user_has_curator_role(request)
@@ -1919,6 +1928,7 @@ class FileList(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         raise_deprecation_error(request)
         result = validate_user_has_curator_role(request, study_required=True)

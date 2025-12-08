@@ -29,6 +29,7 @@ from flask_restful_swagger import swagger
 from app.config import get_settings
 from app.tasks.common_tasks.curation_tasks.chebi_pipeline import run_chebi_pipeline_task
 from app.tasks.worker import celery
+from app.utils import metabolights_exception_handler
 from app.ws.auth.permissions import (
     raise_deprecation_error,
     validate_user_has_curator_role,
@@ -125,6 +126,7 @@ class ChEBIPipeLine(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         settings = get_settings()
         permission = validate_user_has_curator_role(request, study_required=True)
@@ -334,6 +336,7 @@ class SplitMaf(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         result = validate_user_has_curator_role(request, study_required=True)
         study_id = result.context.study_id

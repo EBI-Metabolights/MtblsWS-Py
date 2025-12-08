@@ -9,6 +9,7 @@ from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 
 from app.config import get_settings
+from app.utils import metabolights_exception_handler
 from app.ws.auth.permissions import public_endpoint, raise_deprecation_error
 from app.ws.chebi.chebi_utils import chebi_search_v2, get_complete_chebi_entity_v2
 from app.ws.chebi.wsproxy import ChebiWsException
@@ -104,6 +105,7 @@ class ChebiEntity(Resource):
         ],
         responseMessages=responseMessages,
     )
+    @metabolights_exception_handler
     def get(self, chebi_id):
         log_request(request)
         public_endpoint(request)
@@ -168,6 +170,7 @@ class ChebiOntologyChildren(Resource):
         ],
         responseMessages=responseMessages,
     )
+    @metabolights_exception_handler
     def get(self, acid_chebi_id):
         log_request(request)
         public_endpoint(request)
@@ -208,6 +211,7 @@ class ChebiImageProxy(Resource):
         ],
         responseMessages=responseMessages,
     )
+    @metabolights_exception_handler
     def get(self, chebiIdentifier: str):
         raise_deprecation_error(request)
         image_name = chebiIdentifier

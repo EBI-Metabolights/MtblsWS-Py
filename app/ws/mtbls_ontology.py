@@ -23,6 +23,7 @@ from flask_restful_swagger import swagger
 
 from app.config import get_settings
 from app.study_folder_utils import convert_relative_to_real_path
+from app.utils import metabolights_exception_handler
 from app.ws.auth.permissions import public_endpoint, raise_deprecation_error
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -147,6 +148,7 @@ class MtblsOntologyTerm(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, term_id: str):
         raise_deprecation_error(request)
         public_endpoint(request)

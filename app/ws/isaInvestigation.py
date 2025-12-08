@@ -302,6 +302,7 @@ Please use the GET method above to retrieve the structure of your study prior to
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
         result = validate_submission_update(request)

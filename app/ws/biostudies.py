@@ -22,6 +22,7 @@ from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 
+from app.utils import metabolights_exception_handler
 from app.ws.auth.permissions import validate_submission_update, validate_submission_view
 from app.ws.db_connection import biostudies_acc_to_mtbls, biostudies_accession
 from app.ws.mtblsWSclient import WsClient
@@ -59,6 +60,7 @@ class BioStudies(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         result = validate_submission_view(request)
         study_id = result.context.study_id
@@ -104,6 +106,7 @@ class BioStudies(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         result = validate_submission_update(request)
         study_id = result.context.study_id
@@ -145,6 +148,7 @@ class BioStudies(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         result = validate_submission_update(request)
         study_id = result.context.study_id
