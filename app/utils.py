@@ -96,12 +96,9 @@ class MetabolightsException(Exception):
             return f"{str(self.__class__.__name__)}: {self.message}, http_code: {self.http_code}"
 
 
-
-
-
 class MetabolightsDBException(MetabolightsException):
     def __init__(
-        self, message: str, exception: Union[None, Exception] = None, http_code=401
+        self, message: str, exception: Union[None, Exception] = None, http_code=403
     ):
         super(MetabolightsDBException, self).__init__(message, exception, http_code)
 
@@ -114,11 +111,13 @@ class MetabolightsFileOperationException(MetabolightsException):
             message, exception, http_code
         )
 
-class DeprecationError(MetabolightsDBException):
+
+class DeprecationError(MetabolightsException):
     """Used for deprecated methods and functions."""
 
     def __init__(self, message="This feature has been deprecated."):
-        super().__init__(message)
+        super().__init__(message, http_code=403)
+
 
 class MetabolightsAuthenticationException(MetabolightsException):
     def __init__(
