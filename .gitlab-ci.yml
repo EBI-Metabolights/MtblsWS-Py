@@ -14,13 +14,13 @@ variables:
   CONFIG_DIR: "config-files"
 workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging"
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging"
 stages:
-  - lint
-  - build
-  - deploy
-  - build_sif
-  - deploy-datamover-worker
+- lint
+- build
+- deploy
+- build_sif
+- deploy-datamover-worker
 
 lint:
   stage: lint
@@ -57,7 +57,7 @@ lint:
   - git status
   - ls -al
   - echo "install dependencies"
-  - uv sync --locked --extra dev
+  - uv sync --locked
   - echo "Run pre-commit tools"
   - uv run ruff format
   - uv run ruff check
@@ -73,50 +73,50 @@ build_docker:
   image:
     name: ${CICD_GITLAB_REGISTRY}docker:28.5.1-dind
   tags:
-    - docker
-    - mtbls
+  - docker
+  - mtbls
   before_script:
-    - docker info
+  - docker info
   script:
-    - docker version
-    - git reset --hard origin/$APPS_PROJECT_BRANCH_NAME
-    - git status
-    - ls -al
-    - echo "Build number $BUILD_NUMBER, commit name ${CI_COMMIT_REF_NAME}"
-    - echo "${BUILD_NUMBER}" > build_number
-    - echo  "$APP_VERSION" | xargs > app_version
-    - echo  "$API_VERSION" | xargs > api_version
-    - echo "-----------------------------------------------------------------------"
-    - echo "docker build --build-arg CONTAINER_REGISTRY_PREFIX=${CICD_GITLAB_REGISTRY} --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $IMAGE_NAME ."
-    - docker build --build-arg CONTAINER_REGISTRY_PREFIX=${CICD_GITLAB_REGISTRY} --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $IMAGE_NAME .
-    - echo "docker build --build-arg CONTAINER_REGISTRY_PREFIX=${CICD_GITLAB_REGISTRY} --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $LATEST_IMAGE_NAME ."
-    - docker build --build-arg CONTAINER_REGISTRY_PREFIX=${CICD_GITLAB_REGISTRY} --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $LATEST_IMAGE_NAME .
-    - docker push $IMAGE_NAME
-    - docker push $LATEST_IMAGE_NAME
+  - docker version
+  - git reset --hard origin/$APPS_PROJECT_BRANCH_NAME
+  - git status
+  - ls -al
+  - echo "Build number $BUILD_NUMBER, commit name ${CI_COMMIT_REF_NAME}"
+  - echo "${BUILD_NUMBER}" > build_number
+  - echo  "$APP_VERSION" | xargs > app_version
+  - echo  "$API_VERSION" | xargs > api_version
+  - echo "-----------------------------------------------------------------------"
+  - echo "docker build --build-arg CONTAINER_REGISTRY_PREFIX=${CICD_GITLAB_REGISTRY} --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $IMAGE_NAME ."
+  - docker build --build-arg CONTAINER_REGISTRY_PREFIX=${CICD_GITLAB_REGISTRY} --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $IMAGE_NAME .
+  - echo "docker build --build-arg CONTAINER_REGISTRY_PREFIX=${CICD_GITLAB_REGISTRY} --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $LATEST_IMAGE_NAME ."
+  - docker build --build-arg CONTAINER_REGISTRY_PREFIX=${CICD_GITLAB_REGISTRY} --build-arg GROUP1_ID=$MTBLS_NFS_USER_GROUP1_ID --build-arg GROUP2_ID=$MTBLS_NFS_USER_GROUP2_ID --build-arg USER_ID=$MTBLS_NFS_USER_ID -t $LATEST_IMAGE_NAME .
+  - docker push $IMAGE_NAME
+  - docker push $LATEST_IMAGE_NAME
 
 build_sif:
   stage: build_sif
   image:
     name: ${CICD_GITLAB_REGISTRY}mtbls/singularity:4.0.0
   tags:
-    - docker
-    - mtbls
+  - docker
+  - mtbls
   script:
-    - singularity build $SIF_FILE_NAME docker-daemon://$IMAGE_NAME
-    - echo "$SIF_FILE_URL"
-    - |-
-      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $SIF_FILE_NAME "$SIF_FILE_URL"
-    - echo "$SIF_LATEST_FILE_URL"
-    - |-
-      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $SIF_FILE_NAME "$SIF_LATEST_FILE_URL"
+  - singularity build $SIF_FILE_NAME docker-daemon://$IMAGE_NAME
+  - echo "$SIF_FILE_URL"
+  - |-
+    curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $SIF_FILE_NAME "$SIF_FILE_URL"
+  - echo "$SIF_LATEST_FILE_URL"
+  - |-
+    curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $SIF_FILE_NAME "$SIF_LATEST_FILE_URL"
 
 deploy_metablsws_py:
   stage: deploy
   image:
     name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
   tags:
-    - docker
-    - mtbls
+  - docker
+  - mtbls
   variables:
     CHART_NAME: metablsws-py
   rules:
@@ -131,8 +131,8 @@ deploy_common_worker:
   image:
     name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
   tags:
-    - docker
-    - mtbls
+  - docker
+  - mtbls
   variables:
     CHART_NAME: metablsws-py-common-worker
   rules:
@@ -147,8 +147,8 @@ deploy_datamover_proxy:
   image:
     name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
   tags:
-    - docker
-    - mtbls
+  - docker
+  - mtbls
   variables:
     CHART_NAME: metablsws-py-datamover-proxy
   rules:
@@ -163,8 +163,8 @@ deploy_datamover_worker:
   image:
     name: ${CICD_GITLAB_REGISTRY}alpine/k8s:1.23.17
   tags:
-    - docker
-    - mtbls
+  - docker
+  - mtbls
   variables:
     CHART_NAME: metablsws-py-datamover-worker
   rules:
