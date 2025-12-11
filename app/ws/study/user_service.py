@@ -346,10 +346,11 @@ class UserService(object):
         "reason-03": "a public study accessed by a user that is not owner or has no curator role",
         "reason-04": "a private study accessed by a user that is not owner or has no curator role",
         "reason-05": "a provisional study accessed by a user that is not owner or has no curator role",
-        "reason-06": "a privisional or private study accessed by curator",
-        "reason-07": "a public study accessed by curator",
-        "reason-08": "a provision study accessed by study owner",
-        "reason-09": "a non provisional study access by study owner",
+        "reason-06": "a public study accessed by curator",
+        "reason-07": "a private study accessed by curator",
+        "reason-08": "a provisional study accessed by curator",
+        "reason-09": "a provision study accessed by study owner",
+        "reason-10": "a private or public study accessed by study owner",
     }
 
     def evaluate_study_permission(
@@ -394,7 +395,7 @@ class UserService(object):
                 permission.obfuscation_code = context.obfuscation_code
                 permission.study_category = category
                 self.copy_scopes(
-                    permission, scopes.REVIEWER_PROVISION_STUDY_PAGE_SCOPES
+                    permission, scopes.REVIEWER_PRIVATE_STUDY_PAGE_SCOPES
                 )
                 permission.reason = "reason-04"
                 return permission
@@ -412,15 +413,18 @@ class UserService(object):
                 self.copy_scopes(permission, scopes.CURATOR_PUBLIC_STUDY_PAGE_SCOPES)
                 permission.reason = "reason-06"
                 return permission
-            permission.reason = "reason-07"
-            self.copy_scopes(permission, scopes.CURATOR_PRIVATE_STUDY_PAGE_SCOPES)
+            elif context.study_status == StudyStatus.PRIVATE:
+                permission.reason = "reason-07"
+                self.copy_scopes(permission, scopes.CURATOR_PRIVATE_STUDY_PAGE_SCOPES)
+            permission.reason = "reason-08"
+            self.copy_scopes(permission, scopes.CURATOR_PROVISIONAL_STUDY_PAGE_SCOPES)
             return permission
 
         if context.study_status == StudyStatus.PROVISIONAL:
             self.copy_scopes(permission, scopes.SUBMITTER_PROVISION_STUDY_PAGE_SCOPES)
-            permission.reason = "reason-08"
-        else:
             permission.reason = "reason-09"
+        else:
+            permission.reason = "reason-10"
 
             if context.study_status == StudyStatus.PRIVATE:
                 self.copy_scopes(permission, scopes.SUBMITTER_PRIVATE_STUDY_PAGE_SCOPES)

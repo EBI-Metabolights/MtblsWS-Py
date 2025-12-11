@@ -243,7 +243,7 @@ STUDY_PAGE_ALL_SCOPES: StudyResourceScopes = StudyResourceScopes(
     }
 )
 
-CURATOR_PRIVATE_STUDY_PAGE_SCOPES = StudyResourceScopes(
+CURATOR_PROVISIONAL_STUDY_PAGE_SCOPES = StudyResourceScopes(
     resources={
         StudyResource.SUBMISSION: [
             StudyResourceScope.VIEW,
@@ -283,6 +283,80 @@ CURATOR_PRIVATE_STUDY_PAGE_SCOPES = StudyResourceScopes(
         ],
         StudyResource.DB_METADATA: [
             StudyResourceDbScope.MAKE_PRIVATE,
+            StudyResourceDbScope.UPDATE_LICENSE,
+        ],
+        StudyResource.STUDY_PUBLICATION: [
+            StudyResourceScope.CREATE,
+            StudyResourceScope.VIEW,
+            StudyResourceScope.UPDATE,
+            StudyResourceScope.DELETE,
+        ],
+        StudyResource.STUDY_REVISION_DATE: [
+            StudyResourceScope.VIEW,
+            StudyResourceScope.UPDATE,
+        ],
+        StudyResource.AUDIT_FILES: [
+            StudyResourceScope.CREATE,
+            StudyResourceScope.DELETE,
+            StudyResourceScope.LIST,
+            StudyResourceScope.DOWNLOAD,
+        ],
+        StudyResource.INTERNAL_FILES: [
+            StudyResourceScope.LIST,
+            StudyResourceScope.DELETE,
+            StudyResourceScope.DOWNLOAD,
+        ],
+        StudyResource.STUDY_INDEX: [
+            StudyResourceScope.VIEW,
+            StudyResourceScope.CREATE,
+            StudyResourceScope.UPDATE,
+            StudyResourceScope.DELETE,
+        ],
+    }
+)
+
+
+CURATOR_PRIVATE_STUDY_PAGE_SCOPES = StudyResourceScopes(
+    resources={
+        StudyResource.SUBMISSION: [
+            StudyResourceScope.VIEW,
+            StudyResourceScope.UPDATE,
+            StudyResourceScope.DELETE,
+        ],
+        StudyResource.VALIDATION_REPORTS: [
+            StudyResourceScope.LIST,
+            StudyResourceScope.CREATE,
+            StudyResourceScope.VIEW,
+        ],
+        StudyResource.VALIDATION_OVERRIDES: [
+            StudyResourceScope.CREATE,
+            StudyResourceScope.VIEW,
+            StudyResourceScope.UPDATE,
+            StudyResourceScope.DELETE,
+        ],
+        StudyResource.METADATA_FILES: [
+            StudyResourceScope.CREATE,
+            StudyResourceScope.VIEW,
+            StudyResourceScope.UPDATE,
+            StudyResourceScope.DELETE,
+            StudyResourceScope.LIST,
+            StudyResourceScope.UPLOAD,
+            StudyResourceScope.DOWNLOAD,
+        ],
+        StudyResource.DATA_FILES: [
+            StudyResourceScope.UPLOAD,
+            StudyResourceScope.DOWNLOAD,
+            StudyResourceScope.DELETE,
+        ],
+        StudyResource.DATA_FILES_INDEX: [
+            StudyResourceScope.CREATE,
+            StudyResourceScope.VIEW,
+            StudyResourceScope.UPDATE,
+            StudyResourceScope.DELETE,
+        ],
+        StudyResource.DB_METADATA: [
+            StudyResourceDbScope.MAKE_PROVISIONAL,
+            StudyResourceDbScope.CREATE_REVISION,
             StudyResourceDbScope.UPDATE_LICENSE,
         ],
         StudyResource.STUDY_PUBLICATION: [
@@ -527,7 +601,7 @@ PUBLIC_STUDY_PAGE_SCOPES: StudyResourceScopes = StudyResourceScopes(
     }
 )
 
-REVIEWER_PROVISION_STUDY_PAGE_SCOPES: StudyResourceScopes = StudyResourceScopes(
+REVIEWER_PRIVATE_STUDY_PAGE_SCOPES: StudyResourceScopes = StudyResourceScopes(
     resources={
         StudyResource.SUBMISSION: [StudyResourceScope.VIEW],
         StudyResource.VALIDATION_REPORTS: [
