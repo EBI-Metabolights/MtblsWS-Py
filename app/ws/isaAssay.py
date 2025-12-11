@@ -224,10 +224,8 @@ class StudyAssayDelete(Resource):
                 assay_names and len(assay_names) == 1 and assay_file_name in assay_names
             ):
                 obj = isa_study.get_prot(protocol_name)
-                if not obj:
-                    abort(404)
-                # remove object
-                isa_study.protocols.remove(obj)
+                if obj:
+                    isa_study.protocols.remove(obj)
             elif (
                 assay_names and len(assay_names) > 1 and assay_file_name in assay_names
             ):
