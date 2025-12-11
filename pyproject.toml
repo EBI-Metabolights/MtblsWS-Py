@@ -54,7 +54,7 @@ dependencies = [
     "cachetools~=6.2.2"
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "pytest>=7.4.3",
     "vulture>=2.14,<3",

@@ -3,6 +3,7 @@ from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.auth.one_time_token import get_jwt_with_one_time_token
 from app.ws.db.permission_scopes import (
     AuthInputData,
+    DecisionType,
     PermissionFilter,
     RoleEvaluationResult,
     ScopeFilter,
@@ -134,10 +135,7 @@ def validate_audit_files_update(
             filters=[
                 ScopeFilter(
                     scopes={
-                        StudyResource.AUDIT_FILES: [
-                            StudyResourceScope.CREATE,
-                            StudyResourceScope.UPDATE,
-                        ],
+                        StudyResource.AUDIT_FILES: [StudyResourceScope.CREATE],
                     }
                 )
             ]
@@ -157,10 +155,11 @@ def validate_audit_files_view(
                 ScopeFilter(
                     scopes={
                         StudyResource.AUDIT_FILES: [
-                            StudyResourceScope.CREATE,
-                            StudyResourceScope.UPDATE,
+                            StudyResourceScope.VIEW,
+                            StudyResourceScope.LIST,
                         ],
-                    }
+                    },
+                    scope_decision=DecisionType.ANY,
                 )
             ]
         ),

@@ -28,7 +28,7 @@ class AuthConfiguration(BaseModel):
     one_time_token_expires_in_seconds: int = 300
     openid_connect_client: OpenIdConnnectClient
     openid_connect_admin: OpenIdConnnectAdmin
-    active_authentication_service: Literal["standalone", "keycloak"] = "keycloak"
+    active_authentication_service: Literal["standalone", "keycloak"] = "standalone"
 
 
 class MetabolightsServiceAccount(BaseModel):
