@@ -4,7 +4,6 @@ import logging
 import uuid
 from datetime import timedelta
 from typing import Any, List, Union
-from typing import Any, List, Union
 
 import jwt
 from keycloak import KeycloakAuthenticationError, KeycloakOpenID
@@ -165,8 +164,7 @@ class AuthenticationManager(AbstractAuthManager):
             now = int(current_time().timestamp())
             if now > exp:
                 raise MetabolightsAuthenticationException(
-                raise MetabolightsAuthenticationException(
-                    message="Autantication token is expired"
+                    message="Authentication token is expired"
                 )
             jti = payload.get("jti")
             key = hashlib.sha256(
