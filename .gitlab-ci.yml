@@ -72,6 +72,7 @@ build_docker:
   stage: build
   image:
     name: ${CICD_GITLAB_REGISTRY}docker:28.5.1-dind
+    pull_policy: if-not-present
   tags:
   - docker
   - mtbls
