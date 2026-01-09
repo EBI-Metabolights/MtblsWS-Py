@@ -449,15 +449,13 @@ class OneTimeTokenValidation(Resource):
     @metabolights_exception_handler
     def get(self):
         auth_endpoint(request)
-        one_time_token = None
-        if "one_time_token" in request.headers:
-            one_time_token = request.headers["one_time_token"]
+        one_time_token = request.headers.get("one_time_token")
         if not one_time_token:
             raise MetabolightsAuthorizationException(message="invalid token")
-        jwt = get_jwt_with_one_time_token(one_time_token)
-        if not jwt:
+        jwt_data = get_jwt_with_one_time_token(one_time_token)
+        if not jwt_data:
             raise MetabolightsException(message="Not valid JWT or token", http_code=404)
-        return jsonify({"jwt": jwt})
+        return jsonify({"jwt": jwt_data})
 
 
 class OneTimeTokenCreation(Resource):
@@ -480,8 +478,8 @@ class OneTimeTokenCreation(Resource):
     def get(self):
         auth_endpoint(request)
         result = validate_user_has_submitter_or_super_user_role(request)
-        jwt = result.context.validated_jwt
-        one_time_token = create_one_time_token(jwt)
+        jwt_data = result.context.validated_jwt
+        one_time_token = create_one_time_token(jwt_data)
         if not one_time_token:
             raise MetabolightsException(message="One time token is not created.")
         return jsonify({"one_time_token": one_time_token})
@@ -508,9 +506,9 @@ class AuthUser(Resource):
     def post(self):
         auth_endpoint(request)
         auth_data = get_auth_data(request)
-        jwt = auth_data.jwt
+        jwt_data = auth_data.jwt
         username = None
-        if not jwt:
+        if not jwt_data:
             try:
                 content = request.json
             except:
@@ -520,17 +518,17 @@ class AuthUser(Resource):
                 for k, v in content.items()
                 if k and k.lower() in {"user", "jwt"}
             }
-            jwt = filtered_header.get("jwt")
+            jwt_data = filtered_header.get("jwt")
             username = request.headers.get("user")
             if not username:
                 username = filtered_header.get("user")
-        if not jwt:
+        if not jwt_data:
             return make_response(
                 jsonify({"content": "invalid jwt", "message": None, "err": ""}),
                 401,
             ), None
         try:
-            user = AuthenticationManager.get_instance().validate_oauth2_token(jwt)
+            user = AuthenticationManager.get_instance().validate_oauth2_token(jwt_data)
             resp = make_response(
                 jsonify(
                     {
@@ -542,7 +540,7 @@ class AuthUser(Resource):
                 200,
             )
             resp.headers["Access-Control-Expose-Headers"] = "Jwt, User"
-            resp.headers["Jwt"] = jwt
+            resp.headers["Jwt"] = jwt_data
             resp.headers["User"] = user.userName
             return resp
         except Exception as ex:

@@ -350,7 +350,7 @@ class AuthenticationManager(AbstractAuthManager):
             "iss": issuer_name,
             "aud": audience,
             "jti": jti,
-            "email": username
+            "email": username,
         }
         if additional_data:
             token_base_data.update(additional_data)
