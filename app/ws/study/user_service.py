@@ -389,14 +389,15 @@ class UserService(object):
                 permission.reason = "reason-03"
                 self.copy_scopes(permission, scopes.PUBLIC_STUDY_PAGE_SCOPES)
                 return permission
-            if context.study_status in (StudyStatus.INREVIEW, StudyStatus.PRIVATE):
+            if (
+                context.study_status in (StudyStatus.INREVIEW, StudyStatus.PRIVATE)
+                and context.obfuscation_code
+            ):
                 permission.study_id = context.study_id
                 permission.study_status = context.study_status.name
                 permission.obfuscation_code = context.obfuscation_code
                 permission.study_category = category
-                self.copy_scopes(
-                    permission, scopes.REVIEWER_PRIVATE_STUDY_PAGE_SCOPES
-                )
+                self.copy_scopes(permission, scopes.REVIEWER_PRIVATE_STUDY_PAGE_SCOPES)
                 permission.reason = "reason-04"
                 return permission
             permission.study_id = context.study_id
@@ -416,6 +417,7 @@ class UserService(object):
             elif context.study_status == StudyStatus.PRIVATE:
                 permission.reason = "reason-07"
                 self.copy_scopes(permission, scopes.CURATOR_PRIVATE_STUDY_PAGE_SCOPES)
+                return permission
             permission.reason = "reason-08"
             self.copy_scopes(permission, scopes.CURATOR_PROVISIONAL_STUDY_PAGE_SCOPES)
             return permission

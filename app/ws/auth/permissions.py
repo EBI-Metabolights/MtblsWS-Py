@@ -282,19 +282,19 @@ def get_auth_data(request) -> AuthInputData:
     if not obfuscation_code:
         obfuscation_code = request.view_args.get("obfuscation_code", None) or None
 
-    jwt = None
+    jwt_data = None
     if "authorization" in request.headers:
         auth = request.headers.get("authorization", None) or None
         if auth:
             parts = auth.split(maxsplit=1)
             if len(parts) == 2 and parts[0].lower() == "bearer":
-                jwt = parts[1]
+                jwt_data = parts[1]
             else:
                 # backward compatibility. Use current token as bearer token
-                jwt = auth
-    if not jwt:
+                jwt_data = auth
+    if not jwt_data:
         passcode = request.args.get("passcode", None)
-        jwt = get_jwt_with_one_time_token(passcode)
+        jwt_data = get_jwt_with_one_time_token(passcode)
 
     study_id = request.view_args.get("study_id", "").upper() or None
     if not study_id:
@@ -302,7 +302,7 @@ def get_auth_data(request) -> AuthInputData:
 
     return AuthInputData(
         user_token=user_token,
-        jwt=jwt,
+        jwt=jwt_data,
         study_id=study_id,
         obfuscation_code=obfuscation_code,
     )
