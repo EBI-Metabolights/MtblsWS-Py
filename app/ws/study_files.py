@@ -1723,7 +1723,7 @@ def get_study_metadata_and_data_files(
         )
         internal_files_view = (
             True
-            if StudyResourceScope.VIEW in scopes.get(StudyResource.INTERNAL_FILES, [])
+            if StudyResourceScope.LIST in scopes.get(StudyResource.INTERNAL_FILES, [])
             else False
         )
         if not include_internal_files or not audit_files_view:
