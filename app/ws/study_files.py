@@ -1718,7 +1718,7 @@ def get_study_metadata_and_data_files(
             )
         audit_files_view = (
             True
-            if StudyResourceScope.VIEW in scopes.get(StudyResource.AUDIT_FILES, [])
+            if StudyResourceScope.LIST in scopes.get(StudyResource.AUDIT_FILES, [])
             else False
         )
         internal_files_view = (
@@ -1726,9 +1726,9 @@ def get_study_metadata_and_data_files(
             if StudyResourceScope.LIST in scopes.get(StudyResource.INTERNAL_FILES, [])
             else False
         )
-        if not include_internal_files or not audit_files_view:
-            exclude_list.add(settings.internal_files_symbolic_link_name)
         if not include_internal_files or not internal_files_view:
+            exclude_list.add(settings.internal_files_symbolic_link_name)
+        if not include_internal_files or not audit_files_view:
             exclude_list.add(settings.audit_files_symbolic_link_name)
 
         include_metadata_files = True
