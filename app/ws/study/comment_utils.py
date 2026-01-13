@@ -93,7 +93,7 @@ def update_mhd_comments(
             study_category_name = category.get_label()
 
     mhd_comments_map: OrderedDict[str, model.Comment] = OrderedDict()
-    created = created_at.isoformat() if created_at else ""
+    created = created_at.strftime("%Y-%m-%d") if created_at else ""
     mhd_comments_map["created at"] = model.Comment(name="Created At", value=created)
     mhd_comments_map["study category"] = model.Comment(
         name="Study Category", value=str(study_category_name or "")

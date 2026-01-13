@@ -5,6 +5,7 @@ from cachetools import TTLCache, cached
 from app.ws.isa_table_templates import get_json_from_policy_service
 from app.ws.study_templates.models import (
     FileTemplates,
+    TemplateSettings,
     ValidationConfiguration,
     ValidationControls,
 )
@@ -34,3 +35,15 @@ def get_validation_configuration() -> ValidationConfiguration:
         ),
         templates=FileTemplates.model_validate(templates.get("result"), by_alias=True),
     )
+
+
+@cached(cache=TTLCache(maxsize=1, ttl=60))
+def get_template_settings() -> TemplateSettings:
+    context_path = "/v1/data/metabolights/validation/v2/templates/configuration"
+    response = get_json_from_policy_service(context_path=context_path)
+    return TemplateSettings.model_validate(response.get("result"), by_alias=True)
+
+
+# if __name__ == "__main__":
+#     settings = get_template_settings()
+#     print(settings)

@@ -462,14 +462,14 @@ class TemplateConfiguration(StudyBaseModel):
         list[str], Field(description="active assay file templates")
     ]
     active_study_categories: Annotated[
-        list[str], Field(description="active study categories")
+        list[StudyCategoryStr], Field(description="active study categories")
     ]
     active_dataset_licenses: Annotated[
         list[str], Field(description="active dataset licenses")
     ]
     active_mhd_profiles: Annotated[
         dict[StudyCategoryStr, ActiveMhdProfile],
-        Field(description="active dataset licenses"),
+        Field(description="active mhd profiles for study categories"),
     ]
     active_study_design_descriptor_categories: Annotated[
         list[str],
@@ -637,7 +637,7 @@ class TemplateSettings(StudyBaseModel):
         DefaultCommentConfiguration, Field(description="default comment configuration")
     ]
     study_categories: Annotated[
-        dict[str, StudyCategoryDefinition], Field(description="study categories")
+        dict[StudyCategoryStr, StudyCategoryDefinition], Field(description="study categories")
     ] = {}
     mhd_profiles: Annotated[
         dict[str, dict[str, MhdProfileInfo]],

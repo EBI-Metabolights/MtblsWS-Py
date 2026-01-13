@@ -132,6 +132,7 @@ from app.ws.mtblsStudy import (
     MtblsStudyFolders,
     MyMtblsStudies,
     MyMtblsStudiesDetailed,
+    ProvisionalStudy,
     PublicStudyDetail,
     ReindexStudy,
     RetryReindexStudies,
@@ -390,6 +391,7 @@ def initialize_app(flask_app):
         res_path + "/studies/<string:study_id>/assays/<string:assay_file_name>",
     )
     api.add_resource(CreateAccession, res_path + "/studies/create")
+    api.add_resource(ProvisionalStudy, res_path + "/provisional-studies")
     api.add_resource(CloneAccession, res_path + "/studies/clone")
     api.add_resource(DeleteStudy, res_path + "/studies/<string:study_id>/delete")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/upload")
