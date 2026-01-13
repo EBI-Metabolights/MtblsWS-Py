@@ -123,6 +123,7 @@ def delete_study_folders(
                 sample_template=study.sample_type,
                 dataset_license=study.dataset_license,
                 template_version=study.template_version,
+                created_at=study.created_at,
                 study_template=study.study_template,
             )
             all_results = []
@@ -316,6 +317,7 @@ def maintain_storage_study_folders(
                     sample_template=study.sample_type,
                     dataset_license=study.dataset_license,
                     template_version=study.template_version,
+                    created_at=study.created_at,
                     study_template=study.study_template,
                 )
 

@@ -739,6 +739,7 @@ class StudyStatus(Resource):
             sample_template=context.sample_template,
             dataset_license=context.dataset_license,
             template_version=context.template_version,
+            created_at=context.created_at,
             study_template=context.study_template,
         )
         date_format = "%Y-%m-%d_%H-%M-%S"
