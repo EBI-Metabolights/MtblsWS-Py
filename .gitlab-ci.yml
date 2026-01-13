@@ -14,7 +14,7 @@ variables:
   CONFIG_DIR: "config-files"
 workflow:
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging"
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "new-study-creation"
 stages:
 - lint
 - build
@@ -124,7 +124,7 @@ deploy_metablsws_py:
   variables:
     CHART_NAME: metablsws-py
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging"
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "new-study-creation"
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
@@ -141,7 +141,7 @@ deploy_common_worker:
   variables:
     CHART_NAME: metablsws-py-common-worker
   rules:
-  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging"
+  - if: $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "keycloak" || $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "new-study-creation"
     when: on_success
   - if: $CI_COMMIT_BRANCH == "main"
     when: manual
