@@ -19,15 +19,17 @@
 import logging
 import os
 
-from flask import request, jsonify
+from flask import jsonify, request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 
+from app.utils import metabolights_exception_handler
+from app.ws.auth.permissions import validate_submission_view
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.study import commons
+from app.ws.study.utils import get_study_metadata_path
 from app.ws.utils import read_tsv, totuples
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 iac = IsaApiClient()
 
 
@@ -43,7 +45,7 @@ class GetProtocolForAssays(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user-token",
@@ -51,55 +53,41 @@ class GetProtocolForAssays(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. The TSV table is returned"
-            },
+            {"code": 200, "message": "OK. The TSV table is returned"},
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
-        # param validation
-        if study_id is None:
-            logger.info('No study_id given')
-            abort(404)
-        study_id = study_id.upper()
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        logger.info("Assay Table mapping: Getting ISA-JSON Study %s", study_id)
 
-        logger.info('Assay Table mapping: Getting ISA-JSON Study %s', study_id)
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            commons.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
-
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
-                                                         skip_load_tables=True,
-                                                         study_location=study_location)
+        isa_study, _, _ = iac.get_isa_study(
+            study_id, skip_load_tables=True, study_location=study_location
+        )
 
         all_protocols = []
         for protocol in isa_study.protocols:
             prot_name = protocol.name
-            if prot_name == 'Sample collection':
+            if prot_name == "Sample collection":
                 continue  # Skip as this is not reported in the assay, but rather in the sample sheet
 
             prot_ref = "Protocol REF"
@@ -108,7 +96,9 @@ class GetProtocolForAssays(Resource):
             for assay in isa_study.assays:
                 file_name = os.path.join(study_location, assay.filename)
 
-                logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
+                logger.info(
+                    "Trying to load TSV file (%s) for Study %s", file_name, study_id
+                )
                 # Get the Assay table or create a new one if it does not already exist
                 file_df = None
                 try:
@@ -116,17 +106,16 @@ class GetProtocolForAssays(Resource):
                 except FileNotFoundError:
                     abort(400, message="The file " + file_name + " was not found")
 
-                all_rows_dict = totuples(file_df.reset_index(), 'rows')
-                all_rows = all_rows_dict['rows']
-                row = all_rows_dict['rows'][0]  # Get row 1
+                all_rows_dict = totuples(file_df.reset_index(), "rows")
+                all_rows = all_rows_dict["rows"]
+                row = all_rows_dict["rows"][0]  # Get row 1
                 # row.pop('index')  # Remove the additional 'index' column
 
                 # Next we look for all occurrences of "Protocol REF" columns, as these are the protocol deliminators
                 idx = 0  # This is the index (position) of the column. This is needed for later updates
                 full_column_list = []
                 for key, value in row.items():
-
-                    if key == 'Sample Name' or key == 'index':
+                    if key == "Sample Name" or key == "index":
                         idx += 1
                         continue  # No need for this as this is not part of an assay protocol, but links to samples
                     correct_protocol = False
@@ -157,6 +146,3 @@ class GetProtocolForAssays(Resource):
             all_protocols.append({prot_name: prot_list})
 
         return jsonify({"protocols": all_protocols})
-
-
-

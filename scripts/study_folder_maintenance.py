@@ -1,16 +1,14 @@
 import datetime
 import glob
-import json
 import os
-from pathlib import Path
 import sys
 import time
 from typing import Dict, List, Union
+
 from app.config import get_settings
+from app.config.model.study import StudySettings
 from app.tasks.bash_client import BashClient
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
-
-from app.tasks.worker import get_flask_app
 from app.ws.db.schemes import Study
 from app.ws.db.types import StudyStatus
 from app.ws.folder_maintenance import (
@@ -18,7 +16,6 @@ from app.ws.folder_maintenance import (
     MaintenanceException,
     StudyFolderMaintenanceTask,
 )
-from app.config.model.study import StudySettings
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_service import StudyService
 
@@ -160,7 +157,7 @@ def maintain_folders(
     future_action_log_file_path = output_summary_report
 
     with open(future_action_log_file_path, "w") as fa:
-        header = f"STUDY_ID\tSTUDY STATUS\tSTATUS\tCOMMAND\tACTION\tITEM\tMESSAGE\tPARAMETERS\n"
+        header = "STUDY_ID\tSTUDY STATUS\tSTATUS\tCOMMAND\tACTION\tITEM\tMESSAGE\tPARAMETERS\n"
         fa.writelines([header])
         for study_id in study_id_list:
             study: Study = StudyService.get_instance().get_study_by_acc(
@@ -186,7 +183,8 @@ def maintain_folders(
                 study_category=study.study_category,
                 sample_template=study.sample_type,
                 dataset_license=study.dataset_license,
-                template_version=study.template_version
+                template_version=study.template_version,
+                study_template=study.study_template,
             )
             study_settings = get_settings().study
             released_version = "PUBLIC_VERSION_1.0"

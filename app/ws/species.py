@@ -1,83 +1,85 @@
 from __future__ import annotations
-import json
-import os.path
-from typing import List, Set, Union
 
-from flask import jsonify
+import json
+from typing import List, Union
+
+from flask import jsonify, request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
+from pydantic import BaseModel
+
 from app.config import get_settings
-from app.services.storage_service.storage_service import StorageService
 from app.utils import MetabolightsDBException, metabolights_exception_handler
+from app.ws.auth.permissions import public_endpoint
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefSpeciesGroup, RefSpeciesMember, RefSpecy
 from app.ws.redis.redis import get_redis_server
-from app.ws.study.study_service import StudyService
-from pydantic import BaseModel
 
 
 class SpeciesTreeNode(BaseModel):
     name: str = ""
     level: int = 0
-    
+
+
 class SpeciesTreeLeaf(SpeciesTreeNode):
     size: int = 1
-    
+
+
 class SpeciesTreeParent(SpeciesTreeNode):
     children: List[Union[SpeciesTreeLeaf, SpeciesTreeParent]] = []
-    
+
+
 SpeciesTreeParent.model_rebuild()
-    
+
+
 class SpeciesTree(Resource):
     @swagger.operation(
         summary="Returns  Species as a tree",
-        parameters=[
-        ],
+        parameters=[],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     @metabolights_exception_handler
     def get(self):
+        public_endpoint(request)
+
         key = get_settings().redis_cache.configuration.species_tree_cache_key
-        try: 
+        try:
             redis = get_redis_server()
             tree = redis.get_value(key)
-            
+
             if tree:
                 return json.loads(tree)
         except Exception:
             # no cache or invalid cache
             pass
-        
+
         tree: SpeciesTreeParent = SpeciesTreeParent()
         tree.name = "Species"
         groups = {}
-        
+
         try:
             with DBManager.get_instance().session_maker() as db_session:
                 result = db_session.query(RefSpeciesGroup).all()
-                
+
                 if result:
                     for item in result:
                         # if item.parent == None:
                         groups[item.id] = SpeciesTreeParent()
-                        
+
                         groups[item.id].name = item.name
 
                     for item in result:
@@ -87,39 +89,49 @@ class SpeciesTree(Resource):
                             if item.parent.id in groups:
                                 groups[item.parent.id].children.append(groups[item.id])
                             else:
-                                print(f"Species group parent id is not found in species group tree: {item.parent.id}")
-                    
-                    speciesMemberList = result = db_session.query(RefSpeciesMember).all()
+                                print(
+                                    f"Species group parent id is not found in species group tree: {item.parent.id}"
+                                )
+
+                    speciesMemberList = result = db_session.query(
+                        RefSpeciesMember
+                    ).all()
                     members_and_groups = {}
                     if speciesMemberList:
                         for item in speciesMemberList:
                             members_and_groups[item.id] = item.group_id
-                            
+
                     speciesList = result = db_session.query(RefSpecy).all()
-                    
+
                     if speciesList:
                         for item in speciesList:
                             if item.species_member:
-                                
                                 if item.species_member in members_and_groups:
                                     group_id = members_and_groups[item.species_member]
                                     if group_id in groups:
                                         obj = SpeciesTreeLeaf(name=item.species, size=1)
                                         groups[group_id].children.append(obj)
                                     else:
-                                        print(f"Group id is not found in species group tree. Member id: {item.species_member} group id: {group_id}")  
+                                        print(
+                                            f"Group id is not found in species group tree. Member id: {item.species_member} group id: {group_id}"
+                                        )
                                 else:
-                                    print(f"Species member id is not found in  species group tree: {item.species_member}")    
-                    
-                    self.update_tree(tree)                    
+                                    print(
+                                        f"Species member id is not found in  species group tree: {item.species_member}"
+                                    )
+
+                    self.update_tree(tree)
         except Exception as e:
-            raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
-        
+            raise MetabolightsDBException(
+                message=f"Error while retreiving study from database: {str(e)}",
+                exception=e,
+            )
+
         result_dict = tree.model_dump()
         result_str = json.dumps(result_dict)
-        redis.set_value(key, result_str, ex=60*10)
+        redis.set_value(key, result_str, ex=60 * 10)
         return jsonify(result_dict)
-    
+
     def update_tree(self, tree: SpeciesTreeParent, level: int = 0):
         tree.level = level
         tree.children.sort(key=self.get_sort_key)
@@ -136,7 +148,7 @@ class SpeciesTree(Resource):
         if empty_item_list:
             for empty_item in empty_item_list:
                 tree.children.remove(empty_item)
-                    
+
     def get_sort_key(self, item: SpeciesTreeNode):
         if not item or not item.name:
             return ""

@@ -5,10 +5,10 @@ from flask import Flask
 from flask_mail import Mail
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app import application_path
 from app.ws.email.email_service import EmailService
 from app.ws.mtblsWSclient import WsClient
 from app.wsapp_config import initialize_app
-from app import application_path
 
 
 @pytest.fixture(scope="session")
@@ -18,7 +18,9 @@ def flask_app():
     if "INSTANCE_DIR" in os.environ and os.environ["INSTANCE_DIR"]:
         instance_dir = os.environ["INSTANCE_DIR"]
 
-    flask_app = Flask(__name__, instance_relative_config=True, instance_path=instance_dir)
+    flask_app = Flask(
+        __name__, instance_relative_config=True, instance_path=instance_dir
+    )
     initialize_app(flask_app)
 
     flask_app.config.update(
@@ -64,7 +66,9 @@ class SensitiveDatastorage(BaseSettings):
     invalid_user_token_001: str
     submitter_token_001: str
 
-    model_config = SettingsConfigDict(env_file_encoding='utf-8', env_file="./tests/.test_data")
+    model_config = SettingsConfigDict(
+        env_file_encoding="utf-8", env_file="./tests/.test_data"
+    )
 
 
 @pytest.fixture(scope="session")

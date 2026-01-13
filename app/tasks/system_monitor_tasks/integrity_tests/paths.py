@@ -1,7 +1,8 @@
 import os
+
 from app.config import get_settings
-from app.services.storage_service.storage_service import StorageService
 from app.tasks.system_monitor_tasks.integrity_tests.utils import check_result
+
 
 @check_result(category="paths")
 def check_study_paths():

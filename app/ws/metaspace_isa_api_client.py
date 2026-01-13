@@ -21,13 +21,12 @@ import logging
 import os
 import time
 
-from flask_restful import Resource, abort
-from isatools.isatab import dump
+from flask_restful import Resource
 from isatools import model
-from app.config import get_settings
-from app import application_path
-from app.ws.isaApiClient import IsaApiClient
+from isatools.isatab import dump
+
 from app.ws.isa_table_templates import add_new_assay_sheet
+from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import update_correct_sample_file_name
 
@@ -58,18 +57,6 @@ class MetaSpaceIsaApiClient(Resource):
 
         return inv
 
-    def get_study_file_template_path(self):
-        template_path = get_settings().file_resources.study_default_template_path
-
-        template_path = (
-            template_path
-            if f".{os.sep}" not in template_path
-            else template_path.replace(f".{os.sep}", "", 1)
-        )
-        if not template_path.startswith(os.sep) and f":{os.sep}" not in template_path:
-            template_path = os.path.join(application_path, template_path)
-        return template_path
-
     def new_study(
         self,
         std_title,
@@ -92,7 +79,7 @@ class MetaSpaceIsaApiClient(Resource):
         try:
             # status, message = convert_to_isa(output_dir, study_id)
             isa_study, isa_inv, std_path = isa_api.get_isa_study(
-                study_id, user_token, skip_load_tables=True, study_location=output_dir
+                study_id, None, skip_load_tables=True, study_location=output_dir
             )
         except Exception as e:
             logger.warning(
@@ -100,31 +87,8 @@ class MetaSpaceIsaApiClient(Resource):
             )
 
         if not isa_inv:
-            try:
-                from_path = self.get_study_file_template_path()
-                to_path = output_dir
-                # copy_files_and_folders(
-                #     from_path,
-                #     to_path,
-                #     include_raw_data=True,
-                #     include_investigation_file=True,
-                # )
-                # status, message = convert_to_isa(to_path, study_id)
-            except Exception as e:
-                logger.error(
-                    "Could not copy files from %s to %s, Error %s",
-                    from_path,
-                    to_path,
-                    str(e),
-                )
-                abort(
-                    409,
-                    message="Something went wrong with copying the ISA-Tab templates to study "
-                    + str(study_id),
-                )
-
             isa_study, isa_inv, std_path = isa_api.get_isa_study(
-                study_id, user_token, skip_load_tables=True, study_location=output_dir
+                study_id, None, skip_load_tables=True, study_location=output_dir
             )
 
             # Create upload folder

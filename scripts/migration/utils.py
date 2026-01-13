@@ -1,17 +1,20 @@
 import os
 from typing import List, Tuple, Union
+
 import psycopg2
 
 from app.config import get_settings
 from app.ws.db.types import StudyStatus
 
+
 def sort_by_study_id(value: Tuple[str, str, int]):
-        if value and value[0]:
-            val = os.path.basename(value[0]).upper().replace("MTBLS", "")
-            if val.isnumeric():
-                return int(val)
-        return -1
-    
+    if value and value[0]:
+        val = os.path.basename(value[0]).upper().replace("MTBLS", "")
+        if val.isnumeric():
+            return int(val)
+    return -1
+
+
 def get_studies(status_code: Union[None, StudyStatus] = None, reverse: bool = True):
     settings = get_settings().database.connection
     connection = None
@@ -29,8 +32,8 @@ def get_studies(status_code: Union[None, StudyStatus] = None, reverse: bool = Tr
         if status_code:
             sql_query = f"SELECT acc, obfuscationcode, status, submissiondate, releasedate  FROM studies where status = {status_code.value}"
         else:
-            sql_query = f"SELECT acc, obfuscationcode, status, submissiondate, releasedate FROM studies"
-            
+            sql_query = "SELECT acc, obfuscationcode, status, submissiondate, releasedate FROM studies"
+
         # Execute the query
         cursor.execute(sql_query)
 

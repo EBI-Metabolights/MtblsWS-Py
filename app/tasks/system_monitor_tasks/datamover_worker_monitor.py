@@ -1,8 +1,8 @@
 import logging
 import os
 from typing import Any, Dict, List, Set
-from app.config import get_settings
 
+from app.config import get_settings
 from app.services.cluster.hpc_client import HpcJob
 from app.services.cluster.hpc_utils import get_new_hpc_datamover_client
 from app.tasks.system_monitor_tasks.utils import (
@@ -67,7 +67,9 @@ def maintain_datamover_workers(
 
         if not current_workers:
             create_datamover_worker(
-                results=results, job_name=job_name, worker_identifiers=current_worker_identifiers
+                results=results,
+                job_name=job_name,
+                worker_identifiers=current_worker_identifiers,
             )
             return results
 
@@ -91,7 +93,9 @@ def maintain_datamover_workers(
         active_job_count = len(runnig_jobs) + len(pending_jobs)
         if active_job_count < number_of_workers:
             create_datamover_worker(
-                results=results, job_name=job_name, worker_identifiers=current_worker_identifiers
+                results=results,
+                job_name=job_name,
+                worker_identifiers=current_worker_identifiers,
             )
             return results
         else:
@@ -122,20 +126,22 @@ def create_datamover_worker(
     client = get_new_hpc_datamover_client()
     settings = get_settings()
     job_track_email = settings.hpc_cluster.datamover.job_track_email
-    hpc_queue_name =  settings.hpc_cluster.datamover.default_queue
+    hpc_queue_name = settings.hpc_cluster.datamover.default_queue
     worker_config = settings.workers.datamover_workers
     command = os.path.join(
         worker_config.singularity_image_configuration.docker_deployment_path,
         worker_config.start_datamover_worker_script,
     )
     args = worker_config.broker_queue_names
-    client.run_singularity(task_name=name, 
-                           command=command, 
-                           command_arguments=args,
-                           hpc_queue_name=hpc_queue_name,
-                           account=job_track_email)
-    
-    message = f"New worker is triggered."
+    client.run_singularity(
+        task_name=name,
+        command=command,
+        command_arguments=args,
+        hpc_queue_name=hpc_queue_name,
+        account=job_track_email,
+    )
+
+    message = "New worker is triggered."
     results[name] = [message]
     logger.info(message)
 

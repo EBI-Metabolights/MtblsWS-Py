@@ -72,7 +72,7 @@ def create_datamover_worker(worker_name: str):
         mem_in_mb=settings.workers.datamover_workers.worker_memory_in_mb,
         cpu=settings.workers.datamover_workers.worker_cpu,
     )
-
+    logger.info("Job is created with id: %s for %s", job_id, name)
     for message in messages:
         logger.info(message)
     return job_id

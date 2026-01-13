@@ -6,16 +6,21 @@ from typing import Any, Dict, List, Union
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.acl import Acl
 from app.tasks.worker import MetabolightsTask, celery
-from app.ws.study_folder_utils import FileMetadata, evaluate_files, get_directory_files
+from app.ws.study_folder_utils import evaluate_files, get_directory_files
 
 logger = logging.getLogger("datamover_worker")
 
 
 @celery.task(
-    bind=True, base=MetabolightsTask, name="app.tasks.datamover_tasks.basic_tasks.file_management.create_folders"
+    bind=True,
+    base=MetabolightsTask,
+    name="app.tasks.datamover_tasks.basic_tasks.file_management.create_folders",
 )
 def create_folders(
-    self, folder_paths: Union[str, List[str]], acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE, exist_ok: bool = True
+    self,
+    folder_paths: Union[str, List[str]],
+    acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE,
+    exist_ok: bool = True,
 ):
     results = {}
     input_paths = get_input_paths(folder_paths)
@@ -25,7 +30,10 @@ def create_folders(
         path_exist = os.path.exists(path_item)
         if path_exist:
             if not os.path.isdir(path_item):
-                results[path_item] = {"status": False, "message": f"Path '{path_item}' is not a folder"}
+                results[path_item] = {
+                    "status": False,
+                    "message": f"Path '{path_item}' is not a folder",
+                }
             else:
                 results[path_item] = update_permission(path_item, permission)
         else:
@@ -40,9 +48,15 @@ def create_folders(
                             "message": f"Path '{path_item}' created but permission could not updated.",
                         }
                     else:
-                        results[path_item] = {"status": True, "message": f"Path '{path_item}' was created."}
+                        results[path_item] = {
+                            "status": True,
+                            "message": f"Path '{path_item}' was created.",
+                        }
                 else:
-                    results[path_item] = {"status": False, "message": f"Path '{path_item}' could not be created."}
+                    results[path_item] = {
+                        "status": False,
+                        "message": f"Path '{path_item}' could not be created.",
+                    }
 
             except Exception as ex:
                 results[path_item] = {
@@ -57,7 +71,9 @@ def create_folders(
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.chmod",
 )
-def chmod(self, paths: Union[str, List[str]], acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE):
+def chmod(
+    self, paths: Union[str, List[str]], acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE
+):
     results = {}
 
     input_paths = get_input_paths(paths)
@@ -74,9 +90,17 @@ def chmod(self, paths: Union[str, List[str]], acl: Union[int, Acl] = Acl.AUTHORI
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.list_directory",
 )
-def list_directory(self, path: str, recursive:bool=False, exclude_list: List[str]=None) -> Dict[str, Any]:
+def list_directory(
+    self, path: str, recursive: bool = False, exclude_list: List[str] = None
+) -> Dict[str, Any]:
     applied_exclude_list = exclude_list if exclude_list else []
-    directory_files = get_directory_files(path, None, search_pattern="**/*", recursive=recursive, exclude_list=applied_exclude_list)
+    directory_files = get_directory_files(
+        path,
+        None,
+        search_pattern="**/*",
+        recursive=recursive,
+        exclude_list=applied_exclude_list,
+    )
     search_result = evaluate_files(directory_files, [])
     return search_result.model_dump()
 
@@ -96,18 +120,26 @@ def delete_folders(self, root_path: str, folder_paths: Union[str, List[str]]):
             if os.path.isdir(path_item):
                 try:
                     shutil.rmtree(path_item)
-                    results[path_item] = {"status": False, "message": f"'{relative_path}' was deleted."}
+                    results[path_item] = {
+                        "status": False,
+                        "message": f"'{relative_path}' was deleted.",
+                    }
                 except Exception as ex:
                     results[path_item] = {
                         "status": False,
                         "message": f"Path '{relative_path}' could not be deleted. Root cause: {str(ex)}",
                     }
             else:
-                results[path_item] = {"status": False, "message": f"'{relative_path}' is not a folder or does not exist."}
+                results[path_item] = {
+                    "status": False,
+                    "message": f"'{relative_path}' is not a folder or does not exist.",
+                }
         else:
-            results[path_item] = {"status": False, "message": f"There is no folder '{relative_path}'."}
+            results[path_item] = {
+                "status": False,
+                "message": f"There is no folder '{relative_path}'.",
+            }
     return results
-
 
 
 @celery.task(
@@ -126,16 +158,22 @@ def delete_files(self, root_path: str, file_paths: Union[str, List[str]]):
             if os.path.islink(path_item):
                 try:
                     os.unlink(path_item)
-                    results[path_item] = {"status": True, "message": f"'{relative_path}' was deleted."}
+                    results[path_item] = {
+                        "status": True,
+                        "message": f"'{relative_path}' was deleted.",
+                    }
                 except Exception as ex:
                     results[path_item] = {
                         "status": False,
                         "message": f"Path '{path_item}' could not be deleted. Root cause: {str(ex)}",
-                    }                
+                    }
             elif os.path.isfile(path_item):
                 try:
                     os.remove(path_item)
-                    results[path_item] = {"status": True, "message": f"'{relative_path}' was deleted."}
+                    results[path_item] = {
+                        "status": True,
+                        "message": f"'{relative_path}' was deleted.",
+                    }
                 except Exception as ex:
                     results[path_item] = {
                         "status": False,
@@ -144,17 +182,27 @@ def delete_files(self, root_path: str, file_paths: Union[str, List[str]]):
             elif os.path.isdir(path_item):
                 try:
                     shutil.rmtree(path_item)
-                    results[path_item] = {"status": True, "message": f"'{relative_path}' was deleted."}
+                    results[path_item] = {
+                        "status": True,
+                        "message": f"'{relative_path}' was deleted.",
+                    }
                 except Exception as ex:
                     results[path_item] = {
                         "status": False,
                         "message": f"Path '{path_item}' could not be deleted. Root cause: {str(ex)}",
                     }
             else:
-                results[path_item] = {"status": False, "message": f"'{relative_path}' is not a file / folder or does not exist."}
+                results[path_item] = {
+                    "status": False,
+                    "message": f"'{relative_path}' is not a file / folder or does not exist.",
+                }
         else:
-            results[path_item] = {"status": False, "message": f"There is no file or folder: '{relative_path}'."}
+            results[path_item] = {
+                "status": False,
+                "message": f"There is no file or folder: '{relative_path}'.",
+            }
     return results
+
 
 @celery.task(
     bind=True,
@@ -166,14 +214,17 @@ def move(self, source_path: str, target_path: str):
     new_path = target_path
 
     if not input_path or not new_path:
-        return {"status": False, "message": f"inputs are not valid."}
+        return {"status": False, "message": "inputs are not valid."}
 
     if os.path.exists(input_path):
         if not os.path.exists(new_path):
             try:
                 shutil.move(input_path, new_path)
                 if not os.path.exists(input_path) and os.path.exists(new_path):
-                    return {"status": True, "message": f"'{input_path}' was moved to {new_path}."}
+                    return {
+                        "status": True,
+                        "message": f"'{input_path}' was moved to {new_path}.",
+                    }
                 else:
                     return {
                         "status": False,
@@ -218,7 +269,6 @@ def isdir(self, source_path: str) -> bool:
     name="app.tasks.datamover_tasks.basic_tasks.file_management.exists",
 )
 def exists(self, source_path: str) -> bool:
-
     if source_path and os.path.exists(source_path):
         return True
     return False
@@ -234,10 +284,19 @@ def get_permission(self, source_path: str):
         if source_path and os.path.exists(source_path):
             current_permission = os.stat(source_path).st_mode
             current_permission_str = oct(current_permission).replace("0o", "")
-            result = {"status": True, "value": current_permission, "octal_value": current_permission_str}
+            result = {
+                "status": True,
+                "value": current_permission,
+                "octal_value": current_permission_str,
+            }
             return result
         else:
-            return {"status": False, "message": f"'{source_path}' does not exist.", "value": -1, "octal_value": -1}
+            return {
+                "status": False,
+                "message": f"'{source_path}' does not exist.",
+                "value": -1,
+                "octal_value": -1,
+            }
 
     except Exception as ex:
         return {
@@ -271,9 +330,9 @@ def get_input_permission_value(acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE)
 def update_permission(path_item, permission):
     if not os.path.exists(path_item):
         result = {
-                "status": False,
-                "message": f"Path '{path_item}' does not exist.",
-            }
+            "status": False,
+            "message": f"Path '{path_item}' does not exist.",
+        }
         return result
     current_permission = os.stat(path_item).st_mode & 0o777
     current_permission_str = oct(current_permission).replace("0o", "")
@@ -295,5 +354,8 @@ def update_permission(path_item, permission):
         except Exception as ex:
             raise ex
     else:
-        result = {"status": True, "message": f"Path '{path_item}' permission is already {current_permission_str}."}
+        result = {
+            "status": True,
+            "message": f"Path '{path_item}' permission is already {current_permission_str}.",
+        }
     return result

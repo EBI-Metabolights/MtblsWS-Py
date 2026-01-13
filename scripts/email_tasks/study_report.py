@@ -3,6 +3,14 @@ import logging
 import os
 import pathlib
 import sys
+
+from metabolights_utils.isatab import Reader
+from metabolights_utils.isatab.reader import (
+    InvestigationFileReader,
+    InvestigationFileReaderResult,
+)
+from metabolights_utils.models.isa import investigation_file as inv_model
+
 from app.config import get_settings
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study
@@ -15,12 +23,6 @@ from scripts.email_tasks.models import (
     load_study_report,
     save_study_report,
 )
-from metabolights_utils.isatab import Reader
-from metabolights_utils.isatab.reader import (
-    InvestigationFileReader,
-    InvestigationFileReaderResult,
-)
-from metabolights_utils.models.isa import investigation_file as inv_model
 
 logger = logging.getLogger(__name__)
 

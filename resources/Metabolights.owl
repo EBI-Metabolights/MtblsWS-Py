@@ -15,7 +15,7 @@
         <owl:versionInfo rdf:datatype="http://www.w3.org/2001/XMLSchema#float">1.0</owl:versionInfo>
     </owl:Ontology>
 
-    <!-- 
+    <!--
     ///////////////////////////////////////////////////////////////////////////////////////
     //
     // Annotation properties
@@ -163,7 +163,7 @@
     </owl:AnnotationProperty>
 
 
-    <!-- 
+    <!--
     ///////////////////////////////////////////////////////////////////////////////////////
     //
     // Object Properties
@@ -182,7 +182,7 @@
     <owl:ObjectProperty rdf:about="http://www.ebi.ac.uk/metabolights/ontology#massAnalyzer" />
 
 
-    <!-- 
+    <!--
     ///////////////////////////////////////////////////////////////////////////////////////
     //
     // Classes
@@ -256,14 +256,14 @@
         <rdfs:label>electron ionization</rdfs:label>
     </owl:Class>
 
-    
+
     <!-- http://purl.obolibrary.org/obo/MS_1000071 -->
     <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000071">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001116" />
         <rdfs:isDefinedBy>The formation of a new ion by the reaction of a neutral species with an ion. The process may involve transfer of an electron, a proton or other charged species between the reactants. When a positive ion results from chemical ionization the term may be used without qualification. When a negative ion results the term negative ion chemical ionization should be used. Note that this term is not synonymous with chemi-ionization.</rdfs:isDefinedBy>
         <rdfs:label>chemical ionization</rdfs:label>
     </owl:Class>
-    
+
     <!-- http://purl.obolibrary.org/obo/MS_1000071 -->
     <owl:Class rdf:about="http://purl.obolibrary.org/obo/MS_1000258">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001116" />
@@ -349,14 +349,14 @@
     </owl:Class>
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000513">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" /> 
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001122" />
         <rdfs:isDefinedBy>The total sum of the genetic information of an organism that is known and relevant to the experiment being performed, including chromosomal, plasmid, viral or other genetic material which has been introduced into the organism either prior to or during the experiment.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">genotype</rdfs:label>
     </owl:Class>
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000246">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />  
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001122" />
         <rdfs:isDefinedBy>A temporal measurement of the time period elapsed since an identifiable point in the life cycle of an organism. If a developmental stage is specified, the identifiable point would be the beginning of that stage. Otherwise the identifiable point must be specified such as planting (e.g. 3 days post planting).</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">age</rdfs:label>
@@ -369,7 +369,7 @@
     </owl:Class>
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0000408">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" /> 
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001114" />
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_001122" />
         <rdfs:isDefinedBy>A disease is a disposition to undergo pathological processes that exists in an organism because of one or more disorders in that organism.</rdfs:isDefinedBy>
         <rdfs:label xml:lang="en">disease</rdfs:label>
@@ -792,7 +792,7 @@
         <oboI:hasExactSynonym>ocean water</oboI:hasExactSynonym>
         <rdfs:label xml:lang="en">sea water</rdfs:label>
     </owl:Class>
-    
+
 
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_002304 -->
 
@@ -969,7 +969,7 @@
     </owl:Axiom>
 
 
-    
+
 
 
     <owl:Class rdf:about="http://purl.obolibrary.org/obo/NCIT_C42781">
@@ -14642,7 +14642,7 @@
     </rdf:Description>
 
 
-    <!-- 
+    <!--
     ///////////////////////////////////////////////////////////////////////////////////////
     //
     // Annotations

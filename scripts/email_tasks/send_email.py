@@ -1,11 +1,10 @@
 import datetime
 import logging
-import pathlib
+
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from scripts.email_tasks.models import MetaboLightsStudyReport, load_study_report
 from scripts.email_tasks.utils import send_task_email
-
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +31,9 @@ if __name__ == "__main__":
     # max_created_at = datetime.datetime.fromisoformat("2025-01-01 09:00:00.00000")
     # min_created_at = datetime.datetime.fromisoformat("2024-01-01 00:00:00.00000")
     # max_created_at = datetime.datetime.fromisoformat("2024-01-01 00:00:00.00000")
-    # min_created_at = datetime.datetime.fromisoformat("2023-01-01 00:00:00.00000")    
+    # min_created_at = datetime.datetime.fromisoformat("2023-01-01 00:00:00.00000")
     # max_created_at = datetime.datetime.fromisoformat("2023-01-01 00:00:00.00000")
-    # min_created_at = datetime.datetime.fromisoformat("2022-01-01 00:00:00.00000") 
+    # min_created_at = datetime.datetime.fromisoformat("2022-01-01 00:00:00.00000")
     max_created_at = datetime.datetime.fromisoformat("2022-01-01 00:00:00.00000")
     min_created_at = None
     studies = report.filter_study_report(
@@ -97,7 +96,13 @@ if __name__ == "__main__":
                 bcc_mail_addresses="metabolights-dev@ebi.ac.uk",
                 reply_to="metabolights-help@ebi.ac.uk",
             )
-            print(idx, len(studies), study.study_id, study.created_at, "Email sent successfully")
+            print(
+                idx,
+                len(studies),
+                study.study_id,
+                study.created_at,
+                "Email sent successfully",
+            )
             # if idx > 1:
             #     break
         except Exception as ex:

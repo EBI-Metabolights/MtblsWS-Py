@@ -2,18 +2,22 @@ import datetime
 import logging
 import os
 from typing import Union
+
+from celery.result import AsyncResult
 from pydantic import BaseModel
-from pyparsing import Any
-from app.tasks.bash_client import BashExecutionResult, CapturedBashExecutionResult, LoggedBashExecutionResult
+
+from app.tasks.bash_client import (
+    BashExecutionResult,
+    CapturedBashExecutionResult,
+    LoggedBashExecutionResult,
+)
 from app.tasks.datamover_tasks.basic_tasks.execute_commands import execute_bash_command
 from app.tasks.worker import celery
-from celery.result import AsyncResult
 from app.utils import MetabolightsException, current_time
-
-
 from app.ws.redis.redis import RedisStorage, get_redis_server
 
 logger = logging.getLogger("ws_log")
+
 
 class TaskDescription(BaseModel):
     task_id: str = ""
@@ -31,6 +35,7 @@ class BashExecutionTaskStatus(BaseModel):
     result_ready: bool = False
     result: Union[None, BashExecutionResult] = None
     new_task: bool = False
+
 
 WAIT_STATES = {"STARTED", "INITIATED", "RECEIVED", "STARTED", "RETRY", "PROGRESS"}
 
@@ -80,29 +85,42 @@ class HpcWorkerBashRunner:
         desc: TaskDescription = self.get_task_description()
         if desc and desc.task_id:
             result: AsyncResult = celery.AsyncResult(desc.task_id)
-            
-            
+
             if result and result.state != "PENDING":
                 desc.task_id = result.task_id
-                
+
                 desc.last_status = result.state
                 desc.last_update_time = current_time().timestamp()
-                desc.task_done_time  = result.date_done.timestamp() if result.date_done else 0
-                
+                desc.task_done_time = (
+                    result.date_done.timestamp() if result.date_done else 0
+                )
+
             if result and result.state != "PENDING" and result.state != "REVOKED":
                 if result.state in WAIT_STATES:
                     task_status.running = True
                 elif results_only:
                     task_status.result_ready = result.ready()
                     if task_status.result_ready:
-                        task_status.wait_in_seconds = self.get_wait_time(result.date_done.timestamp())
+                        task_status.wait_in_seconds = self.get_wait_time(
+                            result.date_done.timestamp()
+                        )
                         if result.successful() and isinstance(result.result, dict):
                             if "stdout" in result.result:
-                                task_status.result = CapturedBashExecutionResult.model_validate(result.result)
+                                task_status.result = (
+                                    CapturedBashExecutionResult.model_validate(
+                                        result.result
+                                    )
+                                )
                             elif "stdout_log_file_path" in result.result:
-                                task_status.result = LoggedBashExecutionResult.model_validate(result.result)
+                                task_status.result = (
+                                    LoggedBashExecutionResult.model_validate(
+                                        result.result
+                                    )
+                                )
                             else:
-                                raise MetabolightsException(message="unexpected bash result")
+                                raise MetabolightsException(
+                                    message="unexpected bash result"
+                                )
 
                         desc.task_done_time = result.date_done.timestamp()
                 task_status.description = desc
@@ -110,23 +128,31 @@ class HpcWorkerBashRunner:
                 # desc.last_update_time = current_time().timestamp()
                 desc.last_status = result.state
                 desc.stderr_log_filename = (
-                    os.path.basename(self.stderr_log_file_path) if self.stderr_log_file_path else ""
+                    os.path.basename(self.stderr_log_file_path)
+                    if self.stderr_log_file_path
+                    else ""
                 )
                 desc.stdout_log_filename = (
-                    os.path.basename(self.stdout_log_file_path) if self.stdout_log_file_path else ""
+                    os.path.basename(self.stdout_log_file_path)
+                    if self.stdout_log_file_path
+                    else ""
                 )
 
                 self.save_task_description(desc)
             else:
                 if desc.last_status == "SUCCESS" or desc.last_status == "FAILURE":
-                    task_status.wait_in_seconds = datetime.datetime.fromtimestamp(desc.task_done_time)
+                    task_status.wait_in_seconds = datetime.datetime.fromtimestamp(
+                        desc.task_done_time
+                    )
 
         return task_status
 
     def get_status(self, results_only: bool) -> BashExecutionTaskStatus:
         return self.evaluate_current_status(results_only=results_only)
 
-    def execute(self, command, stdout_log_file_path=None, stderr_log_file_path=None) -> BashExecutionTaskStatus:
+    def execute(
+        self, command, stdout_log_file_path=None, stderr_log_file_path=None
+    ) -> BashExecutionTaskStatus:
         inputs = {
             "command": command,
             "stdout_log_file_path": stdout_log_file_path,
@@ -138,8 +164,16 @@ class HpcWorkerBashRunner:
             result: AsyncResult = celery.AsyncResult(task_id)
             now = current_time().timestamp()
             state = result.state
-            stderr_log_filename = os.path.basename(self.stderr_log_file_path) if stderr_log_file_path else ""
-            stdout_log_filename = os.path.basename(self.stdout_log_file_path) if stdout_log_file_path else ""
+            stderr_log_filename = (
+                os.path.basename(self.stderr_log_file_path)
+                if stderr_log_file_path
+                else ""
+            )
+            stdout_log_filename = (
+                os.path.basename(self.stdout_log_file_path)
+                if stdout_log_file_path
+                else ""
+            )
             desc = TaskDescription(
                 task_id=result.id,
                 last_status=state,

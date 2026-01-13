@@ -2,7 +2,6 @@ import logging
 import socket
 
 import app as current_app
-
 from app.tasks.datamover_worker_utils import ping_datamover_worker
 from app.tasks.utils import set_basic_logging_config
 

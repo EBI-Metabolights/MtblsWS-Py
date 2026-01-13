@@ -6,14 +6,14 @@ from celery.signals import after_task_publish
 from celery.utils.log import get_logger
 from flask import Flask
 from flask_mail import Mail
+
 from app.config import get_settings
 from app.config.model.celery import CelerySettings
 from app.config.model.redis_cache import RedisConnection
-
 from app.tasks.logging_filter import CeleryWorkerLogFilter
 from app.utils import MetabolightsException, ValueMaskUtility
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.email.email_service import EmailService
-
 from app.ws.study.user_service import UserService
 
 settings: CelerySettings = get_settings().celery
@@ -172,25 +172,7 @@ def update_task_was_sent_state(sender=None, headers=None, **kwargs):
 
 service_account_apitoken = get_settings().auth.service_account.api_token
 periodic_task_configuration = get_settings().celery.periodic_task_configuration
-# celery.conf.beat_schedule = {
-#     "check_integration": {
-#         "task": "app.tasks.common_tasks.admin_tasks.integration_check.check_integrations",
-#         "schedule": periodic_task_configuration.integration_test_period_in_seconds,
-#         "options": {"expires": 55},
-#     },
-#     "sync_compound_on_es_and_db": {
-#         "task": "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization.sync_compounds_on_es_and_db",
-#         "schedule": periodic_task_configuration.es_compound_sync_task_period_in_secs ,
-#         "args": (service_account_apitoken,),
-#         "options": {"expires": 60 },
-#     },
-#         "sync_study_on_es_and_db": {
-#         "task": "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization.sync_studies_on_es_and_db",
-#         "schedule": periodic_task_configuration.es_study_sync_task_period_in_secs ,
-#         "args": (service_account_apitoken,),
-#         "options": {"expires": 60 },
-#     }
-# }
+
 celery.conf.beat_schedule = {
     "check_integration": {
         "task": "app.tasks.common_tasks.admin_tasks.integration_check.check_integrations",
@@ -223,13 +205,13 @@ class MetabolightsTask(celery.Task):
         flask_app = get_flask_app()
         with flask_app.app_context():
             subject_name = f"Task {self.name} with {task_id} failed"
-            username = ""
-            if "email" in kwargs:
-                username = kwargs["email"]
-            if not username and "user_token" in kwargs and kwargs["user_token"]:
-                user = UserService.get_instance().get_simplified_user_by_token(
-                    kwargs["user_token"]
-                )
+            username = kwargs.get("email")
+            user_token = kwargs.get("user_token")
+            if not username and user_token:
+                auth_manager = AuthenticationManager.get_instance()
+                user = UserService.get_instance(
+                    auth_manager
+                ).get_simplified_user_by_token(user_token)
                 if user:
                     username = user.userName
 

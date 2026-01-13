@@ -1,12 +1,17 @@
 from typing import Union
 
 from flask import abort
+
 from app.ws.chebi.chebi_utils import chebi_search_v2, get_complete_chebi_entity_v2
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
-from app.ws.chebi.search.models import CompoundSearchResultModel, SearchResource, CompoundSearchResponseModel
-from app.ws.chebi.search.utils import get_term_in_source, find_term_index_in_source
+from app.ws.chebi.search.models import (
+    CompoundSearchResponseModel,
+    CompoundSearchResultModel,
+    SearchResource,
+)
+from app.ws.chebi.search.utils import find_term_index_in_source, get_term_in_source
 from app.ws.chebi.types import SearchCategory, StarsCategory
-from app.ws.chebi.wsproxy import get_chebi_ws_proxy, ChebiWsProxy, ChebiWsException
+from app.ws.chebi.wsproxy import ChebiWsException, ChebiWsProxy, get_chebi_ws_proxy
 
 
 def fill_with_complete_entity(chebi_id, chebi_ws=None):
@@ -46,33 +51,52 @@ def fill_from_metabolite_table(index, row, result: CompoundSearchResultModel):
     result.search_resource = SearchResource.CURATED
 
     name_match_formula = row[CuratedMetaboliteTable.FORMULA_INDEX]
-    result.formula = get_term_in_source(name_match_formula, index) if name_match_formula else None
+    result.formula = (
+        get_term_in_source(name_match_formula, index) if name_match_formula else None
+    )
 
     name_match_inchi = row[CuratedMetaboliteTable.INCHI_INDEX]
-    result.inchi = get_term_in_source(name_match_inchi, index) if name_match_inchi and isinstance(name_match_inchi, str) else None
+    result.inchi = (
+        get_term_in_source(name_match_inchi, index)
+        if name_match_inchi and isinstance(name_match_inchi, str)
+        else None
+    )
 
     name_match_chebi_id = row[CuratedMetaboliteTable.CHEBI_ID_INDEX]
-    result.databaseId = get_term_in_source(name_match_chebi_id, index) if name_match_chebi_id else None
+    result.databaseId = (
+        get_term_in_source(name_match_chebi_id, index) if name_match_chebi_id else None
+    )
 
     name_match_compound_name = row[CuratedMetaboliteTable.COMPOUND_INDEX]
-    result.name = get_term_in_source(name_match_compound_name, index) if name_match_compound_name else None
+    result.name = (
+        get_term_in_source(name_match_compound_name, index)
+        if name_match_compound_name
+        else None
+    )
 
     name_match_smiles = row[CuratedMetaboliteTable.SMILES_INDEX]
-    result.smiles = get_term_in_source(name_match_smiles, index) if name_match_smiles and isinstance(name_match_smiles, str) else None
+    result.smiles = (
+        get_term_in_source(name_match_smiles, index)
+        if name_match_smiles and isinstance(name_match_smiles, str)
+        else None
+    )
 
 
-def search_hits_with_search_category(search_name: str,
-                                     search_category: SearchCategory,
-                                     curation_table_index: int,
-                                     response: CompoundSearchResponseModel,
-                                     stars: StarsCategory = StarsCategory.ALL,
-                                     ws_proxy: Union[None, ChebiWsProxy] = None,
-                                     curated_metabolite_table: Union[None, CuratedMetaboliteTable] = None
-                                     ):
+def search_hits_with_search_category(
+    search_name: str,
+    search_category: SearchCategory,
+    curation_table_index: int,
+    response: CompoundSearchResponseModel,
+    stars: StarsCategory = StarsCategory.ALL,
+    ws_proxy: Union[None, ChebiWsProxy] = None,
+    curated_metabolite_table: Union[None, CuratedMetaboliteTable] = None,
+):
     if not curated_metabolite_table:
         curated_metabolite_table = CuratedMetaboliteTable.get_instance()
 
-    name_match = curated_metabolite_table.get_matching_rows(curation_table_index, search_name)
+    name_match = curated_metabolite_table.get_matching_rows(
+        curation_table_index, search_name
+    )
     if name_match:
         source = name_match[curation_table_index]
         index = find_term_index_in_source(source, search_name)
@@ -93,7 +117,7 @@ def search_hits_with_search_category(search_name: str,
                 databaseId=chebi_id,
                 formula=complete_entity["chemical_data"]["formula"] or "",
                 smiles=complete_entity["default_structure"]["smiles"] or "",
-                search_resource="CHEBI"
+                search_resource="CHEBI",
             )
             response.content.append(compound_search_result_v2)
         except ChebiWsException as e:

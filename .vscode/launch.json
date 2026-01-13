@@ -9,7 +9,7 @@
             "justMyCode": false,
             "cwd": "${cwd}",
             "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
-        }, 
+        },
         {
             "name": "Celery Common Worker",
             "type": "debugpy",
@@ -30,7 +30,7 @@
             "envFile": "${cwd}/.env",
             "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets", "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
 
-        },  
+        },
         {
             "name": "Celery Data Mover Worker",
 
@@ -51,7 +51,7 @@
             "cwd": "${workspaceFolder}",
             "envFile": "${cwd}/.env",
             "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets", "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
-        }, 
+        },
         {
             "name": "Python: Current File (Integrated Terminal)",
 
@@ -60,11 +60,11 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "env": {"PYTHONPATH": "${cwd}", 
-                    "CONFIG_FILE_PATH": "${cwd}/config.yaml", 
-                    "SECRETS_PATH": "${cwd}/.secrets", 
-                    "DATAMOVER_CONFIG_FILE_PATH": "${cwd}/datamover-config.yaml", 
-                    "DATAMOVER_SECRETS_PATH": "${cwd}/.datamover-secrets", 
+            "env": {"PYTHONPATH": "${cwd}",
+                    "CONFIG_FILE_PATH": "${cwd}/config.yaml",
+                    "SECRETS_PATH": "${cwd}/.secrets",
+                    "DATAMOVER_CONFIG_FILE_PATH": "${cwd}/datamover-config.yaml",
+                    "DATAMOVER_SECRETS_PATH": "${cwd}/.datamover-secrets",
                     "SINGULARITY_IMAGE_FILE_URL": "https://gitlab.ebi.ac.uk/api/v4/projects/3199/packages/generic/MtblsWS-Py_sif/2.2.0/MtblsWS-Py_2.2.0_staging.sif"}
         },
         {
@@ -126,7 +126,7 @@
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
             "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"},
-        },     
+        },
 
     ]
 }

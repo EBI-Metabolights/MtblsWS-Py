@@ -17,21 +17,21 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 import logging
 import os
-from flask import request
-from flask_restful import Resource, abort
-from flask_restful_swagger import swagger
+
 import pandas as pd
+from flask import request
+from flask_restful import Resource
+from flask_restful_swagger import swagger
+
 from app.utils import metabolights_exception_handler
+from app.ws.auth.permissions import validate_user_has_curator_role
 from app.ws.db_connection import update_study_sample_type
 from app.ws.isa_table_templates import create_sample_sheet
-
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_folder_service import StudyFolderService
 from app.ws.study.study_service import StudyService
-from app.ws.study.user_service import UserService
 from app.ws.utils import read_tsv
-
 
 logger = logging.getLogger("wslog")
 wsc = WsClient()
@@ -117,15 +117,7 @@ class StudySampleTemplate(Resource):
     )
     @metabolights_exception_handler
     def post(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404)
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        validate_user_has_curator_role(request)
 
         # query validation        sampleType = None
         force_override = False
@@ -138,7 +130,6 @@ class StudySampleTemplate(Resource):
                 True if request.args.get("force", "").lower() == "true" else False
             )
 
-        UserService.get_instance().validate_user_has_curator_role(user_token)
         study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
         logger.info(
             "Init Sample for %s; Type %s with version %s",

@@ -1,19 +1,22 @@
 from typing import List, Union
+
 from pydantic import BaseModel
 
 
 class Host(BaseModel):
     name: str
     port: int
-    
+
+
 class SentinelConnection(BaseModel):
     hosts: List[Host]
     master_name: str = "master-redis-ws"
 
+
 class StandaloneRedisConnection(BaseModel):
     redis_host: str
     redis_port: int
-    
+
 
 class RedisConnection(BaseModel):
     connection_type: str = "redis"

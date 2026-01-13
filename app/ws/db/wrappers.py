@@ -8,16 +8,22 @@ import os.path
 from isatools import isatab
 
 from app.ws.db import models
-from app.ws.db.models import TableModel, ValidationEntriesModel, BackupModel, IndexedUserModel, IndexedAssayModel
+from app.ws.db.models import (
+    BackupModel,
+    IndexedAssayModel,
+    IndexedUserModel,
+    TableModel,
+    ValidationEntriesModel,
+)
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus, UserRole, UserStatus
 from app.ws.db.utils import date_str_to_int, datetime_to_int
 
 logger = logging.getLogger(__file__)
 
-KB_FACTOR = 1024.0 ** 1
-MB_FACTOR = 1024.0 ** 2
-GB_FACTOR = 1024.0 ** 3
+KB_FACTOR = 1024.0**1
+MB_FACTOR = 1024.0**2
+GB_FACTOR = 1024.0**3
 
 
 def create_study_model_from_db_study(db_study: Study):
@@ -25,13 +31,17 @@ def create_study_model_from_db_study(db_study: Study):
         id=db_study.id,
         studyIdentifier=db_study.acc,
         revisionNumber=db_study.revision_number,
-        revisionDatetime=db_study.revision_datetime.isoformat() if db_study.revision_datetime else None,
-        obfuscationCode=db_study.obfuscationcode
+        revisionDatetime=db_study.revision_datetime.isoformat()
+        if db_study.revision_datetime
+        else None,
+        obfuscationCode=db_study.obfuscationcode,
     )
 
     m_study.studyStatus = StudyStatus(db_study.status).name
 
-    m_study.studySize = int(db_study.studysize)  # This value is different in DB and www.ebi.ac.uk
+    m_study.studySize = int(
+        db_study.studysize
+    )  # This value is different in DB and www.ebi.ac.uk
     if m_study.studySize > GB_FACTOR:
         size_in_gb = m_study.studySize / GB_FACTOR
         m_study.studyHumanReadable = "%.2f" % round(size_in_gb, 2) + "GiB"
@@ -54,10 +64,12 @@ def create_study_model_from_db_study(db_study: Study):
     if db_study.validations:
         try:
             db_study.validations = json.loads(db_study.validations)
-            validation_entries_model = models.ValidationEntriesModel.model_validate(db_study.validations)
+            validation_entries_model = models.ValidationEntriesModel.model_validate(
+                db_study.validations
+            )
             m_study.validations = validation_entries_model
         except Exception as e:
-            logger.warning(f'{e.args}')
+            logger.warning(f"{e.args}")
 
     m_study.users = [get_user_lite_model(x) for x in db_study.users]
 
@@ -73,6 +85,7 @@ def get_user_model(db_user: User):
     m_user.status = UserStatus(int(m_user.status)).name
     return m_user
 
+
 def get_user_lite_model(db_user: User):
     m_user = models.UserLiteModel()
     m_user.firstName = db_user.firstname
@@ -80,6 +93,7 @@ def get_user_lite_model(db_user: User):
     m_user.affiliation = db_user.affiliation
     m_user.address = db_user.address
     return m_user
+
 
 def update_users_for_indexing(m_study):
     new_indexed_user_list = []
@@ -102,35 +116,46 @@ def update_assays_for_indexing(m_study):
     m_study.assays.extend(new_indexed_assay_list)
 
 
-def update_study_model_from_directory(m_study: models.StudyModel, studies_root_path,
-                                      optimize_for_es_indexing: bool = False, include_maf_files: bool = False,
-                                      revalidate_study: bool = False, user_token_to_revalidate=None,
-                                      title_and_description_only: bool = False):
+def update_study_model_from_directory(
+    m_study: models.StudyModel,
+    studies_root_path,
+    optimize_for_es_indexing: bool = False,
+    include_maf_files: bool = False,
+    revalidate_study: bool = False,
+    user_token_to_revalidate=None,
+    title_and_description_only: bool = False,
+):
     path = os.path.join(studies_root_path, m_study.studyIdentifier)
     if not os.path.isdir(path):
         return
-    investigation_file = os.path.join(path, 'i_Investigation.txt')
+    investigation_file = os.path.join(path, "i_Investigation.txt")
 
     if not os.path.exists(investigation_file) or not os.path.isfile(investigation_file):
-        investigation_file = os.path.join(path, 'i_investigation.txt')
-        if not os.path.exists(investigation_file) or not os.path.isfile(investigation_file):
+        investigation_file = os.path.join(path, "i_investigation.txt")
+        if not os.path.exists(investigation_file) or not os.path.isfile(
+            investigation_file
+        ):
             return
     investigation = None
     with open(investigation_file, encoding="utf-8") as f:
         try:
             investigation = isatab.load(f, skip_load_tables=True)
         except Exception as e:
-            logger.warning(f'{investigation_file} file is not opened with utf-8 encoding')
+            logger.warning(
+                f"{investigation_file} file is not opened with utf-8 encoding"
+            )
     if investigation is None:
         with open(investigation_file, encoding="latin-1") as f:
             try:
                 investigation = isatab.load(f, skip_load_tables=True)
             except Exception as e:
-                logger.error(f'{investigation_file} file is not opened with latin-1 encoding')
-                message = f'{m_study.studyIdentifier} i_Investigation.txt file can not be loaded.'
-                
+                logger.error(
+                    f"{investigation_file} file is not opened with latin-1 encoding"
+                )
+                message = f"{m_study.studyIdentifier} i_Investigation.txt file can not be loaded."
+
     if not investigation:
-        logger.error(f'{investigation_file} is not valid.')
+        logger.error(f"{investigation_file} is not valid.")
 
     if investigation:
         studies = investigation.studies
@@ -143,7 +168,9 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
             if title_and_description_only:
                 return
             fill_assays(m_study, investigation, path, include_maf_files)
-            fill_sample_table(m_study, path)  # required for fill organism, later remove from model
+            fill_sample_table(
+                m_study, path
+            )  # required for fill organism, later remove from model
             fill_organism(m_study)
             # fill_backups(m_study, path)
 
@@ -154,10 +181,13 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
                 try:
                     fill_contacts(m_study, investigation)
                 except Exception as ex:
-                    logger.error(f'{m_study.studyIdentifier} contacts are not parsed successfully!')
+                    logger.error(
+                        f"{m_study.studyIdentifier} contacts are not parsed successfully!"
+                    )
             else:
-
-                m_study.sampleTable = TableModel() # delete sample table data from model for indexing.
+                m_study.sampleTable = (
+                    TableModel()
+                )  # delete sample table data from model for indexing.
                 m_study.contacts = []
                 m_study.studyLocation = ""
                 m_study.protocols = []
@@ -170,17 +200,43 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
 def fill_derived_data(m_study: models.StudyModel):
     data = models.StudyDerivedData()
     m_study.derivedData = data
-    data.organismNames = "::".join(set(organism.organismName for organism in m_study.organism if organism and organism.organismName)) if m_study.organism else ''
-    data.organismParts = "::".join(set(organism.organismPart for organism in m_study.organism if organism and organism.organismPart)) if m_study.organism else ''
-    data.country = m_study.users[0].address if m_study.users and m_study.users[0] else ""
-    submission_date = datetime.datetime.fromtimestamp(m_study.studySubmissionDate / 1000)
+    data.organismNames = (
+        "::".join(
+            set(
+                organism.organismName
+                for organism in m_study.organism
+                if organism and organism.organismName
+            )
+        )
+        if m_study.organism
+        else ""
+    )
+    data.organismParts = (
+        "::".join(
+            set(
+                organism.organismPart
+                for organism in m_study.organism
+                if organism and organism.organismPart
+            )
+        )
+        if m_study.organism
+        else ""
+    )
+    data.country = (
+        m_study.users[0].address if m_study.users and m_study.users[0] else ""
+    )
+    submission_date = datetime.datetime.fromtimestamp(
+        m_study.studySubmissionDate / 1000
+    )
     data.submissionMonth = submission_date.strftime("%Y-%m")
     data.submissionYear = submission_date.year
-    release_date = datetime.datetime.fromtimestamp(m_study.studyPublicReleaseDate / 1000)
+    release_date = datetime.datetime.fromtimestamp(
+        m_study.studyPublicReleaseDate / 1000
+    )
     data.releaseMonth = release_date.strftime("%Y-%m")
     data.releaseYear = release_date.year
-    
-    
+
+
 def fill_backups(m_study, path):
     backup_path = os.path.join(path, "audit")
     os.makedirs(backup_path, exist_ok=True)
@@ -194,7 +250,11 @@ def fill_backups(m_study, path):
             id = id + 1
             backup_model.folderPath = directory
             try:
-                timestamp = int(datetime.datetime.strptime(directory_name, "%Y%m%d%H%M%S").strftime("%s"))
+                timestamp = int(
+                    datetime.datetime.strptime(directory_name, "%Y%m%d%H%M%S").strftime(
+                        "%s"
+                    )
+                )
                 backup_model.backupTimeStamp = timestamp
             except:
                 pass
@@ -250,8 +310,8 @@ def fill_organism(m_study):
                     model.organismName = data[organism_index]
                 if organism_part_index >= 0:
                     model.organismPart = data[organism_part_index]
-                ind = model.organismName if model.organismName else ''
-                ind += model.organismPart if model.organismPart else ''
+                ind = model.organismName if model.organismName else ""
+                ind += model.organismPart if model.organismPart else ""
                 if ind not in organism_dic and ind:
                     organism_dic[ind] = model
                     m_study.organism.append(model)
@@ -297,7 +357,7 @@ def fill_assays(m_study, investigation, path, include_maf_files):
     if not investigation.studies:
         return
     study = investigation.studies[0]
-    
+
     if study.assays:
         assays = study.assays
         index = 0
@@ -307,55 +367,67 @@ def fill_assays(m_study, investigation, path, include_maf_files):
                 index = index + 1
                 model.assayNumber = index
                 model.fileName = item.filename
-                
-                
-                technology = item.technology_type.term 
+
+                technology = item.technology_type.term
                 model.technology = remove_ontology(technology)
                 model.measurement = item.measurement_type.term
                 platform = item.technology_platform
                 model.platform = remove_ontology(platform)
                 m_study.assays.append(model)
                 file = os.path.join(path, model.fileName)
-                if os.path.exists(file) and os.path.isfile(file):      
-                    
+                if os.path.exists(file) and os.path.isfile(file):
                     table = None
                     try:
                         with open(file, encoding="utf-8") as f:
                             table = isatab.load_table(f)
                     except Exception as ex:
-                        logger.warning(f'{file} is not parsed with utf-8 encoding')
+                        logger.warning(f"{file} is not parsed with utf-8 encoding")
 
                     if table is None:
-                        with open(file, encoding="latin-1", ) as f:
+                        with open(
+                            file,
+                            encoding="latin-1",
+                        ) as f:
                             try:
                                 table = isatab.load_table(f)
                             except Exception as ex:
-                                logger.error(f'{file} is not parsed with latin-1 encoding. {str(ex)}')
+                                logger.error(
+                                    f"{file} is not parsed with latin-1 encoding. {str(ex)}"
+                                )
                     if table is None:
                         continue
 
                     m_table = models.TableModel()
                     model.assayTable = m_table
-                    maf_file_index, valid_indices = set_table_fields(m_table.fields, table,
-                                                                    "metabolite assignment file")
+                    maf_file_index, valid_indices = set_table_fields(
+                        m_table.fields, table, "metabolite assignment file"
+                    )
 
                     for i in range(table.index.size):
                         try:
                             row = table.iloc[i].to_list()
-                            trimmed_row = [row[valid_ind] for valid_ind in valid_indices]
+                            trimmed_row = [
+                                row[valid_ind] for valid_ind in valid_indices
+                            ]
                             m_table.data.append(trimmed_row)
                             if maf_file_index >= 0:
                                 # Get MAF file name from first row
                                 if not model.metaboliteAssignment:
-                                    maf_file_path = os.path.join(path, row[maf_file_index])
+                                    maf_file_path = os.path.join(
+                                        path, row[maf_file_index]
+                                    )
                                     if os.path.exists(maf_file_path):
-                                        assignment_model = models.MetaboliteAssignmentModel()
+                                        assignment_model = (
+                                            models.MetaboliteAssignmentModel()
+                                        )
                                         model.metaboliteAssignment = assignment_model
                                         model.metaboliteAssignment.metaboliteAssignmentFileName = maf_file_path
                                         if include_maf_files:
                                             pass  # TODO fill metabolite alignment lines if needed (not needed now)
                         except Exception as ex:
-                            logger.error(f"{model.fileName} row {str(i + 1)} can not not parsed!")
+                            logger.error(
+                                f"{model.fileName} row {str(i + 1)} can not not parsed!"
+                            )
                     # end of method
             except Exception as ex:
                 logger.error(f"{model.fileName} can not be processed successfully!")
@@ -481,4 +553,6 @@ def fill_contacts(m_study, investigation):
 
                 m_study.contacts.append(model)
             except Exception as ex:
-                logger.error(f'{m_study.studyIdentifier} contact is not parsed successfully!')
+                logger.error(
+                    f"{m_study.studyIdentifier} contact is not parsed successfully!"
+                )

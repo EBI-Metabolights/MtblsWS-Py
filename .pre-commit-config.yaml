@@ -1,0 +1,76 @@
+default_language_version:
+  python: python3.13
+repos:
+- repo: https://github.com/abravalheri/validate-pyproject
+  rev: v0.24.1
+  hooks:
+  - id: validate-pyproject
+    name: 🔍 Validate pyproject.toml
+- repo: https://github.com/gitleaks/gitleaks
+  rev: v8.30.0
+  hooks:
+    - id: gitleaks
+      name: "🔒 Security · Detect hardcoded secrets"
+- repo: https://github.com/hukkin/mdformat
+  rev: 1.0.0
+  hooks:
+    - id: mdformat
+      name: "🟢  Markdown · Format markdown"
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+  hooks:
+  - id: check-added-large-files
+    name: 🟢  Check large files
+    args: [ "--maxkb=2000" ]
+  - id: check-toml
+    name: 🟢  Check toml files
+  - id: check-json
+    name: 🟢  Check json files
+    exclude: .vscode/.+
+  - id: pretty-format-json
+    name: 🟢  Format json files
+    exclude: .vscode/.+
+    args:
+    - "--autofix"
+    - "--indent=2"
+    - "--no-sort-keys"
+  - id: check-yaml
+    name: 🟢  Check yaml files
+    args:
+    - --unsafe
+  - id: end-of-file-fixer
+    name: 🟢 Check end of file character
+    exclude: resources/.+\.(js|css)$
+  - id: trailing-whitespace
+    name: 🟢  Check trailing whitespaces
+    exclude: (tests/data/.+|resources/.+\.(js|css))$
+- repo: https://github.com/astral-sh/uv-pre-commit
+  rev: 0.9.13
+  hooks:
+  - id: uv-lock
+    name: ✅ Check UV lock file
+- repo: https://github.com/lk16/detect-missing-init
+  rev: v0.1.6
+  hooks:
+  - id: detect-missing-init
+    name: 🔍 Detect missing __init__.py files
+    args: [ "--create", "--track", "--python-folders", "mtbls" ]
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.14.6
+  hooks:
+  - id: ruff-check
+    name: 🔍 Check Format with Ruff
+    args:
+    - --fix
+    - --exit-non-zero-on-fix
+    - --no-cache
+  - id: ruff-format
+    name: 🐍 python · Format with Ruff
+- repo: https://github.com/seddonym/import-linter.git
+  rev: "v2.7"
+  hooks:
+  - id: import-linter
+    name: 🪵 architecture and package structure check (lint-imports)
+    language: python
+    additional_dependencies: [ dependency_injector ]
+    args: [ "--no-cache" ]

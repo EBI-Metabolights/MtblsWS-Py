@@ -1,5 +1,6 @@
 import logging
 import sys
+
 from app.tasks.common_tasks.curation_tasks.study_revision import (
     check_not_started_study_revisions,
 )

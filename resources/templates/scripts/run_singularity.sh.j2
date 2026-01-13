@@ -40,7 +40,7 @@ BINDINGS+=("$SECRETS_PATH:$APP_ROOT/.secrets")
 BINDINGS+=("{{ LOGS_PATH }}:$APP_ROOT/logs")
 BINDINGS+=("{{ HOME_DIR }}:{{ HOME_DIR_MOUNT_PATH }}")
 
-{% for SHARED_PATH in SHARED_PATHS %} 
+{% for SHARED_PATH in SHARED_PATHS %}
 BINDINGS+=("{{ SHARED_PATH }}:{{ SHARED_PATH }}")
 {% endfor %}
 

@@ -4,7 +4,6 @@ import sys
 
 from app.utils import current_time
 
-
 UTC_SIMPLE_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 

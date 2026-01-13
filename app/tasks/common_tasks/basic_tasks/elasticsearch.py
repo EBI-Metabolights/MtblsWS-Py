@@ -1,11 +1,12 @@
 import json
 import os
+
+from app.tasks.worker import MetabolightsTask, celery, send_email
 from app.utils import MetabolightsDBException, current_time
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefMetabolite, Study, User
 from app.ws.db.types import StudyStatus
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
-from app.tasks.worker import MetabolightsTask, celery, send_email
 
 
 @celery.task(
@@ -168,18 +169,11 @@ def delete_compound_index(user_token, compound_id):
     base=MetabolightsTask,
     name="app.tasks.common_tasks.basic_tasks.elasticsearch.reindex_all_compounds",
 )
-def reindex_all_compounds(user_token, send_email_to_submitter=False):
+def reindex_all_compounds(email, send_email_to_submitter=False):
     try:
         compounds = []
 
         with DBManager.get_instance().session_maker() as db_session:
-            user = (
-                db_session.query(User.email).filter(User.apitoken == user_token).first()
-            )
-            if not user:
-                raise MetabolightsDBException("No user")
-            email = user.email
-
             metabolites = db_session.query(
                 RefMetabolite.acc, RefMetabolite.updated_date
             ).all()

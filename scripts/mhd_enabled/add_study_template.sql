@@ -1,0 +1,1 @@
+ALTER TABLE studies ADD study_template varchar(50) NOT NULL DEFAULT 'minimum';

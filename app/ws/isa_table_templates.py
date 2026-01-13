@@ -1,16 +1,19 @@
 import logging
 import os
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import Any, Literal, OrderedDict
-from isatools import model
+
 import httpx
-from isatools import model
 import pandas as pd
+from cachetools import TTLCache, cached
+from isatools import model
+
 from app.config import get_settings
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.isa_table_models import NumericValue, OntologyValue
+from app.ws.study_templates.models import InvestigationFileTemplate
 from app.ws.utils import (
     get_legacy_assay_mapping,
     get_maf_name_from_assay_name,
@@ -22,12 +25,35 @@ iac = IsaApiClient()
 
 
 MEASURMENT_TYPE_ONTOLOGY_TERMS = {
-    "metabolite profiling": ("OBI", "http://purl.obolibrary.org/obo/OBI_0000366"),
+    "metabolite profiling": (
+        "metabolite profiling assay",
+        "OBI",
+        "http://purl.obolibrary.org/obo/OBI_0000366",
+    ),
     "targeted metabolite profiling": (
+        "targeted metabolite profiling",
         "MSIO",
         "http://purl.obolibrary.org/obo/MSIO_0000100",
     ),
     "untargeted metabolite profiling": (
+        "untargeted metabolite profiling",
+        "MSIO",
+        "http://purl.obolibrary.org/obo/MSIO_0000101",
+    ),
+}
+ASSAY_TYPE_ONTOLOGY_TERMS = {
+    "LC-MS": (
+        "metabolite profiling assay",
+        "OBI",
+        "http://purl.obolibrary.org/obo/OBI_0000366",
+    ),
+    "targeted metabolite profiling": (
+        "targeted metabolite profiling",
+        "MSIO",
+        "http://purl.obolibrary.org/obo/MSIO_0000100",
+    ),
+    "untargeted metabolite profiling": (
+        "untargeted metabolite profiling",
         "MSIO",
         "http://purl.obolibrary.org/obo/MSIO_0000101",
     ),
@@ -132,14 +158,19 @@ def get_assay_table_header(
 
 def update_study_protocols(
     isa_study: model.Study,
-    protocols: list[dict[str, Any]],
+    protocol_definition: dict[str, Any],
 ):
     # Add new protocol
     assay_protocols = OrderedDict(
-        [(x.get("name"), x.get("parameters")) for x in protocols]
+        [
+            (k, v.get("parameters", []))
+            for k, v in protocol_definition.get("protocolDefinitions", {}).items()
+        ]
     )
     protocols = isa_study.protocols
-    study_protocols_map = OrderedDict([(x.name, x) for x in protocols])
+    study_protocols_map: OrderedDict[str, model.Protocol] = OrderedDict(
+        [(x.name, x) for x in protocols]
+    )
     for name, params in assay_protocols.items():
         assay_params = {x for x in params if x and x.strip()}
         if name in study_protocols_map:
@@ -290,11 +321,11 @@ def add_new_assay_sheet(
 
     if not measurment_type_name:
         measurment_type_name = DEFAULT_MEASUREMENT_TYPE
-    term_source, term_accession = MEASURMENT_TYPE_ONTOLOGY_TERMS.get(
+    term, term_source, term_accession = MEASURMENT_TYPE_ONTOLOGY_TERMS.get(
         measurment_type_name
     )
     measurement_type = model.OntologyAnnotation(
-        term=measurment_type_name,
+        term=term,
         term_source=update_ontology_sources(
             isa_inv, ontology_source_references, term_source
         ),
@@ -305,13 +336,21 @@ def add_new_assay_sheet(
         technology_platform=technology_platform,
         technology_type=technology_type,
         measurement_type=measurement_type,
+        comments=[
+            model.Comment(name="Assay Type Label", value=assay_type),
+            model.Comment(name="Assay Type", value=assay_type),
+            model.Comment(name="Assay Type Term Accession Number", value=""),
+            model.Comment(name="Assay Type Term Source REF", value=""),
+        ],
     )
 
     assays: list[model.Assay] = isa_study.assays
     assays.append(assay)
-    protocol_descriptions = get_protocol_descriptions(assay_type=assay_type)
-    protocols = protocol_descriptions.get("protocols", [])
-    update_study_protocols(isa_study, protocols)
+    protocol_description = get_protocol_descriptions(
+        assay_type=assay_type, template_version=template_version
+    )
+    # protocols = protocol_descriptions.get("protocols", [])
+    update_study_protocols(isa_study, protocol_description)
 
     logger.info("A copy of the previous files will be saved")
     assay.technology_platform = technology_platform
@@ -338,13 +377,17 @@ def get_valid_assay_file_name(file_name, study_path):
 
 def update_ontology_sources(isa_inv, ontology_source_references, ontology_source):
     obi_ontology_reference = ontology_source_references.get(ontology_source)
+    if not obi_ontology_reference:
+        obi_ontology_reference = model.OntologySource(
+            name=ontology_source, version="", description="", file=ontology_source
+        )
     item: model.OntologySource = isa_inv.get_ontology_source_reference(ontology_source)
-    obi_ontology = obi_ontology_reference
     if item is None:  # Add the ontology to the investigation
         ontologies = isa_inv.get_ontology_source_references()
         ontologies.append(obi_ontology_reference)
+        obi_ontology = obi_ontology_reference
     else:
-        obi_ontology = item
+        obi_ontology = obi_ontology_reference
         item.name = obi_ontology_reference.name
         item.version = obi_ontology_reference.version
         item.description = obi_ontology_reference.description
@@ -397,6 +440,8 @@ def create_maf_sheet(
     override_current: bool = False,
     sample_names: None | list[str] = None,
 ):
+    if not maf_file_name:
+        return False
     maf_file_path = os.path.join(study_path, maf_file_name)
     maf_template = get_maf_template(
         maf_type=main_technology_type, template_version=template_version
@@ -425,6 +470,7 @@ def is_empty_isa_table_sheet(isa_table_file_path: str):
     return empty
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_ontology_source_references() -> dict[str, model.OntologySource]:
     settings = get_settings()
     service_url = settings.external_dependencies.api.policy_engine_url
@@ -439,13 +485,13 @@ def get_ontology_source_references() -> dict[str, model.OntologySource]:
         response_json = response.json()
         if response_json:
             ontology_sources = {
-                x.get("sourceName", ""): model.OntologySource(
-                    name=x.get("sourceName", ""),
-                    file=x.get("sourceFile", ""),
-                    version=x.get("sourceVersion", ""),
-                    description=x.get("sourceDescription", ""),
+                k: model.OntologySource(
+                    name=v.get("sourceName", ""),
+                    file=v.get("sourceFile", ""),
+                    version=v.get("sourceVersion", ""),
+                    description=v.get("sourceDescription", ""),
                 )
-                for x in response_json.get("result", [])
+                for k, v in response_json.get("result", []).items()
             }
             return ontology_sources
     except Exception as ex:
@@ -453,6 +499,7 @@ def get_ontology_source_references() -> dict[str, model.OntologySource]:
     return {}
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_sample_template(
     template_name: str, template_version: None | str = None
 ) -> dict[str, Any]:
@@ -463,6 +510,7 @@ def get_sample_template(
     )
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_assay_template(
     assay_type: str, template_version: None | str = None
 ) -> dict[str, Any]:
@@ -473,6 +521,18 @@ def get_assay_template(
     )
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
+def get_investigation_template(
+    template_name: str, template_version: None | str = None
+) -> dict[str, Any]:
+    templates_base_path = "/v1/data/metabolights/validation/v2/templates"
+    context_path = f"{templates_base_path}/investigationFileTemplates/{template_name}"
+    return get_template_from_policy_service(
+        context_path=context_path, template_version=template_version
+    )
+
+
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_maf_template(
     maf_type: str, template_version: None | str = None
 ) -> dict[str, Any]:
@@ -485,14 +545,18 @@ def get_maf_template(
     )
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_protocol_descriptions(
-    assay_type: str, template_version: None | str = None
-) -> dict[str, Any]:
+    assay_type: str, template_version: str
+) -> None | dict[str, Any]:
     templates_base_path = "/v1/data/metabolights/validation/v2/templates"
-    context_path = f"{templates_base_path}/studyProtocolTemplates/{assay_type}"
-    return get_json_from_policy_service(context_path=context_path).get("result", {})
+    context_path = f"{templates_base_path}/protocolTemplates/{assay_type}"
+    result = get_json_from_policy_service(context_path=context_path).get("result", [])
+    descriptions = [x for x in result if x.get("version", "") == template_version]
+    return descriptions[0] if descriptions else None
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_template_from_policy_service(
     context_path: str, template_version: None | str = None
 ) -> dict[str, Any]:
@@ -508,6 +572,7 @@ def get_template_from_policy_service(
     return {}
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60))
 def get_json_from_policy_service(context_path: str) -> dict[str, Any]:
     settings = get_settings()
     service_url = settings.external_dependencies.api.policy_engine_url
@@ -520,6 +585,56 @@ def get_json_from_policy_service(context_path: str) -> dict[str, Any]:
     except Exception as ex:
         logger.error("%s", ex)
     return {}
+
+
+def serialize_investigation_value(value: str | list[str] | list[list[str]]):
+    if not value:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, list):
+        vals = value
+        if isinstance(value[0], list):
+            vals = []
+            for val in value:
+                vals.append(";".join([str(x) if x else "" for x in val]))
+
+        return "\t".join([str(x) if x else "" for x in vals])
+    return str(value)
+
+
+def create_investigation_file(
+    investigation_file_fullpath: str,
+    study_template_name: str = "minimum",
+    version: None | str = None,
+):
+    template_json = get_investigation_template(study_template_name, version)
+    template = InvestigationFileTemplate.model_validate(template_json, by_alias=True)
+    rows = []
+    for section in template.sections:
+        rows.append(f"{section.name}")
+        field_values = section.default_field_values
+        comment_values = section.default_comment_values
+        if section.fields:
+            rows.extend(
+                [
+                    f"{x}\t{serialize_investigation_value(field_values.get(x, ''))}"
+                    for x in section.fields
+                ]
+            )
+        if section.default_comments:
+            rows.extend(
+                [
+                    f"Comment[{x}]\t"
+                    f"{serialize_investigation_value(comment_values.get(x, ''))}"
+                    for x in section.default_comments
+                ]
+            )
+    file_path = Path(investigation_file_fullpath)
+
+    with file_path.open("w") as f:
+        f.write("\n".join(rows))
+    return True
 
 
 def create_file_from_template(

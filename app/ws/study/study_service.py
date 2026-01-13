@@ -1,18 +1,20 @@
 import glob
 import logging
 import os
-from sqlalchemy import or_
 from typing import List, Union
+
+from sqlalchemy import or_
+
 from app.config import get_settings
 from app.utils import (
     MetabolightsDBException,
-    MetabolightsFileOperationException,
     MetabolightsException,
+    MetabolightsFileOperationException,
 )
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyModel
-from app.ws.db.schemes import Study, User, Stableid, StudyTask
-from app.ws.db.types import UserStatus, UserRole, StudyStatus
+from app.ws.db.schemes import Stableid, Study, StudyTask, User
+from app.ws.db.types import StudyStatus, UserRole, UserStatus
 from app.ws.db.wrappers import (
     create_study_model_from_db_study,
     get_user_model,
@@ -141,17 +143,17 @@ class StudyService(object):
                 m_study,
                 self.study_settings.mounted_paths.study_metadata_files_root_path,
                 optimize_for_es_indexing=optimize_for_es_indexing,
-                revalidate_study=revalidate_study,
-                user_token_to_revalidate=user_token,
+                revalidate_study=False,
+                user_token_to_revalidate=None,
                 include_maf_files=include_maf_files,
             )
         except Exception as e:
             raise MetabolightsFileOperationException(
-                message=f"Error while reading study folder.", exception=e
+                message="Error while reading study folder.", exception=e
             )
 
         return m_study
-    
+
     def get_study_with_detailed_user(self, study_id) -> StudyModel:
         with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
@@ -162,7 +164,7 @@ class StudyService(object):
             m_study = create_study_model_from_db_study(study)
             m_study.users = [get_user_model(x) for x in study.users]
             return m_study
-        
+
     def get_public_study_from_db(self, study_id) -> StudyModel:
         with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)

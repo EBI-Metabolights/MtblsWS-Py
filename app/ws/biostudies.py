@@ -19,13 +19,15 @@
 import logging
 
 from flask import request
-from flask_restful import Resource, reqparse, abort
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 
-from app.ws.db_connection import biostudies_accession, biostudies_acc_to_mtbls
+from app.utils import metabolights_exception_handler
+from app.ws.auth.permissions import validate_submission_update, validate_submission_view
+from app.ws.db_connection import biostudies_acc_to_mtbls, biostudies_accession
 from app.ws.mtblsWSclient import WsClient
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 wsc = WsClient()
 
 
@@ -39,7 +41,7 @@ class BioStudies(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user-token",
@@ -47,40 +49,23 @@ class BioStudies(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
 
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
-
-        status, data = biostudies_accession(study_id, None, method='query')
+        _, data = biostudies_accession(study_id, None, method="query")
 
         return {"BioStudies": data[0]}
 
@@ -93,7 +78,7 @@ class BioStudies(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "biostudies_acc",
@@ -110,46 +95,28 @@ class BioStudies(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
-
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        study_id = study_id.upper()
-
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
         # query validation
-        biostudies_acc = request.args.get('biostudies_acc')
+        biostudies_acc = request.args.get("biostudies_acc")
 
         if biostudies_acc is None:
             abort(404)
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
-        status, data = biostudies_accession(study_id, biostudies_acc, method='add')
+        _, data = biostudies_accession(study_id, biostudies_acc, method="add")
 
         return {"BioStudies": data[0]}
 
@@ -162,7 +129,7 @@ class BioStudies(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "user-token",
@@ -170,40 +137,23 @@ class BioStudies(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
 
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
-
-        status, data = biostudies_accession(study_id, None, method='delete')
+        status, data = biostudies_accession(study_id, None, method="delete")
 
         return {"BioStudies": data[0]}
 
@@ -227,41 +177,27 @@ class BioStudiesFromMTBLS(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
+            {"code": 200, "message": "OK."},
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
     def get(self):
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
 
-        # param validation
-        
-        biostudies_acc = request.args.get('biostudies_acc')
+        biostudies_acc = request.args.get("biostudies_acc")
         if biostudies_acc is None:
             abort(404)
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
 
         study_id = biostudies_acc_to_mtbls(biostudies_acc)
         if not study_id:
             abort(403, message=f"No study id for {biostudies_acc}")
-        study_id = study_id[0]
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
 
         return {"BioStudies": study_id}

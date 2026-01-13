@@ -21,19 +21,23 @@ import logging
 import os
 
 import pandas as pd
-
 from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 
 from app.utils import metabolights_exception_handler
+from app.ws.auth.permissions import (
+    public_endpoint,
+    raise_deprecation_error,
+    validate_submission_update,
+    validate_user_has_curator_role,
+)
 from app.ws.isa_table_templates import create_maf_sheet
 from app.ws.mtblsWSclient import WsClient
 from app.ws.report_builders.combined_maf_builder import CombinedMafBuilder
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_service import StudyService
-from app.ws.study.user_service import UserService
-from app.ws.utils import get_maf_name_from_assay_name, read_tsv
+from app.ws.utils import read_tsv
 
 logger = logging.getLogger("wslog")
 # MetaboLights (Java-Based) WebService client
@@ -93,7 +97,9 @@ class MtblsMAFSearch(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, query_type):
+        public_endpoint(request)
         # param validation
         if query_type is None:
             abort(404)
@@ -114,11 +120,11 @@ class MetaboliteAnnotationFile(Resource):
         summary="Read, and add missing samples for a MAF",
         nickname="Get MAF for a given MTBLS Assay",
         notes="""Create or update a Metabolite Annotation File for an assay.
-<pre><code> 
-{  
-  "data": [ 
+<pre><code>
+{
+  "data": [
     { "assay_file_name": "a_some_assay_file.txt" },
-    { "assay_file_name": "a_some_assay_file-1.txt" } 
+    { "assay_file_name": "a_some_assay_file-1.txt" }
   ]
 }
 </code></pre>""",
@@ -170,14 +176,11 @@ class MetaboliteAnnotationFile(Resource):
     )
     @metabolights_exception_handler
     def post(self, study_id):
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+
         data_dict = json.loads(request.data.decode("utf-8"))
         assay_files = data_dict.get("data", [])
-        # User authentication
-        user_token = request.headers.get("user_token", None)
-
-        # param validation
-        if not study_id or not user_token:
-            abort(417)
 
         # param validation
         if not assay_files:
@@ -200,8 +203,6 @@ class MetaboliteAnnotationFile(Resource):
                     assay_file_names.append(file_name)
         if invalid_assay_files:
             abort(417, message="invalid assay files: " + ", ".join(invalid_assay_files))
-
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
         study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
         logger.info("MAF: Getting ISA-JSON Study %s", study_id)
@@ -255,10 +256,10 @@ class MetaboliteAnnotationFile(Resource):
                         if sample not in maf_df.columns:
                             maf_df[sample] = ""
                     updated_maf_files.append(maf_file)
-            if not valid:
+            if os.path.exists(maf_file_path) and not valid:
                 success = create_maf_sheet(
                     study_path=study_location,
-                    maf_file_name=annotation_file_name,
+                    maf_file_name=maf_file,
                     main_technology_type=main_technology_type,
                     template_version=study.template_version,
                     sample_names=sample_names,
@@ -274,31 +275,18 @@ class MetaboliteAnnotationFile(Resource):
             "failed_maf_files": failed_maf_files,
             "invalid_maf_files": invalid_maf_files,
         }
-        # return
-        # if annotation_file_name != new_annotation_file_name:
-        #     assay_df['Metabolite Assignment File'] = new_annotation_file_name
-        #     write_tsv(assay_df, full_assay_file_name)
-        #     annotation_file_name = new_annotation_file_name
-
-        # if maf_df.empty:
-        #     abort(406, message="MAF file could not be created or updated")
-
-        # maf_feedback = maf_feedback + ". New row(s):" + str(new_column_counter) + " for assay file " + \
-        #                 annotation_file_name
-
-        # return {"success": "Failed"}
 
 
 class CombineMetaboliteAnnotationFiles(Resource):
     @swagger.operation(
         summary="[Deprecated] Combine MAFs for a list of studies",
         nickname="Combine MAF files",
-        notes="""Combine MAF files for a given list of studies, by analytical method. If a study contains assays with 
-        more than one analytical method, it will endeavour to try and select only the MAFs that correspond to the chosen 
+        notes="""Combine MAF files for a given list of studies, by analytical method. If a study contains assays with
+        more than one analytical method, it will endeavour to try and select only the MAFs that correspond to the chosen
         analytical method.
-    <pre><code> 
-    {  
-      "data": [ 
+    <pre><code>
+    {
+      "data": [
         "MTBLS1",
         "MTBLS2",
         "MTBLS3"
@@ -345,6 +333,8 @@ class CombineMetaboliteAnnotationFiles(Resource):
         ],
     )
     def post(self):
+        raise_deprecation_error(request)
+        validate_user_has_curator_role(request)
         data_dict = json.loads(request.data.decode("utf-8"))
         studies_to_combine = data_dict["data"]
         method = data_dict["method"]
@@ -352,11 +342,6 @@ class CombineMetaboliteAnnotationFiles(Resource):
         if studies_to_combine is None:
             abort(417)
 
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_curator_role(user_token)
         combiBuilder = CombinedMafBuilder(
             studies_to_combine=studies_to_combine, method=method
         )
