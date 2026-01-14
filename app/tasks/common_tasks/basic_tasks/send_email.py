@@ -45,7 +45,9 @@ def send_test_email(email):
     base=MetabolightsTask,
     name="app.tasks.common_tasks.basic_tasks.send_email.send_email_for_new_provisional_study",
 )
-def send_email_for_new_provisional_study(user_token, study_id, folder_name):
+def send_email_for_new_provisional_study(
+    user_token, study_id, folder_name, study_title
+):
     flask_app = get_flask_app()
     with flask_app.app_context():
         relative_studies_root_path = get_private_ftp_relative_root_path()
@@ -74,6 +76,7 @@ def send_email_for_new_provisional_study(user_token, study_id, folder_name):
             user_email,
             submitters_email_list,
             submitter_fullname,
+            study_title,
         )
 
         return {

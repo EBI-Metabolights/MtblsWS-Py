@@ -111,7 +111,7 @@ from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.study.utils import get_study_metadata_path
-from app.ws.study_creation_model import StudyCreationRequest
+from app.ws.study_creation_model import RelatedDataset, StudyCreationRequest
 from app.ws.study_templates.models import StudyCategoryStr, TemplateSettings
 from app.ws.study_templates.utils import get_template_settings
 from app.ws.utils import add_ontology_to_investigation, log_request, read_tsv, write_tsv
@@ -920,16 +920,16 @@ class ProvisionalStudy(Resource):
                 last_study_datetime = study.submissiondate
         study_settings = get_study_settings()
         now = current_utc_time_without_timezone()
-        # if (
-        #     now - last_study_datetime
-        # ).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
-        #     logger.warning(
-        #         f"New study creation request from user {username} in {study_settings.min_study_creation_interval_in_mins} mins"
-        #     )
-        #     raise MetabolightsException(
-        #         message="Submitter can create only one study in five minutes.",
-        #         http_code=429,
-        #     )
+        last_study_creation_delta = (now - last_study_datetime).total_seconds()
+        threshold_seconds = study_settings.min_study_creation_interval_in_mins * 60
+        if last_study_creation_delta < threshold_seconds:
+            logger.warning(
+                f"New study creation request from user {username} in {study_settings.min_study_creation_interval_in_mins} mins"
+            )
+            raise MetabolightsException(
+                message="Submitter can create only one study in five minutes.",
+                http_code=429,
+            )
 
         if (
             len(provisional_studies) >= study_settings.max_study_in_provisional_status
@@ -955,28 +955,35 @@ class ProvisionalStudy(Resource):
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
             new_study_input = self.validate_study_input(template_settings, data_dict)
-            study_ids = {}
+            multiple_studies = len(new_study_input.selected_study_categories) > 1
+            study_titles = OrderedDict()
             for category in new_study_input.selected_study_categories:
+                category_definition = template_settings.study_categories.get(category)
+                study_title = new_study_input.title
+                if multiple_studies:
+                    study_title += f" ({category_definition.label})"
                 study_id = self.create_provisional_study(
                     user_token,
                     username,
                     new_study_input,
                     study_category=category,
                 )
-                study_ids[study_id] = category
-            study_titles = OrderedDict()
-            for study_id, category in study_ids.items():
-                category_definition = template_settings.study_categories.get(
-                    category, StudyCategoryStr.OTHER
-                )
+                study_titles[study_id] = study_title
+            study_id_set = set(study_titles.keys())
+            for study_id, study_title in study_titles.items():
+                related_study_ids = []
+                if multiple_studies:
+                    related_mtbls_study_ids = list(
+                        study_id_set.copy().discard(study_id)
+                    )
+                    related_mtbls_study_ids.sort()
 
                 self.update_initial_metadata_files(
                     new_study_input,
                     study_root_location,
-                    category,
-                    category_definition.label,
+                    study_title,
                     study_id,
-                    study_titles,
+                    related_study_ids,
                 )
             return {"studies": study_titles}
         except Exception as err:
@@ -988,10 +995,9 @@ class ProvisionalStudy(Resource):
         self,
         new_study_input: StudyCreationRequest,
         study_root_location: str,
-        category: str,
-        category_label: str,
+        study_title: str,
         study_id: str,
-        study_titles: dict[str, str],
+        related_mtbls_study_ids: list[str],
     ):
         study_location = os.path.join(study_root_location, study_id)
         isa_study, isa_inv, std_path = iac.get_isa_study(
@@ -999,6 +1005,7 @@ class ProvisionalStudy(Resource):
         )
         study: isa_model.Study = isa_study
         isa_inv: isa_model.Investigation = isa_inv
+
         study.design_descriptors.extend(
             [
                 isa_model.OntologyAnnotation(
@@ -1057,7 +1064,7 @@ class ProvisionalStudy(Resource):
         study.factors.extend(
             [
                 isa_model.StudyFactor(
-                    name=x.factor_name,
+                    name=self.first_character_uppercase(x.factor_name),
                     factor_type=isa_model.OntologyAnnotation(
                         term=x.factor_type.annotation_value or "",
                         term_source=isa_model.OntologySource(
@@ -1066,7 +1073,7 @@ class ProvisionalStudy(Resource):
                             version=x.factor_type.term_source.version or "",
                             description=x.factor_type.term_source.description or "",
                         )
-                        if x.factor_type
+                        if x.factor_type and x.factor_name
                         else None,
                         term_accession=x.factor_type.term_accession or "",
                     ),
@@ -1078,8 +1085,7 @@ class ProvisionalStudy(Resource):
                 for x in new_study_input.factors
             ]
         )
-        study.title = new_study_input.title + f" ({category_label})"
-        study_titles[study_id] = study.title
+        study.title = study_title
         study.description = new_study_input.description
         publication_status = new_study_input.publication_status or None
         new_publication = isa_model.Publication(
@@ -1143,11 +1149,16 @@ class ProvisionalStudy(Resource):
                 new_comments.append(comment)
         study.comments = new_comments
 
+        for related_study_id in related_mtbls_study_ids:
+            new_study_input.related_datasets.append(
+                RelatedDataset(repository="MetaboLights", accession=related_study_id)
+            )
+
         study_comments = OrderedDict(
             [
                 (
                     "Funder",
-                    "\t".join(
+                    ";".join(
                         [
                             x.funding_organization.annotation_value or ""
                             if x and x.funding_organization
@@ -1158,7 +1169,7 @@ class ProvisionalStudy(Resource):
                 ),
                 (
                     "Funder ROR ID",
-                    "\t".join(
+                    ";".join(
                         [
                             x.funding_organization.term_accession or ""
                             if x.funding_organization
@@ -1169,13 +1180,13 @@ class ProvisionalStudy(Resource):
                 ),
                 (
                     "Related Data Repository",
-                    "\t".join(
+                    ";".join(
                         [x.repository or "" for x in new_study_input.related_datasets]
                     ),
                 ),
                 (
                     "Related Data Accession",
-                    "\t".join(
+                    ";".join(
                         [x.accession or "" for x in new_study_input.related_datasets]
                     ),
                 ),
@@ -1217,7 +1228,7 @@ class ProvisionalStudy(Resource):
                                     name=unit_term_source_ref[0].value
                                     if unit_term_source_ref
                                     else "",
-                                    file="http://unitontology.org/uo.obo",
+                                    file="",
                                 ),
                                 term_accession=unit_accession[0].value
                                 if unit_accession
@@ -1240,12 +1251,35 @@ class ProvisionalStudy(Resource):
 
             write_tsv(sample_df, sample_file_path)
 
+    def first_character_uppercase(self, factor: str):
+        if not factor or not factor.strip():
+            return ""
+        terms = " ".join(factor.split("_"))
+        terms = [x.strip() for x in terms.split() if x and x.strip()]
+        new_terms = []
+        for idx, term in enumerate(terms):
+            sub_terms = [x.strip() for x in term.split("-") if x and x and x.strip()]
+            new_sub_terms = []
+            for idx_2, sub_term in enumerate(sub_terms):
+                if len(sub_term) > 1 and sub_term.isupper():
+                    new_sub_terms.append(sub_term)
+                elif idx == 0 and idx_2 == 0:
+                    if len(sub_term) > 1:
+                        new_sub_terms.append(sub_term[0].upper() + sub_term[1:])
+                    else:
+                        new_sub_terms.append(sub_term.upper())
+                else:
+                    new_sub_terms.append(sub_term.lower())
+            new_terms.append("-".join(new_sub_terms))
+        return " ".join(new_terms)
+
     def create_provisional_study(
         self,
         user_token: str,
         username: str,
         new_study_input: StudyCreationRequest,
         study_category: str,
+        study_title: str,
     ) -> dict:
         new_accession_number = True
         study_acc: Union[None, str] = None
@@ -1331,6 +1365,7 @@ class ProvisionalStudy(Resource):
                 "user_token": user_token,
                 "study_id": study_acc,
                 "folder_name": ftp_folder_name,
+                "study_title": study_title,
             }
             send_email_for_new_provisional_study.apply_async(kwargs=inputs)
             logger.info("Step 5: Sending FTP folder email for the study %s", study_acc)
