@@ -181,6 +181,7 @@ class EmailService(object):
         user_email,
         submitters_mail_addresses,
         submitter_fullname,
+        study_title,
     ):
         settings = get_settings()
         user_name = settings.ftp_server.private.connection.username
@@ -200,6 +201,7 @@ class EmailService(object):
             "ftp_folder": ftp_folder,
             "metabolights_website_url": metabolights_website_url,
             "metabolights_help_email": metabolights_help_email,
+            "study_title": study_title,
         }
 
         body = self.get_rendered_body("new_submission.html", content)
