@@ -75,8 +75,6 @@ class StudyCreationRequest(CamelCaseBaseModel):
     selected_sample_file_template: Optional[str] = None
     dataset_license_agreement: Optional[bool] = False
     dataset_policy_agreement: Optional[bool] = False
-    privacy_policy_agreement: Optional[bool] = False
-    email_communication_agreement: Optional[bool] = False
     publication_status: OntologyTerm = OntologyTerm(
         annotation_value="in preparation",
         term_source=TermSource(name="EFO"),

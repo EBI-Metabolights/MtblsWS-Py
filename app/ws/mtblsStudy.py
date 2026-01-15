@@ -1417,11 +1417,6 @@ class ProvisionalStudy(Resource):
                 message="Dataset license agreement is required to create a new study.",
                 http_code=400,
             )
-        if not new_study_input.privacy_policy_agreement:
-            raise MetabolightsException(
-                message="Dataset privacy policy agreement is required to create a new study.",
-                http_code=400,
-            )
         if not new_study_input.selected_template_version:
             new_study_input.selected_template_version = (
                 template_settings.default_template_version
