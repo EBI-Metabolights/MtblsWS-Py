@@ -918,18 +918,20 @@ class ProvisionalStudy(Resource):
                 provisional_studies.append(study)
             if study.submissiondate.timestamp() > last_study_datetime.timestamp():
                 last_study_datetime = study.submissiondate
-        study_settings = get_study_settings()
-        now = current_utc_time_without_timezone()
-        last_study_creation_delta = (now - last_study_datetime).total_seconds()
-        threshold_seconds = study_settings.min_study_creation_interval_in_mins * 60
-        if last_study_creation_delta < threshold_seconds:
-            logger.warning(
-                f"New study creation request from user {username} in {study_settings.min_study_creation_interval_in_mins} mins"
-            )
-            raise MetabolightsException(
-                message="Submitter can create only one study in five minutes.",
-                http_code=429,
-            )
+
+        settings = get_settings()
+        study_settings = settings.study
+        # now = current_utc_time_without_timezone()
+        # last_study_creation_delta = (now - last_study_datetime).total_seconds()
+        # threshold_seconds = study_settings.min_study_creation_interval_in_mins * 60
+        # if last_study_creation_delta < threshold_seconds:
+        #     logger.warning(
+        #         f"New study creation request from user {username} in {study_settings.min_study_creation_interval_in_mins} mins"
+        #     )
+        #     raise MetabolightsException(
+        #         message="Submitter can create only one study in five minutes.",
+        #         http_code=429,
+        #     )
 
         if (
             len(provisional_studies) >= study_settings.max_study_in_provisional_status
@@ -987,9 +989,9 @@ class ProvisionalStudy(Resource):
             for study_id, study_title in study_titles.items():
                 related_study_ids = []
                 if multiple_studies:
-                    related_mtbls_study_ids = list(
-                        study_id_set.copy().discard(study_id)
-                    )
+                    related_studies = study_id_set.copy()
+                    related_studies.discard(study_id)
+                    related_mtbls_study_ids = list(related_studies)
                     related_mtbls_study_ids.sort()
                 category = study_categories.get(study_id)
                 self.update_initial_metadata_files(
@@ -1002,9 +1004,8 @@ class ProvisionalStudy(Resource):
                 )
             return {"studies": study_titles}
         except Exception as err:
-            for arg in err.args:
-                logger.error(arg)
-            abort(400)
+            logger.error(err)
+            abort(400, message=str(err))
 
     def update_initial_metadata_files(
         self,
@@ -1428,6 +1429,16 @@ class ProvisionalStudy(Resource):
         if not new_study_input.dataset_policy_agreement:
             raise MetabolightsException(
                 message="Dataset policy agreement is required to create a new study.",
+                http_code=400,
+            )
+        if not new_study_input.title:
+            raise MetabolightsException(
+                message="Dataset title is empty.",
+                http_code=400,
+            )
+        if not new_study_input.description:
+            raise MetabolightsException(
+                message="Dataset description is empty.",
                 http_code=400,
             )
         if not new_study_input.dataset_license_agreement:
