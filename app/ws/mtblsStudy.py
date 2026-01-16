@@ -957,18 +957,32 @@ class ProvisionalStudy(Resource):
             new_study_input = self.validate_study_input(template_settings, data_dict)
             multiple_studies = len(new_study_input.selected_study_categories) > 1
             study_titles = OrderedDict()
+            study_categories = OrderedDict()
+            default_template_version = template_settings.default_template_version
+            version_settings = template_settings.versions.get(
+                new_study_input.selected_template_version,
+            ) or template_settings.versions.get(default_template_version)
+
             for category in new_study_input.selected_study_categories:
                 category_definition = template_settings.study_categories.get(category)
                 study_title = new_study_input.title
                 if multiple_studies:
                     study_title += f" ({category_definition.label})"
+                mhd_model_version = None
+                if category in version_settings.active_mhd_profiles:
+                    profile = version_settings.active_mhd_profiles.get(category)
+                    mhd_model_version = profile.default_version
                 study_id = self.create_provisional_study(
                     user_token,
                     username,
                     new_study_input,
                     study_category=category,
+                    study_title=study_title,
+                    mhd_model_version=mhd_model_version,
                 )
                 study_titles[study_id] = study_title
+                study_categories[study_id] = category
+
             study_id_set = set(study_titles.keys())
             for study_id, study_title in study_titles.items():
                 related_study_ids = []
@@ -977,7 +991,7 @@ class ProvisionalStudy(Resource):
                         study_id_set.copy().discard(study_id)
                     )
                     related_mtbls_study_ids.sort()
-
+                category = study_categories.get(study_id)
                 self.update_initial_metadata_files(
                     new_study_input,
                     study_root_location,
@@ -1152,7 +1166,6 @@ class ProvisionalStudy(Resource):
 
         for ontology in ontologies:
             add_ontology_to_investigation(isa_inv, ontology, "", "", "")
-
         new_comments = []
         for comment in study.comments:
             if comment.name not in [
@@ -1218,40 +1231,43 @@ class ProvisionalStudy(Resource):
             for factor in study.factors:
                 suffix = len(sample_df.columns)
                 if factor.name not in sample_df.columns:
-                    format = [
+                    formats = [
                         x
                         for x in factor.comments
                         if x.name == "Study Factor Value Format"
                     ]
-                    format = format[0] if format else ""
-                    if format.lower() == "numeric":
+                    format = "Ontology"
+                    if formats and formats[0].value.lower() == "numeric":
                         format = "Numeric"
-                    else:
-                        format = "Ontology"
-                    unit_term = [x for x in factor.comments if x.name == "Unit Term"]
-                    unit_term_source_ref = [
-                        x for x in factor.comments if x.name == "Unit Term Source REF"
+
+                    unit_terms = [
+                        x for x in factor.comments if x.name == "Study Factor Unit"
                     ]
-                    unit_accession = [
+                    unit_term_source_ref = [
                         x
                         for x in factor.comments
-                        if x.name == "Unit Term Accession Number"
+                        if x.name == "Study Factor Unit Term Source REF"
+                    ]
+                    unit_accessions = [
+                        x
+                        for x in factor.comments
+                        if x.name == "Study Factor Unit Term Accession Number"
                     ]
                     numeric = False
                     default_unit = None
-                    if format and format[0].value == "Numeric":
+                    if format == "Numeric":
                         numeric = True
-                        if unit_term:
+                        if unit_terms:
                             default_unit = isa_model.OntologyAnnotation(
-                                term=unit_term[0].value or "" if unit_term else "",
+                                term=unit_terms[0].value or "" if unit_terms else "",
                                 term_source=isa_model.OntologySource(
-                                    name=unit_term_source_ref[0].value
+                                    name=unit_term_source_ref[0].value or ""
                                     if unit_term_source_ref
                                     else "",
                                     file="",
                                 ),
-                                term_accession=unit_accession[0].value
-                                if unit_accession
+                                term_accession=unit_accessions[0].value or ""
+                                if unit_accessions
                                 else "",
                             )
 
@@ -1300,6 +1316,7 @@ class ProvisionalStudy(Resource):
         new_study_input: StudyCreationRequest,
         study_category: str,
         study_title: str,
+        mhd_model_version: None | str,
     ) -> dict:
         new_accession_number = True
         study_acc: Union[None, str] = None
@@ -1315,6 +1332,7 @@ class ProvisionalStudy(Resource):
                 study_category_name=study_category,
                 sample_template_name=sample_template_name,
                 study_template_name=study_template_name,
+                mhd_model_version=mhd_model_version,
             )
             # study = StudyService.get_instance().get_study_by_acc(study_id=study_acc)
 

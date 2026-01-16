@@ -156,14 +156,14 @@ class Study(Base):
     dataset_license = Column(String)
     revision_number = Column(BigInteger, nullable=False, default=0)
     revision_datetime = Column(DateTime, nullable=True)
-    sample_type = Column(String, default="minimum")
+    sample_type = Column(String, default="minimum", server_default="mininum")
     data_policy_agreement = Column(BigInteger, nullable=False, default=0)
     study_category = Column(BigInteger, nullable=False, default=0)
     template_version = Column(String(50), nullable=False, default="2.0")
     mhd_accession = Column(String(50))
     mhd_model_version = Column(String(50))
     created_at = Column(DateTime, nullable=True)
-    study_template = Column(String, default="minimum")
+    study_template = Column(String, default="minimum", server_default="mininum")
     users = relationship("User", secondary="study_user", back_populates="studies")
 
 
