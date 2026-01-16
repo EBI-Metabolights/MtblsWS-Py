@@ -2,7 +2,7 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Any, Literal, OrderedDict
+from typing import Any, Literal, Optional, OrderedDict
 
 import httpx
 import pandas as pd
@@ -13,7 +13,10 @@ from app.config import get_settings
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.isa_table_models import NumericValue, OntologyValue
-from app.ws.study_templates.models import InvestigationFileTemplate
+from app.ws.study_templates.models import (
+    InvestigationFileTemplate,
+    OntologyTerm,
+)
 from app.ws.utils import (
     get_legacy_assay_mapping,
     get_maf_name_from_assay_name,
@@ -22,43 +25,6 @@ from app.ws.utils import (
 
 logger = logging.getLogger(__name__)
 iac = IsaApiClient()
-
-
-MEASURMENT_TYPE_ONTOLOGY_TERMS = {
-    "metabolite profiling": (
-        "metabolite profiling assay",
-        "OBI",
-        "http://purl.obolibrary.org/obo/OBI_0000366",
-    ),
-    "targeted metabolite profiling": (
-        "targeted metabolite profiling",
-        "MSIO",
-        "http://purl.obolibrary.org/obo/MSIO_0000100",
-    ),
-    "untargeted metabolite profiling": (
-        "untargeted metabolite profiling",
-        "MSIO",
-        "http://purl.obolibrary.org/obo/MSIO_0000101",
-    ),
-}
-ASSAY_TYPE_ONTOLOGY_TERMS = {
-    "LC-MS": (
-        "metabolite profiling assay",
-        "OBI",
-        "http://purl.obolibrary.org/obo/OBI_0000366",
-    ),
-    "targeted metabolite profiling": (
-        "targeted metabolite profiling",
-        "MSIO",
-        "http://purl.obolibrary.org/obo/MSIO_0000100",
-    ),
-    "untargeted metabolite profiling": (
-        "untargeted metabolite profiling",
-        "MSIO",
-        "http://purl.obolibrary.org/obo/MSIO_0000101",
-    ),
-}
-DEFAULT_MEASUREMENT_TYPE = "metabolite profiling"
 
 TECHNOLOGY_TYPE_ONTOLOGY_TERMS = {
     "MS": (
@@ -246,6 +212,7 @@ def add_new_assay_sheet(
     assay_type: str,
     polarity,
     column_type,
+    measurement_type: Optional[OntologyTerm] = None,
     default_column_values: None | dict[str, str | OntologyValue | NumericValue] = None,
     assay_file_name: None | str = None,
     maf_file_name: None | str = None,
@@ -255,10 +222,16 @@ def add_new_assay_sheet(
         "untargeted metabolite profiling",
         "targeted metabolite profiling",
     ] = "metabolite profiling",
+    additional_assay_comments: Optional[dict[str, str]] = None,
 ):
     study_settings = get_study_settings()
     study_metadata_location = os.path.join(
         study_settings.mounted_paths.study_metadata_files_root_path, study_id
+    )
+    measurement_type = measurement_type or OntologyTerm(
+        term="metabolite profiling assay",
+        term_source_ref="OBI",
+        term_accession_number="http://purl.obolibrary.org/obo/OBI_0000366",
     )
     measurement_type_label = (
         measurment_type_name.lower().replace("assay", "").strip().replace(" ", "_")
@@ -305,7 +278,8 @@ def add_new_assay_sheet(
         main_technology_type=main_technology_type,
         template_version=template_version,
     )
-
+    # template_settings = get_template_settings()
+    # version_settings = template_settings.versions.get(template_version)
     ontology_source_references = get_ontology_source_references()
 
     term, term_source, term_accession = TECHNOLOGY_TYPE_ONTOLOGY_TERMS.get(
@@ -318,31 +292,20 @@ def add_new_assay_sheet(
         ),
         term_accession=term_accession,
     )
-
-    if not measurment_type_name:
-        measurment_type_name = DEFAULT_MEASUREMENT_TYPE
-    term, term_source, term_accession = MEASURMENT_TYPE_ONTOLOGY_TERMS.get(
-        measurment_type_name
-    )
-    measurement_type = model.OntologyAnnotation(
-        term=term,
+    measurement_type_ontology = model.OntologyAnnotation(
+        term=measurement_type.term,
         term_source=update_ontology_sources(
-            isa_inv, ontology_source_references, term_source
+            isa_inv, ontology_source_references, measurement_type.term_source_ref
         ),
-        term_accession=term_accession,
+        term_accession=measurement_type.term_accession_number,
     )
     assay = model.Assay(
         filename=assay_file_name,
         technology_platform=technology_platform,
         technology_type=technology_type,
-        measurement_type=measurement_type,
-        comments=[
-            model.Comment(name="Assay Type Label", value=assay_type),
-            model.Comment(name="Assay Type", value=assay_type),
-            model.Comment(name="Assay Type Term Accession Number", value=""),
-            model.Comment(name="Assay Type Term Source REF", value=""),
-        ],
+        measurement_type=measurement_type_ontology,
     )
+    assay.comments.extend(additional_assay_comments)
 
     assays: list[model.Assay] = isa_study.assays
     assays.append(assay)
@@ -405,11 +368,12 @@ def create_assay_sheet(
     template_version: None | str = None,
     override_current: bool = False,
 ) -> str:
+    if not default_column_values:
+        default_column_values = {}
     assay_file_path = os.path.join(study_path, assay_file_name)
     override_file = True
     if not override_current:
         override_file = is_empty_isa_table_sheet(assay_file_path)
-
     if override_file:
         assay_template = get_assay_template(
             assay_type=assay_type, template_version=template_version

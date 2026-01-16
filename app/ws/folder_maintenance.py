@@ -2285,6 +2285,7 @@ class StudyFolderMaintenanceTask(object):
             mhd_accession=self.mhd_accession,
             mhd_model_version=self.mhd_model_version,
             template_version=self.template_version,
+            study_template=self.study_template,
             created_at=self.created_at,
         )
         if updated_comments:

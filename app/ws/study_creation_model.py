@@ -88,3 +88,27 @@ class StudyCreationRequest(CamelCaseBaseModel):
     contacts: Annotated[List[Contact], Field()] = []
     design_descriptors: List[OntologyTerm] = []
     factors: Annotated[List[Factor], Field()] = []
+
+
+class DefaultValue(CamelCaseBaseModel):
+    term_accession: Optional[str] = None
+    annotation_value: Optional[str] = None
+    term_source: Optional[TermSource] = None
+    unit: Optional[OntologyTerm] = None
+
+
+class AssayFieldDefaultValue(CamelCaseBaseModel):
+    field_name: Annotated[str, Field()]
+    field_format: Annotated[str, Field()]
+    default_value: Annotated[DefaultValue, Field()]
+
+
+class AssayCreationRequest(CamelCaseBaseModel):
+    selected_assay_file_template: str
+    assay_identifier: Optional[str] = None
+    assay_result_file_type: Optional[str] = None
+    assay_result_file_name: Optional[str] = None
+    selected_measurement_type: Optional[str] = None
+    selected_omics_type: Optional[str] = None
+    design_descriptors: list[OntologyTerm] = []
+    assay_file_default_values: list[AssayFieldDefaultValue] = []

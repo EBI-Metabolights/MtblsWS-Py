@@ -18,11 +18,12 @@
 
 import json
 import logging
-from typing import Dict, Set, Tuple
+from typing import Dict, OrderedDict, Set, Tuple
 
 from flask import request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
+from isatools import model
 from isatools.model import (
     Assay,
     OntologyAnnotation,
@@ -31,8 +32,9 @@ from isatools.model import (
     Study,
 )
 
-from app.utils import metabolights_exception_handler
+from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.auth.permissions import validate_submission_update, validate_submission_view
+from app.ws.db import schemes as db_model
 from app.ws.db.types import UserRole
 from app.ws.isa_table_templates import (
     add_new_assay_sheet,
@@ -45,6 +47,14 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.study.isa_table_models import NumericValue, OntologyValue
 from app.ws.study.study_service import StudyService
 from app.ws.study.utils import get_study_metadata_path
+from app.ws.study_creation_model import AssayCreationRequest
+from app.ws.study_templates.models import (
+    OntologyTerm,
+    PredefinedValueConfiguration,
+    TemplateConfiguration,
+    TemplateSettings,
+)
+from app.ws.study_templates.utils import get_template_settings
 from app.ws.utils import (
     get_maf_name_from_assay_name,
     log_request,
@@ -271,6 +281,352 @@ class StudyAssayDelete(Resource):
 
         return {"success": "The assay was removed from study " + study_id}
 
+
+class AssayFile(Resource):
+    @swagger.operation(
+        summary="Add a new assay file",
+        notes="Add a new assay to a study<pre><code>",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string",
+            },
+            {
+                "name": "user-token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            },
+            {
+                "name": "assay",
+                "description": "Assay definition",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False,
+            },
+        ],
+    )
+    @metabolights_exception_handler
+    def post(self, study_id):
+        log_request(request)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+
+        # settings = get_study_settings()
+        # study_root_location = settings.mounted_paths.study_metadata_files_root_path
+        # study_location = os.path.join(study_root_location, study_id)
+        template_settings = get_template_settings()
+        study: db_model.Study = StudyService.get_instance().get_study_by_acc(study_id)
+        version_settings = template_settings.versions.get(study.template_version)
+
+        try:
+            data_dict = json.loads(request.data.decode("utf-8"))
+            new_assay_input = self.validate_assay_input(
+                data_dict, template_settings, version_settings
+            )
+            selected_assay_type = new_assay_input.selected_assay_file_template
+            selected_default_values = {
+                "Parameter Value[Scan polarity]": None,
+                "Parameter Value[Column type]": None,
+            }
+            for default_value in new_assay_input.assay_file_default_values:
+                column_name = f"Parameter Value[{default_value.field_name}]"
+                if column_name in selected_default_values:
+                    selected_default_values[column_name] = (
+                        default_value.default_value.annotation_value or None
+                        if default_value.default_value
+                        else None
+                    )
+
+            polarity = selected_default_values.get("Parameter Value[Scan polarity]", "")
+
+            if polarity:
+                if "pos" in polarity and "neg" not in polarity:
+                    polarity = "positive"
+                elif "neg" in polarity and "pos" not in polarity:
+                    polarity = "negative"
+                elif "alt" in polarity or ("neg" in polarity and "pos" in polarity):
+                    polarity = "alternating"
+
+            column_type = (
+                selected_default_values.get("Parameter Value[Column type]", "") or ""
+            )
+            measurment_type_name = "untargeted metabolite profiling"
+            if new_assay_input.selected_measurement_type == "targetted":
+                measurment_type_name = "targeted metabolite profiling"
+
+            column_default_values = {}
+
+            default_value_comments: dict[str, dict[str, str]] = OrderedDict()
+            default_values = OrderedDict(
+                [
+                    ("Assay Field Name", []),
+                    ("Assay Field Default Value", []),
+                    ("Assay Field Default Unit", []),
+                    ("Assay Field Default Value Source REF", []),
+                    ("Assay Field Default Value Accession Number", []),
+                ]
+            )
+
+            for field in new_assay_input.assay_file_default_values:
+                column_name = field.field_name
+                default_value_comments[column_name] = {
+                    "Assay Field Name": column_name,
+                    "Assay Field Default Value": field.default_value.annotation_value,
+                    "Assay Field Default Unit": "",
+                    "Assay Field Default Value Source REF": "",
+                    "Assay Field Default Value Accession Number": "",
+                }
+                if field.default_value and field.default_value.unit:
+                    unit = field.default_value.unit
+                    default_value_comments[column_name].update(
+                        {
+                            "Assay Field Default Unit": unit.annotation_value or "",
+                            "Assay Field Default Value Source REF": unit.term_source.name
+                            or ""
+                            if unit.term_source
+                            else "",
+                            "Assay Field Default Value Accession Number": unit.term_accession
+                            or "",
+                        }
+                    )
+                elif field.default_value:
+                    term = field.default_value
+                    default_value_comments[column_name].update(
+                        {
+                            "Assay Field Default Value Source REF": term.term_source.name
+                            or ""
+                            if term.term_source
+                            else "",
+                            "Assay Field Default Value Accession Number": term.term_accession
+                            or "",
+                        }
+                    )
+                for comment_name, v in default_value_comments[column_name].items():
+                    default_values.get(comment_name).append(v)
+
+                if field.field_format and field.field_format.lower() == "numeric":
+                    column_default_values[column_name] = NumericValue(
+                        value=field.default_value.annotation_value
+                        if field.default_value and field.default_value.annotation_value
+                        else "",
+                        unit=OntologyValue(
+                            term=field.default_value.unit.annotation_value or "",
+                            term_source_ref=field.default_value.unit.term_source.name
+                            or "",
+                            term_accession_number=field.default_value.unit.term_accession
+                            or "",
+                        )
+                        if field.default_value and field.default_value.unit
+                        else OntologyValue(
+                            term="", term_source_ref="", term_accession_number=""
+                        ),
+                    )
+                elif field.field_format and field.field_format.lower() == "text":
+                    column_default_values[column_name] = (
+                        field.default_value.annotation_value
+                        if field.default_value and field.default_value.annotation_value
+                        else ""
+                    )
+                else:
+                    column_default_values[column_name] = OntologyValue(
+                        term=field.default_value.annotation_value or ""
+                        if field.default_value and field.default_value.annotation_value
+                        else "",
+                        term_source_ref=field.default_value.term_source.name or ""
+                        if field.default_value and field.default_value.term_source
+                        else "",
+                        term_accession_number=field.default_value.term_accession or ""
+                        if field.default_value and field.default_value.term_accession
+                        else "",
+                    )
+
+            additional_assay_comments = self.create_assay_comments(
+                new_assay_input,
+                default_values,
+                template_settings,
+                version_settings,
+            )
+            column_type = column_type.lower().replace(" ", "-").strip()
+            default_measurement_type: PredefinedValueConfiguration = (
+                template_settings.measurement_types.get(
+                    version_settings.default_measurement_type
+                ).ontology_term
+            )
+            measurement_type: OntologyTerm = template_settings.omics_types.get(
+                new_assay_input.selected_omics_type or "", default_measurement_type
+            ).ontology_term
+
+            success, assay_file_name, maf_filename = add_new_assay_sheet(
+                study_id,
+                selected_assay_type,
+                polarity or "",
+                column_type or "",
+                measurement_type,
+                column_default_values,
+                template_version=study.template_version,
+                measurment_type_name=measurment_type_name,
+                additional_assay_comments=additional_assay_comments,
+            )
+            if success:
+                return {
+                    "assayFileName": assay_file_name,
+                    "resultFileName": maf_filename,
+                }
+            else:
+                abort(400, message="Process failed")
+        except Exception as e:
+            logger.error(f"Error while creating new study assay: {e}")
+            abort(400, message="Incorrect JSON provided")
+
+    def create_assay_comments(
+        self,
+        new_assay_input: AssayCreationRequest,
+        default_values: dict[str, dict[str, str]],
+        template_settings: TemplateSettings,
+        version_settings: TemplateConfiguration,
+    ):
+        default_omics_type: PredefinedValueConfiguration = (
+            template_settings.omics_types.get(
+                version_settings.default_omics_type
+            ).ontology_term
+        )
+        omics_type: OntologyTerm = template_settings.omics_types.get(
+            new_assay_input.selected_omics_type or "", default_omics_type
+        ).ontology_term
+        assay_type_ontology = version_settings.active_assay_file_templates.get(
+            new_assay_input.selected_assay_file_template
+        ).ontology_term
+        additional_assay_comments = [
+            model.Comment(
+                name="Assay Type Label",
+                value=new_assay_input.selected_assay_file_template,
+            ),
+            model.Comment(name="Assay Type", value=assay_type_ontology.term or ""),
+            model.Comment(
+                name="Assay Type Term Source REF",
+                value=assay_type_ontology.term_source_ref or "",
+            ),
+            model.Comment(
+                name="Assay Type Term Accession Number",
+                value=assay_type_ontology.term_accession_number or "",
+            ),
+            model.Comment(name="Omics Type", value=omics_type.term or ""),
+            model.Comment(
+                name="Omics Type Source REF",
+                value=omics_type.term_source_ref or "",
+            ),
+            model.Comment(
+                name="Omics Type Accession Number",
+                value=omics_type.term_accession_number or "",
+            ),
+        ]
+
+        for name, values in default_values.items():
+            additional_assay_comments.append(
+                model.Comment(name=name, value=";".join(values)),
+            )
+        desc_comments = OrderedDict(
+            OrderedDict(
+                [
+                    ("Assay Descriptor", []),
+                    ("Assay Descriptor Term Accession Number", []),
+                    ("Assay Descriptor Term Source REF", []),
+                    ("Assay Descriptor Category", []),
+                    ("Assay Descriptor Source", []),
+                ]
+            )
+        )
+        default_source = (
+            template_settings.descriptor_configuration.default_submitter_source
+        )
+        default_category = (
+            template_settings.descriptor_configuration.default_descriptor_category
+        )
+
+        for desc in new_assay_input.design_descriptors:
+            desc_comments["Assay Descriptor"].append(desc.annotation_value or "")
+            desc_comments["Assay Descriptor Term Accession Number"].append(
+                desc.term_accession or ""
+            )
+            desc_comments["Assay Descriptor Term Source REF"].append(
+                desc.term_source.name or "" if desc.term_source else ""
+            )
+            source = ""
+            category = ""
+            for comment in desc.comments:
+                if not source and comment.name == "Assay Descriptor Source":
+                    source = comment.value or ""
+                if not category and comment.name == "Assay Descriptor Category":
+                    category = comment.value or ""
+
+            source = source or default_source
+            category = category or default_category
+            desc_comments["Assay Descriptor Source"].append(source)
+            desc_comments["Assay Descriptor Category"].append(category)
+
+        for name, values in desc_comments.items():
+            additional_assay_comments.append(
+                model.Comment(name=name, value=";".join(values)),
+            )
+
+        return additional_assay_comments
+
+    def validate_assay_input(
+        self,
+        data_dict,
+        template_settings: TemplateSettings,
+        version_settings: TemplateConfiguration,
+    ) -> AssayCreationRequest:
+        new_study_input = AssayCreationRequest.model_validate(data_dict)
+
+        if not new_study_input.selected_assay_file_template:
+            raise MetabolightsException(
+                message="Assay file template is not selected.",
+                http_code=400,
+            )
+        if (
+            new_study_input.selected_assay_file_template
+            not in version_settings.active_assay_file_templates
+        ):
+            raise MetabolightsException(
+                message="Assay file template is not valid for this file template.",
+                http_code=400,
+            )
+        if (
+            new_study_input.selected_measurement_type
+            not in version_settings.active_measurement_types
+        ):
+            raise MetabolightsException(
+                message="Measurement type is not valid for this file template.",
+                http_code=400,
+            )
+        if (
+            new_study_input.selected_omics_type
+            not in version_settings.active_omics_types
+        ):
+            raise MetabolightsException(
+                message="Omics type is not valid for this file template.",
+                http_code=400,
+            )
+        if (
+            new_study_input.assay_result_file_type
+            not in version_settings.active_result_file_formats
+        ):
+            raise MetabolightsException(
+                message="Result file format is not valid for this file template.",
+                http_code=400,
+            )
+
+        return new_study_input
 
 class StudyAssay(Resource):
     @swagger.operation(

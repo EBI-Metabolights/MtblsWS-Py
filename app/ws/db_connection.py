@@ -153,7 +153,7 @@ query_provisional_study_ids_for_user = """
 insert_study_with_provisional_id = """
     insert into studies (id, obfuscationcode, releasedate, status, studysize, submissiondate,
     updatedate, validations, validation_status, reserved_submission_id, acc, study_category,
-    template_version, sample_type, study_template
+    template_version, sample_type, study_template, mhd_model_version
     )
     values (
         %(new_unique_id)s,
@@ -166,7 +166,8 @@ insert_study_with_provisional_id = """
         %(study_category)s,
         %(template_version)s,
         %(sample_template_name)s,
-        %(study_template_name)s
+        %(study_template_name)s,
+        %(mhd_model_version)s
         );
     insert into study_user(userid, studyid) values (%(userid)s, %(new_unique_id)s);
 """
@@ -1169,6 +1170,7 @@ def create_empty_study(
     study_template_name="minimum",
     study_id=None,
     obfuscationcode=None,
+    mhd_model_version=None,
 ):
     email = get_email(user_token)
     # val_email(email)
@@ -1218,6 +1220,7 @@ def create_empty_study(
             "sample_template_name": sample_template_name,
             "study_category": study_category,
             "study_template_name": study_template_name,
+            "mhd_model_version": mhd_model_version,
         }
         cursor.execute(insert_study_with_provisional_id, content)
         conn.commit()
