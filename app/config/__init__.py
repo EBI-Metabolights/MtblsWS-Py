@@ -19,6 +19,7 @@ from app.config.model.google import GoogleSettings
 from app.config.model.hpc_cluster import HpcClusterSettings
 from app.config.model.jira import JiraSettings
 from app.config.model.metaspace import MetaspaceSettings
+from app.config.model.mhd import MhdSettings
 from app.config.model.redis_cache import RedisSettings
 from app.config.model.report import ReportSettings
 from app.config.model.server import ServerSettings
@@ -53,6 +54,7 @@ class ApplicationSettings(ApplicationBaseSettings):
     redis_cache: RedisSettings
     celery: CelerySettings
     external_dependencies: ExternalDependenciesSettings
+    mhd: MhdSettings
 
 
 _application_settings: Union[None, ApplicationSettings] = None

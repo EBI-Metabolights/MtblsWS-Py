@@ -27,6 +27,7 @@ import shutil
 import time
 from typing import Dict, Tuple
 
+import httpx
 from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
@@ -56,12 +57,18 @@ from app.ws.auth.permissions import (
     validate_user_has_curator_role,
 )
 from app.ws.db import types
+from app.ws.db.dbmanager import DBManager
 from app.ws.db.permission_scopes import (
     StudyPermissionContext,
     StudyResource,
     StudyResourceDbScope,
 )
-from app.ws.db.types import CurationRequest, StudyRevisionStatus, UserRole
+from app.ws.db.schemes import Study
+from app.ws.db.types import (
+    CurationRequest,
+    StudyRevisionStatus,
+    UserRole,
+)
 from app.ws.db_connection import (
     reserve_mtbls_accession,
     update_curation_request,
@@ -82,6 +89,8 @@ from app.ws.study.comment_utils import update_license, update_mhd_comments
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 from app.ws.study.utils import get_study_metadata_path
+from app.ws.study_templates.models import TemplateSettings
+from app.ws.study_templates.utils import get_template_settings
 
 logger = logging.getLogger("wslog")
 
@@ -488,6 +497,35 @@ class StudyStatus(Resource):
         )
         user_token = context.user_api_token
         if study_id != updated_study_id:
+            template_settings: TemplateSettings = get_template_settings()
+            version_settings = template_settings.versions.get(context.template_version)
+            if not version_settings:
+                version_settings = template_settings.versions.get(
+                    template_settings.default_template_version
+                )
+
+            mhd_accession = context.mhd_accession
+            if (
+                context.study_category.name
+                in [x.name for x in version_settings.active_mhd_profiles]
+                and not context.mhd_accession
+                and not context.first_private_date
+            ):
+                mhd_accession = self.get_new_mhd_accession(updated_study_id)
+                if mhd_accession:
+                    self.update_mhd_accession_in_db(updated_study_id, mhd_accession)
+
+                comment_updated = False
+                for comment in isa_study.comments:
+                    comment.name == "MHD Accession"
+                    comment.value = mhd_accession or ""
+                    comment_updated = True
+                    break
+                if not comment_updated:
+                    isa_study.comments.append(
+                        model.Comment(name="MHD Accession", value=mhd_accession or "")
+                    )
+
             iac.write_isa_study(
                 isa_inv,
                 None,
@@ -587,6 +625,38 @@ class StudyStatus(Resource):
                 }
             )
             return response
+
+    def get_new_mhd_accession(self, study_id: str) -> str:
+        setting = get_settings().mhd
+        base_url = setting.mhd_webservice_base_url
+        url = f"{base_url}/identifiers"
+        api_key = setting.api_key
+        headers = {
+            "Content-Type": "application/json",
+            "x-dataset-repository-identifier": study_id or "",
+            "x-api-token": api_key or "",
+        }
+        try:
+            response = httpx.post(url, headers=headers)
+            return response.json().get("assignment", {}).get("accession")
+        except Exception as ex:
+            logger.exception(ex)
+            return None
+
+    def update_mhd_accession_in_db(self, study_id: str, accession: str):
+        db_session = DBManager.get_instance().session_maker()
+        try:
+            with db_session:
+                query = db_session.query(Study)
+                query_filter = query.filter(Study.reserved_accession == study_id)
+                db_param = query_filter.first()
+
+                db_param.mhd_accession = accession
+                db_session.commit()
+                db_session.refresh(db_param)
+        except Exception as ex:
+            db_session.rollback()
+            raise MetabolightsException(http_code=400, message="DB error", exception=ex)
 
     def get_validation_summary_result_files_from_history(
         self, study_id: str
