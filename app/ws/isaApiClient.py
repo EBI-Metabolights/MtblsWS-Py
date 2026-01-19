@@ -117,7 +117,7 @@ class IsaApiClient:
                 identifier = match.groups()[1]
                 if candidate in self.ASSAY_TYPES:
                     return candidate, parts[2] if identifier else None
-        return None
+        return "", None
 
     def get_isa_study(
         self,
