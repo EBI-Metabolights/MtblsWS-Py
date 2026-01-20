@@ -805,8 +805,13 @@ class StudyContacts(Resource):
                 isa_inv, new_contact = roles_to_contacts(isa_inv, new_contact)
                 new_contacts.append(new_contact)
                 for role in new_contact.roles:
-                    term_anno = role
-                    term_source = term_anno.term_source
+                    term_source = (
+                        role.term_source
+                        if role and role.term_source
+                        else mm_models.OntologySourceSchema(
+                            name="", version="", file="", description=""
+                        )
+                    )
                     add_ontology_to_investigation(
                         isa_inv,
                         term_source.name,
@@ -1159,7 +1164,13 @@ class StudyContacts(Resource):
             isa_inv, updated_contact = roles_to_contacts(isa_inv, updated_contact)
             for role in updated_contact.roles:
                 term_anno = role
-                term_source = term_anno.term_source
+                term_source = (
+                    term_anno.term_source
+                    if term_anno and term_anno.term_source
+                    else mm_models.OntologySourceSchema(
+                        name="", version="", file="", description=""
+                    )
+                )
                 add_ontology_to_investigation(
                     isa_inv,
                     term_source.name,
@@ -1969,7 +1980,13 @@ class StudyFactors(Resource):
 
             # Check that the ontology is referenced in the investigation
             factor_type = new_obj.factor_type
-            term_source = factor_type.term_source
+            term_source = (
+                factor_type.term_source
+                if factor_type and factor_type.term_source
+                else mm_models.OntologySourceSchema(
+                    name="", version="", file="", description=""
+                )
+            )
             add_ontology_to_investigation(
                 isa_inv,
                 term_source.name,
@@ -2334,7 +2351,13 @@ class StudyFactors(Resource):
 
                 # Check that the ontology is referenced in the investigation
                 factor_type = updated_factor.factor_type
-                term_source = factor_type.term_source
+                term_source = (
+                    factor_type.term_source
+                    if factor_type and factor_type.term_source
+                    else mm_models.OntologySourceSchema(
+                        name="", version="", file="", description=""
+                    )
+                )
                 add_ontology_to_investigation(
                     isa_inv,
                     term_source.name,
@@ -2509,7 +2532,13 @@ class StudyDescriptors(Resource):
                 abort(409, message=f"Descriptor name '{new_obj.term}' already exists.")
 
         # Check that the ontology is referenced in the investigation
-        term_source = new_obj.term_source
+        term_source = (
+            new_obj.term_source
+            if new_obj and new_obj.term_source
+            else mm_models.OntologySourceSchema(
+                name="", version="", file="", description=""
+            )
+        )
         if term_source:
             add_ontology_to_investigation(
                 isa_inv,
@@ -2867,7 +2896,13 @@ class StudyDescriptors(Resource):
             logger.info("A copy of the previous files will %s saved. " + save_msg_str)
 
         # Check that the ontology is referenced in the investigation
-        term_source = updated_descriptor.term_source
+        term_source = (
+            updated_descriptor.term_source
+            if updated_descriptor and updated_descriptor.term_source
+            else mm_models.OntologySourceSchema(
+                name="", version="", file="", description=""
+            )
+        )
         add_ontology_to_investigation(
             isa_inv,
             term_source.name,
@@ -3418,7 +3453,12 @@ class StudyPublications(Resource):
         if not found:
             abort(404)
         new_source_name = ""
-        if updated_publication and new_status:
+        if (
+            updated_publication
+            and updated_publication.status
+            and updated_publication.status.term_source
+            and new_status
+        ):
             new_source = updated_publication.status.term_source.name.lower()
         selected_ontology_source_ref = None
         if new_source_name and isa_inv.ontology_source_references:
