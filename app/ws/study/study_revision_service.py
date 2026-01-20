@@ -541,6 +541,20 @@ class StudyRevisionService:
                 folder_name=revision_folder_name,
                 stage=None,
             )
+            mhd_files_root_path = os.path.join(
+                maintenance_task.study_internal_files_path, "DATA_FILES"
+            )
+            for file in glob.glob(mhd_files_root_path + "/*.json", recursive=False):
+                file_path = Path(file)
+                if file_path.is_file() and (
+                    file_path.name.endswith(".mhd.json")
+                    or file_path.name.endswith(".announcement.json")
+                ):
+                    target_file = os.path.join(metadata_revisions_path, file_path.name)
+
+                    basename = os.path.basename(file)
+                    target_file = os.path.join(revisions_root_path, basename)
+                    shutil.copy2(file, target_file)
 
             # delete previous version files on PUBLIC_METADATA top folder
             search_pattern = os.path.join(revisions_root_path, "*")
