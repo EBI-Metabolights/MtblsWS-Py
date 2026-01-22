@@ -48,7 +48,7 @@ Elasticsearch==1.4.0
 Flask-Mail==0.9.1
 SQLAlchemy==1.4.35
 ftputil==5.0.4
-python-jose==3.3.0
+python-jose==3.4.0
 passlib==1.7.4
 celery[redis]
 rdkit==2023.3.3
