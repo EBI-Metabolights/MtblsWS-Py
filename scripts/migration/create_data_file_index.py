@@ -1,12 +1,12 @@
 import json
 import logging
-from app.tasks.datamover_tasks.basic_tasks.ftp_operations import index_study_data_files
 import os
+
 from app.config import get_settings
+from app.tasks.datamover_tasks.basic_tasks.ftp_operations import index_study_data_files
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study
 from app.ws.db.types import StudyRevisionStatus, StudyStatus
-
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 
@@ -15,8 +15,6 @@ logger = logging.getLogger("wslog")
 
 if __name__ == "__main__":
     user_token = get_settings().auth.service_account.api_token
-    # user = UserService.get_instance().get_db_user_by_user_token(user_token)
-
     studies = []
     with DBManager.get_instance().session_maker() as db_session:
         try:

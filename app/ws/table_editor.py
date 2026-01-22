@@ -16,47 +16,39 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import glob
 import json
 import logging
 import os
-from flask.json import jsonify
 
 import numpy as np
 import pandas as pd
 from flask import request
+from flask.json import jsonify
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
-from app.config import get_settings
 
+from app.config import get_settings
 from app.utils import (
     MetabolightsException,
     metabolights_exception_handler,
-    MetabolightsDBException,
 )
-from app.ws.auth.utils import (
-    get_permission_by_obfuscation_code,
-    get_permission_by_study_id,
-)
-from app.ws.db.dbmanager import DBManager
-from app.ws.db.models import StudyAccessPermission
+from app.ws.auth.permissions import validate_submission_update, validate_submission_view
+from app.ws.db.types import UserRole
 from app.ws.isa_table_templates import get_assay_table_header
-from app.ws.study import commons
 from app.ws.study.folder_utils import write_audit_files
-from app.ws.study.study_service import StudyService, identify_study_id
-from app.ws.study.user_service import UserService
+from app.ws.study.study_service import StudyService
+from app.ws.study.utils import get_study_metadata_path
 from app.ws.utils import (
     delete_column_from_tsv_file,
     get_table_header,
-    totuples,
-    validate_row,
     log_request,
     read_tsv,
-    write_tsv,
     read_tsv_with_filter,
+    totuples,
+    validate_row,
+    write_tsv,
 )
-from app.ws.db.schemes import Study
-from app.ws.db.types import StudyStatus
-import glob
 
 """
 MTBLS Table Columns manipulator
@@ -184,7 +176,12 @@ class SimpleColumns(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id, file_name):
+        result = validate_submission_update(request, user_required=True)
+        study_id = result.context.study_id
+
+        study_location = get_study_metadata_path(study_id)
         new_column_name = None
 
         new_column_position = None
@@ -200,38 +197,18 @@ class SimpleColumns(Resource):
             abort(404, message="Please provide valid name for the new column")
 
         # param validation
-        if study_id is None or file_name is None:
+        if file_name is None:
             abort(
                 404,
                 message="Please provide valid parameters for study identifier and file name",
             )
-        study_id = study_id.upper()
 
-        fname, ext = os.path.splitext(file_name)
+        _, ext = os.path.splitext(file_name)
         ext = ext.lower()
         if ext not in (".tsv", ".csv", ".txt"):
             abort(
                 400, message="The file " + file_name + " is not a valid TSV or CSV file"
             )
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = commons.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
         file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
@@ -323,7 +300,12 @@ class ComplexColumns(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id, file_name):
+        result = validate_submission_update(request, user_required=True)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
+
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
             new_columns = data_dict["data"]
@@ -333,16 +315,16 @@ class ComplexColumns(Resource):
         if new_columns is None:
             abort(
                 417,
-                message="Please provide valid key-value pairs for the new columns. The JSON string has to have a 'data' element",
+                message="Please provide valid key-value pairs for the new columns. "
+                "The JSON string has to have a 'data' element",
             )
 
-        # param validation
-        if study_id is None or file_name is None:
+        if file_name is None:
             abort(
                 404,
-                message="Please provide valid parameters for study identifier and/or file name",
+                message="Please provide valid parameters "
+                "for study identifier and/or file name",
             )
-        study_id = study_id.upper()
 
         fname, ext = os.path.splitext(file_name)
         ext = ext.lower()
@@ -350,25 +332,6 @@ class ComplexColumns(Resource):
             abort(
                 400, message="The file " + file_name + " is not a valid TSV or CSV file"
             )
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = commons.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
         file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
@@ -423,14 +386,14 @@ class ComplexColumns(Resource):
     @swagger.operation(
         summary="Delete columns from a tsv file",
         nickname="Delete columns from a tsv file",
-        notes="""Delete given columns from a sample, assay or MAF sheet (tsv files). 
+        notes="""Delete given columns from a sample, assay or MAF sheet (tsv files).
         Only '.tsv', '.csv' or '.txt' files are allowed.
-<pre><code> 
-{  
-  "data": { 
+<pre><code>
+{
+  "data": {
     "columns": [
-         "column name 1" , 
-         "column name 2" 
+         "column name 1" ,
+         "column name 2"
     ]
   }
 }
@@ -490,9 +453,13 @@ class ComplexColumns(Resource):
             {"code": 417, "message": "Incorrect parameters provided"},
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id, file_name):
-        # param validation
-        if study_id is None or file_name is None:
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
+
+        if file_name is None:
             abort(417, message="Please provide a study id and TSV file name")
 
         fname, ext = os.path.splitext(file_name)
@@ -512,25 +479,6 @@ class ComplexColumns(Resource):
         columns = delete_columns["columns"]
         if columns is None:
             abort(417, message='Please ensure the JSON contains a "columns" element')
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = commons.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
 
         audit_status, dest_path = write_audit_files(study_location)
 
@@ -558,7 +506,7 @@ class ColumnsRows(Resource):
         summary="Update a given cell, based on row and column index",
         nickname="Update table columns",
         notes="""Update an TSV table for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed.
-        
+
         <code><pre>
         {
         "data": [
@@ -633,6 +581,9 @@ class ColumnsRows(Resource):
     )
     @metabolights_exception_handler
     def put(self, study_id, file_name):
+        result = validate_submission_update(request, user_required=True)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
             columns_rows = data_dict["data"]
@@ -647,7 +598,7 @@ class ColumnsRows(Resource):
             )
 
         # param validation
-        if study_id is None or file_name is None:
+        if file_name is None:
             abort(
                 404,
                 message="Please provide valid parameters for study identifier and/or file name",
@@ -659,19 +610,6 @@ class ColumnsRows(Resource):
             abort(
                 400, message="The file " + file_name + " is not a valid TSV or CSV file"
             )
-
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        study_root_path = (
-            get_settings().study.mounted_paths.study_metadata_files_root_path
-        )
-        study_location = os.path.join(study_root_path, study_id)
 
         file_basename: str = file_name
         maf_file = (
@@ -791,7 +729,7 @@ class AddRows(Resource):
         summary="Add a new row to the given TSV file",
         nickname="Add TSV table row",
         notes="""Update an TSV table for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed.
-        <p>Please make sure you add a value for echo column/cell combination. 
+        <p>Please make sure you add a value for echo column/cell combination.
         Use the GET method to see all the columns for this tsv file<br> If you do not provide the row "index" parameter,
         the row will be added at the end of the TSV table
 <pre><code>{
@@ -860,8 +798,16 @@ class AddRows(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id, file_name):
         log_request(request)
+        result = validate_submission_update(request, user_required=True)
+        study_id = result.context.study_id
+        is_curator = result.context.user_role in {
+            UserRole.SYSTEM_ADMIN,
+            UserRole.ROLE_SUPER_USER,
+        }
+        study_location = get_study_metadata_path(study_id)
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
             data = data_dict["data"]
@@ -885,7 +831,7 @@ class AddRows(Resource):
             logger.info("No index (row num) supplied, ignoring")
 
         # param validation
-        if study_id is None or file_name is None:
+        if file_name is None:
             abort(
                 404,
                 message="Please provide valid parameters for study identifier and TSV file name",
@@ -898,26 +844,6 @@ class AddRows(Resource):
                 400, message="The file " + file_name + " is not a valid TSV or CSV file"
             )
 
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = commons.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
         file_basename = file_name
         if (
             file_name == "metabolights_zooma.tsv"
@@ -989,7 +915,7 @@ class AddRows(Resource):
         summary="Update existing rows in the given TSV file",
         nickname="Update TSV rows",
         notes="""Update rows in the TSV file for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed.
-        <p>Please make sure you add a value for echo column/cell combination. 
+        <p>Please make sure you add a value for echo column/cell combination.
         Use the GET method to see all the columns for this tsv file<br>
 <pre><code>{
   "data": [
@@ -1058,9 +984,14 @@ class AddRows(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id, file_name):
+        result = validate_submission_update(request, user_required=True)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
+
         # param validation
-        if study_id is None or file_name is None:
+        if file_name is None:
             abort(
                 406,
                 message="Please provide valid parameters for study identifier and TSV file name",
@@ -1072,8 +1003,6 @@ class AddRows(Resource):
             abort(
                 400, message="The file " + file_name + " is not a valid TSV or CSV file"
             )
-
-        study_id = study_id.upper()
 
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
@@ -1105,25 +1034,6 @@ class AddRows(Resource):
                     "The JSON string has to have an 'index:n' element in each (JSON) row. "
                     "The header row can not be updated",
                 )
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = commons.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
         file_basename = file_name
         file_name = os.path.join(study_location, file_name)
 
@@ -1220,8 +1130,11 @@ class AddRows(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id, file_name):
-        # query validation
+        result = validate_submission_update(request, user_required=True)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
         row_num = request.args.get("row_num")
 
@@ -1236,26 +1149,6 @@ class AddRows(Resource):
                 400, message="The file " + file_name + " is not a valid TSV or CSV file"
             )
 
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = commons.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
         file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
@@ -1342,8 +1235,11 @@ class AddRows(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id, file_name):
-        # query validation
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
         row_num = request.args.get("row_num")
 
@@ -1358,26 +1254,6 @@ class AddRows(Resource):
                 400, message="The file " + file_name + " is not a valid TSV or CSV file"
             )
 
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = commons.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
         file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
@@ -1391,7 +1267,6 @@ class AddRows(Resource):
         # Need to remove the highest row number first as the DataFrame dynamically re-orders when one row is removed
         sorted_num_rows = [int(x) for x in row_nums]
         sorted_num_rows.sort(reverse=False)
-        count = 0
         result_df = file_df.filter(items=sorted_num_rows, axis=0)
 
         df_data_dict = totuples(result_df, "rows")
@@ -1461,10 +1336,9 @@ class GetTsvFile(Resource):
     )
     @metabolights_exception_handler
     def get(self, study_id, file_name):
-        # param validation
-        if study_id is None or file_name is None:
-            logger.info("No study_id and/or TSV file name given")
-            abort(404)
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
         fname, ext = os.path.splitext(file_name)
         ext = ext.lower()
@@ -1473,41 +1347,21 @@ class GetTsvFile(Resource):
                 400, message="The file " + file_name + " is not a valid TSV or CSV file"
             )
 
-        study_id = study_id.upper()
         file_name_param = file_name  # store the passed filename for simplicity
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        obfuscation_code = None
-        if "obfuscation_code" in request.headers:
-            obfuscation_code = request.headers["obfuscation_code"]
-
-        study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
         logger.info(
             "Assay Table: Getting ISA-JSON Study Assay Table: Getting ISA-JSON Study %s",
             study_id,
         )
-        # check for access rights
-        if obfuscation_code:
-            permission: StudyAccessPermission = get_permission_by_obfuscation_code(
-                user_token, obfuscation_code
-            )
-        else:
-            permission: StudyAccessPermission = get_permission_by_study_id(
-                study_id, user_token
-            )
 
-        # permission.view
-        if not permission.view:
-            abort(403)
         file_basename = file_name
         if (
             file_name == "metabolights_zooma.tsv"
         ):  # This will edit the MetaboLights Zooma mapping file
-            if not permission.userRole != "ROLE_SUPER_USER":
+            if result.context.user_role not in {
+                UserRole.ROLE_SUPER_USER,
+                UserRole.SYSTEM_ADMIN,
+            }:
                 abort(403)
             file_name = get_settings().file_resources.mtbls_zooma_file
         else:
@@ -1671,6 +1525,9 @@ class TsvFileRows(Resource):
     )
     @metabolights_exception_handler
     def post(self, study_id):
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
             request_data = data_dict["data"]
@@ -1694,8 +1551,6 @@ class TsvFileRows(Resource):
             abort(
                 400, message="The file " + file_name + " is not a valid TSV or CSV file"
             )
-
-        study_id = study_id.upper()
         page_number = 0
         if "pageNumber" in request_data and request_data["pageNumber"]:
             page_number = int(request_data["pageNumber"])
@@ -1706,26 +1561,12 @@ class TsvFileRows(Resource):
         column_names = []
         if "columnNames" in request_data and request_data["columnNames"]:
             column_names = request_data["columnNames"]
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
 
         logger.info(
             "Assay Table: Getting ISA-JSON Study Assay Table: Getting ISA-JSON Study %s",
             study_id,
         )
-        # check for access rights
 
-        permission: StudyAccessPermission = get_permission_by_study_id(
-            study_id, user_token
-        )
-
-        # permission.view
-        # is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        #     study_status = commons.get_permissions(study_id, user_token, obfuscation_code)
-        if not permission.view:
-            abort(403)
         metadata = {
             "file": file_name,
             "columnNames": [],
@@ -1904,31 +1745,18 @@ class GetAssayMaf(Resource):
     )
     @metabolights_exception_handler
     def get(self, study_id, sheet_number):
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # param validation
-        if study_id is None or sheet_number is None:
-            logger.info("No study_id and/or sheet_number given")
+        if sheet_number is None:
+            logger.info("No sheet_number given")
             abort(404)
-
-        study_id = study_id.upper()
-
-        with DBManager.get_instance().session_maker() as db_session:
-            query = db_session.query(Study)
-            query = query.filter(
-                Study.status == StudyStatus.PUBLIC.value, Study.acc == study_id
-            )
-            study = query.first()
-
-            if not study:
-                raise MetabolightsDBException(
-                    f"{study_id} does not exist or is not public"
-                )
 
         logger.info(
             "Trying to load MAF for Study %s, Sheet number %d", study_id, sheet_number
         )
 
-        study_path = get_settings().study.mounted_paths.study_metadata_files_root_path
-        study_location = os.path.join(study_path, study_id)
         maflist = []
 
         for maf in glob.glob(os.path.join(study_location, "m_*.tsv")):

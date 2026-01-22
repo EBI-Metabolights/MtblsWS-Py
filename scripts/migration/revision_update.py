@@ -1,19 +1,18 @@
 import glob
-import os.path
 import logging
-from pathlib import Path
+import os.path
 import re
 import shutil
+from pathlib import Path
 
 from app.config import get_settings
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus
 from app.ws.study.study_folder_service import StudyFolderService
 from app.ws.study.study_revision_service import StudyRevisionService
-
 from app.ws.study.user_service import UserService
-
 
 logger = logging.getLogger("wslog")
 
@@ -42,7 +41,10 @@ def prepare_revisions():
                 get_settings().study.mounted_paths.study_internal_files_root_path
             )
             user_token = get_settings().auth.service_account.api_token
-            user = UserService.get_instance().get_db_user_by_user_token(user_token)
+            auth_manager = AuthenticationManager.get_instance()
+            user = UserService.get_instance(auth_manager).get_db_user_by_user_token(
+                user_token
+            )
 
         except Exception as e:
             db_session.rollback()

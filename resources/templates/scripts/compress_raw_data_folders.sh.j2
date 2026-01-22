@@ -56,11 +56,11 @@ for i in "${arr[@]}"; do
       basename_path=$(basename "$i")
       current_path=$ROOT_PATH
       if [ $? -eq 0 ]; then
-            
+
          dirname_path=$(dirname "$i")
          temp_file_name=$(basename "$temp_path")
          echo "$PACKAGE_TOOL process is started for file $i"
-         
+
          if [ "$PACKAGE_TOOL" = "$TAR_TOOL" ]; then
             cd "$dirname_path" && tar -cvpf "$temp_file_name" "$basename_path"
             tar -tvf "$temp_path"
@@ -96,6 +96,3 @@ else
    echo "RESULT=ERROR $STUDY_ID TOTAL FOLDERS: $file_count. Verified: $verified_count, Converted: $converted_count, Skipped: $skipped_count"
    exit $(($file_count - $total_success))
 fi
-
-
-

@@ -1,6 +1,7 @@
-from datetime import datetime
 import logging
 import pathlib
+from datetime import datetime
+
 from pydantic import BaseModel, EmailStr
 
 logger = logging.getLogger(__name__)

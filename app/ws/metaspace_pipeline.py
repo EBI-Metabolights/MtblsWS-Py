@@ -25,20 +25,22 @@ from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from metaspace.sm_annotation_utils import SMInstance
 
+from app.utils import metabolights_exception_handler
+from app.ws.auth.permissions import raise_deprecation_error, validate_submission_update
 from app.ws.metaspace_utils import annotate_metaspace, import_metaspace
-from app.ws.study import commons
+from app.ws.study.utils import get_study_metadata_path
 from app.ws.utils import log_request
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 
 
 class MetaspacePipeLine(Resource):
     @swagger.operation(
         summary="[Deprecated] Import files files and metadata from METASPACE to a MTBLS study",
         nickname="Import data from METASPACE",
-        notes="""Import files files and metadata from METASPACE to a MetaboLights study. 
-        </p>Please note that METASPACE API keys will take priority over username/password. 
-        </p>METASPACE Users can generate an API key in the "API access" section of https://metaspace2020.eu/user/me. 
+        notes="""Import files files and metadata from METASPACE to a MetaboLights study.
+        </p>Please note that METASPACE API keys will take priority over username/password.
+        </p>METASPACE Users can generate an API key in the "API access" section of https://metaspace2020.eu/user/me.
         </br>
         If you are the dataset owner in METASPACE, you automatically get a link from METASPACE to your MetaboLights study
         </p>
@@ -59,7 +61,7 @@ class MetaspacePipeLine(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
             },
             {
                 "name": "project",
@@ -67,7 +69,7 @@ class MetaspacePipeLine(Resource):
                 "paramType": "body",
                 "type": "string",
                 "required": False,
-                "allowMultiple": False
+                "allowMultiple": False,
             },
             {
                 "name": "user-token",
@@ -75,45 +77,35 @@ class MetaspacePipeLine(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            }
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. Files/Folders were copied across."
-            },
+            {"code": 200, "message": "OK. Files/Folders were copied across."},
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "Unauthorized. Access to the resource requires user authentication.",
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed for this user.",
             },
             {
                 "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
+        raise_deprecation_error(request)
         log_request(request)
         # param validation
-        if study_id is None:
-            abort(404, message='Please provide valid parameter for study identifier')
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = commons.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        obfuscation_code = result.context.obfuscation_code
+        user_token = result.context.user_api_token
+        study_location = get_study_metadata_path(study_id)
 
         investigation = None
         metaspace_projects = None
@@ -125,21 +117,25 @@ class MetaspacePipeLine(Resource):
         # body content validation
         if request.data:
             try:
-                data_dict = json.loads(request.data.decode('utf-8'))
-                project = data_dict['project']
+                data_dict = json.loads(request.data.decode("utf-8"))
+                project = data_dict["project"]
                 if project:
                     if "metaspace-api-key" in project:
-                        metaspace_api_key = project['metaspace-api-key']
+                        metaspace_api_key = project["metaspace-api-key"]
                     if "metaspace-password" in project:
-                        metaspace_password = project['metaspace-password']
+                        metaspace_password = project["metaspace-password"]
                     if "metaspace-email" in project:
-                        metaspace_email = project['metaspace-email']
+                        metaspace_email = project["metaspace-email"]
                     if "metaspace-datasets" in project:
-                        metaspace_datasets = project['metaspace-datasets']
-                        logger.info('Requesting METASPACE datasets ' + metaspace_datasets)
+                        metaspace_datasets = project["metaspace-datasets"]
+                        logger.info(
+                            "Requesting METASPACE datasets " + metaspace_datasets
+                        )
                     if "metaspace-projects" in project:
-                        metaspace_projects = project['metaspace-projects']
-                        logger.info('Requesting METASPACE projects ' + metaspace_projects)
+                        metaspace_projects = project["metaspace-projects"]
+                        logger.info(
+                            "Requesting METASPACE projects " + metaspace_projects
+                        )
 
                     # study_location = os.path.join(study_location, 'METASPACE')
 
@@ -148,31 +144,41 @@ class MetaspacePipeLine(Resource):
                         """
                         Log in with API key
                         Users can generate an API key in the "API access" section of https://metaspace2020.eu/user/me
-                        If you're connecting to our GraphQL API directly, API key authentication requires an HTTP 
+                        If you're connecting to our GraphQL API directly, API key authentication requires an HTTP
                         header "Authorization: Api-Key " followed by the key. """
                         sm.login(email=None, password=None, api_key=metaspace_api_key)
                         # logged_id = sm.logged_in
                     elif metaspace_password and metaspace_email:
-                        sm.login(email=metaspace_email, password=metaspace_password, api_key=None)
+                        sm.login(
+                            email=metaspace_email,
+                            password=metaspace_password,
+                            api_key=None,
+                        )
                     else:
-                        abort(406, message="No METASPACE API key or username/password provided.")
+                        abort(
+                            406,
+                            message="No METASPACE API key or username/password provided.",
+                        )
 
                     if not os.path.isdir(study_location):
                         os.makedirs(study_location, exist_ok=True)
 
                     # Annotate the METASPACE project and return all relevant dataset and project ids
-                    metaspace_project_ids, metaspace_dataset_ids = \
-                        annotate_metaspace(study_id=study_id,
-                                           sm=sm,
-                                           metaspace_projects=metaspace_projects,
-                                           metaspace_datasets=metaspace_datasets)
+                    metaspace_project_ids, metaspace_dataset_ids = annotate_metaspace(
+                        study_id=study_id,
+                        sm=sm,
+                        metaspace_projects=metaspace_projects,
+                        metaspace_datasets=metaspace_datasets,
+                    )
 
-                    investigation = import_metaspace(study_id=study_id,
-                                                     dataset_ids=metaspace_dataset_ids,
-                                                     study_location=study_location,
-                                                     user_token=user_token,
-                                                     obfuscation_code=obfuscation_code,
-                                                     sm_instance=sm)
+                    investigation = import_metaspace(
+                        study_id=study_id,
+                        dataset_ids=metaspace_dataset_ids,
+                        study_location=study_location,
+                        user_token=user_token,
+                        obfuscation_code=obfuscation_code,
+                        sm_instance=sm,
+                    )
             except KeyError:
                 abort(406, message="No 'project' parameter was provided.")
             except AttributeError as e:
@@ -183,5 +189,6 @@ class MetaspacePipeLine(Resource):
         if investigation:
             return {"Success": "METASPACE data imported successfully"}
         else:
-            return {"Warning": "Please check if METASPACE data was successfully imported"}
-
+            return {
+                "Warning": "Please check if METASPACE data was successfully imported"
+            }

@@ -4,12 +4,17 @@ import os
 import pathlib
 from typing import Dict, List, Set, Union
 
-from isatools import isatab
-from isatools.model import Investigation, Study, Assay
 import pandas as pd
+from isatools import isatab
+from isatools.model import Assay, Investigation, Study
 from pydantic import BaseModel, ConfigDict
+
 from app.config import get_settings
-from app.study_folder_utils import FileDescriptor, FileDifference, get_study_folder_files
+from app.study_folder_utils import (
+    FileDescriptor,
+    FileDifference,
+    get_study_folder_files,
+)
 
 logger = logging.getLogger("wslog")
 
@@ -28,6 +33,7 @@ class LiteFileMetadata(BaseModel):
 def sortFileMetadataList(items: List[LiteFileMetadata]):
     items.sort(key=metadata_sort)
 
+
 def metadata_sort(item: LiteFileMetadata):
     if not item:
         return ""
@@ -36,14 +42,14 @@ def metadata_sort(item: LiteFileMetadata):
     else:
         # ~~ is to ensure files are after folders
         return "~~" + item.file.upper()
-    
+
+
 class FileMetadata(LiteFileMetadata):
     relative_path: str = ""
     extension: str = ""
     is_stop_folder: bool = False
     is_empty: bool = False
     model_config = ConfigDict(from_attributes=True)
-    
 
 
 class FileSearchResult(BaseModel):
@@ -71,7 +77,12 @@ class StudyFolderIndex(BaseModel):
 
 
 def get_directory_files(
-    root_path: str, subpath: str, recursive=False, search_pattern="**/*", exclude_list=None, include_metadata_files=True
+    root_path: str,
+    subpath: str,
+    recursive=False,
+    search_pattern="**/*",
+    exclude_list=None,
+    include_metadata_files=True,
 ):
     source_file_descriptors: Dict[str, FileDescriptor] = {}
     if not exclude_list:
@@ -101,11 +112,15 @@ def get_directory_files(
         [x for x in source_folders_iter]
     return source_file_descriptors
 
+
 def evaluate_files(
     source_file_descriptors: Dict[str, FileDescriptor], referenced_file_set: Set[str]
 ) -> LiteFileSearchResult:
-    file_search_result = evaluate_files_in_detail(source_file_descriptors, referenced_file_set)
+    file_search_result = evaluate_files_in_detail(
+        source_file_descriptors, referenced_file_set
+    )
     return LiteFileSearchResult.model_validate(file_search_result)
+
 
 def evaluate_files_in_detail(
     source_file_descriptors: Dict[str, FileDescriptor], referenced_file_set: Set[str]
@@ -121,7 +136,13 @@ def evaluate_files_in_detail(
         modified_time = datetime.datetime.fromtimestamp(file.modified_time)
         long_datetime = modified_time.strftime("%Y-%m-%d %H:%M:%S")
         timestamp = modified_time.strftime("%Y%m%d%H%M%S")
-        metadata = FileMetadata(file=name, directory=file.is_dir, createdAt=long_datetime, timestamp=timestamp, file_difference=file.file_difference)
+        metadata = FileMetadata(
+            file=name,
+            directory=file.is_dir,
+            createdAt=long_datetime,
+            timestamp=timestamp,
+            file_difference=file.file_difference,
+        )
         # if  file.is_stop_folder:
         #     metadata.directory = False
         # else:
@@ -150,12 +171,24 @@ def evaluate_files_in_detail(
             metadata.type = "spreadsheet"
         elif file_extension in (".png", ".tiff", ".tif", ".jpeg", ".mpg", ".jpg"):
             metadata.type = "image"
-        elif file_extension in  (".rar", ".7z", ".z", ".g7z", ".arj", ".bz2", ".war", ".tar", ".zip"):
+        elif file_extension in (
+            ".rar",
+            ".7z",
+            ".z",
+            ".g7z",
+            ".arj",
+            ".bz2",
+            ".war",
+            ".tar",
+            ".zip",
+        ):
             metadata.type = "compressed"
 
         if file.relative_path.startswith(
             settings.study.audit_files_symbolic_link_name
-        ) or file.relative_path.startswith(settings.study.internal_files_symbolic_link_name):
+        ) or file.relative_path.startswith(
+            settings.study.internal_files_symbolic_link_name
+        ):
             metadata.type = "audit"
         metadata.relative_path = file.relative_path
         metadata.is_stop_folder = file.is_stop_folder
@@ -181,7 +214,7 @@ def get_referenced_file_set(study_id, metadata_path: str) -> List[str]:
             logger.warning(f"Error while loading investigation file '{study_id}")
             with open(investigation_file_path, encoding="latin-1") as fp:
                 # loading tables also load Samples and Assays
-                investigation = isatab.load(fp, skip_load_tables=True)  
+                investigation = isatab.load(fp, skip_load_tables=True)
         referenced_files.add(investigation_file_name)
         if investigation and investigation.studies and investigation.studies[0]:
             study: Study = investigation.studies[0]
@@ -195,24 +228,39 @@ def get_referenced_file_set(study_id, metadata_path: str) -> List[str]:
                         try:
                             df = None
                             try:
-                                with open(assay_file_path, encoding="utf-8", errors="ignore") as fp:
-                                    df: pd.DataFrame = pd.read_csv(fp, delimiter="\t", header=0, dtype=str)
+                                with open(
+                                    assay_file_path, encoding="utf-8", errors="ignore"
+                                ) as fp:
+                                    df: pd.DataFrame = pd.read_csv(
+                                        fp, delimiter="\t", header=0, dtype=str
+                                    )
                             except Exception as ex:
-                                logger.warning(f"Error while loading assay file '{study_id} {assay.filename}")
-                                with open(assay_file_path, encoding="latin-1", errors="ignore") as fp:
-                                    df: pd.DataFrame = pd.read_csv(fp, delimiter="\t", header=0, dtype=str)
+                                logger.warning(
+                                    f"Error while loading assay file '{study_id} {assay.filename}"
+                                )
+                                with open(
+                                    assay_file_path, encoding="latin-1", errors="ignore"
+                                ) as fp:
+                                    df: pd.DataFrame = pd.read_csv(
+                                        fp, delimiter="\t", header=0, dtype=str
+                                    )
                             if df is not None:
                                 df = df.fillna("")
                             referenced_file_columns: List[str] = []
                             for column in df.columns:
-                                if " Data File" in column or "Metabolite Assignment File" in column:
+                                if (
+                                    " Data File" in column
+                                    or "Metabolite Assignment File" in column
+                                ):
                                     referenced_file_columns.append(column)
                                     file_names = df[column].unique()
                                     for item in file_names:
                                         if item:
                                             referenced_files.add(item)
                         except Exception as ex:
-                            logger.error(f"Error reading assay file of {study_id} {assay.filename}. Skipping...")
+                            logger.error(
+                                f"Error reading assay file of {study_id} {assay.filename}. Skipping..."
+                            )
                         # df: pd.DataFrame = pd.read_csv(assay_file_path, delimiter="\t", header=0, names=referenced_file_columns, dtype=str)
                         # if df is not None:
                         #     df = df.fillna("")

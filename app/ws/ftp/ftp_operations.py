@@ -1,13 +1,12 @@
 import logging
 import os.path
 
-from flask import current_app as app, request
-from flask_restful import Resource, reqparse, abort
+from flask import request
+from flask_restful import Resource
 from flask_restful_swagger import swagger
+
 from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
-
-from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
 from app.tasks.hpc_study_rsync_client import (
     StudyFolder,
@@ -20,6 +19,14 @@ from app.utils import (
     MetabolightsException,
     metabolights_exception_handler,
 )
+from app.ws.auth.permissions import (
+    raise_deprecation_error,
+    validate_data_files_upload,
+    validate_submission_update,
+    validate_submission_view,
+    validate_user_has_curator_role,
+    validate_user_has_role,
+)
 from app.ws.db.types import StudyStatus
 from app.ws.ftp.ftp_utils import (
     get_ftp_folder_access_status,
@@ -27,7 +34,6 @@ from app.ws.ftp.ftp_utils import (
 )
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.study_service import StudyService
-from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
 
 logger = logging.getLogger("wslog")
@@ -84,24 +90,14 @@ class SyncCalculation(Resource):
     @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
-        study_id = study_id.upper()
+        raise_deprecation_error(request)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
 
-        force_recalculate = False
+        force_recalculate = (
+            True if request.args.get("force", "").lower() == "true" else False
+        )
 
-        if request.args:
-            force_recalculate = (
-                True if request.args.get("force").lower() == "true" else False
-            )
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         status_check_only = False if force_recalculate else True
         study = StudyService.get_instance().get_study_by_acc(study_id)
         client = StudyRsyncClient(
@@ -119,13 +115,6 @@ class SyncCalculation(Resource):
             source, target, status_check_only=status_check_only
         )
         return status.model_dump()
-
-        # study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
-        # storage = StorageService.get_ftp_private_storage()
-
-        # meta_calc_result = storage.calculate_sync_status(study_id, study.obfuscationcode, study_path, force=force_recalculate)
-        # # return jsonify({'result':{'meta_calc_result':meta_calc_result.model_dump(),'rdfiles_calc_result': rdfiles_calc_result.model_dump()}})
-        # return jsonify(meta_calc_result.model_dump())
 
 
 class SyncFromFtpFolder(Resource):
@@ -181,32 +170,18 @@ class SyncFromFtpFolder(Resource):
     @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            raise MetabolightsException(
-                message="Please provide valid parameter for study identifier"
-            )
-        study_id = study_id.upper()
-        sync_type = "metadata"
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        raise_deprecation_error(request)
 
-        if "sync_type" in request.headers:
-            sync_type = request.headers["sync_type"]
+        sync_type = request.headers.get("sync_type", "metadata")
         if sync_type not in ("data", "internal", "metadata"):
             raise MetabolightsException(message="sync_type is not valid")
+
         study = None
         if sync_type not in ("data", "metadata"):
-            UserService.get_instance().validate_user_has_write_access(
-                user_token, study_id
-            )
-            study = StudyService.get_instance().get_study_by_acc(study_id)
-            if StudyStatus(study.status) != StudyStatus.PROVISIONAL:
-                UserService.get_instance().validate_user_has_curator_role(user_token)
+            result = validate_user_has_curator_role(request)
         else:
-            UserService.get_instance().validate_user_has_curator_role(user_token)
+            result = validate_submission_update(request)
+        study_id = result.context.study_id
 
         if sync_type == "metadata":
             source = StudyFolder(
@@ -296,18 +271,9 @@ class FtpFolderSyncStatus(Resource):
     @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-
+        raise_deprecation_error(request)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
         study = StudyService.get_instance().get_study_by_acc(study_id)
         client = StudyRsyncClient(
             study_id=study_id, obfuscation_code=study.obfuscationcode
@@ -365,19 +331,10 @@ class FtpFolderPermission(Resource):
     @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # Security check
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-
-        return get_ftp_folder_access_status(app, study_id)
+        return get_ftp_folder_access_status(study_id)
 
 
 class FtpFolderPermissionModification(Resource):
@@ -421,17 +378,10 @@ class FtpFolderPermissionModification(Resource):
     @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
+        result = validate_user_has_role(request, study_required=True)
+        study_id = result.context.study_id
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        return toogle_ftp_folder_permission(app, study_id)
+        return toogle_ftp_folder_permission(study_id)
 
 
 class PrivateFtpFolder(Resource):
@@ -486,21 +436,12 @@ class PrivateFtpFolder(Resource):
     @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-        user_token = None
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        raise_deprecation_error(request)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        user_token = result.context.user_api_token
 
-        if user_token is None or study_id is None:
-            abort(401)
-        send_email = None
-        if request.args:
-            send_email = (
-                True
-                if request.args.get("send_email")
-                and request.args.get("send_email").lower() == "true"
-                else False
-            )
+        send_email = True and request.args.get("send_email", "").lower() == "true"
 
         study_id = study_id.upper()
 
@@ -552,19 +493,12 @@ class PrivateFtpFolderPath(Resource):
     @metabolights_exception_handler
     def get(self, study_id: str):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
+        result = validate_data_files_upload(request)
+        study_id = result.context.study_id
+        obfuscation_code = result.context.obfuscation_code
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        study = StudyService.get_instance().get_study_by_acc(study_id)
         relative_studies_root_path = get_private_ftp_relative_root_path()
-        folder_name = f"{study_id.lower()}-{study.obfuscationcode}"
+        folder_name = f"{study_id.lower()}-{obfuscation_code}"
         relative_ftp_study_path = os.path.join(
             os.sep, relative_studies_root_path.lstrip(os.sep), folder_name
         )
@@ -612,14 +546,6 @@ class PrivateFtpUploadInfo(Resource):
     @metabolights_exception_handler
     def get(self, study_id: str):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
         study = None
         try:
             study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
@@ -627,7 +553,10 @@ class PrivateFtpUploadInfo(Resource):
             pass
         if not study:
             raise MetabolightsDBException("identifier is not valid", http_code=404)
-        UserService.get_instance().validate_user_has_write_access(user_token, study.acc)
+
+        result = validate_data_files_upload(request)
+        study_id = result.context.study_id
+
         relative_studies_root_path = get_private_ftp_relative_root_path()
         folder_name = f"{study_id.lower()}-{study.obfuscationcode}"
         relative_ftp_study_path = os.path.join(
@@ -699,34 +628,16 @@ class SyncFromStudyFolder(Resource):
     @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            raise MetabolightsException(
-                message="Please provide valid parameter for study identifier"
-            )
-        study_id = study_id.upper()
-        sync_type = "metadata"
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if "sync_type" in request.headers:
-            sync_type = request.headers["sync_type"]
-
+        raise_deprecation_error(request)
+        sync_type = request.headers.get("sync_type", "metadata")
         if sync_type not in ("data", "internal", "metadata"):
             raise MetabolightsException(message="sync_type is not valid")
 
         study = None
         if sync_type not in ("data", "metadata"):
-            UserService.get_instance().validate_user_has_write_access(
-                user_token, study_id
-            )
-            study = StudyService.get_instance().get_study_by_acc(study_id)
-            if StudyStatus(study.status) != StudyStatus.PROVISIONAL:
-                UserService.get_instance().validate_user_has_curator_role(user_token)
+            validate_user_has_curator_role(request)
         else:
-            UserService.get_instance().validate_user_has_curator_role(user_token)
+            validate_submission_update(request)
 
         if sync_type == "metadata":
             target = StudyFolder(
@@ -763,37 +674,6 @@ class SyncFromStudyFolder(Resource):
 
         status = client.rsync(source, target, status_check_only=False)
         return status.model_dump()
-
-        # log_request(request)
-        # # param validation
-        # if study_id is None:
-        #     abort(404, message='Please provide valid parameter for study identifier')
-        # study_id = study_id.upper()
-
-        # # User authentication
-        # user_token = None
-        # if "user_token" in request.headers:
-        #     user_token = request.headers["user_token"]
-
-        #
-        #
-        # sync_only_chebi_results = True
-        # if request.args:
-        #
-        #     sync_only_chebi_results = False if request.args.get('sync_only_chebi_pipeline_results').lower() == 'false' else True
-
-        # UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        # study = StudyService.get_instance().get_study_by_acc(study_id)
-        # destination = study_id.lower() + '-' + study.obfuscationcode
-
-        # ftp_private_storage = StorageService.get_ftp_private_storage()
-        # logger.info(f"syncing files from study folder to FTP folder for {study_id}")
-
-        # ftp_private_storage.remote.create_folder(destination, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
-
-        # meta_sync_status,files_sync_status,chebi_sync_status = ftp_private_storage.sync_from_local(source_local_folder=None, target_folder=destination, ignore_list=None, sync_chebi_annotation=sync_only_chebi_results)
-        # logger.info('Copying file %s to FTP %s', study_id, destination)
-        # return {'meta_sync_status': meta_sync_status, 'files_sync_status':files_sync_status, 'chebi_sync_status':chebi_sync_status}
 
 
 class SyncPublicStudyToFTP(Resource):
@@ -837,19 +717,10 @@ class SyncPublicStudyToFTP(Resource):
     @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404, message="Please provide valid parameter for study identifier")
-        study_id = study_id.upper()
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        UserService.get_instance().validate_user_has_curator_role(user_token)
-        study = StudyService.get_instance().get_study_by_acc(study_id)
-        if study.status != 0:
+        if result.context.study_status != StudyStatus.PUBLIC:
             return {"Error": "Given study is not public yet!"}
         study_path = os.path.join(
             get_settings().study.mounted_paths.study_metadata_files_root_path, study_id
@@ -857,7 +728,7 @@ class SyncPublicStudyToFTP(Resource):
 
         ftp_public_storage = StorageService.get_ftp_public_storage()
         logger.info(
-            f"Syncing files from public study folder to FTP folder for {study_id}"
+            "Syncing files from public study folder to FTP folder for %s", study_id
         )
         meta_public_sync_status, files_public_sync_status = (
             ftp_public_storage.sync_to_public_ftp(

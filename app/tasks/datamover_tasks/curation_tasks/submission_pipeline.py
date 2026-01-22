@@ -2,20 +2,20 @@ import logging
 import os
 from typing import Any
 
-
 from app.config import get_settings
 from app.services.storage_service.acl import Acl
 from app.tasks.common_tasks.curation_tasks.submission_model import (
     MakeStudyPrivateParameters,
     StudySubmissionError,
 )
+from app.tasks.datamover_tasks.basic_tasks import file_management
 from app.tasks.datamover_tasks.basic_tasks.ftp_operations import index_study_data_files
 from app.tasks.worker import MetabolightsTask, celery
 from app.ws.db.schemes import Study
-from app.tasks.datamover_tasks.basic_tasks import file_management
 from app.ws.study.study_service import StudyService
 
 logger = logging.getLogger(__name__)
+
 
 @celery.task(
     bind=True,
@@ -62,8 +62,10 @@ def update_folder_status(model: MakeStudyPrivateParameters, permission: int):
     study_private_ftp_path = os.path.join(
         private_ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}"
     )
-    model.current_private_ftp_permission =  os.stat(study_private_ftp_path).st_mode & 0o777
-    
+    model.current_private_ftp_permission = (
+        os.stat(study_private_ftp_path).st_mode & 0o777
+    )
+
     result = file_management.update_permission(study_private_ftp_path, permission)
 
     if result and result.get("status"):

@@ -2,9 +2,9 @@ from pydantic import BaseModel
 
 
 class ChebiServiceConnection(BaseModel):
-    chebi_ws_wsdl: str
-    chebi_ws_wsdl_service: str
-    chebi_ws_wsdl_service_port: str
+    chebi_ws_wsdl: str = "https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl"
+    chebi_ws_wsdl_service: str = "ChebiWebServiceService"
+    chebi_ws_wsdl_service_port: str = "ChebiWebServicePort"
 
 
 class ChebiServiceConfiguration(BaseModel):
@@ -14,12 +14,14 @@ class ChebiServiceConfiguration(BaseModel):
 
 
 class ChebiPipelineSearchServices(BaseModel):
-    classyfire_url: str
-    opsin_url: str
-    chemspider_url: str
-    chem_plus_url: str
-    unichem_url: str
-    dime_url: str
+    classyfire_url: str = "http://classyfire.wishartlab.com"
+    opsin_url: str = "https://opsin.ch.cam.ac.uk/opsin/"
+    chemspider_url: str = "http://parts.chemspider.com/JSON.ashx?op="
+    chem_plus_url: str = (
+        "https://chem.nlm.nih.gov/api/data/inchikey/equals/INCHI_KEY?data=summary"
+    )
+    unichem_url: str = "https://www.ebi.ac.uk/unichem/rest"
+    dime_url: str = "https://dimedb.ibers.aber.ac.uk/api/metabolites?where=%7B%22_id%22%20:%20%22INCHI_KEY%22%7D&projection=%7B%22External%20Sources%22%20:%201%7D"
 
 
 class ChebiPipelineConfiguration(BaseModel):
@@ -37,13 +39,15 @@ class ChebiPipelineConfiguration(BaseModel):
 
 
 class ChebiServiceSettings(BaseModel):
-    connection: ChebiServiceConnection
-    configuration: ChebiServiceConfiguration
-    
+    connection: ChebiServiceConnection = ChebiServiceConnection()
+    configuration: ChebiServiceConfiguration = ChebiServiceConnection()
+
+
 class ChebiCacheSettings(BaseModel):
-    images_cache_path: str
+    images_cache_path: str = ""
+
 
 class ChebiSettings(BaseModel):
     pipeline: ChebiPipelineConfiguration
-    service: ChebiServiceSettings
-    caches: ChebiCacheSettings
+    service: ChebiServiceSettings = ChebiServiceSettings()
+    caches: ChebiCacheSettings = ChebiCacheSettings()

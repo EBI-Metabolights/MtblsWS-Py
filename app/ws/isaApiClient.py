@@ -20,15 +20,16 @@ import glob
 import io
 import logging
 import os
+import re
 import time
 
 from flask_restful import abort
 from isatools import model
 from isatools.convert import isatab2json
-from isatools.isatab import load, dump
-from app.ws.settings.utils import get_study_settings
+from isatools.isatab import dump, load
 
-from app.ws.study import commons
+from app.ws.settings.utils import get_study_settings
+from app.ws.study.utils import get_study_metadata_path
 from app.ws.utils import copy_file, new_timestamped_folder
 
 """
@@ -45,7 +46,7 @@ class IsaApiClient:
         self.settings = get_study_settings()
 
     @staticmethod
-    def get_isa_json(study_id, api_key, study_location=None):
+    def get_isa_json(study_id, api_key=None, study_location=None):
         """
         Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier
@@ -59,7 +60,7 @@ class IsaApiClient:
             logger.info(
                 "Study location is not set, will have load study from filesystem"
             )
-            path = commons.get_study_location(study_id, api_key)
+            path = get_study_metadata_path(study_id)
         else:
             logger.info("Study location is: " + study_location)
             path = study_location
@@ -90,6 +91,34 @@ class IsaApiClient:
             )
             return isa_json
 
+    ASSAY_TYPES = {
+        "LC-MS",
+        "GC-MS",
+        "GCxGC-MS",
+        "MALDI-MS",
+        "FIA-MS",
+        "DI-MS",
+        "CE-MS",
+        "MS",
+        "NMR",
+        "MRImaging",
+        "MSImaging",
+        "GC-FID",
+        "LC-DAD",
+    }
+
+    def find_assay_type_and_identifier(self, assay: model.Assay) -> tuple[str, None]:
+        file_name = assay.filename or ""
+        parts = file_name.split("_")
+        if len(parts) > 3:
+            match = re.match(r"^(.+?)(?:-(\d+))?$", parts[2])
+            if match:
+                candidate = match.groups()[0]
+                identifier = match.groups()[1]
+                if candidate in self.ASSAY_TYPES:
+                    return candidate, parts[2] if identifier else None
+        return "", None
+
     def get_isa_study(
         self,
         study_id,
@@ -115,9 +144,9 @@ class IsaApiClient:
             logger.info(
                 "Study location is not set, will have load study from filesystem"
             )
-            std_path = commons.get_study_location(study_id, api_key)
+            std_path = get_study_metadata_path(study_id)
         else:
-            logger.info("Study location is: " + study_location)
+            logger.info("Study location is: %s", study_location)
             std_path = study_location
 
         try:
@@ -126,7 +155,42 @@ class IsaApiClient:
             # loading tables also load Samples and Assays
             isa_inv = load(fp, skip_load_tables)
             # ToDo. Add MAF to isa_study
-            isa_study = isa_inv.studies[0]
+            isa_study: model.Study = isa_inv.studies[0]
+            if isa_inv.studies and isa_study.assays:
+                for item in isa_study.assays:
+                    assay: model.Assay = item
+                    assay_type = None
+                    identifier = None
+                    assay_type_labels = [
+                        x.value
+                        for x in assay.comments
+                        if x.name == "Assay Type Label" and x.value
+                    ]
+                    if len(assay_type_labels) == 1:
+                        assay_type = assay_type_labels[0]
+                    assay_identifiers = [
+                        x.value
+                        for x in assay.comments
+                        if x.name == "Assay Identifier" and x.value
+                    ]
+                    if len(assay_identifiers) == 1:
+                        identifier = assay_identifiers[0]
+                    if assay_type and assay_type in self.ASSAY_TYPES and identifier:
+                        continue
+                    assay_type, identifier = self.find_assay_type_and_identifier(assay)
+                    new_comments = [
+                        model.Comment(name="Assay Identifier", value=identifier or ""),
+                        model.Comment(name="Assay Type Label", value=assay_type or ""),
+                    ]
+                    new_comments.extend(
+                        [
+                            x
+                            for x in assay.comments
+                            if x.name not in {"Assay Type Label", "Assay Identifier"}
+                        ]
+                    )
+                    assay.comments = new_comments
+
         except IndexError as e:
             logger.exception(
                 "Failed to find Investigation file %s from %s", study_id, std_path

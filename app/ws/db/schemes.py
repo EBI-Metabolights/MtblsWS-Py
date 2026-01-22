@@ -6,12 +6,12 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Numeric,
+    Sequence,
     String,
     Table,
     Text,
     UniqueConstraint,
     text,
-    Sequence,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -75,12 +75,18 @@ t_study_user = Table(
     Column("userid", ForeignKey("users.id"), primary_key=True, nullable=False),
     Column("studyid", ForeignKey("studies.id"), primary_key=True, nullable=False),
 )
+hibernate_sequence = Sequence("hibernate_sequence", metadata=metadata)
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(BigInteger, primary_key=True)
+    id = Column(
+        BigInteger,
+        hibernate_sequence,
+        primary_key=True,
+        server_default=hibernate_sequence.next_value(),
+    )
     address = Column(String(255))
     affiliation = Column(String(255))
     affiliationurl = Column(String(255))
@@ -156,7 +162,8 @@ class Study(Base):
     template_version = Column(String(50), nullable=False, default="2.0")
     mhd_accession = Column(String(50))
     mhd_model_version = Column(String(50))
-
+    created_at = Column(DateTime, nullable=True)
+    study_template = Column(String, default="minimum")
     users = relationship("User", secondary="study_user", back_populates="studies")
 
 

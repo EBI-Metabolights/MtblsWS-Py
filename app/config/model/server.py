@@ -1,28 +1,31 @@
 from enum import Enum
 from typing import List, Set, Union
+
 import isatools
 import metaspace
 import mzml2isa
 import pkg_resources
 from pydantic import BaseModel
+
 import app
 
 isatools_version = pkg_resources.get_distribution(isatools.__name__).version
 metaspace_version = metaspace.__version__
 mzml2isa_version = mzml2isa.__version__
 
+
 class EndpointMethodOption(str, Enum):
     GET = "GET"
     POST = "POST"
     PUT = "PUT"
-    DELETE = "DELETE" 
-    ANY = "*"   
+    DELETE = "DELETE"
+    ANY = "*"
 
 
 class EndpointDescription(BaseModel):
     method: Union[EndpointMethodOption, Set[EndpointMethodOption]]
-    path: str    
-    
+    path: str
+
 
 class ServerService(BaseModel):
     rest_api_port: int

@@ -17,8 +17,6 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 from __future__ import annotations
 
-from enum import Enum
-from functools import lru_cache
 import json
 import logging
 import os
@@ -26,11 +24,13 @@ import re
 import socket
 import ssl
 import traceback
-from typing import Any, Callable, Dict, List, Set, Union
+from enum import Enum
+from functools import lru_cache
+from typing import Any, Dict, List, Set
 from urllib.parse import quote_plus
 
 import pandas as pd
-from owlready2 import get_ontology, urllib, IRIS
+from owlready2 import get_ontology, urllib
 from owlready2.namespace import Ontology
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
@@ -38,6 +38,12 @@ from pydantic.alias_generators import to_camel
 from app.config import get_settings
 from app.study_folder_utils import convert_relative_to_real_path
 from app.utils import current_time, ttl_cache
+from app.ws.study_templates.models import (
+    FileTemplates,
+    ValidationConfiguration,
+    ValidationControls,
+)
+from app.ws.study_templates.utils import get_validation_configuration
 
 logger = logging.getLogger("wslog")
 
@@ -136,7 +142,7 @@ def filter_term_by_keyword(
 
 
 class DefaultControlLists(BaseModel):
-    control_lists: Dict[str, List[Entity]] = {}
+    control_lists: Dict[str, List[Entity] | ValidationControls | FileTemplates] = {}
     model_config = ConfigDict(alias_generator=to_camel)
 
 
@@ -157,10 +163,16 @@ class MetaboLightsOntology:
         self.initiate()
         default_list: DefaultControlLists = DefaultControlLists()
         default_list.control_lists = self.branch_map
+        self.update_validation_configuration(default_list.control_lists)
         self.control_lists: DefaultControlLists = default_list
         self.control_lists_dict: Dict[str, Any] = self.control_lists.model_dump(
             by_alias=True
         )
+
+    def update_validation_configuration(self, control_lists):
+        configuration: ValidationConfiguration = get_validation_configuration()
+        control_lists["controls"] = configuration.controls
+        control_lists["templates"] = configuration.templates
 
     def get_default_control_lists(self, name: str = ""):
         if name:
@@ -171,9 +183,6 @@ class MetaboLightsOntology:
                 if name in self.branch_map
                 else {}
             )
-        if not self.control_lists.control_lists:
-            self.control_lists.control_lists = self.branch_map
-            self.control_lists_dict = self.control_lists.model_dump(by_alias=True)
         return self.control_lists_dict
 
     def get_control_lists_file_path(self):
@@ -806,10 +815,10 @@ def get_ontology_search_result(term: str, branch, ontologies, mapping, queryFiel
         temp = """    {
                         "comments": [],
                         "annotationValue": "",
-                        "annotationDefinition": "", 
+                        "annotationDefinition": "",
                         "termAccession": "",
-                        "wormsID": "", 
-                        
+                        "wormsID": "",
+
                         "termSource": {
                             "comments": [],
                             "name": "",
@@ -817,7 +826,7 @@ def get_ontology_search_result(term: str, branch, ontologies, mapping, queryFiel
                             "provenanceName": "",
                             "version": "",
                             "description": ""
-                        }                            
+                        }
                     }"""
 
         d = json.loads(str(temp))
@@ -864,14 +873,14 @@ def load_ontology_file(filepath) -> MetaboLightsOntology:
     return None
 
 
-def initiate_mtbls_model():
-    file = convert_relative_to_real_path(
-        get_settings().file_resources.mtbls_ontology_file
-    )
-    load_ontology_file(file)
+# def initiate_mtbls_model():
+#     file = convert_relative_to_real_path(
+#         get_settings().file_resources.mtbls_ontology_file
+#     )
+#     load_ontology_file(file)
 
 
-initiate_mtbls_model()
+# initiate_mtbls_model()
 
 
 @ttl_cache(2048)
@@ -1327,7 +1336,7 @@ def getBioportalTerm(keyword, mapping=False, ontologies="", limit=50):
             except:
                 definition = ""
             try:
-                synonymn = ", ".join(term["definition"])
+                synonymn = ", ".join(term["synonymn"])
             except:
                 synonymn = ""
 

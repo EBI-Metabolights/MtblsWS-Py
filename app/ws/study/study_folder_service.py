@@ -1,10 +1,9 @@
 import logging
 
-from app.ws.folder_maintenance import StudyFolderMaintenanceTask
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study
 from app.ws.db.types import StudyStatus
-
+from app.ws.folder_maintenance import StudyFolderMaintenanceTask
 
 logger = logging.getLogger("wslog")
 

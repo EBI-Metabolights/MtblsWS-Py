@@ -2,7 +2,6 @@ from app.ws.db_connection import create_empty_study, execute_query_with_paramete
 
 
 class UserTestData:
-
     def __init__(self, user_token, email, userid, role, status, studies=None):
         self.user_token = user_token
         self.email = email
@@ -16,10 +15,17 @@ class UserTestData:
 
 def create_user_in_db(user):
     insert_user_sql = """
-        INSERT INTO users (id, apitoken, email, password, role, status, username) 
+        INSERT INTO users (id, apitoken, email, password, role, status, username)
         VALUES (%(id)s, %(apitoken)s, %(email)s, %(password)s, %(role)s, %(status)s, %(username)s);"""
-    content1 = {"id": user.userid, "apitoken": user.user_token,
-                "email": user.email, "password": "", "status": str(user.status), "role": user.role, "username": user.email}
+    content1 = {
+        "id": user.userid,
+        "apitoken": user.user_token,
+        "email": user.email,
+        "password": "",
+        "status": str(user.status),
+        "role": user.role,
+        "username": user.email,
+    }
     execute_query_with_parameter(insert_user_sql, content1)
 
 

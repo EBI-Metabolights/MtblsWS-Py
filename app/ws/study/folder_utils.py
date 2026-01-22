@@ -7,11 +7,8 @@ import time
 from copy import deepcopy
 from operator import itemgetter
 
-from flask import current_app as app
 from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
-
-from app.file_utils import make_dir_with_chmod
 from app.study_folder_utils import get_all_study_metadata_and_data_files
 from app.ws.db.schemes import Study
 from app.ws.db.types import StudyStatus
@@ -27,8 +24,6 @@ from app.ws.utils import (
     date_format,
     file_date_format,
     map_file_type,
-    new_timestamped_folder,
-    copy_file,
 )
 
 logger = logging.getLogger("wslog")
@@ -512,7 +507,8 @@ def write_audit_files(study_location_or_study_id):
             study_category=study.study_category,
             sample_template=study.sample_type,
             dataset_license=study.dataset_license,
-            template_version=study.template_version
+            template_version=study.template_version,
+            study_template=study.study_template,
         )
         last_metadata_signature = maintenance_task.read_hash_file()
         metadata_files_signature, _ = maintenance_task.calculate_metadata_files_hash()

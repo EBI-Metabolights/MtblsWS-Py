@@ -9,8 +9,8 @@ from typing import List, Union
 
 from app.config import get_settings
 from app.config.model.hpc_cluster import HpcClusterDefaultSettings
-from app.tasks.bash_client import BashClient, CapturedBashExecutionResult
 from app.services.cluster.hpc_client import HpcClient, HpcJob, SubmittedJobResult
+from app.tasks.bash_client import BashClient, CapturedBashExecutionResult
 from app.utils import MetabolightsException
 
 logger = logging.getLogger("wslog")
@@ -125,7 +125,7 @@ class SlurmClient(HpcClient):
             )
 
         if not failing_gracefully:
-            raise MetabolightsException(message=f"No job id is defined.")
+            raise MetabolightsException(message="No job id is defined.")
         return SubmittedJobResult(
             return_code=result.returncode,
             job_ids=[],

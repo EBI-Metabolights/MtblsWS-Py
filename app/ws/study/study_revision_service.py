@@ -1,34 +1,38 @@
+import datetime
 import glob
 import json
-import os.path
 import logging
-from pathlib import Path
+import os.path
 import shutil
+from pathlib import Path
+from typing import List, Union
+
+from isatools import model
 
 from app.tasks.common_tasks.basic_tasks.elasticsearch import reindex_study
 from app.tasks.common_tasks.basic_tasks.send_email import send_email_on_public
 from app.tasks.datamover_tasks.basic_tasks.ftp_operations import (
     sync_private_ftp_data_files,
 )
-from app.ws.db.models import StudyRevisionModel
-from app.ws.elasticsearch.elastic_service import ElasticsearchService
-from app.ws.folder_maintenance import StudyFolderMaintenanceTask
-import datetime
-from typing import List, Union
 from app.utils import (
     MetabolightsException,
     current_time,
     current_utc_time_without_timezone,
 )
 from app.ws.db.dbmanager import DBManager
+from app.ws.db.models import StudyRevisionModel
 from app.ws.db.schemes import Study, StudyRevision
 from app.ws.db.types import StudyRevisionStatus, StudyStatus
+from app.ws.elasticsearch.elastic_service import ElasticsearchService
+from app.ws.folder_maintenance import StudyFolderMaintenanceTask
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
-from app.ws.study.comment_utils import update_license, update_mhd_comments, update_revision_comments
+from app.ws.study.comment_utils import (
+    update_license,
+    update_mhd_comments,
+    update_revision_comments,
+)
 from app.ws.study.study_service import StudyService
-from isatools import model
-
 
 logger = logging.getLogger("wslog")
 
@@ -225,7 +229,8 @@ class StudyRevisionService:
             sample_template=study.sample_type,
             mhd_accession=study.mhd_accession,
             mhd_model_version=study.mhd_model_version,
-            template_version=study.template_version
+            template_version=study.template_version,
+            created_at=study.created_at,
         )
         update_license(isa_study, study.dataset_license)
 
@@ -280,8 +285,10 @@ class StudyRevisionService:
                     .filter(
                         Study.revision_number == StudyRevision.revision_number,
                         StudyRevision.status.in_(
-                            [ StudyRevisionStatus.INITIATED.value,
-                            StudyRevisionStatus.FAILED.value ]
+                            [
+                                StudyRevisionStatus.INITIATED.value,
+                                StudyRevisionStatus.FAILED.value,
+                            ]
                         ),
                         StudyRevision.revision_datetime <= ten_minutes_ago,
                     )
@@ -376,7 +383,7 @@ class StudyRevisionService:
 
                 db_session.commit()
                 try:
-                    inputs = {"user_token": user_token, "study_id": study_id}
+                    inputs = {"user_token": None, "study_id": study_id}
                     reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
                     logger.info(
                         "%s study reindex task started with task id %s",

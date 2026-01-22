@@ -1,42 +1,43 @@
-import datetime
 import json
 import logging
 import os
 
-from app.tasks.worker import (MetabolightsTask, celery, send_email)
+from app.tasks.worker import MetabolightsTask, celery, send_email
 from app.utils import MetabolightsDBException, current_time
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
-from app.ws.study.user_service import UserService
 
 logger = logging.getLogger(__name__)
 
 
-@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization.sync_studies_on_es_and_db")
+@celery.task(
+    base=MetabolightsTask,
+    name="app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization.sync_studies_on_es_and_db",
+)
 def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
     try:
-        UserService.get_instance().validate_user_has_curator_role(user_token)
-
         studies_dict = {}
-        
+
         with DBManager.get_instance().session_maker() as db_session:
-            user = db_session.query(User.email).filter(User.apitoken == user_token).first()
+            user = (
+                db_session.query(User.email).filter(User.apitoken == user_token).first()
+            )
             if not user:
                 raise MetabolightsDBException("No user")
-            
+
             email = user.email
-            
+
             result = db_session.query(Study.acc, Study.updatedate).all()
 
             if not result:
-                raise MetabolightsDBException(f"No study found on db.") 
+                raise MetabolightsDBException("No study found on db.")
             for study in result:
-                studies_dict[study["acc"]] = study["updatedate"] 
-                
-        indexed_studies= {} 
-        unindexed_studies= []
-        out_of_date_studies= []
+                studies_dict[study["acc"]] = study["updatedate"]
+
+        indexed_studies = {}
+        unindexed_studies = []
+        out_of_date_studies = []
         studies_not_in_db = []
         es = ElasticsearchService.get_instance()
         result = es.get_all_study_ids()
@@ -54,32 +55,36 @@ def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
                         pass
                     if studies_id:
                         indexed_studies[studies_id] = updated_date
-                        
+
                         if studies_id not in studies_dict:
                             studies_not_in_db.append(studies_id)
                         else:
                             if updated_date:
                                 if studies_dict[studies_id]:
-                                    time = int(studies_dict[studies_id].timestamp()*1000)
-                                    if  updated_date < time:
+                                    time = int(
+                                        studies_dict[studies_id].timestamp() * 1000
+                                    )
+                                    if updated_date < time:
                                         out_of_date_studies.append(studies_id)
                             else:
                                 out_of_date_studies.append(studies_id)
-            except Exception as exc: 
+            except Exception as exc:
                 raise exc
-        
+
         for db_studies in studies_dict:
             if db_studies not in indexed_studies:
                 unindexed_studies.append(db_studies)
-        try:                
+        try:
             # print("Unindex studies: " + ", ".join(unindexed_studies))
             for item in unindexed_studies:
                 # print(f"inserting new studies index {item}")
                 try:
-                    es._reindex_study(item, user_token, include_validation_results=False, sync=True)
+                    es._reindex_study(
+                        item, user_token, include_validation_results=False, sync=True
+                    )
                 except Exception as ex:
-                    logger.error(f'Error while adding new index {item}: {str(ex)}')
-            
+                    logger.error(f"Error while adding new index {item}: {str(ex)}")
+
             if studies_not_in_db:
                 # print("studiesnot in db: " + ", ".join(studies_not_in_db))
                 for item in studies_not_in_db:
@@ -87,37 +92,55 @@ def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
                     try:
                         es._delete_study_index(item)
                     except Exception as ex:
-                        logger.error(f'Error while deleting index {item}: {str(ex)}')
-            
+                        logger.error(f"Error while deleting index {item}: {str(ex)}")
+
             if out_of_date_studies:
                 # print("Out of date studies: " + ", ".join(out_of_date_studies))
                 for item in out_of_date_studies:
                     try:
-                        es._reindex_study(item, user_token, include_validation_results=False, sync=True)
+                        es._reindex_study(
+                            item,
+                            user_token,
+                            include_validation_results=False,
+                            sync=True,
+                        )
                     except Exception as ex:
-                        logger.error(f'Error while reindexing {item}: {str(ex)}')
+                        logger.error(f"Error while reindexing {item}: {str(ex)}")
         except Exception as exc:
             raise exc
-    
+
         updated = True
         if not out_of_date_studies and not unindexed_studies and not studies_not_in_db:
             updated = False
-        result = {"time": current_time().strftime("%Y-%m-%d %H:%M:%S"), 
-                  "executed_on":  os.uname().nodename,
-                "status": f'{"UPDATED" if updated else "NO CHANGE"}',
-                "reindexed_studies": str(out_of_date_studies),
-                "added_studies": str(unindexed_studies),
-                "deleted_studies": str(studies_not_in_db)}
-        
+        result = {
+            "time": current_time().strftime("%Y-%m-%d %H:%M:%S"),
+            "executed_on": os.uname().nodename,
+            "status": f"{'UPDATED' if updated else 'NO CHANGE'}",
+            "reindexed_studies": str(out_of_date_studies),
+            "added_studies": str(unindexed_studies),
+            "deleted_studies": str(studies_not_in_db),
+        }
+
         if send_email_to_submitter:
             result_str = json.dumps(result, indent=4)
             result_str = result_str.replace("\n", "<p>")
-            send_email("Result of the task: sync MetaboLights studies on elasticsearch and database", result_str, None, email, None)
-            
+            send_email(
+                "Result of the task: sync MetaboLights studies on elasticsearch and database",
+                result_str,
+                None,
+                email,
+                None,
+            )
+
         return result
     except Exception as ex:
         if send_email_to_submitter:
             result_str = str(ex).replace("\n", "<p>")
-            send_email("A task was failed: sync MetaboLights studies on elasticsearch and database", result_str, None, email, None)
-        raise ex        
-    
+            send_email(
+                "A task was failed: sync MetaboLights studies on elasticsearch and database",
+                result_str,
+                None,
+                email,
+                None,
+            )
+        raise ex

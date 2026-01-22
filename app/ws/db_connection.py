@@ -25,22 +25,22 @@ from typing import Union
 
 import psycopg2
 import psycopg2.extras
-from psycopg2 import pool
+from psycopg2.pool import SimpleConnectionPool
+
 from app.config import get_settings
 from app.utils import (
     MetabolightsDBException,
     current_time,
     current_utc_time_without_timezone,
 )
-from app.ws.db.models import StudyRevisionModel
-from app.ws.db.types import CurationRequest, StudyCategory
+from app.ws.db.types import CurationRequest, StudyCategory, UserRole, UserStatus
 from app.ws.settings.utils import get_study_settings
 from app.ws.study import identifier_service
 from app.ws.utils import (
-    get_single_file_information,
     check_user_token,
-    val_email,
     fixUserDictKeys,
+    get_single_file_information,
+    val_email,
 )
 
 logger = logging.getLogger("wslog")
@@ -66,12 +66,12 @@ query_curation_log = "select * from curation_log_temp order by acc_short asc;"
 
 query_all_studies = """
     select * from (
-        select 
-          s.acc, 
-          string_agg(u.firstname || ' ' || u.lastname, ', ' order by u.lastname) as username, 
+        select
+          s.acc,
+          string_agg(u.firstname || ' ' || u.lastname, ', ' order by u.lastname) as username,
           to_char(s.releasedate, 'YYYYMMDD') as release_date,
-          to_char(s.updatedate, 'YYYYMMDD') as update_date, 
-          case when s.status = 0 then 'Provisional' 
+          to_char(s.updatedate, 'YYYYMMDD') as update_date,
+          case when s.status = 0 then 'Provisional'
                when s.status = 1 then 'Private'
                when s.status = 2 then 'In Review'
                when s.status = 3 then 'Public'
@@ -79,7 +79,7 @@ query_all_studies = """
           curator,
           to_char(s.status_date, 'YYYY-MM-DD HH24:MI') as status_date,
           to_char(s.status_date + INTERVAL '28 day', 'YYYY-MM-DD') as due_date
-        from 
+        from
           studies s,
           study_user su,
           users u
@@ -116,17 +116,17 @@ query_study_info = """
 """
 
 query_studies_user = """
-    SELECT distinct s.acc, 
-    to_char(s.releasedate,'YYYY-MM-DD'), 
-    to_char(s.submissiondate,'YYYY-MM-DD'), 
-      case when s.status = 0 then 'Provisional' 
+    SELECT distinct s.acc,
+    to_char(s.releasedate,'YYYY-MM-DD'),
+    to_char(s.submissiondate,'YYYY-MM-DD'),
+      case when s.status = 0 then 'Provisional'
            when s.status = 1 then 'Private'
-           when s.status = 2 then 'In Review' 
-           when s.status = 3 then 'Public' 
+           when s.status = 2 then 'In Review'
+           when s.status = 3 then 'Public'
            else 'Dormant' end,
-      case when s.curation_request = 0 then 'MANUAL_CURATION' 
+      case when s.curation_request = 0 then 'MANUAL_CURATION'
            when s.curation_request = 1 then 'NO_CURATION'
-           when s.curation_request = 2 then 'SEMI_AUTOMATED_CURATION' 
+           when s.curation_request = 2 then 'SEMI_AUTOMATED_CURATION'
            else 'MANUAL_CURATION' end,
     s.id,
     s.revision_number,
@@ -138,37 +138,44 @@ query_studies_user = """
     s.mhd_accession,
     s.mhd_model_version,
     s.dataset_license,
-    s.template_version
-    from studies s, users u, study_user su 
+    s.template_version,
+    s.created_at
+    from studies s, users u, study_user su
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
 
 query_provisional_study_ids_for_user = """
-    SELECT distinct s.acc 
-    from studies s, users u, study_user su 
+    SELECT distinct s.acc
+    from studies s, users u, study_user su
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(user_token)s and s.status=0;
     """
 
-insert_study_with_provisional_id = """   
-    insert into studies (id, obfuscationcode, releasedate, status, studysize, submissiondate, 
-    updatedate, validations, validation_status, reserved_submission_id, acc) 
-    values ( 
+insert_study_with_provisional_id = """
+    insert into studies (id, obfuscationcode, releasedate, status, studysize, submissiondate,
+    updatedate, validations, validation_status, reserved_submission_id, acc, study_category,
+    template_version, sample_type, study_template
+    )
+    values (
         %(new_unique_id)s,
         %(obfuscationcode)s,
         %(releasedate)s,
-        0, 0, %(current_time)s, 
+        0, 0, %(current_time)s,
         %(current_time)s, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error',
         %(req_id)s,
-        %(req_id)s
+        %(req_id)s,
+        %(study_category)s,
+        %(template_version)s,
+        %(sample_template_name)s,
+        %(study_template_name)s
         );
     insert into study_user(userid, studyid) values (%(userid)s, %(new_unique_id)s);
 """
 
-reserve_mtbls_accession_sql = """  
+reserve_mtbls_accession_sql = """
     LOCK TABLE stableid IN ACCESS EXCLUSIVE MODE;
-    update stableid set seq = (select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s)  
-    where prefix = %(stable_id_prefix)s; 
-    update studies set reserved_accession = 'MTBLS' || (select seq as current_acc from stableid where prefix = %(stable_id_prefix)s) 
+    update stableid set seq = (select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s)
+    where prefix = %(stable_id_prefix)s;
+    update studies set reserved_accession = 'MTBLS' || (select seq as current_acc from stableid where prefix = %(stable_id_prefix)s)
     where id = %(table_id)s;
 """
 get_study_id_sql = """
@@ -180,33 +187,33 @@ select id from users where lower(username)=%(username)s;
 """
 
 query_user_access_rights = """
-    SELECT DISTINCT role, read, write, obfuscationcode, releasedate, submissiondate, 
+    SELECT DISTINCT role, read, write, obfuscationcode, releasedate, submissiondate,
         CASE    WHEN status = 0 THEN 'Provisional'
-                WHEN status = 1 THEN 'Private' 
-                WHEN status = 2 THEN 'In Review' 
-                WHEN status = 3 THEN 'Public' 
-                ELSE 'Dormant' end 
-        AS status, 
+                WHEN status = 1 THEN 'Private'
+                WHEN status = 2 THEN 'In Review'
+                WHEN status = 3 THEN 'Public'
+                ELSE 'Dormant' end
+        AS status,
         acc from
-        ( 
-            SELECT 'curator' as role, 'True' as read, 'True' as write, s.obfuscationcode, 
+        (
+            SELECT 'curator' as role, 'True' as read, 'True' as write, s.obfuscationcode,
                     s.releasedate, s.submissiondate, s.status, s.acc from studies s
             WHERE   exists (select 1 from users where apitoken = %(apitoken)s and role = 1)
                     AND acc = %(study_id)s -- CURATOR
-            UNION 
+            UNION
             SELECT * from (
-                SELECT 'user' as role, 'True' as read, 'True' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
+                SELECT 'user' as role, 'True' as read, 'True' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc
                 from studies s, study_user su, users u
-                where s.acc = %(study_id)s and s.status = 0 and s.id = su.studyid and su.userid = u.id and 
+                where s.acc = %(study_id)s and s.status = 0 and s.id = su.studyid and su.userid = u.id and
                 u.apitoken = %(apitoken)s -- USER own data, provisional
                 UNION
-                SELECT 'user' as role, 'True' as read, 'False' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
+                SELECT 'user' as role, 'True' as read, 'False' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc
                 from studies s, study_user su, users u
-                where s.acc = %(study_id)s and s.status in (1, 2, 4) and s.id = su.studyid and su.userid = u.id and 
+                where s.acc = %(study_id)s and s.status in (1, 2, 4) and s.id = su.studyid and su.userid = u.id and
                 u.apitoken = %(apitoken)s -- USER own data, private, review or dormant
-                UNION 
-                SELECT 'user' as role, 'True' as read, 'False' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
-                from studies s where acc = %(study_id)s and status = 3) user_data 
+                UNION
+                SELECT 'user' as role, 'True' as read, 'False' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc
+                from studies s where acc = %(study_id)s and status = 3) user_data
             WHERE NOT EXISTS (SELECT 1 from users where apitoken = %(apitoken)s and role = 1)
         ) study_user_data;
 """
@@ -234,24 +241,26 @@ def create_user(
     api_token,
     password_encoded,
     metaspace_api_key,
+    role=UserRole.ROLE_SUBMITTER.value,
+    status=UserStatus.ACTIVE.value,
 ):
     email = email.lower()
     insert_user_query = """
         INSERT INTO users (
             address, affiliation, affiliationurl,
-            apitoken, email, firstname, 
+            apitoken, email, firstname,
             joindate,
-            lastname, password, 
+            lastname, password,
             role, status,
             username, orcid, metaspace_api_key
-            ) 
-        VALUES 
+            )
+        VALUES
         (
             %(address_value)s, %(affiliation_value)s, %(affiliationurl_value)s,
             %(apitoken_value)s, %(email_value)s, %(firstname_value)s,
-            %(current_time)s, 
-            %(lastname_value)s, %(password_value)s, 
-            2, 0,
+            %(current_time)s,
+            %(lastname_value)s, %(password_value)s,
+            %(role_value)s, %(status_value)s,
             %(email_value)s, %(orcid_value)s, %(metaspace_api_key_value)s
         );
     """
@@ -267,6 +276,8 @@ def create_user(
         "password_value": password_encoded,
         "orcid_value": orcid,
         "metaspace_api_key_value": metaspace_api_key,
+        "role_value": role,
+        "status_value": status,
         "current_time": current_utc_time_without_timezone(),
     }
 
@@ -364,7 +375,7 @@ def get_user(username):
     """
     val_query_params(username)
     get_user_query = """
-        select firstname, lastname, lower(email), affiliation, affiliationurl, address, orcid, metaspace_api_key 
+        select firstname, lastname, lower(email), affiliation, affiliationurl, address, orcid, metaspace_api_key
         from users
         where username = %(username)s;
     """
@@ -586,11 +597,12 @@ def get_all_studies_for_user(user_token):
         first_private_date = row[8].isoformat() if row[8] else None
         first_public_date = row[9].isoformat() if row[9] else None
         sample_type = row[10] if row[10] else None
-        study_category =  StudyCategory(row[11]).get_label()
+        study_category = StudyCategory(row[11]).get_label()
         mhd_accession = row[12] if row[12] else None
         mhd_model_version = row[13] if row[13] else None
         dataset_license = row[14] if row[14] else None
         template_version = row[15] if row[15] else ""
+        created_at = row[16].isoformat() if row[16] else None
         complete_list.append(
             {
                 "accession": study_id,
@@ -617,7 +629,8 @@ def get_all_studies_for_user(user_token):
                 "mhdAccession": mhd_accession,
                 "mhdModelVersion": mhd_model_version,
                 "datasetLicense": dataset_license,
-                "templateVersion": template_version
+                "templateVersion": template_version,
+                "createdAt": created_at,
             }
         )
     return complete_list
@@ -851,7 +864,7 @@ def update_study_id_from_provisional_id(study_id):
 def get_study(study_id):
     val_acc(study_id)
     query = """
-    select 
+    select
        case
            when s.placeholder = '1' then 'Placeholder'
            when s.status = 0 then 'Provisional'
@@ -1090,13 +1103,13 @@ def study_submitters(study_id, user_email, method):
     if method == "add":
         query = """
             insert into study_user(userid, studyid)
-            select u.id, s.id from users u, studies s where lower(u.email) = %(email)s and acc=%(study_id)s;    
+            select u.id, s.id from users u, studies s where lower(u.email) = %(email)s and acc=%(study_id)s;
         """
     elif method == "delete":
         query = """
             delete from study_user su where exists(
             select u.id, s.id from users u, studies s
-            where su.userid = u.id and su.studyid = s.id and lower(u.email) = %(email)s and acc=%(study_id)s); 
+            where su.userid = u.id and su.studyid = s.id and lower(u.email) = %(email)s and acc=%(study_id)s);
         """
 
     try:
@@ -1148,7 +1161,15 @@ def get_provisional_study_ids_for_user(user_token):
     return complete_list
 
 
-def create_empty_study(user_token, study_id=None, obfuscationcode=None):
+def create_empty_study(
+    user_token,
+    template_version="1.0",
+    study_category_name="other",
+    sample_template_name="minimum",
+    study_template_name="minimum",
+    study_id=None,
+    obfuscationcode=None,
+):
     email = get_email(user_token)
     # val_email(email)
     email = email.lower()
@@ -1177,14 +1198,14 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
             logger.error(message)
             raise MetabolightsDBException(http_code=501, message=message)
 
-        cursor.execute(f"SELECT nextval('hibernate_sequence')")
+        cursor.execute("SELECT nextval('hibernate_sequence')")
         new_unique_id = cursor.fetchone()[0]
         conn.commit()
         if not req_id:
             req_id = identifier_service.default_provisional_identifier.get_id(
                 new_unique_id, current_time
             )
-
+        study_category = StudyCategory.from_name(study_category_name)
         content = {
             "req_id": req_id,
             "obfuscationcode": obfuscationcode,
@@ -1193,6 +1214,10 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
             "new_unique_id": new_unique_id,
             "userid": user_id,
             "current_time": current_time,
+            "template_version": template_version,
+            "sample_template_name": sample_template_name,
+            "study_category": study_category,
+            "study_template_name": study_template_name,
         }
         cursor.execute(insert_study_with_provisional_id, content)
         conn.commit()
@@ -1269,7 +1294,7 @@ def query_study_submitters(study_id):
 
     query = """
         select u.email from users u, studies s, study_user su where
-        su.userid = u.id and su.studyid = s.id and acc = %(study_id)s; 
+        su.userid = u.id and su.studyid = s.id and acc = %(study_id)s;
     """
     try:
         postgresql_pool, conn, cursor = get_connection()
@@ -1629,9 +1654,7 @@ def get_connection():
     conn_pool_min = settings.database.configuration.conn_pool_min
     conn_pool_max = settings.database.configuration.conn_pool_max
     try:
-        postgresql_pool = psycopg2.pool.SimpleConnectionPool(
-            conn_pool_min, conn_pool_max, **params
-        )
+        postgresql_pool = SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
         conn = postgresql_pool.getconn()
         cursor = conn.cursor()
     # TODO: Actual exception handling, this is crap
@@ -1686,10 +1709,10 @@ def database_maf_info_table_actions(study_id=None):
             sql_trunc = "truncate table maf_info;"
             sql_drop = "drop table maf_info;"
             sql_create = """
-                CREATE table maf_info(  
-                                        acc VARCHAR, 
-                                        database_identifier VARCHAR, 
-                                        metabolite_identification VARCHAR, 
+                CREATE table maf_info(
+                                        acc VARCHAR,
+                                        database_identifier VARCHAR,
+                                        metabolite_identification VARCHAR,
                                         database_found VARCHAR,
                                         metabolite_found VARCHAR);
             """
@@ -1712,10 +1735,10 @@ def add_maf_info_data(
     msg = None
     sql = """
         insert into maf_info values(
-                                %(acc)s, 
-                                %(database_identifier)s, 
+                                %(acc)s,
+                                %(database_identifier)s,
                                 %(metabolite_identification)s,
-                                %(database_found)s, 
+                                %(database_found)s,
                                 %(metabolite_found)s
                                 );
     """
@@ -1738,8 +1761,8 @@ def add_metabolights_data(content_name, data_format, content):
     msg = None
     sql = """
         insert into metabolights_data_reuse(content_name, data_format, content) values(
-                                %(content_name)s, 
-                                %(data_format)s, 
+                                %(content_name)s,
+                                %(data_format)s,
                                 %(content)s
                                 );
     """

@@ -17,34 +17,36 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 import datetime
 import json
+import logging
 import os
 import re
 
-from flask import request, jsonify
-from flask_restful import Resource, marshal_with, reqparse, abort
+from email_validator import EmailNotValidError, validate_email
+from flask import jsonify, request
+from flask_restful import Resource, abort, marshal_with
 from flask_restful_swagger import swagger
+from isatools import model
 from marshmallow import ValidationError
-from app.config import get_settings
-from app.tasks.common_tasks.basic_tasks.elasticsearch import reindex_study
 
-from app.ws import utils
+from app.tasks.common_tasks.basic_tasks.elasticsearch import reindex_study
+from app.utils import metabolights_exception_handler
+from app.ws import mm_models
+from app.ws.auth.permissions import validate_submission_update, validate_submission_view
 from app.ws.db_connection import study_submitters, update_release_date
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.mm_models import *
-from email_validator import validate_email, EmailNotValidError
 from app.ws.mm_models import PersonSchema
 from app.ws.models import Investigation_api_model, serialize_investigation
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study.user_service import UserService
+from app.ws.study.utils import get_study_metadata_path
+from app.ws.study_templates.utils import get_validation_configuration
 from app.ws.utils import (
+    add_ontology_to_investigation,
     delete_column_from_tsv_file,
     log_request,
-    add_ontology_to_investigation,
     read_tsv,
     update_ontolgies_in_isa_tab_sheets,
     write_tsv,
 )
-import logging
 
 logger = logging.getLogger("wslog")
 iac = IsaApiClient()
@@ -103,33 +105,16 @@ class IsaJsonStudy(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     @marshal_with(Investigation_api_model, envelope="investigation")
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         logger.info("Getting ISA-JSON Study %s", study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
 
-        isa_obj = iac.get_isa_json(study_id, user_token, study_location=study_location)
+        isa_obj = iac.get_isa_json(study_id, None, study_location=study_location)
         str_inv = json.dumps(
             {"investigation": isa_obj}, default=serialize_investigation, sort_keys=True
         )
@@ -181,33 +166,15 @@ class StudyTitle(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        logger.info("Getting Study title for %s", study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         title = isa_study.title
@@ -216,9 +183,9 @@ class StudyTitle(Resource):
 
     @swagger.operation(
         summary="Update Study Title",
-        notes="""Update the title of a Study.</p><pre><code> 
-{ 
-    \"title\": \"New title of your study. Use publication title if possible\" 
+        notes="""Update the title of a Study.</p><pre><code>
+{
+    \"title\": \"New title of your study. Use publication title if possible\"
 }
 
 </code></pre>
@@ -280,16 +247,12 @@ class StudyTitle(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
         # body content validation
         if request.data is None or request.json is None:
@@ -313,30 +276,16 @@ class StudyTitle(Resource):
 
         # update study title
         logger.info("Updating Study title for %s", study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
         isa_study.title = new_title
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
-        inputs = {"user_token": user_token, "study_id": study_id}
-        reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
+        inputs = {"user_token": None, "study_id": study_id}
+        reindex_study.apply_async(kwargs=inputs, expires=60)
         logger.info("Applied %s", new_title)
         return jsonify({"title": new_title})
 
@@ -344,9 +293,9 @@ class StudyTitle(Resource):
 class StudyReleaseDate(Resource):
     @swagger.operation(
         summary="Update study release date",
-        notes="""Update the release date of a study.</p><pre><code> 
-{ 
-    \"release_date\": \"2019-05-15\" 
+        notes="""Update the release date of a study.</p><pre><code>
+{
+    \"release_date\": \"2019-05-15\"
 }
 
 </code></pre>
@@ -408,16 +357,12 @@ class StudyReleaseDate(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
         # body content validation
         if request.data is None or request.json is None:
@@ -444,33 +389,20 @@ class StudyReleaseDate(Resource):
 
         # update study title
         logger.info("Updating Study title for %s", study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
         isa_inv.public_release_date = new_date
         isa_study.public_release_date = new_date
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
         # update database
         update_release_date(study_id, new_date)
-        inputs = {"user_token": user_token, "study_id": study_id}
-        reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
+        inputs = {"user_token": None, "study_id": study_id}
+        reindex_study.apply_async(kwargs=inputs, expires=60)
         logger.info("Applied %s", new_date)
         return jsonify({"release_date": new_date})
 
@@ -517,34 +449,25 @@ class StudyMetaInfo(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
 
-        logger.info(
-            "Getting Study details for %s, using API-Key %s", study_id, user_token
+        logger.info("Getting Study details for %s", study_id)
+        release_date = (
+            result.context.first_public_date.strftime("%Y-%m-%d")
+            if result.context.first_public_date
+            else ""
         )
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
         return jsonify(
-            {"data": ["status:" + study_status, "release-date:" + release_date]}
+            {
+                "data": [
+                    "status:" + result.context.study_status.to_camel_case_str(),
+                    "release-date:" + release_date,
+                ]
+            }
         )
 
 
@@ -590,33 +513,14 @@ class StudyDescription(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        logger.info("Getting Study description for %s", study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
-
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
         description = isa_study.description
         logger.info("Got %s", description)
@@ -624,9 +528,9 @@ class StudyDescription(Resource):
 
     @swagger.operation(
         summary="Update Study Description",
-        notes="""Update the description of a Study.</p><pre><code> 
-{ 
-    \"description\": \"The description of your study. Please use the abstract from your paper if possible\" 
+        notes="""Update the description of a Study.</p><pre><code>
+{
+    \"description\": \"The description of your study. Please use the abstract from your paper if possible\"
 }
 
 </code></pre>""",
@@ -687,15 +591,12 @@ class StudyDescription(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
         logger.debug("Request headers   : %s", request.headers)
         logger.debug("Request data      : %s", request.data)
@@ -723,31 +624,18 @@ class StudyDescription(Resource):
 
         # update study description
         logger.info("Updating Study description for %s", study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
         isa_study.description = new_description.replace('"', "'").replace(
             "#", ""
         )  # ISA-API can not deal with these
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
-        inputs = {"user_token": user_token, "study_id": study_id}
+        inputs = {"user_token": None, "study_id": study_id}
         reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
         logger.info(
             "Applied %s and reindex task is triggered for %s",
@@ -758,20 +646,6 @@ class StudyDescription(Resource):
 
 
 def roles_to_contacts(isa_inv, new_contact):
-    # # Check that the ontology is referenced in the investigation
-    # isa_inv, efo = add_ontology_to_investigation(
-    #     isa_inv,
-    #     "EFO",
-    #     "132",
-    #     "http://data.bioontology.org/ontologies/EFO",
-    #     "Experimental Factor Ontology",
-    # )
-    # new_role = OntologyAnnotation(
-    #     term_accession="http://purl.obolibrary.org/obo/NCIT_C51826",
-    #     term="Investigator",
-    #     term_source=efo,
-    # )
-
     if new_contact and new_contact.roles:
         valid_roles = []
         for role in new_contact.roles:
@@ -880,19 +754,12 @@ class StudyContacts(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404, errors=["study_id is not defined."])
-        # query validation
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            abort(401, errors=["user_token is not defined."])
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
         # check for keeping copies
         save_audit_copy = False
@@ -904,16 +771,10 @@ class StudyContacts(Resource):
             save_audit_copy = True
             save_msg_str = "be"
 
-        study_root_path = (
-            get_settings().study.mounted_paths.study_metadata_files_root_path
-        )
-        study_location = os.path.join(study_root_path, study_id)
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
-        
+
         # body content validation
         new_contacts = []
         errors = {}
@@ -944,8 +805,13 @@ class StudyContacts(Resource):
                 isa_inv, new_contact = roles_to_contacts(isa_inv, new_contact)
                 new_contacts.append(new_contact)
                 for role in new_contact.roles:
-                    term_anno = role
-                    term_source = term_anno.term_source
+                    term_source = (
+                        role.term_source
+                        if role and role.term_source
+                        else mm_models.OntologySourceSchema(
+                            name="", version="", file="", description=""
+                        )
+                    )
                     add_ontology_to_investigation(
                         isa_inv,
                         term_source.name,
@@ -953,7 +819,7 @@ class StudyContacts(Resource):
                         term_source.file,
                         term_source.description,
                     )
-      
+
         except Exception as e:
             import traceback
 
@@ -972,18 +838,18 @@ class StudyContacts(Resource):
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
-        inputs = {"user_token": user_token, "study_id": study_id}
+        inputs = {"user_token": None, "study_id": study_id}
         reindex_study.apply_async(kwargs=inputs, expires=60)
 
         # Using context to avoid envelop tags in contained objects
         logger.info("Got %s contacts", len(new_contacts))
-        
+
         sch = PersonSchema()
-        sch.context['contact'] = Person()
+        sch.context["contact"] = model.Person()
         return sch.dump(isa_study.contacts, many=True)
-    
+
     def validate_contact(self, new_contact: PersonSchema):
         errors = []
         comments = {x.name: x for x in new_contact.comments}
@@ -1106,43 +972,26 @@ class StudyContacts(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        email = None
-        full_name = None
-        if request.args:
-            email = request.args.get("email")
-            full_name = request.args.get("full_name", "").replace(" ", "").lower()
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
+        email = request.args.get("email") or None
+        full_name = request.args.get("full_name", "").replace(" ", "").lower() or None
 
         logger.info("Getting Contacts %s for Study %s", email, study_id)
         # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
+
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         obj_list = isa_study.contacts
         # Using context to avoid envelop tags in contained objects
         sch = PersonSchema()
-        sch.context["contact"] = Person()
+        sch.context["contact"] = model.Person()
         if email is None and full_name is None:
             # return a list of objs
             logger.info("Got %s contacts", len(obj_list))
@@ -1150,9 +999,9 @@ class StudyContacts(Resource):
         else:
             # return a single obj
             if full_name:
-                logger.info("Contact full_name " + full_name)
+                logger.info("Contact full_name %s", full_name)
             if email:
-                logger.info("Email " + email)
+                logger.info("Email %s", email)
             found = False
             for index, obj in enumerate(obj_list):
                 if email and obj.email == email:
@@ -1271,27 +1120,16 @@ class StudyContacts(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404, errors=["study_id must be provided."])
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
         contact_index = int(request.args.get("contact_index", -1))
         if contact_index < 0:
             abort(400, errors=["contact_index must be provided."])
-
-        # User authentication
-        user_token = request.headers.get("user_token")
-        if not user_token:
-            abort(401, errors=["user_token must be provided."])
-
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-
-        study_root_path = (
-            get_settings().study.mounted_paths.study_metadata_files_root_path
-        )
-        study_location = os.path.join(study_root_path, study_id)
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -1303,7 +1141,7 @@ class StudyContacts(Resource):
             save_msg_str = "be"
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         if contact_index >= len(isa_study.contacts):
@@ -1326,7 +1164,13 @@ class StudyContacts(Resource):
             isa_inv, updated_contact = roles_to_contacts(isa_inv, updated_contact)
             for role in updated_contact.roles:
                 term_anno = role
-                term_source = term_anno.term_source
+                term_source = (
+                    term_anno.term_source
+                    if term_anno and term_anno.term_source
+                    else mm_models.OntologySourceSchema(
+                        name="", version="", file="", description=""
+                    )
+                )
                 add_ontology_to_investigation(
                     isa_inv,
                     term_source.name,
@@ -1345,9 +1189,9 @@ class StudyContacts(Resource):
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
-        inputs = {"user_token": user_token, "study_id": study_id}
+        inputs = {"user_token": None, "study_id": study_id}
         reindex_study.apply_async(kwargs=inputs, expires=60)
         logger.info("Updated %s", updated_contact.email)
 
@@ -1415,11 +1259,12 @@ class StudyContacts(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404, errors=["study_id must be provided."])
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
         contact_index = request.args.get("contact_index")
         if contact_index is None:
@@ -1428,12 +1273,6 @@ class StudyContacts(Resource):
             contact_index = int(contact_index) if contact_index.isnumeric() else -1
         if isinstance(contact_index, int) and int(contact_index) < 0:
             abort(400, errors=["contact_index must be a positive integer."])
-
-        # User authentication
-        user_token = request.headers.get("user_token")
-        if not user_token:
-            abort(401, errors=["user_token must be provided."])
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -1443,14 +1282,8 @@ class StudyContacts(Resource):
         ):
             save_audit_copy = True
             save_msg_str = "be"
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        study_root_path = (
-            get_settings().study.mounted_paths.study_metadata_files_root_path
-        )
-        study_location = os.path.join(study_root_path, study_id)
-
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
         if contact_index >= len(isa_study.contacts):
             abort(404, errors=[f"Contact not found at {contact_index}."])
@@ -1458,7 +1291,7 @@ class StudyContacts(Resource):
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
         logger.info("%s Contact at %s deleted ", study_id, contact_index)
 
@@ -1568,41 +1401,16 @@ class StudyProtocols(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        # query validation
-
-        obj_name = (
-            request.args.get("name").lower() if request.args.get("name") else None
-        )
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
+        obj_name = request.args.get("name", "").lower() or None
         # No protocol param allowed, just to prevent confusion with UPDATE
         if obj_name:
             abort(400)
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
 
         # check for keeping copies
         save_audit_copy = False
@@ -1620,7 +1428,7 @@ class StudyProtocols(Resource):
             data_dict = json.loads(request.data.decode("utf-8"))
             data = data_dict["protocol"]
             # if partial=True missing fields will be ignored
-            result = ProtocolSchema().load(data, partial=False)
+            result = mm_models.ProtocolSchema().load(data, partial=False)
             new_obj = result.data
         except (ValidationError, Exception):
             abort(400)
@@ -1629,7 +1437,7 @@ class StudyProtocols(Resource):
         # Add new protocol
         logger.info("Adding new Protocol %s for %s", new_obj.name, study_id)
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         # check for protocol added already
@@ -1640,11 +1448,11 @@ class StudyProtocols(Resource):
         isa_study.protocols.append(new_obj)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
         logger.info("Added %s", new_obj.name)
 
-        return ProtocolSchema().dump(new_obj)
+        return mm_models.ProtocolSchema().dump(new_obj)
 
     @swagger.operation(
         summary="Get Study Protocols",
@@ -1698,16 +1506,12 @@ class StudyProtocols(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        # query validation
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
         obj_name = None
         if request.args:
@@ -1716,29 +1520,17 @@ class StudyProtocols(Resource):
             )
 
         logger.info("Getting Study protocols for %s", study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
+
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         obj_list = isa_study.protocols
         for objProt in obj_list:
             logger.info(objProt.name)
         # Using context to avoid envelop tags in contained objects
-        sch = ProtocolSchema()
-        sch.context["protocol"] = Protocol()
+        sch = mm_models.ProtocolSchema()
+        sch.context["protocol"] = model.Protocol()
         if not obj_name:
             # return a list of objs
             logger.info("Got %s protocols", len(obj_list))
@@ -1828,11 +1620,12 @@ class StudyProtocols(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
         force_remove_protocols = True
 
@@ -1842,12 +1635,6 @@ class StudyProtocols(Resource):
 
         if not prot_name:
             abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            abort(401)
 
         # check for keeping copies
         save_audit_copy = False
@@ -1861,22 +1648,9 @@ class StudyProtocols(Resource):
 
         # delete protocol
         logger.info("Deleting protocol %s for %s", prot_name, study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         protocol = isa_study.get_prot(prot_name)
@@ -1903,7 +1677,7 @@ class StudyProtocols(Resource):
             isa_study.protocols.remove(protocol)
             logger.info("A copy of the previous files will %s saved", save_msg_str)
             iac.write_isa_study(
-                isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+                isa_inv, None, std_path, save_investigation_copy=save_audit_copy
             )
             logger.info("Deleted %s", protocol.name)
         else:
@@ -2012,25 +1786,18 @@ class StudyProtocols(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        # query validation
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
         obj_name = (
             request.args.get("name").lower() if request.args.get("name") else None
         )
         if not obj_name:
             abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
 
         # check for keeping copies
         save_audit_copy = False
@@ -2048,29 +1815,15 @@ class StudyProtocols(Resource):
             data_dict = json.loads(request.data.decode("utf-8"))
             data = data_dict["protocol"]
             # if partial=True missing fields will be ignored
-            result = ProtocolSchema().load(data, partial=False)
+            result = mm_models.ProtocolSchema().load(data, partial=False)
             updated_protocol = result.data
         except (ValidationError, Exception):
             abort(400)
 
         # update protocol details
         logger.info("Updating Protocol details for %s", study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
         found = False
         for index, protocol in enumerate(isa_study.protocols):
@@ -2083,11 +1836,11 @@ class StudyProtocols(Resource):
             abort(404)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
         logger.info("Updated %s", updated_protocol.name)
 
-        return ProtocolSchema().dump(updated_protocol)
+        return mm_models.ProtocolSchema().dump(updated_protocol)
 
 
 class StudyFactors(Resource):
@@ -2171,26 +1924,19 @@ class StudyFactors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
-
         obj_name = (
             request.args.get("name").lower() if request.args.get("name") else None
         )
         # No params allowed, just to prevent confusion with UPDATE
         if obj_name:
             abort(400)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
 
         # check for keeping copies
         save_audit_copy = False
@@ -2208,28 +1954,15 @@ class StudyFactors(Resource):
             data_dict = json.loads(request.data.decode("utf-8"))
             data = data_dict["factor"]
             # if partial=True missing fields will be ignored
-            result = StudyFactorSchema().load(data, partial=False)
+            result = mm_models.StudyFactorSchema().load(data, partial=False)
             new_obj = result.data
         except (ValidationError, Exception):
             abort(400)
 
         # Add new Study Factor
         logger.info("Adding new Study Factor %s for %s", new_obj.name, study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         # check for factor added already
@@ -2247,7 +1980,13 @@ class StudyFactors(Resource):
 
             # Check that the ontology is referenced in the investigation
             factor_type = new_obj.factor_type
-            term_source = factor_type.term_source
+            term_source = (
+                factor_type.term_source
+                if factor_type and factor_type.term_source
+                else mm_models.OntologySourceSchema(
+                    name="", version="", file="", description=""
+                )
+            )
             add_ontology_to_investigation(
                 isa_inv,
                 term_source.name,
@@ -2257,13 +1996,13 @@ class StudyFactors(Resource):
             )
 
             iac.write_isa_study(
-                isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+                isa_inv, None, std_path, save_investigation_copy=save_audit_copy
             )
             logger.info("Added %s", new_obj.name)
         else:
             abort(406, message="Please provide a name (factorName) for the factor")
 
-        return StudyFactorSchema().dump(new_obj)
+        return mm_models.StudyFactorSchema().dump(new_obj)
 
     @swagger.operation(
         summary="Get Study Factors",
@@ -2317,15 +2056,12 @@ class StudyFactors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
 
         obj_name = None
@@ -2335,27 +2071,14 @@ class StudyFactors(Resource):
             )
 
         logger.info("Getting Study Factors for %s", study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         obj_list = isa_study.factors
         # Using context to avoid envelop tags in contained objects
-        sch = StudyFactorSchema()
-        sch.context["factor"] = StudyFactor()
+        sch = mm_models.StudyFactorSchema()
+        sch.context["factor"] = model.StudyFactor()
         if not obj_name:
             # return a list of objs
             logger.info("Got %s factors", len(obj_list))
@@ -2434,22 +2157,17 @@ class StudyFactors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
 
         obj_name = request.args.get("name") if request.args.get("name") else None
         if not obj_name:
             abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            abort(401)
 
         # check for keeping copies
         save_audit_copy = False
@@ -2463,24 +2181,10 @@ class StudyFactors(Resource):
 
         # delete Study Factor
         logger.info("Deleting Study Factor %s for %s", obj_name, study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
-        # obj = isa_study.get_factor(obj_name)
         obj = self.get_factor(isa_study.factors, obj_name)
         if not obj:
             abort(404)
@@ -2488,12 +2192,12 @@ class StudyFactors(Resource):
         isa_study.factors.remove(obj)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
         logger.info("Deleted %s", obj.name)
 
-        sch = StudyFactorSchema()
-        sch.context["factor"] = StudyFactor()
+        sch = mm_models.StudyFactorSchema()
+        sch.context["factor"] = model.StudyFactor()
         try:
             resp = sch.dump(obj)
             sample_file = os.path.join(study_location, isa_study.filename)
@@ -2609,23 +2313,17 @@ class StudyFactors(Resource):
             {"code": 412, "message": "The JSON provided can not be parsed properly."},
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
 
         factor_name = request.args.get("name")
         if factor_name is None:
             abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
 
         # check for keeping copies
         save_audit_copy = False
@@ -2637,22 +2335,8 @@ class StudyFactors(Resource):
             save_audit_copy = True
             save_msg_str = "be"
 
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         # body content validation
@@ -2662,12 +2346,18 @@ class StudyFactors(Resource):
             data = data_dict["factor"]
             # if partial=True missing fields will be ignored
             try:
-                result = StudyFactorSchema().load(data, partial=False)
+                result = mm_models.StudyFactorSchema().load(data, partial=False)
                 updated_factor = result.data
 
                 # Check that the ontology is referenced in the investigation
                 factor_type = updated_factor.factor_type
-                term_source = factor_type.term_source
+                term_source = (
+                    factor_type.term_source
+                    if factor_type and factor_type.term_source
+                    else mm_models.OntologySourceSchema(
+                        name="", version="", file="", description=""
+                    )
+                )
                 add_ontology_to_investigation(
                     isa_inv,
                     term_source.name,
@@ -2708,11 +2398,11 @@ class StudyFactors(Resource):
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
         logger.info("Updated %s", updated_factor.name)
 
-        return StudyFactorSchema().dump(updated_factor)
+        return mm_models.StudyFactorSchema().dump(updated_factor)
 
 
 class StudyDescriptors(Resource):
@@ -2793,24 +2483,18 @@ class StudyDescriptors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
 
         obj_term = request.args.get("term")
         # No params allowed, just to prevent confusion with UPDATE
         if obj_term:
             abort(400)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
 
         # check for keeping copies
         save_audit_copy = False
@@ -2828,7 +2512,7 @@ class StudyDescriptors(Resource):
             data_dict = json.loads(request.data.decode("utf-8"))
             data = data_dict["studyDesignDescriptor"]
             # if partial=True missing fields will be ignored
-            result = StudyDesignDescriptorSchema().load(data, partial=False)
+            result = mm_models.StudyDesignDescriptorSchema().load(data, partial=False)
             new_obj = result.data
         except (ValidationError, Exception):
             abort(400)
@@ -2837,22 +2521,9 @@ class StudyDescriptors(Resource):
         logger.info(
             "Adding new Study Design Descriptor %s for %s", new_obj.term, study_id
         )
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         # check for Study Descriptor added already
@@ -2861,7 +2532,13 @@ class StudyDescriptors(Resource):
                 abort(409, message=f"Descriptor name '{new_obj.term}' already exists.")
 
         # Check that the ontology is referenced in the investigation
-        term_source = new_obj.term_source
+        term_source = (
+            new_obj.term_source
+            if new_obj and new_obj.term_source
+            else mm_models.OntologySourceSchema(
+                name="", version="", file="", description=""
+            )
+        )
         if term_source:
             add_ontology_to_investigation(
                 isa_inv,
@@ -2877,11 +2554,11 @@ class StudyDescriptors(Resource):
         isa_study.design_descriptors.append(new_obj)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
         logger.info("Added %s", new_obj.term)
 
-        return StudyDesignDescriptorSchema().dump(new_obj)
+        return mm_models.StudyDesignDescriptorSchema().dump(new_obj)
 
     @swagger.operation(
         summary="Get Study Design Descriptors",
@@ -2935,15 +2612,12 @@ class StudyDescriptors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
 
         obj_term = None
@@ -2951,27 +2625,14 @@ class StudyDescriptors(Resource):
             obj_term = request.args.get("annotationValue")
 
         logger.info("Getting Study Design Descriptors for %s", study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         obj_list = isa_study.design_descriptors
         # Using context to avoid envelop tags in contained objects
-        sch = StudyDesignDescriptorSchema()
+        sch = mm_models.StudyDesignDescriptorSchema()
         sch.context["descriptor"] = StudyDescriptors()
         if obj_term is None:
             # return a list of objs
@@ -3051,22 +2712,17 @@ class StudyDescriptors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
 
         obj_term = request.args.get("term")
         if obj_term is None:
             abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            abort(401)
 
         # check for keeping copies
         save_audit_copy = False
@@ -3080,22 +2736,8 @@ class StudyDescriptors(Resource):
 
         # delete Study Design Descriptor
         logger.info("Deleting Study Design Descriptor %s for %s", obj_term, study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         found = False
@@ -3109,11 +2751,11 @@ class StudyDescriptors(Resource):
             abort(404)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
         logger.info("Deleted %s", obj.term)
 
-        return StudyDesignDescriptorSchema().dump(obj)
+        return mm_models.StudyDesignDescriptorSchema().dump(obj)
 
     @swagger.operation(
         summary="Update Study Design Descriptor",
@@ -3198,23 +2840,17 @@ class StudyDescriptors(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
 
         descriptor_term = request.args.get("term")
         if descriptor_term is None:
             abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
 
         # check for keeping copies
         save_audit_copy = False
@@ -3232,29 +2868,16 @@ class StudyDescriptors(Resource):
             data_dict = json.loads(request.data.decode("utf-8"))
             data = data_dict["studyDesignDescriptor"]
             # if partial=True missing fields will be ignored
-            result = StudyDesignDescriptorSchema().load(data, partial=False)
+            result = mm_models.StudyDesignDescriptorSchema().load(data, partial=False)
             updated_descriptor = result.data
         except (ValidationError, Exception):
             abort(400)
 
         # update Study Design Descriptor details
         logger.info("Updating Study Design Descriptor details for %s", study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
         found = False
         for index, descriptor in enumerate(
@@ -3273,7 +2896,13 @@ class StudyDescriptors(Resource):
             logger.info("A copy of the previous files will %s saved. " + save_msg_str)
 
         # Check that the ontology is referenced in the investigation
-        term_source = updated_descriptor.term_source
+        term_source = (
+            updated_descriptor.term_source
+            if updated_descriptor and updated_descriptor.term_source
+            else mm_models.OntologySourceSchema(
+                name="", version="", file="", description=""
+            )
+        )
         add_ontology_to_investigation(
             isa_inv,
             term_source.name,
@@ -3283,11 +2912,11 @@ class StudyDescriptors(Resource):
         )
 
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
         logger.info("Updated %s", updated_descriptor.term)
 
-        return StudyDesignDescriptorSchema().dump(updated_descriptor)
+        return mm_models.StudyDesignDescriptorSchema().dump(updated_descriptor)
 
 
 class StudyPublications(Resource):
@@ -3369,24 +2998,18 @@ class StudyPublications(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
 
         publication_title = request.args.get("title")
         # No params allowed, just to prevent confusion with UPDATE
         if publication_title:
             abort(400)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
 
         # check for keeping copies
         save_audit_copy = False
@@ -3404,7 +3027,7 @@ class StudyPublications(Resource):
             data_dict = json.loads(request.data.decode("utf-8"))
             data = data_dict["publication"]
             # if partial=True missing fields will be ignored
-            result = PublicationSchema().load(data, partial=False)
+            result = mm_models.PublicationSchema().load(data, partial=False)
             new_publication = result.data
         except (ValidationError, Exception):
             abort(400)
@@ -3414,22 +3037,9 @@ class StudyPublications(Resource):
         validation_result = self.validate_publication(new_publication)
         if validation_result:
             abort(409, message=validation_result)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         # Check that the ontology is referenced in the investigation
@@ -3482,13 +3092,13 @@ class StudyPublications(Resource):
                 logger.info("Updated %s", new_publication.title)
         if updated:
             iac.write_isa_study(
-                isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+                isa_inv, None, std_path, save_investigation_copy=save_audit_copy
             )
             # logger.info("A copy of the previous files will %s saved", save_msg_str)
 
-        return PublicationSchema().dump(new_publication)
-    
-    def validate_publication(self, new_publication: PublicationSchema):
+        return mm_models.PublicationSchema().dump(new_publication)
+
+    def validate_publication(self, new_publication: mm_models.PublicationSchema):
         errors = []
         status = getattr(new_publication, "status", None)
         if not new_publication.title or len(new_publication.title) < 20:
@@ -3502,9 +3112,9 @@ class StudyPublications(Resource):
             if not re.match(pmid_pattern, new_publication.pubmed_id):
                 errors.append(f"Invalid PubMed ID '{new_publication.pubmed_id}'")
         if not status:
-            errors.append(f"Publication status cannot be empty")        
+            errors.append("Publication status cannot be empty")
         return errors
-    
+
     @swagger.operation(
         summary="Get Study Publications",
         notes="""Get Study Publications.
@@ -3557,45 +3167,27 @@ class StudyPublications(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        # query validation
-        # ToDo add authors, PubMedID and DOI filters
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
         obj_title = None
         if request.args:
             obj_title = request.args.get("title")
 
         logger.info("Getting Study Publications for %s", study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         obj_list = isa_study.publications
         # Using context to avoid envelop tags in contained objects
-        sch = PublicationSchema()
-        sch.context["publication"] = Publication()
+        sch = mm_models.PublicationSchema()
+        sch.context["publication"] = model.Publication()
         if obj_title is None:
             # return a list of publications
             logger.info("Got %s publications", len(isa_study.publications))
@@ -3674,23 +3266,16 @@ class StudyPublications(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        # query validation
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
 
         publication_title = request.args.get("title")
         if publication_title is None:
             abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            abort(401)
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -3703,22 +3288,9 @@ class StudyPublications(Resource):
 
         # delete publication
         logger.info("Deleting Study Publication %s for %s", publication_title, study_id)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
         found = False
         for index, publication in enumerate(isa_study.publications):
@@ -3733,11 +3305,11 @@ class StudyPublications(Resource):
             abort(404, message="Requested publication title does not exist.")
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
         logger.info("Deleted %s", publication.title)
 
-        return PublicationSchema().dump(publication)
+        return mm_models.PublicationSchema().dump(publication)
 
     @swagger.operation(
         summary="Update Study Publication",
@@ -3823,24 +3395,17 @@ class StudyPublications(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def put(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        study_location = get_study_metadata_path(study_id)
         # query validation
 
         publication_title = request.args.get("title")
         if publication_title is None:
             abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -3857,7 +3422,7 @@ class StudyPublications(Resource):
             data_dict = json.loads(request.data.decode("utf-8"))
             data = data_dict["publication"]
             # if partial=True missing fields will be ignored
-            result = PublicationSchema().load(data, partial=False)
+            result = mm_models.PublicationSchema().load(data, partial=False)
             updated_publication = result.data
         except (ValidationError, Exception):
             abort(400)
@@ -3867,27 +3432,14 @@ class StudyPublications(Resource):
         validation_result = self.validate_publication(updated_publication)
         if validation_result:
             abort(409, message=validation_result)
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id, user_token, skip_load_tables=True, study_location=study_location
+            study_id, None, skip_load_tables=True, study_location=study_location
         )
 
         # Check that the ontology is referenced in the investigation
         new_status = updated_publication.status
-        # term_source = new_status.term_source
+        term_source = new_status.term_source
 
         found = False
         for index, publication in enumerate(isa_study.publications):
@@ -3900,31 +3452,59 @@ class StudyPublications(Resource):
                 break
         if not found:
             abort(404)
-        # if term_source:
+        new_source_name = ""
+        if (
+            updated_publication
+            and updated_publication.status
+            and updated_publication.status.term_source
+            and new_status
+        ):
+            new_source = updated_publication.status.term_source.name.lower()
+        selected_ontology_source_ref = None
+        if new_source_name and isa_inv.ontology_source_references:
+            for ref in isa_inv.ontology_source_references:
+                if (ref.name or "").lower() == new_source:
+                    selected_ontology_source_ref = ref
+                    break
+        if not selected_ontology_source_ref and new_source_name:
+            config = get_validation_configuration()
+            term_source = updated_publication.status.term_source
+            if config:
+                refs = config.templates.ontology_source_reference_templates
+                if refs and new_source_name.upper() in refs:
+                    item = refs[new_source_name.upper()]
+                    term_source = model.OntologySource(
+                        name=str(item.source_name),
+                        version=str(item.version),
+                        file=str(item.name),
+                        description=str(item.description),
+                    )
+            isa_inv.ontology_source_references.append(term_source)
+        # if new_source:
         #     add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
         #                                   term_source.file, term_source.description)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
-            isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy
+            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
         )
         logger.info("Updated %s", updated_publication.title)
 
-        return PublicationSchema().dump(updated_publication)
+        return mm_models.PublicationSchema().dump(updated_publication)
 
 
 class StudySubmitters(Resource):
     @swagger.operation(
         summary="Add new Study Submitters",
-        notes="""Add new Submitter (owner) to a Study. The submitter must already exist in the MetaboLights database.  
+        notes="""Add new Submitter (owner) to a Study. The submitter must already exist in the MetaboLights database.
         Due to GDPR data protection issues with confirming if an email address exists in MetaboLights, we will always indicate a successful update<pre><code>
-    { 
+    {
       "submitters": [
         {
           "email": "joe.blogs@university.ac.uk"
         },
         {
           "email": "jane.blogs@university.ac.uk"
-        } 
+        }
       ]
     }
     </code></pre>""",
@@ -3980,32 +3560,11 @@ class StudySubmitters(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            abort(401)
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
 
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
@@ -4015,8 +3574,8 @@ class StudySubmitters(Resource):
             for submitter in data:
                 email = submitter.get("email")
                 study_submitters(study_id, email, "add")
-                inputs = {"user_token": user_token, "study_id": study_id}
-                reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
+                inputs = {"user_token": None, "study_id": study_id}
+                reindex_study.apply_async(kwargs=inputs, expires=60)
         except:
             logger.error("Could not add user " + email + " to study " + study_id)
 
@@ -4024,16 +3583,16 @@ class StudySubmitters(Resource):
 
     @swagger.operation(
         summary="Delete a Study Submitter",
-        notes="""Delete an existing Submitter (owner) from a Study. The submitter must already exist in the MetaboLights database. 
+        notes="""Delete an existing Submitter (owner) from a Study. The submitter must already exist in the MetaboLights database.
         Due to data protection issues with confirming if an email address exists in MetaboLights, we will always indicate a successful deletion<pre><code>
-    { 
+    {
       "submitters": [
-        { 
+        {
           "email": "joe.blogs@university.ac.uk"
         },
         {
           "email": "jane.blogs@university.ac.uk"
-        } 
+        }
       ]
     }
     </code></pre>""",
@@ -4089,33 +3648,11 @@ class StudySubmitters(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
         log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            abort(401)
-
-        # check for access rights
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
             data = data_dict["submitters"]
@@ -4124,7 +3661,7 @@ class StudySubmitters(Resource):
             for submitter in data:
                 email = submitter.get("email")
                 study_submitters(study_id, email, "delete")
-                inputs = {"user_token": user_token, "study_id": study_id}
+                inputs = {"user_token": None, "study_id": study_id}
                 reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
         except:
             logger.error("Could not delete user " + email + " from study " + study_id)

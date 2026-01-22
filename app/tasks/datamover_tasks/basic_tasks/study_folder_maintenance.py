@@ -10,11 +10,12 @@ import pandas as pd
 from app.config import get_settings
 from app.tasks.worker import (
     MetabolightsTask,
+    celery,
     report_internal_technical_issue,
     send_email,
-    celery,
 )
 from app.utils import MetabolightsDBException, current_time
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus
@@ -39,7 +40,7 @@ def create_study_folders(
 
         if maintain_metadata_storage:
             maintenance_task.maintain_study_rw_storage_folders()
-            
+
         if maintain_private_ftp_storage:
             maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
 
@@ -122,6 +123,7 @@ def delete_study_folders(
                 sample_template=study.sample_type,
                 dataset_license=study.dataset_license,
                 template_version=study.template_version,
+                study_template=study.study_template,
             )
             all_results = []
             if delete_metadata_storage_folders:
@@ -266,14 +268,15 @@ def maintain_storage_study_folders(
     studies = []
     try:
         with DBManager.get_instance().session_maker() as db_session:
+            auth_manager = AuthenticationManager.get_instance()
             if study_id:
-                user: User = UserService.get_instance().validate_user_has_write_access(
-                    user_token, study_id=study_id
-                )
+                user: User = UserService.get_instance(
+                    auth_manager
+                ).validate_user_has_write_access(user_token, study_id=study_id)
             else:
-                user: User = UserService.get_instance().validate_user_has_curator_role(
-                    user_token
-                )
+                user: User = UserService.get_instance(
+                    auth_manager
+                ).validate_user_has_curator_role(user_token)
 
             if not user:
                 raise MetabolightsDBException("No user")
@@ -313,6 +316,7 @@ def maintain_storage_study_folders(
                     sample_template=study.sample_type,
                     dataset_license=study.dataset_license,
                     template_version=study.template_version,
+                    study_template=study.study_template,
                 )
 
                 if maintain_metadata_storage:

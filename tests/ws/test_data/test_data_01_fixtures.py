@@ -14,17 +14,28 @@ def data_01_study_id_01_list():
 
 @pytest.fixture
 def super_user_01(data_01_study_id_01_list):
-    return utils.UserTestData(str(uuid.uuid4()), "mtbls-test-super@ebi.ac.uk", 9999998, 1, 2)
+    return utils.UserTestData(
+        str(uuid.uuid4()), "mtbls-test-super@ebi.ac.uk", 9999998, 1, 2
+    )
 
 
 @pytest.fixture
 def submitter_1(data_01_study_id_01_list):
-    return utils.UserTestData(str(uuid.uuid4()), "mtbls-submitter1@ebi.ac.uk", 9999999, 0, 2, data_01_study_id_01_list)
+    return utils.UserTestData(
+        str(uuid.uuid4()),
+        "mtbls-submitter1@ebi.ac.uk",
+        9999999,
+        0,
+        2,
+        data_01_study_id_01_list,
+    )
 
 
 @pytest.fixture
 def invalid_user_1(data_01_study_id_01_list):
-    return utils.UserTestData("xxxxxxxsss", "mtbls-invalid@ebi.ac.uk", 1111111111, 0, 2, [])
+    return utils.UserTestData(
+        "xxxxxxxsss", "mtbls-invalid@ebi.ac.uk", 1111111111, 0, 2, []
+    )
 
 
 @pytest.fixture

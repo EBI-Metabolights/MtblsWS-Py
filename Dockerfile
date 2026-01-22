@@ -1,63 +1,31 @@
 ARG CONTAINER_REGISTRY_PREFIX=docker.io/
 
-FROM ${CONTAINER_REGISTRY_PREFIX}python:3.12-slim-bullseye AS builder
-LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
+FROM ${CONTAINER_REGISTRY_PREFIX}astral/uv:0.9-python3.13-trixie-slim AS builder
 
-RUN apt-get clean && apt-get -y update && apt-get -y \
-    install build-essential python3-dev python3-pip \
-    libpq-dev libglib2.0-0 libsm6 libxrender1 libxext6 \
-    git openssh-client ca-certificates
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV POETRY_NO_INTERACTION=1
-ENV POETRY_VIRTUALENVS_IN_PROJECT=1 
-ENV POETRY_VIRTUALENVS_CREATE=1
-ENV POETRY_CACHE_DIR=/tmp/poetry_cache
-ENV POETRY_HOME=/opt/poetry
-WORKDIR /app-root
-
-RUN pip3 install --upgrade pip 
-RUN pip3 install --no-cache-dir  poetry==2.2.1
-RUN poetry --version
-
-COPY pyproject.toml .
-COPY poetry.lock .
-RUN touch README.md
-
-RUN poetry install --without dev --no-root && rm -rf $POETRY_CACHE_DIR
-
-FROM ${CONTAINER_REGISTRY_PREFIX}python:3.12-slim-bullseye AS runner
 LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
 
 RUN apt-get -y update \
-    && apt-get -y install wget curl zip git vim unrar-free p7zip-full bzip2 pigz pbzip2 zstd rsync openssh-client libglib2.0-0 libsm6 libxrender1 libxext6 libpq-dev \
+    && apt-get -y install wget curl zip git vim \
+        unrar-free p7zip-full bzip2 pigz pbzip2 \
+        zstd rsync openssh-client \
+        libglib2.0-0 libsm6 libxrender1 libxext6 libpq-dev \
+        build-essential python3-dev pkg-config libssl-dev libffi-dev \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get -y autoremove --purge
 
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-ENV VIRTUAL_ENV=/app-root/.venv
-ENV PATH=/opt/rar:/app-root/.venv/bin:$PATH
-
-COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+WORKDIR /app-root
+COPY . .
+RUN uv sync --locked
 
 ARG GROUP1_ID=2222
 ARG GROUP2_ID=2223
 ARG USER_ID=2222
 RUN groupadd group1 -g $GROUP1_ID \
-    && groupadd group2 -g $GROUP2_ID \ 
+    && groupadd group2 -g $GROUP2_ID \
     && useradd -ms /bin/bash -u $USER_ID -g group1 -G group1,group2 metabolights
-    
-RUN cd /opt && wget rarlab.com/rar/rarlinux-x64-5.1.1.tar.gz && tar -zxvf rarlinux-x64-5.1.1.tar.gz && rm rarlinux-x64-5.1.1.tar.gz
-
 USER metabolights
-
-WORKDIR /app-root
-
-COPY . .
+ENV PYTHONPATH=/app-root
+ENV PATH=/app-root/.venv/bin:$PATH
 
 EXPOSE 7007
 

@@ -1,18 +1,17 @@
 import glob
 import hashlib
-import io
 import json
 import logging
 import os
 import pathlib
 import re
 import shutil
-import chardet
 import time
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, OrderedDict, Set, Union
 
+import chardet
 import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -20,8 +19,8 @@ from isatools import isatab
 from isatools import model as isatools_model
 from pydantic import BaseModel
 from unidecode import unidecode
+
 from app.config import get_settings
-from app import application_path
 from app.config.model.hpc_cluster import HpcClusterConfiguration
 from app.config.model.study import StudySettings
 from app.file_utils import make_dir_with_chmod
@@ -36,7 +35,7 @@ from app.utils import (
 )
 from app.ws.db.types import StudyStatus
 from app.ws.db_connection import update_study_sample_type
-from app.ws.isa_table_templates import create_sample_sheet
+from app.ws.isa_table_templates import create_investigation_file, create_sample_sheet
 from app.ws.settings.utils import get_cluster_settings, get_study_settings
 from app.ws.study.comment_utils import update_mhd_comments
 
@@ -249,6 +248,8 @@ class StudyFolderMaintenanceTask(object):
         mhd_model_version: None | str = None,
         dataset_license: None | str = None,
         template_version: None | str = None,
+        created_at: None | datetime = None,
+        study_template: None | str = None,
     ) -> None:
         self.study_category = study_category
         self.mhd_accession = mhd_accession
@@ -256,6 +257,8 @@ class StudyFolderMaintenanceTask(object):
         self.sample_template = sample_template
         self.dataset_license = dataset_license
         self.template_version = template_version
+        self.created_at = created_at
+        self.study_template = study_template
         self.study_id = study_id
         self.obfuscationcode = obfuscationcode
         self.study_status = study_status
@@ -522,7 +525,7 @@ class StudyFolderMaintenanceTask(object):
         audit_folder_root_path: Union[None, str] = None,
         folder_name: Union[None, str] = None,
         metadata_files_signature_root_path: Union[None, str] = None,
-        stage: str = "BACKUP",
+        stage: None | str = "BACKUP",
     ):
         # if os.path.exists(self.study_metadata_files_path):
         metadata_files_list = self.get_all_metadata_files(
@@ -639,7 +642,7 @@ class StudyFolderMaintenanceTask(object):
                             item=target_path,
                             action=MaintenanceAction.RENAME,
                             parameters={"target": target_path},
-                            message=f"",
+                            message="",
                             command=f'mv "{target_path}"" "{renamed_path}"',
                         )
 
@@ -654,7 +657,7 @@ class StudyFolderMaintenanceTask(object):
                         item=current_path,
                         action=MaintenanceAction.RENAME,
                         parameters={"target": target_path},
-                        message=f"",
+                        message="",
                         command=f'mv "{current_path}" "{target_path}"',
                     )
                     self.future_actions.append(action_log)
@@ -684,7 +687,7 @@ class StudyFolderMaintenanceTask(object):
                         item=current_path,
                         action=MaintenanceAction.COMPRESS,
                         parameters={"target": target_path},
-                        message=f"",
+                        message="",
                         command=f"cd '{current_dirname}' && zip -0 -r '{target_path}' '{current_basename}' && cd -",
                     )
                     self.future_actions.append(action_log)
@@ -721,7 +724,7 @@ class StudyFolderMaintenanceTask(object):
                         item=current_path,
                         action=MaintenanceAction.RECOMPRESS,
                         parameters={"target": target_path},
-                        message=f"",
+                        message="",
                     )
                     self.future_actions.append(action_log)
                     updated_file_names[key] = new_basename
@@ -1243,7 +1246,7 @@ class StudyFolderMaintenanceTask(object):
                             item=file_path,
                             action=MaintenanceAction.ERROR_MESSAGE,
                             parameters={
-                                "summary": f"File encoding is not detected and file is not converted to utf-8"
+                                "summary": "File encoding is not detected and file is not converted to utf-8"
                             },
                             message=f"{study_id} ({status.name}): {file_path}. File encoding is not detected and file is not converted to utf-8",
                             successful=False,
@@ -1511,7 +1514,7 @@ class StudyFolderMaintenanceTask(object):
         rows = []
 
         rows.append(
-            f"STUDY ID\tSTUDY STATUS\tEXECUTED\tSUCCESS\tACTION\tITEM\tMESSAGE\tPARAMETERS\tCOMMAND\n"
+            "STUDY ID\tSTUDY STATUS\tEXECUTED\tSUCCESS\tACTION\tITEM\tMESSAGE\tPARAMETERS\tCOMMAND\n"
         )
         for action in self.actions:
             success = action.successful
@@ -1582,7 +1585,7 @@ class StudyFolderMaintenanceTask(object):
         summary_list.sort()
 
         rows = []
-        rows.append(f"HASH:SHA256\tFILE TYPE\tEXISTENCE\tSTATUS\tMODIFIED\tFILE NAME\n")
+        rows.append("HASH:SHA256\tFILE TYPE\tEXISTENCE\tSTATUS\tMODIFIED\tFILE NAME\n")
         for file in summary_list:
             file_path = os.path.join(self.study_metadata_files_path, file)
             status = (
@@ -2030,6 +2033,11 @@ class StudyFolderMaintenanceTask(object):
             internal_file_path, 0o755, rw_storage_recycle_bin_path
         )
 
+        data_files_index_json_path = os.path.join(internal_file_path, "DATA_FILES")
+        self._create_rw_storage_folder(
+            data_files_index_json_path, 0o755, rw_storage_recycle_bin_path
+        )
+
         metadata_path = os.path.join(settings.study_metadata_files_root_path, study_id)
         self._create_rw_storage_folder(
             metadata_path, 0o755, rw_storage_recycle_bin_path
@@ -2174,10 +2182,7 @@ class StudyFolderMaintenanceTask(object):
         investigation_file_path = os.path.join(
             self.study_metadata_files_path, study_settings.investigation_file_name
         )
-        template_path = self.get_study_file_template_path()
-        temaplate_investigation_file_path = os.path.join(
-            template_path, study_settings.investigation_file_name
-        )
+
         investigation_file_candidates = glob.glob(
             os.path.join(self.study_metadata_files_path, "i_*.txt")
         )
@@ -2216,12 +2221,16 @@ class StudyFolderMaintenanceTask(object):
             #     for file in investigation_file_candidates:
             #         self.backup_file(file, reason="Investigation file name is not invalid.")
         else:
-            shutil.copy2(temaplate_investigation_file_path, investigation_file_path)
+            create_investigation_file(
+                investigation_file_path,
+                study_template_name=self.study_template or "minimum",
+                version=self.template_version,
+            )
             action_log = MaintenanceActionLog(
                 item=investigation_file_path,
                 action=MaintenanceAction.COPY,
-                parameters={"from": temaplate_investigation_file_path},
-                message=f"{study_id}: {study_settings.investigation_file_name} does not exist. File was copied from {temaplate_investigation_file_path}",
+                parameters={"from": "templates"},
+                message=f"{study_id}: {study_settings.investigation_file_name} does not exist. File was created from template",
             )
             self.actions.append(action_log)
 
@@ -2250,18 +2259,6 @@ class StudyFolderMaintenanceTask(object):
             self.actions.append(action_log)
             raise ex
 
-    def get_study_file_template_path(self):
-        template_path = get_settings().file_resources.study_default_template_path
-
-        template_path = (
-            template_path
-            if f".{os.sep}" not in template_path
-            else template_path.replace(f".{os.sep}", "", 1)
-        )
-        if not template_path.startswith(os.sep) and f":{os.sep}" not in template_path:
-            template_path = os.path.join(application_path, template_path)
-        return template_path
-
     def maintain_investigation_file_content(
         self, investigation: isatools_model.Investigation
     ):
@@ -2288,6 +2285,7 @@ class StudyFolderMaintenanceTask(object):
             mhd_accession=self.mhd_accession,
             mhd_model_version=self.mhd_model_version,
             template_version=self.template_version,
+            created_at=self.created_at,
         )
         if updated_comments:
             self.actions.append(
@@ -3122,7 +3120,7 @@ class StudyFolderMaintenanceTask(object):
                         + str(e)
                     )
                     print(
-                        f"Invalid UTF-8 file was converted to UTF with ignore errors option: "
+                        "Invalid UTF-8 file was converted to UTF with ignore errors option: "
                         + file_path
                     )
                 else:

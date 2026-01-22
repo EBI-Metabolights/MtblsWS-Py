@@ -1,37 +1,37 @@
-import datetime
 import logging
 import os
 from typing import List
+
 import gspread
 import gspread_dataframe
-import pandas
 import numpy
+import pandas
+from flask_restful import abort
+from googleapiclient.discovery import build
+from oauth2client.service_account import ServiceAccountCredentials
 from pandas import DataFrame
 
-from flask_restful import abort
-from oauth2client.service_account import ServiceAccountCredentials
-from googleapiclient.discovery import build
 from app.config import get_settings
 from app.utils import current_time
-
-from app.ws.mtbls_maf import totuples
-from app.ws.performance_and_metrics.builder_performance_tracker import BuilderPerformanceTracker
-from app.ws.utils import readDatafromFile
 from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
+from app.ws.mtbls_maf import totuples
+from app.ws.performance_and_metrics.builder_performance_tracker import (
+    BuilderPerformanceTracker,
+)
+from app.ws.utils import readDatafromFile
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger("wslog")
 
 
 class AnalyticalMethodBuilder:
-
     def __init__(
-            self,
-            original_study_location: str,
-            studytype: str,
-            slim: bool,
-            reporting_path,
-            verbose: bool = True,
-            g_drive: bool = False
+        self,
+        original_study_location: str,
+        studytype: str,
+        slim: bool,
+        reporting_path,
+        verbose: bool = True,
+        g_drive: bool = False,
     ):
         """
         Init method
@@ -51,9 +51,7 @@ class AnalyticalMethodBuilder:
         self.reporting_path = reporting_path
         self.verbose = verbose
         self.tracker = BuilderPerformanceTracker(
-            assays_causing_errors=[],
-            missing_sample_sheets=0,
-            saved_to_drive=""
+            assays_causing_errors=[], missing_sample_sheets=0, saved_to_drive=""
         )
         self.specified_study_data = self._get_data_from_reporting_directory()
         self.g_drive = g_drive
@@ -66,8 +64,8 @@ class AnalyticalMethodBuilder:
 
         :return: message indicating the outcome of the file generating process.
         """
-        logger.info(f'starting build process for type {self.studytype}')
-        self.tracker.start_timer('total')
+        logger.info(f"starting build process for type {self.studytype}")
+        self.tracker.start_timer("total")
         list_of_samps = []
         list_of_assays = []
         dataframe_generator = self._get_dataframe()
@@ -80,7 +78,7 @@ class AnalyticalMethodBuilder:
 
         self._save(result)
 
-        self.tracker.stop_timer('total')
+        self.tracker.stop_timer("total")
         message = self._builder_report()
         return message
 
@@ -102,22 +100,30 @@ class AnalyticalMethodBuilder:
         try:
             merged_assay = pandas.DataFrame(list_of_assays)
         except Exception as e:
-            logger.error(f'Problem creating assay dataframe from list of dicts: {str(e)}')
+            logger.error(
+                f"Problem creating assay dataframe from list of dicts: {str(e)}"
+            )
 
         try:
             merged_samp = pandas.DataFrame(list_of_samps)
         except Exception as e:
-            logger.error(f'Problem creating sample dataframe from list of dicts: {str(e)}')
+            logger.error(
+                f"Problem creating sample dataframe from list of dicts: {str(e)}"
+            )
 
         if merged_samp is None or merged_assay is None:
-            logger.error(f'Unable to build a report for analytical method {self.studytype}. Either the assay or sample '
-                         f'dataframe was unable to be built.')
+            logger.error(
+                f"Unable to build a report for analytical method {self.studytype}. Either the assay or sample "
+                f"dataframe was unable to be built."
+            )
             abort(500)
 
         try:
-            result = pandas.merge(merged_samp, merged_assay, on=['Study', 'Sample.Name'])
+            result = pandas.merge(
+                merged_samp, merged_assay, on=["Study", "Sample.Name"]
+            )
         except Exception as e:
-            logger.error(f'Unable to build merged report dataframe: {str(e)}')
+            logger.error(f"Unable to build merged report dataframe: {str(e)}")
             abort(500)
 
         return result
@@ -146,24 +152,34 @@ class AnalyticalMethodBuilder:
 
         for study in self.specified_study_data:
             self.tracker.start_timer(study)
-            study_location = repr(self.original_study_location).replace("MTBLS1", study).strip("'")
+            study_location = (
+                repr(self.original_study_location).replace("MTBLS1", study).strip("'")
+            )
             logger.info(study_location)
-            sample_file_list = [file for file in os.listdir(study_location) if
-                                file.startswith('s_') and file.endswith('.txt')]
+            sample_file_list = [
+                file
+                for file in os.listdir(study_location)
+                if file.startswith("s_") and file.endswith(".txt")
+            ]
             if len(sample_file_list) == 0:
                 logger.error(
-                    'Sample sheet not found. Either it is not present or does not follow the proper naming convention.')
+                    "Sample sheet not found. Either it is not present or does not follow the proper naming convention."
+                )
                 self.tracker.missing_samplesheets += 1
                 # skip this iteration since we cant find the samplesheet
                 continue
 
             try:
-                sample_temp = pandas.read_csv(os.path.join(study_location, sample_file_list[0]), sep="\t", header=0,
-                                              encoding='unicode_escape')
+                sample_temp = pandas.read_csv(
+                    os.path.join(study_location, sample_file_list[0]),
+                    sep="\t",
+                    header=0,
+                    encoding="unicode_escape",
+                )
 
                 # Get rid of empty numerical values
-                sample_temp = sample_temp.replace(numpy.nan, '', regex=True)
-                sample_temp.insert(0, 'Study', study)
+                sample_temp = sample_temp.replace(numpy.nan, "", regex=True)
+                sample_temp.insert(0, "Study", study)
 
                 # we want to remove any columns we don't want
                 sample_temp = DataFrameUtils.sample_cleanup(df=sample_temp)
@@ -172,27 +188,40 @@ class AnalyticalMethodBuilder:
 
             except UnicodeDecodeError as e:
                 logger.error(
-                    f'UnicodeDecodeError when trying to open sample sheet. Study {study} will not be included in report: '
-                    f'{str(e)}')
+                    f"UnicodeDecodeError when trying to open sample sheet. Study {study} will not be included in report: "
+                    f"{str(e)}"
+                )
                 self.tracker.missing_samplesheets += 1
                 self.tracker.stop_timer(study)
                 continue
 
             assays_list = self._sort_assays(study_location)
             for assay in assays_list:
-                logger.info('hit interior loop')
+                logger.info("hit interior loop")
                 try:
-                    assay_temp = pandas.read_csv(os.path.join(study_location, assay), sep="\t", header=0, encoding="utf-8")
-                    assay_temp.insert(0, 'Study', study)
-                    assay_temp = assay_temp.replace(numpy.nan, '', regex=True)
+                    assay_temp = pandas.read_csv(
+                        os.path.join(study_location, assay),
+                        sep="\t",
+                        header=0,
+                        encoding="utf-8",
+                    )
+                    assay_temp.insert(0, "Study", study)
+                    assay_temp = assay_temp.replace(numpy.nan, "", regex=True)
                     assay_temp = self._dataframe_cleanup(assay_temp)
                     if self.slim:
                         assay_temp = DataFrameUtils.collapse(df=assay_temp)
                     self.tracker.stop_timer(study)
-                    yield totuples(df=sample_temp, text='dict')['dict'], totuples(df=assay_temp, text='dict')['dict']
+                    yield (
+                        totuples(df=sample_temp, text="dict")["dict"],
+                        totuples(df=assay_temp, text="dict")["dict"],
+                    )
                 except Exception as e:
-                    logger.error('Error appending assay {0} into larger dataframe: {1}'.format(assay, e))
-                    self.tracker.push('assays_causing_errors', assay)
+                    logger.error(
+                        "Error appending assay {0} into larger dataframe: {1}".format(
+                            assay, e
+                        )
+                    )
+                    self.tracker.push("assays_causing_errors", assay)
                     self.tracker.stop_timer(study)
                     continue
 
@@ -201,7 +230,7 @@ class AnalyticalMethodBuilder:
         Pick which cleanup method to use. Uses the same broad assumption as elsewhere that all studies fall into one of two
         categories.
         """
-        if self.studytype.count('LC') > 0:
+        if self.studytype.count("LC") > 0:
             return DataFrameUtils.LCMS_assay_cleanup(assay_dataframe)
         else:
             return DataFrameUtils.NMR_assay_cleanup(assay_dataframe)
@@ -217,20 +246,27 @@ class AnalyticalMethodBuilder:
         """
         filtered_assays_list = []
         tokens = {
-            'NMR': ['NMR', 'spectroscopy'],
-            'LCMS': ['LC', 'LC-MS', 'LCMS', 'spectrometry']
+            "NMR": ["NMR", "spectroscopy"],
+            "LCMS": ["LC", "LC-MS", "LCMS", "spectrometry"],
         }
-        t = 'LCMS' if self.studytype != 'NMR' else 'NMR'
+        t = "LCMS" if self.studytype != "NMR" else "NMR"
 
-        assays_list = [file for file in os.listdir(study_location) if file.startswith('a_') and file.endswith('.txt')]
+        assays_list = [
+            file
+            for file in os.listdir(study_location)
+            if file.startswith("a_") and file.endswith(".txt")
+        ]
 
         if include_all:
             return assays_list
         # if we have only one assay, we already know this is an NMR study, do the assay must be an nmr one.
         if len(assays_list) > 1:
             # attempt to cull any irrelevant assays by checking for tokens in the assay filenames.
-            filtered_assays_list = [file for file in assays_list if
-                                    any(token.upper() in file.upper() for token in tokens[t])]
+            filtered_assays_list = [
+                file
+                for file in assays_list
+                if any(token.upper() in file.upper() for token in tokens[t])
+            ]
         elif len(assays_list) == 1:
             filtered_assays_list = assays_list
 
@@ -251,69 +287,95 @@ class AnalyticalMethodBuilder:
         token_path = settings.google.connection.google_sheet_api
         mariana_folder_id = settings.google.services.google_mariana_drive_id
 
-        title = f'{self.studytype} {str(current_time())}'
-
+        title = f"{self.studytype} {str(current_time())}"
 
         if not result.empty:
             try:
                 result.to_csv(
-                    os.path.join(self.reporting_path, f"{self.studytype}.tsv"), sep="\t", encoding='utf-8', index=False)
+                    os.path.join(self.reporting_path, f"{self.studytype}.tsv"),
+                    sep="\t",
+                    encoding="utf-8",
+                    index=False,
+                )
             except Exception as e:
-                message = f'Problem with writing report to csv file: {str(e)}'
+                message = f"Problem with writing report to csv file: {str(e)}"
                 logger.error(message)
                 abort(500, message=message)
         else:
-            message = 'Unexpected error in concatenating dataframes - end result is empty. Check the globals.json file ' \
-                  'exists and if so, has been recently generated. Check the spelling of the study type given as a '\
-                  'parameter'
+            message = (
+                "Unexpected error in concatenating dataframes - end result is empty. Check the globals.json file "
+                "exists and if so, has been recently generated. Check the spelling of the study type given as a "
+                "parameter"
+            )
             logger.error(message)
             abort(500, message=message)
 
         if self.g_drive:
             # there is a bunch of stuff here that would be good to write into a little google interface class,
             # but this has improvement has been hanging for some time so I am going to shelve it
-            scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-            credentials = ServiceAccountCredentials.from_json_keyfile_name(token_path, scope)
+            scope = [
+                "https://spreadsheets.google.com/feeds",
+                "https://www.googleapis.com/auth/drive",
+            ]
+            credentials = ServiceAccountCredentials.from_json_keyfile_name(
+                token_path, scope
+            )
 
             gc = gspread.authorize(credentials)
             gc.create(title)
             empty_spreadsheet = gc.open(title)
-            empty_spreadsheet.add_worksheet(title=title, rows=len(result.index), cols=len(result.columns))
+            empty_spreadsheet.add_worksheet(
+                title=title, rows=len(result.index), cols=len(result.columns)
+            )
             gspread_dataframe.set_with_dataframe(
-                worksheet=empty_spreadsheet.worksheet(title),
-                dataframe=result
+                worksheet=empty_spreadsheet.worksheet(title), dataframe=result
             )
 
-            drive_service = build('drive', 'v3', credentials=credentials, cache_discovery=False)
+            drive_service = build(
+                "drive", "v3", credentials=credentials, cache_discovery=False
+            )
 
             # Now we need to find the file in google drive
             spreadsheet_file = None
             page_token = None
             while True:
-                response = drive_service.files().list(q="mimeType='application/vnd.google-apps.spreadsheet'",
-                                                      spaces='drive',
-                                                      fields='nextPageToken, files(id, name)',
-                                                      pageToken=page_token).execute()
-                for file in response.get('files', []):
+                response = (
+                    drive_service.files()
+                    .list(
+                        q="mimeType='application/vnd.google-apps.spreadsheet'",
+                        spaces="drive",
+                        fields="nextPageToken, files(id, name)",
+                        pageToken=page_token,
+                    )
+                    .execute()
+                )
+                for file in response.get("files", []):
                     # Process change
                     logger.info(f"{file.get('id')}, {file.get('name')}")
-                    if file.get('name') == title:
+                    if file.get("name") == title:
                         spreadsheet_file = file
                         break
 
-                page_token = response.get('nextPageToken', None)
+                page_token = response.get("nextPageToken", None)
                 if page_token is None:
                     break
 
             if spreadsheet_file is None:
                 raise FileNotFoundError
 
-            updated_spreadsheet_file = drive_service.files().update(fileId=spreadsheet_file.get('id'),
-                                                                  addParents=mariana_folder_id,
-                                                                  fields="id, parents").execute()
+            updated_spreadsheet_file = (
+                drive_service.files()
+                .update(
+                    fileId=spreadsheet_file.get("id"),
+                    addParents=mariana_folder_id,
+                    fields="id, parents",
+                )
+                .execute()
+            )
             logger.info(updated_spreadsheet_file)
-            self.tracker.saved_to_drive = 'Saved to the BBSRC Mariana Drive successfully.'
-
+            self.tracker.saved_to_drive = (
+                "Saved to the BBSRC Mariana Drive successfully."
+            )
 
     def _get_data_from_reporting_directory(self):
         """
@@ -323,19 +385,25 @@ class AnalyticalMethodBuilder:
 
         :return: List of relevant accession numbers.
         """
-        json_data = readDatafromFile(os.path.join(self.reporting_path, 'global.json'))
+        json_data = readDatafromFile(os.path.join(self.reporting_path, "global.json"))
         specified_study_data = []
-        if str(self.studytype) == 'LCMS':
-            keys = [key for key in json_data['data']['techniques'].keys() if key.count('LC') > 0]
+        if str(self.studytype) == "LCMS":
+            keys = [
+                key
+                for key in json_data["data"]["techniques"].keys()
+                if key.count("LC") > 0
+            ]
             for key in keys:
-                specified_study_data.extend(json_data['data']['techniques'][key])
+                specified_study_data.extend(json_data["data"]["techniques"][key])
         else:
             try:
-                specified_study_data = json_data['data']['techniques'][self.studytype]
+                specified_study_data = json_data["data"]["techniques"][self.studytype]
 
             except KeyError as e:
-                msg = f'The queried study type {self.studytype} is invalid. Check spelling and punctuation including ' \
-                      f'hyphens: {str(e)}'
+                msg = (
+                    f"The queried study type {self.studytype} is invalid. Check spelling and punctuation including "
+                    f"hyphens: {str(e)}"
+                )
                 logger.error(msg)
                 abort(400, message=msg)
         return specified_study_data
@@ -347,30 +415,36 @@ class AnalyticalMethodBuilder:
 
         :return: Report of the build process as a string
         """
-        base_message = f'Successfully wrote report to excel file at {self.reporting_path}{self.studytype}.tsv in ' \
-                       f'{str(round(self.tracker.get_duration("total"), 2))} s. There were ' \
-                       f'{self.tracker.missing_sample_sheets} studies that were missing sample sheets and so were not '\
-                       f'included in the report. There were {str(len(self.tracker.assays_causing_errors))} assay ' \
-                       f'sheets which caused errors when processed. {self.tracker.saved_to_drive}'
+        base_message = (
+            f"Successfully wrote report to excel file at {self.reporting_path}{self.studytype}.tsv in "
+            f"{str(round(self.tracker.get_duration('total'), 2))} s. There were "
+            f"{self.tracker.missing_sample_sheets} studies that were missing sample sheets and so were not "
+            f"included in the report. There were {str(len(self.tracker.assays_causing_errors))} assay "
+            f"sheets which caused errors when processed. {self.tracker.saved_to_drive}"
+        )
         if self.verbose:
-            time_str = 'Output for all timers in tracker: \n'
-            timer_message = '\n '.join(self.tracker.report_all_timers())
+            time_str = "Output for all timers in tracker: \n"
+            timer_message = "\n ".join(self.tracker.report_all_timers())
             total_time = "\n ".join((time_str, timer_message))
 
-            general_report_str = f'Results from AnalyticalMethodBuilder {str(current_time())}: \n'
-            general_message = '\n '.join((general_report_str, base_message))
+            general_report_str = (
+                f"Results from AnalyticalMethodBuilder {str(current_time())}: \n"
+            )
+            general_message = "\n ".join((general_report_str, base_message))
 
-            tracking_variables_str = f'Output from tracking variables \n'
-            tracking_message = '\n '.join([
-                f'Tracker {key} : {str(val)}'
-                for key, val in self.tracker.__dict__.items()
-                if key != '_timers'])
-            total_tracking = '\n '.join((tracking_variables_str, tracking_message))
+            tracking_variables_str = "Output from tracking variables \n"
+            tracking_message = "\n ".join(
+                [
+                    f"Tracker {key} : {str(val)}"
+                    for key, val in self.tracker.__dict__.items()
+                    if key != "_timers"
+                ]
+            )
+            total_tracking = "\n ".join((tracking_variables_str, tracking_message))
 
-            message = '\n\n '.join(( general_message, total_tracking, total_time))
+            message = "\n\n ".join((general_message, total_tracking, total_time))
 
         else:
             message = base_message
 
         return message
-
