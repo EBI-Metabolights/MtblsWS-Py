@@ -100,6 +100,12 @@ class UserService(object):
 
                 query = db_session.query(Study)
                 study: Study = query.filter(*filters).first()
+                if not study and study_id:
+                    study = (
+                        db_session.query(Study)
+                        .filter(Study.reserved_submission_id == study_id)
+                        .first()
+                    )
                 if study and obfuscation_code in {study.obfuscationcode, None}:
                     permission_context.obfuscation_code = study.obfuscationcode
                     permission_context.study_id = study.acc
