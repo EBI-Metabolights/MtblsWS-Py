@@ -10,6 +10,9 @@ from typing import List, Union
 from isatools import model
 
 from app.tasks.common_tasks.basic_tasks.elasticsearch import reindex_study
+from app.tasks.common_tasks.basic_tasks.mhd import (
+    submit_announcement_file_task,
+)
 from app.tasks.common_tasks.basic_tasks.send_email import send_email_on_public
 from app.tasks.datamover_tasks.basic_tasks.ftp_operations import (
     sync_private_ftp_data_files,
@@ -22,7 +25,7 @@ from app.utils import (
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyRevisionModel
 from app.ws.db.schemes import Study, StudyRevision
-from app.ws.db.types import StudyRevisionStatus, StudyStatus
+from app.ws.db.types import MhdSubmissionStatus, StudyRevisionStatus, StudyStatus
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.folder_maintenance import StudyFolderMaintenanceTask
 from app.ws.isaApiClient import IsaApiClient
@@ -340,7 +343,7 @@ class StudyRevisionService:
                         raise MetabolightsException(
                             http_code=401, message="Revision task is already completed."
                         )
-
+                prev_revision_status = StudyRevisionStatus(study_revision.status)
                 study_revision.status = status.value
                 if task_started_at:
                     study_revision.task_started_at = task_started_at
@@ -381,8 +384,17 @@ class StudyRevisionService:
                                 ),
                             }
                             send_email_on_public.apply_async(kwargs=inputs)
-
+                        if prev_revision_status != status:
+                            study_revision.mhd_share_status == MhdSubmissionStatus.IN_PROGRESS.value
                 db_session.commit()
+                inputs = {
+                    "study_id": user_token,
+                    "revision_number": revision_number,
+                    "mhd_id": study.mhd_accession or study.reserved_accession,
+                    "announcement_reason": revision_comment,
+                }
+                submit_announcement_file_task.apply_async(kwargs=inputs)
+
                 try:
                     inputs = {"user_token": None, "study_id": study_id}
                     reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)

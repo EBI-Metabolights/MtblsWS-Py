@@ -1172,6 +1172,7 @@ class ProvisionalStudy(Resource):
             if comment.name not in [
                 "Funder",
                 "Funder ROR ID",
+                "Grant Identifier",
                 "Related Data Repository",
                 "Related Data Accession",
             ]:
@@ -1203,6 +1204,15 @@ class ProvisionalStudy(Resource):
                             x.funding_organization.term_accession or ""
                             if x.funding_organization
                             else ""
+                            for x in new_study_input.funding
+                        ]
+                    ),
+                ),
+                (
+                    "Grant Identifier",
+                    ";".join(
+                        [
+                            x.grant_identifier or "" if x.grant_identifier else ""
                             for x in new_study_input.funding
                         ]
                     ),

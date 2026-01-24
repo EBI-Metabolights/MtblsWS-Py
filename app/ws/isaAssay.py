@@ -628,6 +628,7 @@ class AssayFile(Resource):
 
         return new_study_input
 
+
 class StudyAssay(Resource):
     @swagger.operation(
         summary="Get Study Assay",

@@ -27,11 +27,11 @@ import shutil
 import time
 from typing import Dict, Tuple
 
-import httpx
 from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 from isatools import model
+from mhd_model.mhd_client import MhdClient, MhdClientError
 from pydantic import BaseModel
 
 from app.config import get_settings
@@ -42,6 +42,7 @@ from app.tasks.common_tasks.basic_tasks.send_email import (
     get_principal_investigator_emails,
     get_study_contacts,
     send_email_for_new_accession_number,
+    send_technical_issue_email,
 )
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import (
     rename_folder_on_private_storage,
@@ -66,6 +67,7 @@ from app.ws.db.permission_scopes import (
 from app.ws.db.schemes import Study
 from app.ws.db.types import (
     CurationRequest,
+    StudyCategory,
     StudyRevisionStatus,
     UserRole,
 )
@@ -511,9 +513,26 @@ class StudyStatus(Resource):
                 and not context.mhd_accession
                 and not context.first_private_date
             ):
-                mhd_accession = self.get_new_mhd_accession(updated_study_id)
-                if mhd_accession:
-                    self.update_mhd_accession_in_db(updated_study_id, mhd_accession)
+                if get_settings().flask.TESTING:
+                    accession_type = "test"
+                else:
+                    if context.study_category == StudyCategory.MS_MHD_ENABLED:
+                        accession_type = "mhd"
+                    elif context.study_category == StudyCategory.MS_MHD_LEGACY:
+                        accession_type = "legacy"
+                try:
+                    mhd_accession = self.get_new_mhd_accession(
+                        updated_study_id, accession_type
+                    )
+                    if mhd_accession:
+                        self.update_mhd_accession_in_db(updated_study_id, mhd_accession)
+                except MhdClientError as e:
+                    inputs = {
+                        "subject": "MHD accession request error",
+                        "body": f"{study_id} MHD accession request error : {e}",
+                    }
+                    send_technical_issue_email.apply_async(kwargs=inputs)
+                    logger.error(e)
 
                 comment_updated = False
                 for comment in isa_study.comments:
@@ -626,22 +645,11 @@ class StudyStatus(Resource):
             )
             return response
 
-    def get_new_mhd_accession(self, study_id: str) -> str:
-        setting = get_settings().mhd
-        base_url = setting.mhd_webservice_base_url
-        url = f"{base_url}/identifiers"
-        api_key = setting.api_key
-        headers = {
-            "Content-Type": "application/json",
-            "x-dataset-repository-identifier": study_id or "",
-            "x-api-token": api_key or "",
-        }
-        try:
-            response = httpx.post(url, headers=headers)
-            return response.json().get("assignment", {}).get("accession")
-        except Exception as ex:
-            logger.exception(ex)
-            return None
+    def get_new_mhd_accession(self, study_id: str, accession_type: str) -> str:
+        api_key = get_settings().mhd.api_key
+        mhd_submission_url = get_settings().mhd.mhd_webservice_base_url
+        client = MhdClient(mhd_submission_url, api_key)
+        return client.get_new_mhd_accession(study_id, accession_type)
 
     def update_mhd_accession_in_db(self, study_id: str, accession: str):
         db_session = DBManager.get_instance().session_maker()
