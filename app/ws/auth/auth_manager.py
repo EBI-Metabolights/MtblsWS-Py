@@ -296,6 +296,7 @@ class AuthenticationManager(AbstractAuthManager):
         user = UserService.get_instance(
             self
         ).validate_user_has_submitter_or_super_user_role(token)
+        user = user._asdict()
         additional_data = {
             "name": user["username"],
             "role": UserRole(user["role"]) if user["role"] else "",
@@ -488,7 +489,7 @@ class AuthenticationManager(AbstractAuthManager):
             raise MetabolightsAuthenticationException(
                 message="Invalid user or credential"
             )
-        return user
+        return user._asdict()
 
     def _create_jwt_token(
         self, data: dict, expires_delta: Union[None, timedelta] = None

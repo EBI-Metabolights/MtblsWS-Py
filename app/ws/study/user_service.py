@@ -593,9 +593,6 @@ class UserService(object):
             user_token, [UserRole.ROLE_SUBMITTER.value, UserRole.ROLE_SUPER_USER.value]
         )
 
-    def validate_user_has_submitter_role(self, user_token):
-        return self.validate_user_by_token(user_token, [UserRole.ROLE_SUBMITTER.value])
-
     def validate_user_by_username(
         self, user_name, allowed_role_list, allowed_status_list=None
     ):
@@ -653,10 +650,10 @@ class UserService(object):
             )
 
         if db_user:
-            if int(db_user[3]) not in allowed_status_list:
+            if int(db_user.status) not in allowed_status_list:
                 raise MetabolightsAuthorizationException(message="Invalid user status")
 
-            if db_user[2] not in allowed_role_list:
+            if db_user.role not in allowed_role_list:
                 raise MetabolightsAuthorizationException(message="Invalid user role")
             return db_user
         else:

@@ -154,6 +154,7 @@ class AuthLoginWithToken(Resource):
             auth_manager
         ).validate_user_has_submitter_or_super_user_role(api_token)
         settings = get_settings().auth.configuration
+        user = dict(user._asdict())
         if UserRole(user["role"]) == UserRole.ROLE_SUPER_USER:
             exp = settings.admin_jwt_token_expires_in_mins
         else:
@@ -184,7 +185,7 @@ class AuthLoginWithToken(Resource):
         resp = make_response(
             jsonify(
                 {
-                    "content": user.model_dump(),
+                    "content": user["username"],
                     "message": "Authentication successful",
                     "err": None,
                 }
@@ -195,6 +196,7 @@ class AuthLoginWithToken(Resource):
         resp.headers["Jwt"] = token
         resp.headers["Refresh-Token"] = refresh_token
         resp.headers["User"] = user["username"]
+        return resp
 
 
 class AuthLogin(Resource):

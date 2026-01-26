@@ -940,10 +940,12 @@ class ProvisionalStudy(Resource):
             and not partner_user
         ):
             logger.warning(
-                f"New study creation request from user {username}. User has already {study_settings.max_study_in_provisional_status} study in Provisional status."
+                f"New study creation request from user {username}. "
+                f"User has already {study_settings.max_study_in_provisional_status} study in Provisional status."
             )
             raise MetabolightsException(
-                message="The user can have at most two studies in Provisional status. Please complete and update status of your current studies.",
+                message="The user can have at most two studies in Provisional status. "
+                "Please complete and update status of your current studies.",
                 http_code=400,
             )
 
