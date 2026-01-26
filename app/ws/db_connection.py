@@ -21,11 +21,11 @@ import os
 import re
 import traceback
 import uuid
+from contextlib import contextmanager
 from typing import Union
 
-import psycopg2
-import psycopg2.extras
-from psycopg2.pool import SimpleConnectionPool
+import psycopg
+from psycopg.rows import dict_row, tuple_row
 
 from app.config import get_settings
 from app.utils import (
@@ -33,6 +33,7 @@ from app.utils import (
     current_time,
     current_utc_time_without_timezone,
 )
+from app.ws.db import get_db_connection_pool
 from app.ws.db.types import CurationRequest, StudyCategory, UserRole, UserStatus
 from app.ws.settings.utils import get_study_settings
 from app.ws.study import identifier_service
@@ -285,10 +286,9 @@ def create_user(
     query = insert_user_query
 
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, input_values)
-        conn.commit()
-        release_connection(postgresql_pool, conn)
+        with get_connection() as (conn, cursor):
+            cursor.execute(query, input_values)
+            conn.commit()
         return True, "User account '" + email + "' created successfully"
 
     except Exception as e:
@@ -313,19 +313,19 @@ def update_user(
     val_email(email)
 
     update_user_query = (
-        "update users set address = 'address_value', affiliation = 'affiliation_value', "
-        "affiliationurl = 'affiliationurl_value', email = 'email_value', "
-        "firstname = 'firstname_value', lastname = 'lastname_value', username = 'email_value', "
-        "orcid = 'orcid_value', metaspace_api_key = 'metaspace_api_key_value' "
-        "where username = 'existing_user_name_value'"
+        "update users set address = %(address_value)s, affiliation = %(affiliation_value)s, "
+        "affiliationurl = %(affiliationurl_value)s, email = %(email_value)s, "
+        "firstname = %(firstname_value)s, lastname = %(lastname_value)s, username = %(email_value)s, "
+        "orcid = %(orcid_value)s, metaspace_api_key = %(metaspace_api_key_value)s "
+        "where username = %(existing_user_name_value)s"
     )
 
     if not is_curator:
-        update_user_query = update_user_query + " and apitoken = 'apitoken_value'"
+        update_user_query = update_user_query + " and apitoken = %(apitoken_value)s"
 
-    update_user_query = update_user_query + ";"
+    query = update_user_query + ";"
 
-    subs = {
+    input_values = {
         "address_value": address,
         "affiliation_value": affiliation,
         "affiliationurl_value": affiliation_url,
@@ -340,29 +340,14 @@ def update_user(
         "metaspace_api_key_value": metaspace_api_key,
     }
 
-    for key, value in subs.items():
-        val_query_params(str(value))
-        update_user_query = update_user_query.replace(str(key), str(value))
-
-    query = update_user_query
-
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query)
-        number_of_users = cursor.rowcount
-        conn.commit()
-        release_connection(postgresql_pool, conn)
-
-        if number_of_users == 1:
-            return (
-                True,
-                "User account '" + existing_user_name + "' updated successfully",
-            )
-        else:
-            return (
-                False,
-                "User account '" + existing_user_name + "' could not be updated",
-            )
+        with get_connection() as (conn, cursor):
+            cursor.execute(query, input_values)
+            conn.commit()
+        return (
+            True,
+            "User account '" + existing_user_name + "' updated successfully",
+        )
 
     except Exception as e:
         return False, str(e)
@@ -380,16 +365,14 @@ def get_user(username):
         from users
         where username = %(username)s;
     """
-    postgresql_pool = None
-    conn = None
     data = None
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(get_user_query, {"username": username})
-        data = [
-            dict((cursor.description[i][0], value) for i, value in enumerate(row))
-            for row in cursor.fetchall()
-        ]
+        with get_connection() as (conn, cursor):
+            cursor.execute(get_user_query, {"username": username})
+            data = [
+                dict((cursor.description[i][0], value) for i, value in enumerate(row))
+                for row in cursor.fetchall()
+            ]
     except Exception as e:
         logger.error(
             "An error occurred while retrieving user {0}: {1}".format(username, e)
@@ -399,8 +382,6 @@ def get_user(username):
             http_code=500,
             message=f"An error occurred while retrieving user {username}",
         )
-    finally:
-        release_connection(postgresql_pool, conn)
 
     if data:
         return {"user": fixUserDictKeys(data[0])}
@@ -414,7 +395,9 @@ def get_user(username):
 def get_all_private_studies_for_user(user_token):
     val_query_params(user_token)
 
-    study_list = execute_select_query(query=query_studies_user, user_token=user_token)
+    with get_connection() as (conn, cursor):
+        cursor.execute(query_studies_user, {"apitoken": user_token})
+        study_list = cursor.fetchall()
     settings = get_study_settings()
     study_location = settings.mounted_paths.study_metadata_files_root_path
     file_name = settings.investigation_file_name
@@ -496,7 +479,10 @@ def get_all_private_studies_for_user(user_token):
 def get_all_studies_for_user(user_token):
     val_query_params(user_token)
 
-    study_list = execute_select_query(query=query_studies_user, user_token=user_token)
+    with get_connection() as (conn, cursor):
+        cursor.execute(query_studies_user, {"apitoken": user_token})
+        study_list = cursor.fetchall()
+
     if not study_list:
         return []
     study_location = get_settings().study.mounted_paths.study_metadata_files_root_path
@@ -638,48 +624,48 @@ def get_all_studies_for_user(user_token):
 
 
 def get_all_studies(user_token):
-    data = execute_select_query(query=query_all_studies, user_token=user_token)
+    with get_connection() as (conn, cursor):
+        cursor.execute(query_all_studies, {"apitoken": user_token})
+        data = cursor.fetchall()
     return data
 
 
 def get_study_info(user_token):
-    data = execute_select_query(query=query_study_info, user_token=user_token)
+    with get_connection() as (conn, cursor):
+        cursor.execute(query_study_info, {"apitoken": user_token})
+        data = cursor.fetchall()
     return data
 
 
 def get_public_studies_with_methods():
     query = "select acc, studytype from studies where status = 3;"
-    postgresql_pool, conn, cursor = get_connection()
-    cursor.execute(query)
-    data = cursor.fetchall()
-    release_connection(postgresql_pool, conn)
+    with get_connection() as (conn, cursor):
+        cursor.execute(query)
+        data = cursor.fetchall()
     return data
 
 
 def get_public_studies():
     query = "select acc from studies where status = 3;"
-    postgresql_pool, conn, cursor = get_connection()
-    cursor.execute(query)
-    data = cursor.fetchall()
-    release_connection(postgresql_pool, conn)
+    with get_connection() as (conn, cursor):
+        cursor.execute(query)
+        data = cursor.fetchall()
     return data
 
 
 def get_private_studies():
     query = "select acc from studies where status = 0;"
-    postgresql_pool, conn, cursor = get_connection()
-    cursor.execute(query)
-    data = cursor.fetchall()
-    release_connection(postgresql_pool, conn)
+    with get_connection() as (conn, cursor):
+        cursor.execute(query)
+        data = cursor.fetchall()
     return data
 
 
 def get_all_non_public_studies():
     query = "select acc from studies where status = 0 OR status = 1 OR status = 2;"
-    postgresql_pool, conn, cursor = get_connection()
-    cursor.execute(query)
-    data = cursor.fetchall()
-    release_connection(postgresql_pool, conn)
+    with get_connection() as (conn, cursor):
+        cursor.execute(query)
+        data = cursor.fetchall()
     return data
 
 
@@ -707,9 +693,9 @@ def get_study_by_type(sType, publicStudy=True):
         return None
 
     query = "SELECT acc, studytype FROM studies WHERE {q2} = {q3};".format(q2=q2, q3=q3)
-    postgresql_pool, conn, cursor = get_connection()
-    cursor.execute(query, input_data)
-    data = cursor.fetchall()
+    with get_connection() as (conn, cursor):
+        cursor.execute(query, input_data)
+        data = cursor.fetchall()
     studyID = [r[0] for r in data]
     studytype = [r[1] for r in data]
     return studyID, studytype
@@ -721,13 +707,12 @@ def update_release_date(study_id, release_date):
         "update studies set releasedate = %(releasedate)s where acc = %(study_id)s;"
     )
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(
-            query_update_release_date,
-            {"releasedate": release_date, "study_id": study_id},
-        )
-        conn.commit()
-        release_connection(postgresql_pool, conn)
+        with get_connection() as (conn, cursor):
+            cursor.execute(
+                query_update_release_date,
+                {"releasedate": release_date, "study_id": study_id},
+            )
+            conn.commit()
         return True, "Date updated for study " + study_id
 
     except Exception as e:
@@ -740,10 +725,9 @@ def add_placeholder_flag(study_id):
         "update studies set placeholder = 1, status = 0 where acc = %(study_id)s;"
     )
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query_update, {"study_id": study_id})
-        conn.commit()
-        release_connection(postgresql_pool, conn)
+        with get_connection() as (conn, cursor):
+            cursor.execute(query_update, {"study_id": study_id})
+            conn.commit()
         return True, "Placeholder flag updated for study %s" % (study_id,)
 
     except Exception as e:
@@ -753,10 +737,9 @@ def add_placeholder_flag(study_id):
 def get_obfuscation_code(study_id):
     val_acc(study_id)
     query = "select obfuscationcode from studies where acc = %(study_id)s;"
-    postgresql_pool, conn, cursor = get_connection()
-    cursor.execute(query, {"study_id": study_id})
-    data = cursor.fetchall()
-    release_connection(postgresql_pool, conn)
+    with get_connection() as (conn, cursor):
+        cursor.execute(query, {"study_id": study_id})
+        data = cursor.fetchall()
     return data
 
 
@@ -767,10 +750,9 @@ def get_id_list_by_req_id(req_id: Union[None, str]):
         raise ValueError("Invalid provisional ID")
 
     query = "select id from studies where reserved_submission_id = %(val)s or id = %(unique_id)s;"
-    postgresql_pool, conn, cursor = get_connection()
-    cursor.execute(query, {"val": req_id, "unique_id": parts[1]})
-    data = cursor.fetchall()
-    release_connection(postgresql_pool, conn)
+    with get_connection() as (conn, cursor):
+        cursor.execute(query, {"val": req_id, "unique_id": parts[1]})
+        data = cursor.fetchall()
     data = [x for x in data if x[0] == int(parts[1])]
 
     return data
@@ -779,8 +761,7 @@ def get_id_list_by_req_id(req_id: Union[None, str]):
 def reserve_mtbls_accession(study_id):
     val_acc(study_id)
     query = "select id from studies where acc = %(study_id)s;"
-    postgresql_pool, conn, cursor = get_connection()
-    try:
+    with get_connection() as (conn, cursor):
         cursor.execute(query, {"study_id": study_id})
         data = cursor.fetchall()
         if data:
@@ -796,69 +777,61 @@ def reserve_mtbls_accession(study_id):
             data = cursor.fetchall()
             if data:
                 return data[0][1]
-    finally:
-        release_connection(postgresql_pool, conn)
     return None
 
 
 def update_study_id_from_mtbls_accession(study_id):
     val_acc(study_id)
     query = "select id, reserved_accession from studies where acc = %(study_id)s;"
-    postgresql_pool, conn, cursor = get_connection()
-    try:
-        cursor.execute(query, {"study_id": study_id})
-        data = cursor.fetchall()
-        if data:
-            set_reserved_acc_query = "update studies set acc = %(reserved_accession)s where id = %(table_id)s;"
-            cursor.execute(
-                set_reserved_acc_query,
-                {"table_id": data[0][0], "reserved_accession": data[0][1]},
-            )
-            conn.commit()
-            get_reserved_acc_query = (
-                "select id, acc from studies where id = %(table_id)s;"
-            )
-            cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
+    with get_connection() as (conn, cursor):
+        try:
+            cursor.execute(query, {"study_id": study_id})
             data = cursor.fetchall()
             if data:
-                return data[0][1]
-    except Exception as e:
-        conn.rollback()
-        logger.error(str(e))
-    finally:
-        release_connection(postgresql_pool, conn)
+                set_reserved_acc_query = "update studies set acc = %(reserved_accession)s where id = %(table_id)s;"
+                cursor.execute(
+                    set_reserved_acc_query,
+                    {"table_id": data[0][0], "reserved_accession": data[0][1]},
+                )
+                conn.commit()
+                get_reserved_acc_query = (
+                    "select id, acc from studies where id = %(table_id)s;"
+                )
+                cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
+                data = cursor.fetchall()
+                if data:
+                    return data[0][1]
+        except Exception as e:
+            conn.rollback()
+            logger.error(str(e))
     return None
 
 
 def update_study_id_from_provisional_id(study_id):
     val_acc(study_id)
     query = "select id, reserved_submission_id from studies where acc = %(study_id)s;"
-    postgresql_pool, conn, cursor = get_connection()
-    try:
-        cursor.execute(query, {"study_id": study_id})
-        data = cursor.fetchall()
-        if data:
-            set_reserved_acc_query = (
-                "update studies set acc = %(provisional_id)s where id = %(table_id)s;"
-            )
-            cursor.execute(
-                set_reserved_acc_query,
-                {"table_id": data[0][0], "provisional_id": data[0][1]},
-            )
-            conn.commit()
-            get_reserved_acc_query = (
-                "select id, acc from studies where id = %(table_id)s;"
-            )
-            cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
+    with get_connection() as (conn, cursor):
+        try:
+            cursor.execute(query, {"study_id": study_id})
             data = cursor.fetchall()
             if data:
-                return data[0][1]
+                set_reserved_acc_query = "update studies set acc = %(provisional_id)s where id = %(table_id)s;"
+                cursor.execute(
+                    set_reserved_acc_query,
+                    {"table_id": data[0][0], "provisional_id": data[0][1]},
+                )
+                conn.commit()
+                get_reserved_acc_query = (
+                    "select id, acc from studies where id = %(table_id)s;"
+                )
+                cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
+                data = cursor.fetchall()
+                if data:
+                    return data[0][1]
 
-    except Exception as e:
-        conn.rollback()
-        logger.error(str(e))
-    finally:
-        release_connection(postgresql_pool, conn)
+        except Exception as e:
+            conn.rollback()
+            logger.error(str(e))
     return None
 
 
@@ -901,13 +874,11 @@ def get_study(study_id):
     where s.acc = %(study_id)s;
 """
 
-    postgresql_pool, conn, cursor = get_connection2()
-    cursor.execute(query, {"study_id": study_id})
-    data = cursor.fetchall()
-    result = [dict(row) for row in data]
+    with get_connection(row_factory=dict_row) as (conn, cursor):
+        cursor.execute(query, {"study_id": study_id})
+        data = cursor.fetchall()
 
-    release_connection(postgresql_pool, conn)
-    return result[0]
+        return dict(data[0]) if data else None
 
 
 def biostudies_acc_to_mtbls(biostudies_id):
@@ -919,11 +890,9 @@ def biostudies_acc_to_mtbls(biostudies_id):
     query = "SELECT acc from studies where biostudies_acc = %(biostudies_id)s;"
 
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {"biostudies_id": biostudies_id})
-        data = cursor.fetchall()
-        # conn.close()
-        release_connection(postgresql_pool, conn)
+        with get_connection() as (conn, cursor):
+            cursor.execute(query, {"biostudies_id": biostudies_id})
+            data = cursor.fetchall()
         return data[0] if data else None
     except Exception as e:
         logger.error(
@@ -950,16 +919,16 @@ def biostudies_accession(study_id, biostudies_id, method):
     if not query:
         return False, "Not a valid method for adding the biostudies accession"
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {"study_id": study_id, "biostudies_id": biostudies_id})
+        with get_connection() as (conn, cursor):
+            cursor.execute(
+                query, {"study_id": study_id, "biostudies_id": biostudies_id}
+            )
 
-        if method == "add" or method == "delete":
-            conn.commit()
-            cursor.execute(s_query, {"study_id": study_id})
+            if method == "add" or method == "delete":
+                conn.commit()
+                cursor.execute(s_query, {"study_id": study_id})
 
-        data = cursor.fetchall()
-        # conn.close()
-        release_connection(postgresql_pool, conn)
+            data = cursor.fetchall()
         return True, data[0]
 
     except Exception as e:
@@ -969,12 +938,11 @@ def biostudies_accession(study_id, biostudies_id, method):
 def get_study_revision(study_id, revision_number):
     query = "select accession_number, revision_datetime, revision_number, revision_comment, status, task_message from study_revisions where accession_number=%(study_id)s and revision_number=%(revision_number)s;"
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(
-            query, {"study_id": study_id, "revision_number": revision_number}
-        )
-        data = cursor.fetchall()
-        release_connection(postgresql_pool, conn)
+        with get_connection() as (conn, cursor):
+            cursor.execute(
+                query, {"study_id": study_id, "revision_number": revision_number}
+            )
+            data = cursor.fetchall()
         if data:
             return True, data[0]
         return False, None
@@ -997,10 +965,9 @@ def mtblc_on_chebi_accession(chebi_id):
     # Default query to get the biosd accession
     query = "select acc from ref_metabolite where temp_id = %(chebi_id)s;"
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {"chebi_id": chebi_id})
-        data = cursor.fetchall()
-        release_connection(postgresql_pool, conn)
+        with get_connection() as (conn, cursor):
+            cursor.execute(query, {"chebi_id": chebi_id})
+            data = cursor.fetchall()
         return True, data[0]
 
     except IndexError:
@@ -1114,10 +1081,8 @@ def study_submitters(study_id, user_email, method):
         """
 
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {"email": user_email, "study_id": study_id})
-        conn.commit()
-        release_connection(postgresql_pool, conn)
+        with get_connection() as (conn, cursor):
+            cursor.execute(query, {"email": user_email, "study_id": study_id})
         return True
     except Exception as e:
         return False
@@ -1127,36 +1092,32 @@ def get_all_study_acc():
     # Select all study accessions which are not in Dormant status or currently only a placeholder
     query = "select acc from studies where placeholder != '1' and status != 4;"
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query)
-        data = cursor.fetchall()
-        release_connection(postgresql_pool, conn)
+        with get_connection() as (conn, cursor):
+            cursor.execute(query)
+            data = cursor.fetchall()
         return data
     except Exception as e:
         return False
 
 
-def get_user_email(user_token):
+def get_user_email(user_token) -> None | str:
     input = "select lower(email) from users where apitoken = %(apitoken)s;"
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        if cursor:
+        with get_connection() as (conn, cursor):
             cursor.execute(input, {"apitoken": user_token})
             data = cursor.fetchone()[0]
-            release_connection(postgresql_pool, conn)
             return data
-        return False
     except Exception as e:
         logger.warning(f"User is not fetched for token {user_token}")
-        return False
+    return None
 
 
 def get_provisional_study_ids_for_user(user_token):
     val_query_params(user_token)
+    with get_connection() as (conn, cursor):
+        cursor.execute(query_provisional_study_ids_for_user, {"user_token": user_token})
+        study_id_list = cursor.fetchall()
 
-    study_id_list = execute_select_with_params(
-        query_provisional_study_ids_for_user, {"user_token": user_token}
-    )
     complete_list = [row[0] for row in study_id_list]
 
     return complete_list
@@ -1175,118 +1136,62 @@ def create_empty_study(
     email = get_email(user_token)
     # val_email(email)
     email = email.lower()
-    conn = None
-    postgresql_pool = None
     req_id = study_id
     current_time = current_utc_time_without_timezone()
     releasedate = current_time + datetime.timedelta(days=365)
     if not obfuscationcode:
         obfuscationcode = str(uuid.uuid4())
-    try:
-        postgresql_pool, conn, cursor = get_connection()
-        if not cursor:
+    with get_connection() as (conn, cursor):
+        try:
+            user_id = None
+            cursor.execute(get_user_id_sql, {"username": email})
+            result = cursor.fetchone()
+            if result:
+                user_id = result[0] if result else None
+
+            if not user_id:
+                message = f"User detail for {email} is not fetched."
+                logger.error(message)
+                raise MetabolightsDBException(http_code=501, message=message)
+
+            cursor.execute("SELECT nextval('hibernate_sequence')")
+            new_unique_id = cursor.fetchone()[0]
+            conn.commit()
+            if not req_id:
+                req_id = identifier_service.default_provisional_identifier.get_id(
+                    new_unique_id, current_time
+                )
+            study_category = StudyCategory.from_name(study_category_name)
+            content = {
+                "req_id": req_id,
+                "obfuscationcode": obfuscationcode,
+                "releasedate": releasedate,
+                "email": email,
+                "new_unique_id": new_unique_id,
+                "userid": user_id,
+                "current_time": current_time,
+                "template_version": template_version,
+                "sample_template_name": sample_template_name,
+                "study_category": study_category,
+                "study_template_name": study_template_name,
+                "mhd_model_version": mhd_model_version,
+            }
+            cursor.execute(insert_study_with_provisional_id, content)
+            conn.commit()
+            cursor.execute(get_study_id_sql, {"unique_id": new_unique_id})
+            fetched_study = cursor.fetchone()
+            return fetched_study[0]
+
+        except Exception as ex:
+            if conn:
+                conn.rollback()
+            if isinstance(ex, MetabolightsDBException):
+                raise ex
             raise MetabolightsDBException(
-                http_code=503, message="There is no database connection"
+                http_code=501,
+                message="Error while creating study. Try later.",
+                exception=ex,
             )
-
-        user_id = None
-        cursor.execute(get_user_id_sql, {"username": email})
-        result = cursor.fetchone()
-        if result:
-            user_id = result[0] if result else None
-
-        if not user_id:
-            message = f"User detail for {email} is not fetched."
-            logger.error(message)
-            raise MetabolightsDBException(http_code=501, message=message)
-
-        cursor.execute("SELECT nextval('hibernate_sequence')")
-        new_unique_id = cursor.fetchone()[0]
-        conn.commit()
-        if not req_id:
-            req_id = identifier_service.default_provisional_identifier.get_id(
-                new_unique_id, current_time
-            )
-        study_category = StudyCategory.from_name(study_category_name)
-        content = {
-            "req_id": req_id,
-            "obfuscationcode": obfuscationcode,
-            "releasedate": releasedate,
-            "email": email,
-            "new_unique_id": new_unique_id,
-            "userid": user_id,
-            "current_time": current_time,
-            "template_version": template_version,
-            "sample_template_name": sample_template_name,
-            "study_category": study_category,
-            "study_template_name": study_template_name,
-            "mhd_model_version": mhd_model_version,
-        }
-        cursor.execute(insert_study_with_provisional_id, content)
-        conn.commit()
-        cursor.execute(get_study_id_sql, {"unique_id": new_unique_id})
-        fetched_study = cursor.fetchone()
-        return fetched_study[0]
-
-    except Exception as ex:
-        if conn:
-            conn.rollback()
-        if isinstance(ex, MetabolightsDBException):
-            raise ex
-        raise MetabolightsDBException(
-            http_code=501,
-            message="Error while creating study. Try later.",
-            exception=ex,
-        )
-    finally:
-        if postgresql_pool and conn:
-            release_connection(postgresql_pool, conn)
-
-
-def execute_select_with_params(query, params):
-    conn = None
-    postgresql_pool = None
-    try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, params)
-
-        data = cursor.fetchall()
-        return data
-    except Exception as e:
-        if conn:
-            conn.rollback()
-        return None
-    finally:
-        if postgresql_pool and conn:
-            release_connection(postgresql_pool, conn)
-
-
-def execute_query_with_parameter(query, parameters):
-    conn = None
-    postgresql_pool = None
-    try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, parameters)
-        conn.commit()
-    except Exception as e:
-        if conn:
-            conn.rollback()
-        return None
-    finally:
-        if postgresql_pool and conn:
-            release_connection(postgresql_pool, conn)
-
-
-def get_release_date_of_study(study_id):
-    query = f"select acc, to_char(releasedate, 'DD/MM/YYYY') as release_date from studies where acc={study_id};"
-    try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query)
-        data = cursor.fetchone()[0]
-        release_connection(postgresql_pool, conn)
-        return data
-    except Exception as e:
-        return None
 
 
 def query_study_submitters(study_id):
@@ -1300,136 +1205,11 @@ def query_study_submitters(study_id):
         su.userid = u.id and su.studyid = s.id and acc = %(study_id)s;
     """
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {"study_id": study_id})
-        data = cursor.fetchall()
-        release_connection(postgresql_pool, conn)
-        return data
-    except Exception as e:
-        return False
-
-
-def get_username_by_token(token):
-    query = "select concat(firstname,' ',lastname) from users where apitoken = %(apitoken)s;"
-    try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {"apitoken": token})
-        data = cursor.fetchone()[0]
-        release_connection(postgresql_pool, conn)
-        return data
-    except Exception as e:
-        return False
-
-
-def override_validations(study_id, method, override=""):
-    val_acc(study_id)
-
-    if not study_id:
-        return None
-
-    if method == "query":
-        query = "select override from studies where acc = '#study_id#';"
-    elif method == "update":
-        query = "update studies set override = '#override#' where acc = '#study_id#';"
-
-    try:
-        postgresql_pool, conn, cursor = get_connection()
-
-        if method == "query":
-            query = query.replace("#study_id#", study_id.upper())
-            query = query.replace("\\", "")
-            cursor.execute(query)
+        with get_connection() as (conn, cursor):
+            cursor.execute(query, {"study_id": study_id})
             data = cursor.fetchall()
-            release_connection(postgresql_pool, conn)
-            return data[0]
-        elif method == "update" and override:
-            query = query.replace("#study_id#", study_id.upper())
-            query = query.replace("#override#", override)
-            query = query.replace("\\", "")
-            cursor.execute(query)
-            conn.commit()
-            # conn.close()
-            release_connection(postgresql_pool, conn)
+        return data
     except Exception as e:
-        return False
-
-
-def query_comments(study_id):
-    """
-    Get any comments associated with a study.
-
-    :param study_id: The accession number of the study we want to retrieve comments for.
-    :return: The comments as a string (can be null if none are found)
-    """
-    val_acc(study_id)
-
-    if not study_id:
-        return None
-
-    query = "select comment from studies where acc = '#study_id#';"
-
-    postgresql_pool, conn, cursor = get_connection()
-    query = query.replace("#study_id#", study_id.upper())
-    query = query.replace("\\", "")
-    cursor.execute(query)
-    data = cursor.fetchall()
-    release_connection(postgresql_pool, conn)
-    return data[0]
-
-
-def update_comments(study_id, comments=None):
-    """
-    Update the comments string for the given study row in the studies table.
-
-    :param study_id: The accession number of the study we want to update comments for
-    :param comments: The new comments string.
-    """
-    val_acc(study_id)
-    if comments is None:
-        comments = ""
-    if not study_id:
-        return None
-    query = "update studies set comment = '#comments#' where acc = '#study_id#';"
-
-    postgresql_pool, conn, cursor = get_connection()
-    query = query.replace("#study_id#", study_id.upper())
-    query = query.replace("#comments#", comments)
-    query = query.replace("\\", "")
-    cursor.execute(query)
-    conn.commit()
-    release_connection(postgresql_pool, conn)
-    return True
-
-
-def update_validation_status(study_id, validation_status):
-    val_acc(study_id)
-
-    if study_id and validation_status:
-        logger.info(
-            "Updating database validation status to "
-            + validation_status
-            + " for study "
-            + study_id
-        )
-        query = (
-            "update studies set validation_status = '"
-            + validation_status
-            + "' where acc = '"
-            + study_id
-            + "';"
-        )
-        try:
-            postgresql_pool, conn, cursor = get_connection()
-            cursor.execute(query)
-            conn.commit()
-            release_connection(postgresql_pool, conn)
-            return True
-        except Exception as e:
-            logger.error(
-                "Database update of validation status failed with error " + str(e)
-            )
-            return False
-    else:
         return False
 
 
@@ -1465,13 +1245,11 @@ def update_study_sample_type(study_id, sample_type):
 
 def insert_update_data(query, inputs=None):
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        if inputs:
-            cursor.execute(query, inputs)
-        else:
-            cursor.execute(query)
-        conn.commit()
-        release_connection(postgresql_pool, conn)
+        with get_connection() as (conn, cursor):
+            if inputs:
+                cursor.execute(query, inputs)
+            else:
+                cursor.execute(query)
         return True, "Database command success " + query
     except Exception as e:
         msg = "Database command " + query + "failed with error " + str(e)
@@ -1510,10 +1288,8 @@ def update_study_status(
     query = query + " WHERE acc = %(study_id)s;"
 
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {"study_id": study_id, "status": status})
-        conn.commit()
-        release_connection(postgresql_pool, conn)
+        with get_connection() as (conn, cursor):
+            cursor.execute(query, {"study_id": study_id, "status": status})
         return True
     except Exception as e:
         logger.error("Database update of study status failed with error " + str(e))
@@ -1532,17 +1308,15 @@ def update_curation_request(
     query += " WHERE acc = %(study_id)s;"
 
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(
-            query,
-            {
-                "study_id": study_id,
-                "curation_request": curation_request.value,
-                "current": current,
-            },
-        )
-        conn.commit()
-        release_connection(postgresql_pool, conn)
+        with get_connection() as (conn, cursor):
+            cursor.execute(
+                query,
+                {
+                    "study_id": study_id,
+                    "curation_request": curation_request.value,
+                    "current": current,
+                },
+            )
         return True
     except Exception as e:
         logger.error(
@@ -1561,40 +1335,14 @@ def update_modification_time(
     query += " WHERE acc = %(study_id)s;"
 
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {"study_id": study_id, "date_time": update_time})
-        conn.commit()
-        release_connection(postgresql_pool, conn)
+        with get_connection() as (conn, cursor):
+            cursor.execute(query, {"study_id": study_id, "date_time": update_time})
         return True
     except Exception as e:
         logger.error(
             "Database update of study modification time failed with error " + str(e)
         )
         return False
-
-
-def execute_select_query(query, user_token):
-    if not user_token:
-        return None
-    val_query_params(user_token)
-
-    input_data = {"apitoken": user_token}
-
-    try:
-        postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, input_data)
-        data = cursor.fetchall()
-        release_connection(postgresql_pool, conn)
-        return data
-    except psycopg2.Error as e:
-        print("Unable to connect to the database")
-        print(e.pgcode)
-        print(e.pgerror)
-        print(traceback.format_exc())
-    except Exception as e:
-        print("Error: " + str(e))
-        logger.error("Error: " + str(e))
-    return None
 
 
 def execute_query(
@@ -1624,22 +1372,20 @@ def execute_query(
     val_query_params(obfuscation_code)
 
     try:
-        postgresql_pool, conn, cursor = get_connection()
-        if study_id is None and study_obfuscation_code is None:
-            cursor.execute(query, input_data)
-        elif study_id and user_token and not study_obfuscation_code:
-            cursor.execute(query_user_access_rights, input_data)
-        elif study_id and study_obfuscation_code:
-            cursor.execute(study_by_obfuscation_code_query, input_data)
-        data = cursor.fetchall()
-        release_connection(postgresql_pool, conn)
+        with get_connection() as (conn, cursor):
+            if study_id is None and study_obfuscation_code is None:
+                cursor.execute(query, input_data)
+            elif study_id and user_token and not study_obfuscation_code:
+                cursor.execute(query_user_access_rights, input_data)
+            elif study_id and study_obfuscation_code:
+                cursor.execute(study_by_obfuscation_code_query, input_data)
+            data = cursor.fetchall()
 
         return data
 
-    except psycopg2.Error as e:
+    except psycopg.Error as e:
         print("Unable to connect to the database")
-        print(e.pgcode)
-        print(e.pgerror)
+        print(e)
         print(traceback.format_exc())
     except Exception as e:
         print("Error: " + str(e))
@@ -1647,57 +1393,13 @@ def execute_query(
     return data
 
 
-def get_connection():
-    postgresql_pool = None
-    conn = None
-    cursor = None
-    settings = get_settings()
-    params = settings.database.connection.model_dump()
+@contextmanager
+def get_connection(row_factory=tuple_row):
+    connection_pool = get_db_connection_pool()
 
-    conn_pool_min = settings.database.configuration.conn_pool_min
-    conn_pool_max = settings.database.configuration.conn_pool_max
-    try:
-        postgresql_pool = SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
-        conn = postgresql_pool.getconn()
-        cursor = conn.cursor()
-    # TODO: Actual exception handling, this is crap
-    except Exception as e:
-        logger.error("Could not query the database " + str(e))
-        if postgresql_pool:
-            postgresql_pool.closeall()
-            postgresql_pool = None
-            conn = None
-            cursor = None
-    return postgresql_pool, conn, cursor
-
-
-def get_connection2():
-    postgresql_pool = None
-    conn = None
-    cursor = None
-    try:
-        settings = get_settings()
-        params = settings.database.connection.model_dump()
-        conn_pool_min = settings.database.configuration.conn_pool_min
-        conn_pool_max = settings.database.configuration.conn_pool_max
-        postgresql_pool = psycopg2.pool.SimpleConnectionPool(
-            conn_pool_min, conn_pool_max, **params
-        )
-        conn = postgresql_pool.getconn()
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    except Exception as e:
-        logger.error("Could not query the database " + str(e))
-        if postgresql_pool:
-            postgresql_pool.closeall()
-    return postgresql_pool, conn, cursor
-
-
-def release_connection(postgresql_pool, ps_connection):
-    try:
-        postgresql_pool.putconn(ps_connection)
-    except (Exception, psycopg2.DatabaseError) as error:
-        print("Error while connecting to PostgreSQL", error)
-        logger.error("Error while releasing PostgreSQL connection. " + str(error))
+    with connection_pool.connection() as conn:
+        with conn.cursor(row_factory=row_factory) as cur:
+            yield conn, cur
 
 
 def database_maf_info_table_actions(study_id=None):

@@ -1,4 +1,15 @@
-from app.ws.db_connection import create_empty_study, execute_query_with_parameter
+from app.ws.db_connection import create_empty_study, get_connection
+
+
+def execute_query_with_parameter(query, parameters):
+    with get_connection() as (conn, cursor):
+        try:
+            cursor.execute(query, parameters)
+            conn.commit()
+        except Exception as e:
+            if conn:
+                conn.rollback()
+            return None
 
 
 class UserTestData:

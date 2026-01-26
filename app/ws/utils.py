@@ -37,7 +37,6 @@ from urllib import request as urllib_request
 
 import numpy as np
 import pandas as pd
-import psycopg2
 import requests
 from email_validator import EmailNotValidError, validate_email
 from flask import request
@@ -57,6 +56,7 @@ from app.config import get_settings
 from app.config.utils import get_host_internal_url
 from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files
 from app.utils import current_time
+from app.ws.db.dbmanager import DBManager
 from app.ws.settings.utils import get_study_settings
 
 """
@@ -1432,9 +1432,8 @@ def get_techniques(studyID=None):
     else:
         sql = "select acc,studytype from studies where status= 3"
 
-    settings = get_settings()
-    params = settings.database.connection.model_dump()
-    with psycopg2.connect(**params) as conn:
+    with DBManager.get_instance().session_maker() as session:
+        conn = session.connection()
         data = pd.read_sql_query(sql, conn)
 
     data = data[~data["studytype"].isin(["Insufficient data supplied", "None"])]
@@ -1541,160 +1540,6 @@ def get_organisms(studyID, sample_file_name):
         return res_df
     except Exception as e:
         print(e)
-
-
-def get_studytype(studyID=None):
-    study_type = {"targeted": [], "untargeted": [], "targeted_untargeted": []}
-
-    if not studyID:
-        studyIDs = get_public_review_studies()
-    else:
-        studyIDs = [studyID]
-
-    for studyID in studyIDs:
-        untarget = False
-        target = False
-
-        source = "/ws/studies/{study_id}/descriptors".format(study_id=studyID)
-        ws_url = get_host_internal_url() + source
-        try:
-            resp = requests.get(
-                ws_url,
-                headers={"user_token": get_settings().auth.service_account.api_token},
-            )
-            data = resp.json()
-            for descriptor in data["studyDesignDescriptors"]:
-                term = str(descriptor["annotationValue"])
-                if term.startswith(("untargeted", "Untargeted", "non-targeted")):
-                    untarget = True
-                elif term.startswith("targeted"):
-                    target = True
-
-            if target and untarget:
-                # print(studyID + ' is targeted and untargeted')
-                study_type["targeted_untargeted"].append(studyID)
-                continue
-            elif target and not untarget:
-                # print(studyID + ' is targeted')
-                study_type["targeted"].append(studyID)
-                continue
-            elif not target and untarget:
-                # print(studyID + ' is untargeted')
-                study_type["untargeted"].append(studyID)
-                continue
-        except Exception as e:
-            print(e)
-
-    return {"study_type": study_type}
-
-
-def get_instruments_organism(studyID=None):
-    if studyID:
-        studyIDs = [studyID]
-    else:
-        studyIDs = get_public_review_studies()
-    # ========================== INSTRUMENTS ===============================
-    instruments_df = pd.DataFrame(columns=["studyID", "assay_name", "instrument"])
-    organism_df = pd.DataFrame(columns=["studyID", "organism", "organism_part"])
-    for studyID in studyIDs:
-        print(studyID)
-        assay_file, investigation_file, sample_file, maf_file = getFileList(studyID)
-
-        for assay in assay_file:
-            ins = get_instrument(studyID, assay)
-            if ins:
-                for i in ins["instruments"]:
-                    instruments_df.loc[len(instruments_df)] = [
-                        ins["studyID"],
-                        ins["assay_name"],
-                        i,
-                    ]
-
-        organism_df = pd.concat([organism_df, get_organisms(studyID, sample_file)])
-
-    instruments = {}
-    for index, row in instruments_df.iterrows():
-        term = row["instrument"]
-        assay_name = row["assay_name"]
-        studyID = row["studyID"]
-
-        if term in instruments:
-            if studyID in instruments[term]:
-                instruments[term][studyID].append(assay_name)
-            else:
-                instruments[term].update({studyID: [assay_name]})
-        else:
-            instruments[term] = {studyID: [assay_name]}
-
-    organisms = {}
-    organism_df = organism_df[
-        ~(
-            (organism_df["organism"].str.lower() == "blank")
-            | (organism_df["organism_part"].str.lower() == "blank")
-        )
-    ]
-    for index, row in organism_df.iterrows():
-        organism = row["organism"]
-        organism_part = row["organism_part"]
-        studyID = row["studyID"]
-
-        if organism not in organisms:
-            organisms[organism] = {organism_part: [studyID]}
-        else:
-            if organism_part not in organisms[organism]:
-                organisms[organism].update({organism_part: [studyID]})
-            else:
-                organisms[organism][organism_part].append(studyID)
-
-    return {"instruments": instruments}, {"organisms": organisms}
-
-
-def get_connection():
-    postgresql_pool = None
-    conn = None
-    cursor = None
-    try:
-        settings = get_settings()
-        params = settings.database.connection.model_dump()
-        conn_pool_min = settings.database.configuration.conn_pool_min
-        conn_pool_max = settings.database.configuration.conn_pool_max
-        postgresql_pool = psycopg2.pool.SimpleConnectionPool(
-            conn_pool_min, conn_pool_max, **params
-        )
-        conn = postgresql_pool.getconn()
-        cursor = conn.cursor()
-    except Exception as e:
-        print("Could not query the database " + str(e))
-        if postgresql_pool:
-            postgresql_pool.closeall
-    return postgresql_pool, conn, cursor
-
-
-def release_connection(postgresql_pool, ps_connection):
-    try:
-        postgresql_pool.putconn(ps_connection)
-    except (Exception, psycopg2.DatabaseError) as error:
-        print("Error while connecting to PostgreSQL", error)
-        logger.error("Error while releasing PostgreSQL connection. " + str(error))
-
-
-def get_public_review_studies():
-    def atoi(text):
-        return int(text) if text.isdigit() else text
-
-    def natural_keys(text):
-        return [atoi(c) for c in re.split(r"(\d+)", text)]
-
-    query = "select acc from studies where status= 3 or status = 2"
-    query = query.replace("\\", "")
-    postgresql_pool, conn, cursor = get_connection()
-    cursor.execute(query)
-    data = cursor.fetchall()
-    release_connection(postgresql_pool, conn)
-
-    res = [id[0] for id in data]
-    res.sort(key=natural_keys)
-    return res
 
 
 def getFileList(studyID):

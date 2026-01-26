@@ -26,7 +26,7 @@ from datetime import datetime
 import gspread
 import numpy as np
 import pandas as pd
-import psycopg2
+import psycopg
 import requests
 from flask import jsonify, request
 from flask_restful import Resource, abort
@@ -34,11 +34,13 @@ from flask_restful_swagger import swagger
 from gspread_dataframe import set_with_dataframe
 from oauth2client.service_account import ServiceAccountCredentials
 from owlready2 import urllib
+from sqlalchemy import text
 
 from app.config import get_settings
 from app.config.utils import get_host_internal_url
 from app.study_folder_utils import convert_relative_to_real_path
 from app.ws.auth.permissions import validate_user_has_curator_role
+from app.ws.db.dbmanager import DBManager
 from app.ws.db_connection import get_public_studies, get_study_by_type, get_study_info
 from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 from app.ws.mtblsWSclient import WsClient
@@ -200,12 +202,11 @@ class cronjob(Resource):
 
 def curation_log_database_query():
     try:
-        settings = get_settings()
-        params = settings.database.connection.model_dump()
-        with psycopg2.connect(**params) as conn:
+        with DBManager.get_instance().session_maker() as session:
             sql = open(
                 convert_relative_to_real_path("resources/updateDB.sql"), "r"
             ).read()
+            conn = session.connection()
             data = pd.read_sql_query(sql, conn)
 
         percentage_known = round(
@@ -243,15 +244,10 @@ def curation_log_database_update(starting_index, ending_index):
 
         def execute_query(query):
             try:
-                settings = get_settings()
-                params = settings.database.connection.model_dump()
-                conn = psycopg2.connect(**params)
-                cursor = conn.cursor()
-                cursor.execute(query)
-                conn.commit()
-                conn.close()
+                with DBManager.get_instance().session_maker() as session:
+                    session.execute(text(query))
 
-            except psycopg2.Error as e:
+            except psycopg.Error as e:
                 print("Unable to connect to the database")
                 logger.info("Unable to connect to the database")
                 print(e.pgcode)
@@ -274,14 +270,10 @@ def curation_log_database_update(starting_index, ending_index):
 
         # Find the maximum number of Metlite ID
         try:
-            settings = get_settings()
-            params = settings.database.connection.model_dump()
-            connection = psycopg2.connect(**params)
-            cursor = connection.cursor()
-            select_Query = "select max(lpad(replace(acc, 'MTBLS', ''), 4, '0')) as acc_short from studies order by acc_short"
-            cursor.execute(select_Query)
-            result = cursor.fetchone()
-            max_acc_short = int(result[0])
+            select_query = "select max(lpad(replace(acc, 'MTBLS', ''), 4, '0')) as acc_short from studies order by acc_short"
+            results = DBManager.execute_select_sql(text(select_query))
+            if results:
+                max_acc_short = int(results[0])
             logger.info(f"max_acc_short - {max_acc_short}")
         except Exception as e:
             logger.error("Retrieving acc from DB failed " + str(e))

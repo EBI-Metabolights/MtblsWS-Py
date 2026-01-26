@@ -1,9 +1,9 @@
 import os
 from typing import List, Tuple, Union
 
-import psycopg2
+import psycopg
 
-from app.config import get_settings
+from app.ws.db.dbmanager import DBManager
 from app.ws.db.types import StudyStatus
 
 
@@ -16,15 +16,9 @@ def sort_by_study_id(value: Tuple[str, str, int]):
 
 
 def get_studies(status_code: Union[None, StudyStatus] = None, reverse: bool = True):
-    settings = get_settings().database.connection
     connection = None
     try:
-        connection = psycopg2.connect(
-            host=settings.host,
-            database=settings.database,
-            user=settings.user,
-            password=settings.password,
-        )
+        connection = psycopg.connect(DBManager.get_instance().get_db_url())
 
         # Create a cursor object
         cursor = connection.cursor()
@@ -43,7 +37,7 @@ def get_studies(status_code: Union[None, StudyStatus] = None, reverse: bool = Tr
         # Print the results or process them as needed
         studies.sort(key=sort_by_study_id, reverse=reverse)
         return studies
-    except (Exception, psycopg2.Error) as error:
+    except (Exception, psycopg.Error) as error:
         print("Error connecting to PostgreSQL:", error)
     finally:
         # Close the cursor and connection

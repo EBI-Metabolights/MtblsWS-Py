@@ -34,9 +34,10 @@ from app.ws.auth.permissions import (
     validate_user_has_curator_role,
 )
 from app.ws.cluster_jobs import submit_job
+from app.ws.db_connection import get_connection
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import get_connection, log_request
+from app.ws.utils import log_request
 
 logger = logging.getLogger("wslog")
 iac = IsaApiClient()
@@ -172,8 +173,8 @@ class keggid(Resource):
                     studyID=studyID
                 )
 
-                postgresql_pool, conn, cursor = get_connection()
-                cursor.execute(query)
+                with get_connection() as (conn, cursor):
+                    cursor.execute(query)
                 # d= cursor.fetchall()
                 ID = [r[0] for r in cursor.fetchall()]
                 result = {uni_organism[0]: ID}
