@@ -74,4 +74,3 @@ def get_jwt_with_one_time_token(one_time_token: str) -> None | str:
         logger.error("Error while fetching one-time-token: %s", ex)
         redis.delete_value(token_key)
         return None
-
