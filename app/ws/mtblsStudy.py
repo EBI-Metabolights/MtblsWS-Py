@@ -976,6 +976,8 @@ class ProvisionalStudy(Resource):
                 if category in version_settings.active_mhd_profiles:
                     profile = version_settings.active_mhd_profiles.get(category)
                     mhd_model_version = profile.default_version
+                licence_key = version_settings.default_dataset_license
+                licence = template_settings.dataset_licenses.get(licence_key)
                 study_id = self.create_provisional_study(
                     user_token,
                     username,
@@ -983,6 +985,9 @@ class ProvisionalStudy(Resource):
                     study_category=category,
                     study_title=study_title,
                     mhd_model_version=mhd_model_version,
+                    dataset_license=licence.name or "",
+                    dataset_license_version=licence.version or "",
+                    data_policy_agreement=new_study_input.dataset_policy_agreement,
                 )
                 study_titles[study_id] = study_title
                 study_categories[study_id] = category
@@ -1326,6 +1331,9 @@ class ProvisionalStudy(Resource):
         study_category: str,
         study_title: str,
         mhd_model_version: None | str,
+        dataset_license: str,
+        dataset_license_version: str,
+        data_policy_agreement: bool,
     ) -> dict:
         new_accession_number = True
         study_acc: Union[None, str] = None
@@ -1342,6 +1350,9 @@ class ProvisionalStudy(Resource):
                 sample_template_name=sample_template_name,
                 study_template_name=study_template_name,
                 mhd_model_version=mhd_model_version,
+                dataset_license=dataset_license,
+                dataset_license_version=dataset_license_version,
+                data_policy_agreement=1 if data_policy_agreement else 0,
             )
             # study = StudyService.get_instance().get_study_by_acc(study_id=study_acc)
 
@@ -1439,6 +1450,11 @@ class ProvisionalStudy(Resource):
                 message="Dataset policy agreement is required to create a new study.",
                 http_code=400,
             )
+        if not new_study_input.dataset_license_agreement:
+            raise MetabolightsException(
+                message="Dataset license agreement is required to create a new study.",
+                http_code=400,
+            )
         if not new_study_input.title:
             raise MetabolightsException(
                 message="Dataset title is empty.",
@@ -1447,11 +1463,6 @@ class ProvisionalStudy(Resource):
         if not new_study_input.description:
             raise MetabolightsException(
                 message="Dataset description is empty.",
-                http_code=400,
-            )
-        if not new_study_input.dataset_license_agreement:
-            raise MetabolightsException(
-                message="Dataset license agreement is required to create a new study.",
                 http_code=400,
             )
         if not new_study_input.selected_template_version:

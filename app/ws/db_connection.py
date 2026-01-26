@@ -154,7 +154,8 @@ query_provisional_study_ids_for_user = """
 insert_study_with_provisional_id = """
     insert into studies (id, obfuscationcode, releasedate, status, studysize, submissiondate,
     updatedate, validations, validation_status, reserved_submission_id, acc, study_category,
-    template_version, sample_type, study_template, mhd_model_version
+    template_version, sample_type, study_template, mhd_model_version, dataset_license,
+    dataset_license_version, data_policy_agreement
     )
     values (
         %(new_unique_id)s,
@@ -168,7 +169,10 @@ insert_study_with_provisional_id = """
         %(template_version)s,
         %(sample_template_name)s,
         %(study_template_name)s,
-        %(mhd_model_version)s
+        %(mhd_model_version)s,
+        %(dataset_license)s,
+        %(dataset_license_version)s,
+        %(data_policy_agreement)s
         );
 """
 assign_user_sql = (
@@ -1136,6 +1140,9 @@ def create_empty_study(
     study_id=None,
     obfuscationcode=None,
     mhd_model_version=None,
+    dataset_license=None,
+    dataset_license_version=None,
+    data_policy_agreement=0,
 ):
     email = get_email(user_token)
     # val_email(email)
@@ -1179,6 +1186,9 @@ def create_empty_study(
                 "study_category": study_category,
                 "study_template_name": study_template_name,
                 "mhd_model_version": mhd_model_version,
+                "dataset_license": dataset_license,
+                "dataset_license_version": dataset_license_version,
+                "data_policy_agreement": data_policy_agreement,
             }
             cursor.execute(insert_study_with_provisional_id, content)
             cursor.execute(assign_user_sql, content)
