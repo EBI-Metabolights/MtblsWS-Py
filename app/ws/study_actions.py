@@ -87,7 +87,11 @@ from app.ws.ftp.ftp_utils import (
 )
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study.comment_utils import update_license, update_mhd_comments
+from app.ws.study.comment_utils import (
+    consolidate_keywords,
+    update_license,
+    update_mhd_comments,
+)
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 from app.ws.study.utils import get_study_metadata_path
@@ -393,6 +397,9 @@ class StudyStatus(Resource):
         )
         isa_study: model.Study = isa_study_item
         if status_updated:
+            if new_study_status in types.StudyStatus.PRIVATE:
+                consolidate_keywords(isa_study)
+
             update_license(isa_study, dataset_license=context.dataset_license)
             update_mhd_comments(
                 isa_study,
@@ -498,6 +505,7 @@ class StudyStatus(Resource):
             context.reserved_accession,
         )
         user_token = context.user_api_token
+
         if study_id != updated_study_id:
             template_settings: TemplateSettings = get_template_settings()
             version_settings = template_settings.versions.get(context.template_version)

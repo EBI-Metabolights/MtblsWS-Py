@@ -535,15 +535,13 @@ class AssayFile(Resource):
                 model.Comment(name=name, value=";".join(values)),
             )
         desc_comments = OrderedDict(
-            OrderedDict(
-                [
-                    ("Assay Descriptor", []),
-                    ("Assay Descriptor Term Accession Number", []),
-                    ("Assay Descriptor Term Source REF", []),
-                    ("Assay Descriptor Category", []),
-                    ("Assay Descriptor Source", []),
-                ]
-            )
+            [
+                ("Assay Descriptor", []),
+                ("Assay Descriptor Term Accession Number", []),
+                ("Assay Descriptor Term Source REF", []),
+                ("Assay Descriptor Category", []),
+                ("Assay Descriptor Source", []),
+            ]
         )
         default_source = (
             template_settings.descriptor_configuration.default_submitter_source

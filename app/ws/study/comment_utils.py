@@ -58,6 +58,60 @@ class CharacteristicDescription(BaseModel):
     format: str
 
 
+def consolidate_keywords(isa_study: model.Study):
+    study_keywords: OrderedDict[str, model.OntologyAnnotation] = OrderedDict()
+    desc_comments = OrderedDict(
+        [
+            ("Assay Descriptor", []),
+            ("Assay Descriptor Term Accession Number", []),
+            ("Assay Descriptor Term Source REF", []),
+            ("Assay Descriptor Category", []),
+            ("Assay Descriptor Source", []),
+        ]
+    )
+    for item in isa_study.assays:
+        assay: model.Assay = item
+        for comment in assay.comments:
+            if comment.name in desc_comments:
+                desc_comments[comment.name].extend(comment.value.split(";"))
+    ontology_terms: OrderedDict[str, model.OntologyAnnotation] = OrderedDict()
+
+    for item in desc_comments.get("Assay Descriptor", []):
+        for idx, part in enumerate(item):
+            if part.lower() in ontology_terms:
+                continue
+            ontology_terms[part.lower()] = model.OntologyAnnotation()
+            ontology = ontology_terms[part.lower()]
+            ontology.term = part
+            accessions = desc_comments.get("Assay Descriptor Term Accession Number", [])
+            if len(accessions) > idx:
+                ontology.term_accession = accessions[idx]
+            sources = desc_comments.get("Assay Descriptor Term Source REF", [])
+            if len(sources) > idx:
+                ontology.term_source = sources[idx]
+            categories = desc_comments.get("Assay Descriptor Category", [])
+            if not ontology.comments:
+                ontology.comments = []
+            if len(categories) > idx:
+                ontology.comments.append(
+                    model.Comment(
+                        name="Assay Descriptor Category", value=categories[idx]
+                    )
+                )
+            sources = desc_comments.get("Assay Descriptor Source", [])
+            if len(sources) > idx:
+                ontology.comments.append(
+                    model.Comment(name="Assay Descriptor Source", value=categories[idx])
+                )
+
+    for item in isa_study.design_descriptors:
+        descriptor: model.OntologyAnnotation = item
+        study_keywords[descriptor.term.lower()] = descriptor
+    for item in ontology_terms:
+        if item not in study_keywords:
+            isa_study.design_descriptors.append(ontology_terms[item])
+
+
 @staticmethod
 def update_mhd_comments(
     isa_study: model.Study,

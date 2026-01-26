@@ -170,15 +170,19 @@ insert_study_with_provisional_id = """
         %(study_template_name)s,
         %(mhd_model_version)s
         );
-    insert into study_user(userid, studyid) values (%(userid)s, %(new_unique_id)s);
 """
+assign_user_sql = (
+    "insert into study_user(userid, studyid) values (%(userid)s, %(new_unique_id)s);"
+)
+
 
 reserve_mtbls_accession_sql = """
-    LOCK TABLE stableid IN ACCESS EXCLUSIVE MODE;
-    update stableid set seq = (select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s)
-    where prefix = %(stable_id_prefix)s;
-    update studies set reserved_accession = 'MTBLS' || (select seq as current_acc from stableid where prefix = %(stable_id_prefix)s)
-    where id = %(table_id)s;
+    UPDATE studies
+    SET reserved_accession = 'MTBLS' || stableid.seq
+    FROM stableid
+    WHERE stableid.prefix = %(stable_id_prefix)
+    AND studies.id = %(table_id)
+    RETURNING studies.reserved_accession
 """
 get_study_id_sql = """
 select acc from studies where id = %(unique_id)s;
@@ -1177,6 +1181,7 @@ def create_empty_study(
                 "mhd_model_version": mhd_model_version,
             }
             cursor.execute(insert_study_with_provisional_id, content)
+            cursor.execute(assign_user_sql, content)
             conn.commit()
             cursor.execute(get_study_id_sql, {"unique_id": new_unique_id})
             fetched_study = cursor.fetchone()
