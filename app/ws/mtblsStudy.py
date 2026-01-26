@@ -989,7 +989,7 @@ class ProvisionalStudy(Resource):
 
             study_id_set = set(study_titles.keys())
             for study_id, study_title in study_titles.items():
-                related_study_ids = []
+                related_mtbls_study_ids = []
                 if multiple_studies:
                     related_studies = study_id_set.copy()
                     related_studies.discard(study_id)
@@ -1001,7 +1001,7 @@ class ProvisionalStudy(Resource):
                     study_root_location,
                     study_title,
                     study_id,
-                    related_study_ids,
+                    related_mtbls_study_ids,
                     template_settings,
                 )
             return {"studies": study_titles}
@@ -1180,9 +1180,9 @@ class ProvisionalStudy(Resource):
             ]:
                 new_comments.append(comment)
         study.comments = new_comments
-
+        related_datasets = new_study_input.related_datasets.copy()
         for related_study_id in related_mtbls_study_ids:
-            new_study_input.related_datasets.append(
+            related_datasets.append(
                 RelatedDataset(repository="MetaboLights", accession=related_study_id)
             )
 
@@ -1221,15 +1221,11 @@ class ProvisionalStudy(Resource):
                 ),
                 (
                     "Related Data Repository",
-                    ";".join(
-                        [x.repository or "" for x in new_study_input.related_datasets]
-                    ),
+                    ";".join([x.repository or "" for x in related_datasets]),
                 ),
                 (
                     "Related Data Accession",
-                    ";".join(
-                        [x.accession or "" for x in new_study_input.related_datasets]
-                    ),
+                    ";".join([x.accession or "" for x in related_datasets]),
                 ),
             ]
         )
