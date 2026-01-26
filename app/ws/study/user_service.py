@@ -98,6 +98,7 @@ class UserService(object):
                         or_(
                             Study.reserved_accession == study_id,
                             Study.reserved_submission_id == study_id,
+                            Study.mhd_accession == study_id,
                         )
                     )
                 if obfuscation_code:
