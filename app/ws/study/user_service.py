@@ -94,18 +94,17 @@ class UserService(object):
             if study_id or obfuscation_code:
                 filters = []
                 if study_id:
-                    filters.append(Study.acc == study_id)
+                    filters.append(
+                        or_(
+                            Study.reserved_accession == study_id,
+                            Study.reserved_submission_id == study_id,
+                        )
+                    )
                 if obfuscation_code:
                     filters.append(Study.obfuscationcode == obfuscation_code)
 
                 query = db_session.query(Study)
                 study: Study = query.filter(*filters).first()
-                if not study and study_id:
-                    study = (
-                        db_session.query(Study)
-                        .filter(Study.reserved_submission_id == study_id)
-                        .first()
-                    )
                 if study and obfuscation_code in {study.obfuscationcode, None}:
                     permission_context.obfuscation_code = study.obfuscationcode
                     permission_context.study_id = study.acc
