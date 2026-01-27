@@ -1,7 +1,7 @@
 import logging
 from typing import Any, List, Self, Union
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from app.utils import MetabolightsAuthorizationException, MetabolightsException
 from app.ws.auth.service import AbstractAuthManager
@@ -94,7 +94,13 @@ class UserService(object):
             if study_id or obfuscation_code:
                 filters = []
                 if study_id:
-                    filters.append(Study.acc == study_id)
+                    filters.append(
+                        or_(
+                            Study.reserved_accession == study_id,
+                            Study.reserved_submission_id == study_id,
+                            Study.mhd_accession == study_id,
+                        )
+                    )
                 if obfuscation_code:
                     filters.append(Study.obfuscationcode == obfuscation_code)
 
