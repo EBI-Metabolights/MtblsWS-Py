@@ -3,7 +3,8 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict
+import pandas as pd
+from typing import Any, Callable, Dict
 
 import requests
 
@@ -18,7 +19,7 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.redis.redis import get_redis_server
 from app.ws.utils import read_tsv, write_tsv
 
-logger = logging.getLogger("wslog")
+logger = logging.getLogger(__name__)
 
 
 def init_chebi_search_manager():
@@ -43,11 +44,13 @@ def init_chebi_search_manager():
     soft_time_limit=60 * 60 * 24,
     name="app.tasks.common_tasks.curation_tasks.chebi_pipeline.maf_post_curation_task",
 )
-def maf_post_curation_task(self, study_id: str):
-    wsc = WsClient()
-    init_chebi_search_manager()
+def maf_post_curation_task(
+    self,
+    study_id: str,
+    chebi_identifier_search: bool = True,
+    refmet_identifier_search: bool = True,
+):
     settings = get_settings()
-    # study = StudyService.get_instance().get_study_by_acc(study_id)
     study_metadata_location = os.path.join(
         settings.study.mounted_paths.study_metadata_files_root_path, study_id
     )
@@ -88,58 +91,93 @@ def maf_post_curation_task(self, study_id: str):
         assigned_refmet_identifier = "assigned_refmet_identifier"
         chebi_identifier_search_status = "chebi_identifier_search_status"
         chebi_identifier_search_time = "chebi_identifier_search_time"
-        if assigned_chebi_identifier not in maf_df.columns:
-            idx = maf_df.columns.get_loc(last_default_column) + 1
-            maf_df.insert(idx, assigned_chebi_identifier, "")
+        refmet_identifier_search_status = "refmet_identifier_search_status"
+        refmet_identifier_search_time = "refmet_identifier_search_time"
 
-        if assigned_refmet_identifier not in maf_df.columns:
-            idx = maf_df.columns.get_loc(assigned_chebi_identifier) + 1
-            maf_df.insert(idx, assigned_refmet_identifier, "")
-
-        if chebi_identifier_search_status not in maf_df.columns:
-            idx = maf_df.columns.get_loc(assigned_refmet_identifier) + 1
-            maf_df.insert(idx, chebi_identifier_search_status, "")
-
-        if chebi_identifier_search_time not in maf_df.columns:
-            idx = maf_df.columns.get_loc(chebi_identifier_search_status) + 1
-            maf_df.insert(idx, chebi_identifier_search_time, "")
+        last_column = last_default_column
+        for column in [
+            assigned_chebi_identifier,
+            assigned_refmet_identifier,
+            chebi_identifier_search_status,
+            chebi_identifier_search_time,
+            refmet_identifier_search_status,
+            refmet_identifier_search_time,
+        ]:
+            if column not in maf_df.columns:
+                idx = maf_df.columns.get_loc(last_column) + 1
+                maf_df.insert(idx, column, "")
+                last_column = column
 
         for index, row in maf_df.iterrows():
-            value = row["metabolite_identification"]
-            if value:
-                values = value.split("|")
-                assigned_values = []
-                maf_df.at[index, chebi_identifier_search_time] = current_task_time
-                for identifier in values:
-                    success, chebi_id = search_chebi_identifier(identifier)
-                    if not success:
-                        maf_df.at[index, assigned_chebi_identifier] = "failed"
-                        continue
-                    if chebi_id:
-                        assigned_values.append(chebi_id)
-                    else:
-                        assigned_values.append("")
-                current_value = row[assigned_chebi_identifier]
-
-                new_value = "|".join(assigned_values)
-                if current_value != new_value:
-                    if not current_value:
-                        maf_df.at[index, chebi_identifier_search_status] = "assigned"
-                    elif not new_value:
-                        maf_df.at[index, chebi_identifier_search_status] = "removed"
-                    else:
-                        maf_df.at[index, chebi_identifier_search_status] = "updated"
-                    maf_df.at[index, assigned_chebi_identifier] = new_value
-                else:
-                    if not new_value:
-                        if not new_value:
-                            maf_df.at[index, chebi_identifier_search_status] = (
-                                "not found"
-                            )
-                    else:
-                        maf_df.at[index, chebi_identifier_search_status] = "same"
+            logger.debug("Row: %s", index)
+            if chebi_identifier_search:
+                search_compound_identifier(
+                    search_chebi_identifier,
+                    current_task_time,
+                    maf_df,
+                    index,
+                    assigned_chebi_identifier,
+                    chebi_identifier_search_status,
+                    chebi_identifier_search_time,
+                )
+            if refmet_identifier_search:
+                search_compound_identifier(
+                    search_refmet_identifier,
+                    current_task_time,
+                    maf_df,
+                    index,
+                    assigned_refmet_identifier,
+                    refmet_identifier_search_status,
+                    refmet_identifier_search_time,
+                )
 
         write_tsv(maf_df, str(maf_file))
+
+
+def search_compound_identifier(
+    fn: Callable,
+    current_task_time: str,
+    maf_df: pd.DataFrame,
+    row_index: int,
+    assigned_identifier_column: str,
+    identifier_search_status_column: str,
+    identifier_search_time_column: str,
+):
+    value: str = maf_df.loc[row_index]["metabolite_identification"] or ""
+    if not value:
+        return True, ""
+    values = value.split("|")
+    assigned_values = []
+    failed = False
+    for identifier in values:
+        success, ref_id = fn(identifier)
+        if not success:
+            failed = True
+            break
+        if ref_id:
+            assigned_values.append(ref_id)
+        else:
+            assigned_values.append("")
+    maf_df.at[row_index, identifier_search_time_column] = current_task_time
+    if failed:
+        maf_df.at[row_index, identifier_search_status_column] = "failed"
+        return
+    current_value = maf_df.at[row_index, assigned_identifier_column]
+
+    new_value = "|".join(assigned_values)
+    if not current_value:
+        if not new_value:
+            maf_df.at[row_index, identifier_search_status_column] = "not found"
+        else:
+            maf_df.at[row_index, identifier_search_status_column] = "first assignment"
+    else:
+        if not new_value:
+            maf_df.at[row_index, identifier_search_status_column] = "deleted"
+        elif current_value != new_value:
+            maf_df.at[row_index, identifier_search_status_column] = "updated"
+        else:
+            maf_df.at[row_index, identifier_search_status_column] = "same"
+    maf_df.at[row_index, assigned_identifier_column] = new_value
 
 
 def search_chebi_identifier(search_term):
@@ -154,7 +192,7 @@ def search_chebi_identifier(search_term):
     chebi_id = ""
     success = False
     try:
-        logger.debug(f"-- Search che {search_term}")
+        logger.debug(f"-- Search chebi id {search_term}")
         resp = requests.get(chebi_es_search_url, params=params, timeout=5)
         if resp.status_code == 200:
             json_resp = resp.json()
@@ -174,6 +212,33 @@ def search_chebi_identifier(search_term):
     return success, chebi_id
 
 
+def search_refmet_identifier(search_term):
+    search_term = clean_compound_name(search_term)
+
+    if not search_term:
+        return ""
+    search_url = (
+        f"https://www.metabolomicsworkbench.org/rest/refmet/match/{search_term}"
+    )
+
+    refmet_id = ""
+    success = False
+    try:
+        logger.debug(f"-- Search refmet id {search_term}")
+        resp = requests.get(search_url, timeout=5)
+        if resp.status_code == 200:
+            json_resp = resp.json()
+            refmet_id = json_resp["refmet_id"] or ""
+            if refmet_id and refmet_id.replace("-", "").strip():
+                refmet_id = refmet_id
+            success = True
+            return success, refmet_id
+    except Exception as e:
+        logger.error(" -- Error querying REFMET ID. Error " + str(e), mode="error")
+
+    return success, refmet_id
+
+
 def clean_compound_name(input_str: str):
     if not input_str:
         return ""
@@ -189,6 +254,10 @@ def clean_compound_name(input_str: str):
 
 
 if __name__ == "__main__":
+    from app.tasks.utils import set_basic_logging_config
+
+    set_basic_logging_config(logging.DEBUG)
+    init_chebi_search_manager()
     maf_post_curation_task("MTBLS1")
 
 
