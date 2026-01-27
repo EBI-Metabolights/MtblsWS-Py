@@ -1,8 +1,7 @@
 import logging
-from operator import or_
 from typing import Any, List, Self, Union
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from app.utils import MetabolightsAuthorizationException, MetabolightsException
 from app.ws.auth.service import AbstractAuthManager
