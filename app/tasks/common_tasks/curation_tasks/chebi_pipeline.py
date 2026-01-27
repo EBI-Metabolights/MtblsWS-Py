@@ -1,7 +1,11 @@
 import json
 import logging
 import os
+import re
+from pathlib import Path
 from typing import Any, Dict
+
+import requests
 
 from app.config import get_settings
 from app.tasks.worker import MetabolightsTask, celery, send_email
@@ -9,9 +13,10 @@ from app.utils import current_time
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.wsproxy import get_chebi_ws_proxy
-from app.ws.chebi_pipeline_utils import run_chebi_pipeline
+from app.ws.chebi_pipeline_utils import clean_comp_name, run_chebi_pipeline
 from app.ws.mtblsWSclient import WsClient
 from app.ws.redis.redis import get_redis_server
+from app.ws.utils import read_tsv, write_tsv
 
 logger = logging.getLogger("wslog")
 
@@ -22,13 +27,169 @@ def init_chebi_search_manager():
     if not WsClient.default_search_manager:
         chebi_proxy = get_chebi_ws_proxy()
         curation_table_file_path = (
-            settings.chebi.pipeline.curated_metabolite_list_file_location
+            settings.chebi.pipeline.assigned_metabolite_list_file_location
         )
         curation_table = CuratedMetaboliteTable.get_instance(curation_table_file_path)
         chebi_search_manager = ChebiSearchManager(
-            ws_proxy=chebi_proxy, curated_metabolite_table=curation_table
+            ws_proxy=chebi_proxy, assigned_metabolite_table=curation_table
         )
         WsClient.default_search_manager = chebi_search_manager
+
+
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    max_retries=3,
+    soft_time_limit=60 * 60 * 24,
+    name="app.tasks.common_tasks.curation_tasks.chebi_pipeline.maf_post_curation_task",
+)
+def maf_post_curation_task(self, study_id: str):
+    wsc = WsClient()
+    init_chebi_search_manager()
+    settings = get_settings()
+    # study = StudyService.get_instance().get_study_by_acc(study_id)
+    study_metadata_location = os.path.join(
+        settings.study.mounted_paths.study_metadata_files_root_path, study_id
+    )
+    results = []
+    current_task_time = current_time(True).strftime("%Y-%m-%d %H:%M:%S")
+    for maf_file in Path(study_metadata_location).glob(
+        "*_maf.tsv", case_sensitive=False
+    ):
+        maf_df = None
+
+        try:
+            maf_df = read_tsv(str(maf_file))
+        except Exception as ex:
+            message = f"Error while reading {maf_file.name} MAF file: {ex}"
+            logger.error(message)
+            results.append(message)
+            continue
+        last_default_column = "smallmolecule_abundance_std_error_sub"
+        if last_default_column not in maf_df.columns:
+            message = (
+                f"{last_default_column} column is missing in {maf_file.name} MAF file"
+            )
+            logger.error(message)
+            results.append(message)
+            continue
+
+        if "metabolite_identification" not in maf_df.columns:
+            message = f"metabolite_identification column is missing in {maf_file.name} MAF file"
+            logger.error(message)
+            results.append(message)
+            continue
+        if len(maf_df) == 0:
+            message = f"{maf_file.name} MAF file is empty"
+            logger.error(message)
+            results.append(message)
+            continue
+        assigned_chebi_identifier = "assigned_chebi_identifier"
+        assigned_refmet_identifier = "assigned_refmet_identifier"
+        chebi_identifier_search_status = "chebi_identifier_search_status"
+        chebi_identifier_search_time = "chebi_identifier_search_time"
+        if assigned_chebi_identifier not in maf_df.columns:
+            idx = maf_df.columns.get_loc(last_default_column) + 1
+            maf_df.insert(idx, assigned_chebi_identifier, "")
+
+        if assigned_refmet_identifier not in maf_df.columns:
+            idx = maf_df.columns.get_loc(assigned_chebi_identifier) + 1
+            maf_df.insert(idx, assigned_refmet_identifier, "")
+
+        if chebi_identifier_search_status not in maf_df.columns:
+            idx = maf_df.columns.get_loc(assigned_refmet_identifier) + 1
+            maf_df.insert(idx, chebi_identifier_search_status, "")
+
+        if chebi_identifier_search_time not in maf_df.columns:
+            idx = maf_df.columns.get_loc(chebi_identifier_search_status) + 1
+            maf_df.insert(idx, chebi_identifier_search_time, "")
+
+        for index, row in maf_df.iterrows():
+            value = row["metabolite_identification"]
+            if value:
+                values = value.split("|")
+                assigned_values = []
+                maf_df.at[index, chebi_identifier_search_time] = current_task_time
+                for identifier in values:
+                    success, chebi_id = search_chebi_identifier(identifier)
+                    if not success:
+                        maf_df.at[index, assigned_chebi_identifier] = "failed"
+                        continue
+                    if chebi_id:
+                        assigned_values.append(chebi_id)
+                    else:
+                        assigned_values.append("")
+                current_value = row[assigned_chebi_identifier]
+
+                new_value = "|".join(assigned_values)
+                if current_value != new_value:
+                    if not current_value:
+                        maf_df.at[index, chebi_identifier_search_status] = "assigned"
+                    elif not new_value:
+                        maf_df.at[index, chebi_identifier_search_status] = "removed"
+                    else:
+                        maf_df.at[index, chebi_identifier_search_status] = "updated"
+                    maf_df.at[index, assigned_chebi_identifier] = new_value
+                else:
+                    if not new_value:
+                        if not new_value:
+                            maf_df.at[index, chebi_identifier_search_status] = (
+                                "not found"
+                            )
+                    else:
+                        maf_df.at[index, chebi_identifier_search_status] = "same"
+
+        write_tsv(maf_df, str(maf_file))
+
+
+def search_chebi_identifier(search_term):
+    search_term = clean_compound_name(search_term)
+
+    if not search_term:
+        return ""
+    chebi_ws2_url = get_settings().chebi.service.connection.chebi_ws_wsdl
+    chebi_es_search_url = f"{chebi_ws2_url}/public/es_search"
+    params = {"term": search_term, "page": 1, "size": 5}
+
+    chebi_id = ""
+    success = False
+    try:
+        logger.debug(f"-- Search che {search_term}")
+        resp = requests.get(chebi_es_search_url, params=params, timeout=5)
+        if resp.status_code == 200:
+            json_resp = resp.json()
+            results = json_resp["results"]
+
+            if results:
+                for result in results:
+                    source = result["_source"]
+                    name = source["name"]
+                    if name.lower() == search_term:
+                        chebi_id = source["chebi_accession"]
+                        break
+            success = True
+    except Exception as e:
+        logger.error(" -- Error querying ChEBI ws2. Error " + str(e), mode="error")
+
+    return success, chebi_id
+
+
+def clean_compound_name(input_str: str):
+    if not input_str:
+        return ""
+    comp_name = input_str.strip().lower()
+
+    comp_name = comp_name.replace("Î´", "delta").replace("?", "").replace("*", "")
+    if "[" in comp_name:
+        comp_name = comp_name.replace("[U]", "").replace("[S]", "")
+        comp_name = re.sub(re.escape(r"[iso\d]"), "", comp_name)
+
+    comp_name = clean_comp_name(comp_name)
+    return comp_name
+
+
+if __name__ == "__main__":
+    maf_post_curation_task("MTBLS1")
 
 
 @celery.task(

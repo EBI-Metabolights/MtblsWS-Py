@@ -23,6 +23,7 @@ from app.config import get_settings
 from app.utils import MetabolightsException
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
+from app.ws.chebi.search.models import CompoundSearchResponseModel
 from app.ws.chebi.wsproxy import get_chebi_ws_proxy
 from app.ws.db.dbmanager import DBManager
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
@@ -83,7 +84,9 @@ class WsClient:
             )
             WsClient.elasticsearch_service = self.elasticsearch_service
 
-    def get_maf_search(self, search_type, search_value):
+    def get_maf_search(
+        self, search_type, search_value, json_object: bool = True
+    ) -> Union[CompoundSearchResponseModel, dict]:
         # Updated to remove Java WS /genericcompoundsearch/{search_type}/{search_value} dependency
         result = None
         try:
@@ -98,9 +101,9 @@ class WsClient:
             if result.err:
                 logger.warning(f"Result is not valid {str(result.err)}")
             return None
-
-        json_result = result.model_dump()
-        return json_result
+        if json_object:
+            return result.model_dump()
+        return result
 
     @staticmethod
     def get_public_studies():

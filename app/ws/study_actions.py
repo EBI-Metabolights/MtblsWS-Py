@@ -44,6 +44,7 @@ from app.tasks.common_tasks.basic_tasks.send_email import (
     send_email_for_new_accession_number,
     send_technical_issue_email,
 )
+from app.tasks.common_tasks.curation_tasks.chebi_pipeline import maf_post_curation_task
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import (
     rename_folder_on_private_storage,
 )
@@ -608,6 +609,17 @@ class StudyStatus(Resource):
             "obfuscation_code": obfuscation_code,
             "study_table_id": study.id,
         }
+
+        # RUN post curation tasks if study is converted to PRIVATE
+        if (
+            context.study_status != new_study_status
+            and new_study_status
+            in (types.StudyStatus.PRIVATE, types.StudyStatus.INREVIEW)
+            and context.study_status == types.StudyStatus.PROVISIONAL
+        ):
+            inputs = {"study_id": updated_study_id}
+            maf_post_curation_task.apply_async(kwargs=inputs)
+
         # Explictly changing the FTP folder permission for Private and Provisional state
         if context.study_status != new_study_status:
             if new_study_status in (
