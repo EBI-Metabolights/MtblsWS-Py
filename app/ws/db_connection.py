@@ -184,8 +184,8 @@ reserve_mtbls_accession_sql = """
     UPDATE studies
     SET reserved_accession = 'MTBLS' || stableid.seq
     FROM stableid
-    WHERE stableid.prefix = %(stable_id_prefix)
-    AND studies.id = %(table_id)
+    WHERE stableid.prefix = %(stable_id_prefix)s
+    AND studies.id = %(table_id)s
     RETURNING studies.reserved_accession
 """
 get_study_id_sql = """
@@ -773,9 +773,10 @@ def reserve_mtbls_accession(study_id):
         cursor.execute(query, {"study_id": study_id})
         data = cursor.fetchall()
         if data:
+            table_id = data[0][0]
             cursor.execute(
                 reserve_mtbls_accession_sql,
-                {"stable_id_prefix": "MTBLS", "table_id": data[0][0]},
+                {"stable_id_prefix": "MTBLS", "table_id": table_id},
             )
             conn.commit()
             get_reserved_acc_query = (

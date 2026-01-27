@@ -305,7 +305,8 @@ def add_new_assay_sheet(
         technology_type=technology_type,
         measurement_type=measurement_type_ontology,
     )
-    assay.comments.extend(additional_assay_comments)
+    if additional_assay_comments:
+        assay.comments.extend(additional_assay_comments)
 
     assays: list[model.Assay] = isa_study.assays
     assays.append(assay)

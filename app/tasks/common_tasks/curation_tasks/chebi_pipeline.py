@@ -3,9 +3,9 @@ import logging
 import os
 import re
 from pathlib import Path
-import pandas as pd
 from typing import Any, Callable, Dict
 
+import pandas as pd
 import requests
 
 from app.config import get_settings

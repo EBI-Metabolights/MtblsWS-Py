@@ -398,7 +398,7 @@ class StudyStatus(Resource):
         )
         isa_study: model.Study = isa_study_item
         if status_updated:
-            if new_study_status in types.StudyStatus.PRIVATE:
+            if new_study_status in (types.StudyStatus.PRIVATE,):
                 consolidate_keywords(isa_study)
 
             update_license(isa_study, dataset_license=context.dataset_license)

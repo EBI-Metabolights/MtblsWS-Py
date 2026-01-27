@@ -51,7 +51,7 @@ class StudyTask(Base):
     task_name = Column(String(255), nullable=False)
     last_request_time = Column(DateTime, nullable=False)
     last_request_executed = Column(DateTime, nullable=False)
-    last_execution_time = Column(String(255), nullable=False)
+    last_execution_time = Column(DateTime, nullable=False)
     last_execution_status = Column(String(255), nullable=False)
     last_execution_message = Column(Text)
     (UniqueConstraint("study_acc", "task_name"),)

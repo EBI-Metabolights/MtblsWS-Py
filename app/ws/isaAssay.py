@@ -902,7 +902,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             assay_type,
             polarity,
             column_type,
-            column_default_values,
+            default_column_values=column_default_values,
             template_version=study.template_version,
         )
 
