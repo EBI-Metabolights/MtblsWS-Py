@@ -433,7 +433,6 @@ class StudyRevision(Resource):
         task_started_at = request.headers.get("task-started-at", None)
         task_message = request.headers.get("task-message", None)
         revision_comment = request.headers.get("revision-comment", None)
-
         task_completed_at = (
             datetime.datetime.fromisoformat(task_completed_at)
             if task_completed_at

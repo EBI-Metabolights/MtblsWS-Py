@@ -392,7 +392,7 @@ class StudyRevisionService:
                     "study_id": study.acc,
                     "revision_number": revision_number,
                     "mhd_id": study.mhd_accession or study.reserved_accession,
-                    "announcement_reason": revision_comment,
+                    "announcement_reason": study_revision.revision_comment,
                 }
                 submit_announcement_file_task.apply_async(kwargs=inputs)
 
