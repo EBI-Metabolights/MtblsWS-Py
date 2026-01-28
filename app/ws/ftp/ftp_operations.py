@@ -572,6 +572,7 @@ class PrivateFtpUploadInfo(Resource):
             "obfuscation_code": study.obfuscationcode,
             "reserved_accession": study.reserved_accession,
             "reserved_submission_id": study.reserved_submission_id,
+            "mhd_accession": study.mhd_accession,
         }
 
 

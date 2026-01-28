@@ -548,26 +548,23 @@ class StudyRevisionService:
                 shutil.rmtree(revisions_path)
 
             os.makedirs(metadata_revisions_path, exist_ok=True)
-
+            def copy_mhd_files(audit_folder_path: str):
+                mhd_files_root_path = os.path.join(
+                    maintenance_task.study_internal_files_path, "DATA_FILES"
+                )
+                for file_path in Path(mhd_files_root_path).glob("*.json", case_sensitive=False):
+                    if file_path.is_file() and (
+                        file_path.name.lower().endswith(".mhd.json")
+                        or file_path.name.lower().endswith(".announcement.json")
+                    ):
+                        target_file = os.path.join(audit_folder_path, file_path.name)
+                        shutil.copy2(str(file_path), target_file)
             dest_path = maintenance_task.create_audit_folder(
                 audit_folder_root_path=metadata_revisions_path,
                 folder_name=revision_folder_name,
                 stage=None,
+                after_creation_callback=copy_mhd_files
             )
-            mhd_files_root_path = os.path.join(
-                maintenance_task.study_internal_files_path, "DATA_FILES"
-            )
-            for file in glob.glob(mhd_files_root_path + "/*.json", recursive=False):
-                file_path = Path(file)
-                if file_path.is_file() and (
-                    file_path.name.endswith(".mhd.json")
-                    or file_path.name.endswith(".announcement.json")
-                ):
-                    target_file = os.path.join(metadata_revisions_path, file_path.name)
-
-                    basename = os.path.basename(file)
-                    target_file = os.path.join(revisions_root_path, basename)
-                    shutil.copy2(file, target_file)
 
             # delete previous version files on PUBLIC_METADATA top folder
             search_pattern = os.path.join(revisions_root_path, "*")

@@ -9,7 +9,7 @@ import shutil
 import time
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, OrderedDict, Set, Union
+from typing import Callable, Dict, List, OrderedDict, Set, Union
 
 import chardet
 import numpy as np
@@ -526,6 +526,7 @@ class StudyFolderMaintenanceTask(object):
         folder_name: Union[None, str] = None,
         metadata_files_signature_root_path: Union[None, str] = None,
         stage: None | str = "BACKUP",
+        after_creation_callback: Union[None, Callable] = None,
     ):
         # if os.path.exists(self.study_metadata_files_path):
         metadata_files_list = self.get_all_metadata_files(
@@ -549,6 +550,8 @@ class StudyFolderMaintenanceTask(object):
                 basename = os.path.basename(file)
                 target_file = os.path.join(audit_folder_path, basename)
                 shutil.copy2(file, target_file)
+            if after_creation_callback:
+                after_creation_callback(audit_folder_path)
             if not metadata_files_signature_root_path:
                 metadata_files_signature_root_path = self.study_internal_files_path
             metadata_files_signature_path = os.path.join(
@@ -557,11 +560,11 @@ class StudyFolderMaintenanceTask(object):
             )
             files_hash_txt = "metadata_sha256.json"
             files_hash_txt_path = os.path.join(
-                metadata_files_signature_root_path, files_hash_txt
+                audit_folder_hash_path, files_hash_txt
             )
             self.create_metadata_files_signature(
-                metadata_files_path=metadata_files_path,
-                metadata_files_signature_root_path=metadata_files_signature_root_path,
+                metadata_files_path=audit_folder_path,
+                metadata_files_signature_root_path=audit_folder_hash_path,
             )
 
             target_file = os.path.join(
@@ -1685,7 +1688,7 @@ class StudyFolderMaintenanceTask(object):
         self, recursive=False, search_path: Union[None, str] = None
     ):
         metadata_files = []
-        patterns = ["[asi]_*.txt", "m_*.tsv"]
+        patterns = ["[asi]_*.txt", "m_*.tsv", "*.mhd.json", "*.announcement.json"]
         search_path = search_path if search_path else self.study_metadata_files_path
         if not os.path.exists(search_path) or not os.path.isdir(search_path):
             return metadata_files
