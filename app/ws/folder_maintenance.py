@@ -576,6 +576,7 @@ class StudyFolderMaintenanceTask(object):
             if target_file != metadata_files_signature_path:
                 if os.path.exists(metadata_files_signature_path):
                     shutil.copy2(metadata_files_signature_path, target_file)
+            if target_files_hash_txt != files_hash_txt_path:
                 if os.path.exists(files_hash_txt_path):
                     shutil.copy2(files_hash_txt_path, target_files_hash_txt)
             action_log = MaintenanceActionLog(
