@@ -389,7 +389,7 @@ class StudyRevisionService:
                             study_revision.mhd_share_status == MhdSubmissionStatus.IN_PROGRESS.value
                 db_session.commit()
                 inputs = {
-                    "study_id": user_token,
+                    "study_id": study.acc,
                     "revision_number": revision_number,
                     "mhd_id": study.mhd_accession or study.reserved_accession,
                     "announcement_reason": revision_comment,

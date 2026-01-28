@@ -32,7 +32,7 @@ def submit_announcement_file_task(
         "DATA_FILES",
     )
     announcement_file_path = os.path.join(
-        mhd_files_root_path, f"{mhd_id}.announcement.json"
+        mhd_files_root_path, f"{study_id}.announcement.json"
     )
     if not os.path.exists(announcement_file_path):
         inputs = {
