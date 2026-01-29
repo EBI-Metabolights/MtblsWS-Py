@@ -195,6 +195,7 @@ class AuthenticationManager(AbstractAuthManager):
                     message="Could not validate credentials or no username"
                 )
             user = SimplifiedUserModel.model_validate(db_user)
+            user.email = db_user.email.lower()
         except Exception as e:
             raise e
 
