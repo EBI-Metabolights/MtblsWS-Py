@@ -525,10 +525,10 @@ class StudyStatus(Resource):
                 if get_settings().flask.TESTING:
                     accession_type = "test"
                 else:
-                        if context.study_category == StudyCategory.MS_MHD_ENABLED:
-                            accession_type = "mhd"
-                        elif context.study_category == StudyCategory.MS_MHD_LEGACY:
-                            accession_type = "legacy"
+                    if context.study_category == StudyCategory.MS_MHD_ENABLED:
+                        accession_type = "mhd"
+                    elif context.study_category == StudyCategory.MS_MHD_LEGACY:
+                        accession_type = "legacy"
                 try:
                     mhd_accession = self.get_new_mhd_accession(
                         updated_study_id, accession_type

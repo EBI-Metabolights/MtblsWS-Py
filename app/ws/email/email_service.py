@@ -222,7 +222,7 @@ class EmailService(object):
         new_ftp_folder,
         additional_cc_emails,
         study_contacts,
-        mhd_accession
+        mhd_accession,
     ):
         host = get_settings().server.service.ws_app_base_link
 
@@ -248,7 +248,7 @@ class EmailService(object):
             "user_password": user_password,
             "ftp_server": ftp_server,
             "study_contacts": study_contacts,
-            "mhd_accession": mhd_accession
+            "mhd_accession": mhd_accession,
         }
         body = self.get_rendered_body("new_accession_number.html", content)
 
@@ -278,10 +278,8 @@ class EmailService(object):
         publication_doi,
         publication_pubmed_id,
         additional_cc_emails,
-        mhd_accession
+        mhd_accession,
     ):
-        
-        
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
         metabolights_website_url = get_settings().server.service.ws_app_base_link
         # mtbls_accession_url = os.path.join(metabolights_website_url, study_id)
@@ -329,7 +327,7 @@ class EmailService(object):
         subject_name = f"MetaboLights Study Made Public ({study_id})"
         if mhd_accession and mhd_accession != study_id:
             subject_name = f"MetaboLights Study Made Public ({mhd_accession})"
-            
+
         self.send_email(
             subject_name,
             body,

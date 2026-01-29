@@ -1,5 +1,4 @@
 import logging
-from operator import or_
 from typing import Any, List, Self, Union
 
 from sqlalchemy import func, or_

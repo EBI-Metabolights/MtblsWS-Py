@@ -559,9 +559,7 @@ class StudyFolderMaintenanceTask(object):
                 self.study_settings.metadata_files_signature_file_name,
             )
             files_hash_txt = "metadata_sha256.json"
-            files_hash_txt_path = os.path.join(
-                audit_folder_hash_path, files_hash_txt
-            )
+            files_hash_txt_path = os.path.join(audit_folder_hash_path, files_hash_txt)
             self.create_metadata_files_signature(
                 metadata_files_path=audit_folder_path,
                 metadata_files_signature_root_path=audit_folder_hash_path,
