@@ -1,4 +1,5 @@
 import logging
+from operator import or_
 from typing import Any, List, Self, Union
 
 from sqlalchemy import func, or_
@@ -96,8 +97,8 @@ class UserService(object):
                 if study_id:
                     filters.append(
                         or_(
-                            Study.reserved_submission_id == study_id,
                             Study.reserved_accession == study_id,
+                            Study.reserved_submission_id == study_id,
                             Study.mhd_accession == study_id,
                         )
                     )
