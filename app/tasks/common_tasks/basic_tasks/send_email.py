@@ -20,6 +20,7 @@ from app.ws.db_connection import (
     query_study_submitters,
 )
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 
 
@@ -131,7 +132,13 @@ def send_email_for_new_accession_number(
         new_ftp_folder = os.path.join(
             ftp_base_folder.rstrip('"'), f"{study_id.lower()}-{obfuscation_code}"
         )
+        db_study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
         email_service = get_email_service(flask_app)
+        mhd_accession = (
+            db_study.mhd_accession
+            if db_study.mhd_accession not in (study_id, provisional_id)
+            else None
+        )
         email_service.send_email_for_new_accession_number(
             study_id,
             provisional_id,
@@ -145,11 +152,13 @@ def send_email_for_new_accession_number(
             new_ftp_folder=new_ftp_folder,
             additional_cc_emails=additional_cc_emails,
             study_contacts=study_contacts,
+            mhd_accession=mhd_accession,
         )
 
         return {
             "provisional_id": provisional_id,
             "study_id": study_id,
+            "mhd_accession": mhd_accession,
             "obfuscation_code": obfuscation_code,
             "user_email": user_email,
             "submitters_email_list": submitters_email_list,
@@ -178,6 +187,7 @@ def send_email_on_public(user_token, study_id, release_date):
         user = UserService.get_instance(auth_manager).get_db_user_by_user_name(
             submitter_email
         )
+        db_study = StudyService.get_instance().get_study_by_req_or_mtbls_id(study_id)
         submitter_fullname = user.fullName
         email_service = get_email_service(flask_app)
         iac = IsaApiClient()
@@ -201,7 +211,12 @@ def send_email_on_public(user_token, study_id, release_date):
             publication_doi = "-"
         if not publication_pubmed_id:
             publication_pubmed_id = "-"
-
+        mhd_accession = (
+            db_study.mhd_accession
+            if db_study.mhd_accession
+            not in (db_study.reserved_accession, db_study.reserved_submission_id)
+            else None
+        )
         additional_cc_emails = get_principal_investigator_emails(study)
         email_service.send_email_on_public(
             study_id,
@@ -214,10 +229,12 @@ def send_email_on_public(user_token, study_id, release_date):
             publication_doi=publication_doi,
             publication_pubmed_id=publication_pubmed_id,
             additional_cc_emails=additional_cc_emails,
+            mhd_accession=mhd_accession,
         )
 
         return {
             "study_id": study_id,
+            "mhd_accession": mhd_accession,
             "release_date": release_date,
             "user_email": user_email,
             "submitters_email_list": submitters_email_list,

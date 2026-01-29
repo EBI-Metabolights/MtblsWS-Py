@@ -57,7 +57,7 @@ lint:
   - git status
   - ls -al
   - echo "install dependencies"
-  - uv sync --locked
+  - uv sync --locked --group dev
   - echo "Run pre-commit tools"
   - uv run ruff format
   - uv run ruff check

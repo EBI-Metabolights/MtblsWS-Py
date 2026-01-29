@@ -222,11 +222,10 @@ class EmailService(object):
         new_ftp_folder,
         additional_cc_emails,
         study_contacts,
+        mhd_accession
     ):
         host = get_settings().server.service.ws_app_base_link
-        subject_name = "Submission Complete and Accessioned"
-        if study_id != provisional_id:
-            subject_name += f" - from {provisional_id} to {study_id}"
+
         reviewer_url = os.path.join(host, f"reviewer{obfuscation_code}")
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
         metabolights_website_url = get_settings().server.service.ws_app_base_link
@@ -249,9 +248,16 @@ class EmailService(object):
             "user_password": user_password,
             "ftp_server": ftp_server,
             "study_contacts": study_contacts,
+            "mhd_accession": mhd_accession
         }
         body = self.get_rendered_body("new_accession_number.html", content)
 
+        subject_name = "Submission Complete and Accessioned"
+        target_accession = study_id
+        if mhd_accession and mhd_accession != study_id:
+            target_accession = mhd_accession
+        if study_id != provisional_id:
+            subject_name += f" - from {provisional_id} to {target_accession}"
         self.send_email(
             subject_name,
             body,
@@ -272,8 +278,10 @@ class EmailService(object):
         publication_doi,
         publication_pubmed_id,
         additional_cc_emails,
+        mhd_accession
     ):
-        subject_name = f"MetaboLights Study Made Public ({study_id})"
+        
+        
         metabolights_help_email = "metabolights-help@ebi.ac.uk"
         metabolights_website_url = get_settings().server.service.ws_app_base_link
         # mtbls_accession_url = os.path.join(metabolights_website_url, study_id)
@@ -298,6 +306,7 @@ class EmailService(object):
         )
         content = {
             "mtbls_accession": study_id,
+            "mhd_accession": mhd_accession,
             "submitter_fullname": submitter_fullname,
             "study_title": study_title,
             "release_date": release_date,
@@ -317,6 +326,10 @@ class EmailService(object):
         curation_mail_address = (
             self.email_settings.email_service.configuration.curation_email_address
         )
+        subject_name = f"MetaboLights Study Made Public ({study_id})"
+        if mhd_accession and mhd_accession != study_id:
+            subject_name = f"MetaboLights Study Made Public ({mhd_accession})"
+            
         self.send_email(
             subject_name,
             body,

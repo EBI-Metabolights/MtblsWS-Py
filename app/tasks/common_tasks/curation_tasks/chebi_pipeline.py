@@ -229,8 +229,9 @@ def search_refmet_identifier(search_term):
         if resp.status_code == 200:
             json_resp = resp.json()
             refmet_id = json_resp["refmet_id"] or ""
-            if refmet_id and refmet_id.replace("-", "").strip():
-                refmet_id = refmet_id
+            refmet_id = refmet_id.replace("-", "").strip()
+            if refmet_id:
+                refmet_id = refmet_id.replace("-", "").strip()
             success = True
             return success, refmet_id
     except Exception as e:

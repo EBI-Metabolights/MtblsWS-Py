@@ -19,10 +19,10 @@
 
 Dear {{ submitter_fullname }},<br/><br/>
 
-{% if provisional_id != mtbls_accession  -%}
-We are happy to inform you that your study "{{ study_title }}" with provisional ID {{ provisional_id }} has been successfully submitted to MetaboLights as <b>{{ mtbls_accession }}</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
+{% if mhd_accession -%}
+We are happy to inform you that your study "{{ study_title }}" {% if provisional_id -%}with provisional ID {{ provisional_id }}{% endif -%} has been successfully submitted to MetaboLights as <b>{{ mhd_accession}} ({{ mtbls_accession }})</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
 {% else -%}
-We are happy to inform you that your study "{{ study_title }}" has been successfully submitted to MetaboLights as <b>{{ mtbls_accession }}</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
+We are happy to inform you that your study "{{ study_title }}" {% if provisional_id -%}with provisional ID {{ provisional_id }}{% endif -%} has been successfully submitted to MetaboLights as <b>{{ mtbls_accession }}</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
 {% endif -%}
 <br/><br/>
 
@@ -33,9 +33,13 @@ The requested Study Public Release Date is <b>{{ release_date }}</b>. <br> <br>
 For immediate release simply change the status from Private to Public. If you do not extend the release date, the study will be released to the public on the date that was previously selected (<b>{{ release_date }}</b>). MetaboLights will also automatically release datasets to the public upon notification of the corresponding publication (automatically, via e.g. information sent by the journal or available in EuropePMC).<br> <br>
 
 <b>SUBMISSION DETAILS</b><br/>
-MetaboLights study title: <code>{{ study_title }}</code><br/>
-MetaboLights accession: <code>{{ mtbls_accession }}</code><br/>
-MetaboLights study contacts: <code>{{ study_contacts }}</code><br/>
+{% if mhd_accession  -%}
+Accession number: <code>{{ mhd_accession }}</code><br/>
+{% else -%}
+Accession number: <code>{{ mtbls_accession }}</code><br/>
+{% endif -%}
+Study title: <code>{{ study_title }}</code><br/>
+Study contacts: <code>{{ study_contacts }}</code><br/>
 Public release date: <code>{{ release_date }}</code><br/>
 
 <br/>

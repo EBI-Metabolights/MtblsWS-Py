@@ -53,6 +53,8 @@ dependencies = [
     "mhd-model>=0.1.40",
     "psycopg[binary,pool]>=3.3.2",
     "sqlalchemy>=2.0.46",
+    "python-multipart>=0.0.22",
+    "mtbls-mhd-integration>=0.0.12",
 ]
 
 [dependency-groups]
@@ -63,6 +65,8 @@ dev = [
     "import-linter>=2.5,<3",
     "pre-commit>=4.5.0"
 ]
+[tool.uv]
+default-groups = []
 
 [tool.uv.sources]
 flask-restful-swagger = { git = "https://github.com/EBI-Metabolights/flask-restful-swagger.git", rev = "master" }
