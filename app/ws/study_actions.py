@@ -537,11 +537,12 @@ class StudyStatus(Resource):
                         self.update_mhd_accession_in_db(updated_study_id, mhd_accession)
                 except MhdClientError as e:
                     inputs = {
-                        "subject": "MHD accession request error",
-                        "body": f"{study_id} MHD accession request error : {e}",
+                        "subject": f"MHD accession request error for {updated_study_id}",
+                        "body": f"MHD accession request failed for {updated_study_id}<br/> {e}",
                     }
                     send_technical_issue_email.apply_async(kwargs=inputs)
                     logger.error(e)
+                    raise e
 
                 comment_updated = False
                 for comment in isa_study.comments:

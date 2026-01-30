@@ -462,6 +462,12 @@ class ActiveDesignDescriptorCategory(StudyBaseModel):
     ]
 
 
+class AssayDefaultValueGroup(StudyBaseModel):
+    order: Annotated[int, Field(description="Group order")]
+    label: Annotated[str, Field(description="Group label")]
+    fields: Annotated[list[str], Field(description="List of field names")]
+
+
 class AssayFileConfiguration(StudyBaseModel):
     order: Annotated[int, Field(description="order of the predefined value")]
     label: Annotated[str, Field(description="label for the predefined value")]
@@ -472,7 +478,7 @@ class AssayFileConfiguration(StudyBaseModel):
         OntologyTerm, Field(description="ontology term for the assay")
     ]
     assay_file_default_values: Annotated[
-        dict[str, list[str]],
+        dict[str, AssayDefaultValueGroup],
         Field(description="assay field groups (protocols, file, etc.) and parameters"),
     ]
 
@@ -669,7 +675,23 @@ class PredefinedValueConfiguration(StudyBaseModel):
     ]
 
 
+class FileTemplateConfiguration(StudyBaseModel):
+    order: Annotated[int, Field(description="order of the predefined value")]
+    label: Annotated[str, Field(description="label for the predefined value")]
+    description: Annotated[
+        str, Field(description="description of the predefined value")
+    ]
+
+
 class TemplateSettings(StudyBaseModel):
+    investigation_file_templates: Annotated[
+        dict[str, FileTemplateConfiguration],
+        Field(description="investigation file template configuration"),
+    ]
+    sample_file_templates: Annotated[
+        dict[str, FileTemplateConfiguration],
+        Field(description="sample file template configuration"),
+    ]
     result_file_formats: Annotated[
         dict[str, PredefinedValueConfiguration],
         Field(description="result file configurations"),

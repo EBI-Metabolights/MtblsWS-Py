@@ -69,12 +69,52 @@ def consolidate_keywords(isa_study: model.Study):
             ("Assay Descriptor Source", []),
         ]
     )
+
+    omics_type_comments = OrderedDict(
+        [
+            ("Omics Type", []),
+            ("Omics Type Term Accession Number", []),
+            ("Omics Type Term Source REF", []),
+        ]
+    )
+    assay_type_comments = OrderedDict(
+        [
+            ("Assay Type", []),
+            ("Assay Type Term Accession Number", []),
+            ("Assay Type Term Source REF", []),
+        ]
+    )
+
+    ontology_terms: OrderedDict[str, model.OntologyAnnotation] = OrderedDict()
+
     for item in isa_study.assays:
         assay: model.Assay = item
         for comment in assay.comments:
             if comment.name in desc_comments:
                 desc_comments[comment.name].extend(comment.value.split(";"))
-    ontology_terms: OrderedDict[str, model.OntologyAnnotation] = OrderedDict()
+            if comment.name in omics_type_comments:
+                omics_type_comments[comment.name].extend(comment.value.split(";"))
+
+            if comment.name in assay_type_comments:
+                assay_type_comments[comment.name].extend(comment.value.split(";"))
+            if assay.measurement_type and assay.measurement_type.term:
+                key = assay.measurement_type.term.lower()
+                if key not in ontology_terms:
+                    ontology_terms[key] = model.OntologyAnnotation(
+                        term=assay.measurement_type.term,
+                        term_accession=assay.measurement_type.term_accession,
+                        term_source=assay.measurement_type.term_source,
+                        comments=[
+                            model.Comment(
+                                name="Study Design Type Category",
+                                value="measurement-type",
+                            ),
+                            model.Comment(
+                                name="Study Design Type Source",
+                                value="workflows",
+                            ),
+                        ],
+                    )
 
     for item in desc_comments.get("Assay Descriptor", []):
         for idx, part in enumerate(item):
@@ -95,18 +135,69 @@ def consolidate_keywords(isa_study: model.Study):
             if len(categories) > idx:
                 ontology.comments.append(
                     model.Comment(
-                        name="Assay Descriptor Category", value=categories[idx]
+                        name="Study Design Type Category", value=categories[idx]
                     )
                 )
             sources = desc_comments.get("Assay Descriptor Source", [])
             if len(sources) > idx:
                 ontology.comments.append(
-                    model.Comment(name="Assay Descriptor Source", value=categories[idx])
+                    model.Comment(name="Study Design Type Source", value="workflows")
                 )
+
+    for item in omics_type_comments.get("Omics Type", []):
+        for idx, part in enumerate(item):
+            if part.lower() in ontology_terms:
+                continue
+            ontology_terms[part.lower()] = model.OntologyAnnotation(
+                comments=[
+                    model.Comment(
+                        name="Study Design Type Category",
+                        value="omics-type",
+                    ),
+                    model.Comment(
+                        name="Study Design Type Source",
+                        value="workflows",
+                    ),
+                ],
+            )
+            ontology = ontology_terms[part.lower()]
+            ontology.term = part
+            accessions = desc_comments.get("Omics Type Term Accession Number", [])
+            if len(accessions) > idx:
+                ontology.term_accession = accessions[idx]
+            sources = desc_comments.get("Omics Type Term Source REF", [])
+            if len(sources) > idx:
+                ontology.term_source = sources[idx]
+
+    for item in assay_type_comments.get("Assay Type", []):
+        for idx, part in enumerate(item):
+            if part.lower() in ontology_terms:
+                continue
+            ontology_terms[part.lower()] = model.OntologyAnnotation(
+                comments=[
+                    model.Comment(
+                        name="Study Design Type Category",
+                        value="assay-type",
+                    ),
+                    model.Comment(
+                        name="Study Design Type Source",
+                        value="workflows",
+                    ),
+                ],
+            )
+            ontology = ontology_terms[part.lower()]
+            ontology.term = part
+            accessions = desc_comments.get("Assay Type Term Accession Number", [])
+            if len(accessions) > idx:
+                ontology.term_accession = accessions[idx]
+            sources = desc_comments.get("Assay Type Term Source REF", [])
+            if len(sources) > idx:
+                ontology.term_source = sources[idx]
 
     for item in isa_study.design_descriptors:
         descriptor: model.OntologyAnnotation = item
         study_keywords[descriptor.term.lower()] = descriptor
+
     for item in ontology_terms:
         if item not in study_keywords:
             isa_study.design_descriptors.append(ontology_terms[item])

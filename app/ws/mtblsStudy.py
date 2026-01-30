@@ -111,7 +111,12 @@ from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.study.utils import get_study_metadata_path
-from app.ws.study_creation_model import RelatedDataset, StudyCreationRequest
+from app.ws.study_creation_model import (
+    OntologyTerm,
+    RelatedDataset,
+    StudyCreationRequest,
+    TermSource,
+)
 from app.ws.study_templates.models import StudyCategoryStr, TemplateSettings
 from app.ws.study_templates.utils import get_template_settings
 from app.ws.utils import add_ontology_to_investigation, log_request, read_tsv, write_tsv
@@ -1124,31 +1129,42 @@ class ProvisionalStudy(Resource):
         )
         study.title = study_title
         study.description = new_study_input.description
-        publication_status = new_study_input.publication_status or None
-        new_publication = isa_model.Publication(
-            title=new_study_input.title,
-            doi=new_study_input.publication_doi or None,
-            status=isa_model.OntologyAnnotation(
-                term=publication_status.annotation_value or "",
-                term_source=isa_model.OntologySource(
-                    name=publication_status.term_source.name or "",
-                    file=publication_status.term_source.file or "",
-                    version=publication_status.term_source.version or "",
-                    description=publication_status.term_source.description or "",
-                )
-                if publication_status
-                else None,
-                term_accession=publication_status.term_accession or "",
-            ),
-        )
-        if study.publications:
-            study.publications[0] = new_publication
-        else:
-            study.publications.append(new_publication)
+        new_publications = []
+        study.publications = new_publications
         ontologies = {}
+        default_publication_status = OntologyTerm(
+            annotation_value="in preparation",
+            term_source=TermSource(name="EFO"),
+            term_accession="http://www.ebi.ac.uk/efo/EFO_0001795",
+        )
+        if new_study_input.publications:
+            for publication in new_study_input.publications:
+                publication_status = publication.status or default_publication_status
+                new_publication = isa_model.Publication(
+                    title=publication.title or new_study_input.title,
+                    author_list=publication.author_list,
+                    pubmed_id=publication.pubmed_id,
+                    doi=publication.doi or None,
+                    status=isa_model.OntologyAnnotation(
+                        term=publication_status.annotation_value or "",
+                        term_source=isa_model.OntologySource(
+                            name=publication_status.term_source.name or "",
+                            file=publication_status.term_source.file or "",
+                            version=publication_status.term_source.version or "",
+                            description=publication_status.term_source.description
+                            or "",
+                        ),
+                        term_accession=publication_status.term_accession or "",
+                    ),
+                )
+                ontology_source_name = new_publication.status.term_source.name
+                if ontology_source_name:
+                    ontologies[ontology_source_name] = new_publication.status
+                new_publications.append(new_publication)
+
         for contact in study.contacts:
             for role in contact.roles:
-                if role.term_source:
+                if role.term_source and role.term_source.name:
                     ontologies[role.term_source.name] = role.term_source
         ontologies.update(
             {

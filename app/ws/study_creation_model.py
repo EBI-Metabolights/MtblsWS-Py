@@ -68,6 +68,18 @@ class Factor(CamelCaseBaseModel):
     factor_type: OntologyTerm
 
 
+class Publication(CamelCaseBaseModel):
+    title: Optional[str] = None
+    author_list: Optional[str] = None
+    doi: Optional[str] = None
+    pubmed_id: Optional[str] = None
+    status: OntologyTerm = OntologyTerm(
+        annotation_value="in preparation",
+        term_source=TermSource(name="EFO"),
+        term_accession="http://www.ebi.ac.uk/efo/EFO_0001795",
+    )
+
+
 class StudyCreationRequest(CamelCaseBaseModel):
     selected_template_version: Optional[str] = None
     selected_study_categories: Dict[str, List[str]]
@@ -75,12 +87,7 @@ class StudyCreationRequest(CamelCaseBaseModel):
     selected_sample_file_template: Optional[str] = None
     dataset_license_agreement: Optional[bool] = False
     dataset_policy_agreement: Optional[bool] = False
-    publication_status: OntologyTerm = OntologyTerm(
-        annotation_value="in preparation",
-        term_source=TermSource(name="EFO"),
-        term_accession="http://www.ebi.ac.uk/efo/EFO_0001795",
-    )
-    publication_doi: Optional[str] = None
+    publications: list[Publication] = []
     title: str = ""
     description: str = ""
     related_datasets: List[RelatedDataset] = []
