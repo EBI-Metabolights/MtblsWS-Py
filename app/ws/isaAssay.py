@@ -677,8 +677,8 @@ class StudySampleFileSync(Resource):
         log_request(request)
         result = validate_submission_update(request)
         study_id = result.context.study_id
-        source_study_id = request.args.get("x-source-study-id")
-        if not source_study_id or source_study_id != study_id:
+        source_study_id = request.headers.get("x-source-study-id")
+        if not source_study_id or source_study_id == study_id:
             raise MetabolightsException(
                 message="Source study id is not valid.", http_code=400
             )
@@ -709,6 +709,30 @@ class StudySampleFileSync(Resource):
             )
             write_audit_files(target_study_location)
             shutil.copy(source_sample_path, target_sample_path)
+            target_isa_study, target_isa_inv, _ = iac.get_isa_study(
+                study_id,
+                None,
+                skip_load_tables=True,
+                study_location=target_study_location,
+            )
+            source_isa_study, _, _ = iac.get_isa_study(
+                source_study_id,
+                None,
+                skip_load_tables=True,
+                study_location=source_study_location,
+            )
+
+            target_isa_study.factors = source_isa_study.factors
+
+            iac.write_isa_study(
+                target_isa_inv,
+                None,
+                target_study_location,
+                save_investigation_copy=False,
+                save_assays_copy=False,
+                save_samples_copy=False,
+            )
+            return {"status": "success"}
         except Exception as ex:
             raise MetabolightsException(
                 message="Copy failed.",
@@ -721,7 +745,7 @@ class InvestigationFileSync(Resource):
         summary="Copy investigation file sections from other study",
         notes="""Copy investigation file sections from other study.
 
-        Multiple sections can be provided with ; characters.
+        Multiple sections can be provided with , characters.
         1- description
         2- publicReleaseDate
         3- contacts
@@ -731,12 +755,12 @@ class InvestigationFileSync(Resource):
         7- funders
         8- relatedDatasets
 
-        Example section input: description;publicReleaseDate;designDesctiptors;protocols;factors;publications;funders
+        Example section input: description,publicReleaseDate,designDesctiptors,protocols,factors,publications,funders
 
         Notes:
         1- Source study metadata values will overriden with the selected sections of the target study.
         2- Source protocol content will be copied if same protocol is defined in target study.
-        3- Related datasets will be merged.
+        3- Related datasets and design factors will be merged.
 
         """,
         parameters=[
@@ -760,8 +784,18 @@ class InvestigationFileSync(Resource):
                 "name": "x-study-sections",
                 "description": "Study metadata sections",
                 "required": True,
-                "allowMultiple": False,
+                "allowMultiple": True,
                 "paramType": "header",
+                "enum": [
+                    "description",
+                    "publicReleaseDate",
+                    "contacts",
+                    "designDesctiptors",
+                    "protocols",
+                    "publications",
+                    "funders",
+                    "relatedDatasets",
+                ],
                 "dataType": "string",
             },
             {
@@ -779,13 +813,13 @@ class InvestigationFileSync(Resource):
         log_request(request)
         result = validate_submission_update(request)
         study_id = result.context.study_id
-        source_study_id = request.args.get("x-source-study-id")
+        source_study_id = request.headers.get("x-source-study-id")
         selected_sections = [
             x.strip()
-            for x in request.args.get("x-study-sections", "").split(";")
+            for x in request.headers.get("x-study-sections", "").split(",")
             if x and x.strip()
         ]
-        if not source_study_id or source_study_id != study_id:
+        if not source_study_id or source_study_id == study_id:
             raise MetabolightsException(
                 message="Source study id is not valid.", http_code=400
             )
@@ -808,17 +842,17 @@ class InvestigationFileSync(Resource):
         try:
             source_study_location = get_study_metadata_path(source_study_id)
             target_study_location = get_study_metadata_path(study_id)
-            write_audit_files(target_study_location)
+
             source_isa_study, _, _ = iac.get_isa_study(
-                study_id,
+                source_study_id,
                 None,
-                skip_load_tables=False,
+                skip_load_tables=True,
                 study_location=source_study_location,
             )
             target_isa_study, target_isa_inv, _ = iac.get_isa_study(
                 study_id,
                 None,
-                skip_load_tables=False,
+                skip_load_tables=True,
                 study_location=target_study_location,
             )
 
@@ -834,7 +868,19 @@ class InvestigationFileSync(Resource):
                 elif section == "publications":
                     target_isa_study.publications = source_isa_study.publications
                 elif section == "designDesctiptors":
-                    target_isa_study.publications = source_isa_study.design_descriptors
+                    source_descriptors = {
+                        x.term.lower(): x
+                        for x in source_isa_study.design_descriptors
+                        if x and x.term
+                    }
+                    new_descriptors = []
+                    for item in target_isa_study.design_descriptors:
+                        key = item.term.lower()
+                        if item.term.lower() in source_descriptors:
+                            new_descriptors.append(source_descriptors[key])
+                        else:
+                            new_descriptors.append(item)
+                    target_isa_study.design_descriptors = new_descriptors
                 elif section == "protocols":
                     source_protocols = {
                         x.name.lower(): x for x in source_isa_study.protocols
@@ -875,7 +921,7 @@ class InvestigationFileSync(Resource):
                             target_isa_study.comments.append(
                                 model.Comment(name=name, value=source_comments[name])
                             )
-
+            write_audit_files(target_study_location)
             iac.write_isa_study(
                 target_isa_inv,
                 None,
@@ -884,7 +930,7 @@ class InvestigationFileSync(Resource):
                 save_assays_copy=False,
                 save_samples_copy=False,
             )
-
+            return {"status": "success"}
         except Exception as ex:
             raise MetabolightsException(
                 message="Copy failed.",

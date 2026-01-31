@@ -407,11 +407,11 @@ def initialize_app(flask_app):
     )
     api.add_resource(
         StudySampleFileSync,
-        res_path + "/studies/<string:study_id>/metadata-files/sample-file/sync",
+        res_path + "/studies/<string:study_id>/metadata-files/sample-file/copy-from",
     )
     api.add_resource(
         InvestigationFileSync,
-        res_path + "/studies/<string:study_id>/metadata-files/investigation/sync",
+        res_path + "/studies/<string:study_id>/metadata-files/investigation/copy-from",
     )
     api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays")
     api.add_resource(
