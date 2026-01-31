@@ -408,7 +408,10 @@ def create_assay_sheet(
                     header.get("columnHeader")
                 ]
         create_file_from_template(
-            assay_file_path, assay_template, sample_names=sample_names
+            assay_file_path,
+            assay_template,
+            sample_names=sample_names,
+            add_samples="as_row",
         )
 
         return True, technology_platform
@@ -435,7 +438,9 @@ def create_maf_sheet(
         override_maf = is_empty_isa_table_sheet(maf_file_path)
 
     if override_maf:
-        create_file_from_template(maf_file_path, maf_template, sample_names)
+        create_file_from_template(
+            maf_file_path, maf_template, sample_names or [], add_samples="as_column"
+        )
         logger.info("%s maf file is created.", maf_file_name)
         return True
     else:
@@ -625,6 +630,7 @@ def create_file_from_template(
     sample_file_fullpath: str,
     template: dict[str, Any],
     sample_names: None | list[str] = None,
+    add_samples: Literal["as_row", "as_column"] = "as_row",
 ):
     if not template:
         return False
@@ -640,14 +646,20 @@ def create_file_from_template(
             add_new_columns(
                 header_row, default_row, header_name, column_structure, default_value
             )
+        if add_samples == "as_column":
+            for sample_name in sample_names:
+                header_row.append(sample_name)
+                default_row.append("")
+
         with Path(sample_file_fullpath).open("w") as f:
             f.write("\t".join(header_row) + "\n")
-            if sample_names:
-                for sample_name in sample_names:
-                    default_row[0] = sample_name
+            if add_samples == "as_row":
+                if sample_names:
+                    for sample_name in sample_names:
+                        default_row[0] = sample_name
+                        f.write("\t".join(default_row) + "\n")
+                else:
                     f.write("\t".join(default_row) + "\n")
-            else:
-                f.write("\t".join(default_row) + "\n")
 
         return True
     except Exception as ex:

@@ -18,6 +18,8 @@
 
 import json
 import logging
+import os
+import shutil
 from typing import Dict, OrderedDict, Set, Tuple
 
 from flask import request
@@ -33,8 +35,15 @@ from isatools.model import (
 )
 
 from app.utils import MetabolightsException, metabolights_exception_handler
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.auth.permissions import validate_submission_update, validate_submission_view
 from app.ws.db import schemes as db_model
+from app.ws.db.permission_scopes import (
+    PermissionFilter,
+    ScopeFilter,
+    StudyResource,
+    StudyResourceScope,
+)
 from app.ws.db.types import UserRole
 from app.ws.isa_table_templates import (
     add_new_assay_sheet,
@@ -44,8 +53,10 @@ from app.ws.isa_table_templates import (
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import AssaySchema
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.isa_table_models import NumericValue, OntologyValue
 from app.ws.study.study_service import StudyService
+from app.ws.study.user_service import UserService
 from app.ws.study.utils import get_study_metadata_path
 from app.ws.study_creation_model import AssayCreationRequest
 from app.ws.study_templates.models import (
@@ -341,12 +352,14 @@ class AssayFile(Resource):
                 column_name = f"Parameter Value[{default_value.field_name}]"
                 if column_name in selected_default_values:
                     selected_default_values[column_name] = (
-                        default_value.default_value.annotation_value or None
+                        default_value.default_value.annotation_value
                         if default_value.default_value
                         else None
                     )
 
-            polarity = selected_default_values.get("Parameter Value[Scan polarity]", "")
+            polarity = (
+                selected_default_values.get("Parameter Value[Scan polarity]", "") or ""
+            )
 
             if polarity:
                 if "pos" in polarity and "neg" not in polarity:
@@ -359,9 +372,9 @@ class AssayFile(Resource):
             column_type = (
                 selected_default_values.get("Parameter Value[Column type]", "") or ""
             )
-            measurment_type_name = "untargeted metabolite profiling"
-            if new_assay_input.selected_measurement_type == "targetted":
-                measurment_type_name = "targeted metabolite profiling"
+            # measurment_type_name = "untargeted metabolite profiling"
+            # if new_assay_input.selected_measurement_type == "targetted":
+            #     measurment_type_name = "targeted metabolite profiling"
 
             column_default_values = {}
 
@@ -473,9 +486,9 @@ class AssayFile(Resource):
                 measurement_type,
                 column_default_values,
                 template_version=study.template_version,
-                measurment_type_name=measurment_type_name,
+                # measurment_type_name=measurment_type_name,
                 additional_assay_comments=additional_assay_comments,
-                populate_rows_from_samples=True
+                populate_rows_from_samples=True,
             )
             if success:
                 return {
@@ -626,6 +639,257 @@ class AssayFile(Resource):
             )
 
         return new_study_input
+
+
+class StudySampleFileSync(Resource):
+    @swagger.operation(
+        summary="Copy sample file from other study",
+        notes="Copy sample file from other study",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string",
+            },
+            {
+                "name": "x-source-study-id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+            },
+            {
+                "name": "user-token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            },
+        ],
+    )
+    @metabolights_exception_handler
+    def post(self, study_id):
+        log_request(request)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        source_study_id = request.args.get("x-source-study-id")
+        if not source_study_id or source_study_id != study_id:
+            raise MetabolightsException(
+                message="Source study id is not valid.", http_code=400
+            )
+        auth_manager = AuthenticationManager.get_instance()
+        UserService.get_instance(auth_manager).validate_permissions(
+            study_id=source_study_id,
+            permissions=PermissionFilter(
+                filters=[
+                    ScopeFilter(
+                        scopes={
+                            StudyResource.METADATA_FILES: [StudyResourceScope.VIEW]
+                        },
+                    )
+                ]
+            ),
+            user_token=result.context.user_api_token,
+            jwt=result.context.validated_jwt,
+            user_required=False,
+        )
+        try:
+            source_study_location = get_study_metadata_path(source_study_id)
+            target_study_location = get_study_metadata_path(study_id)
+            source_sample_path = os.path.join(
+                source_study_location, f"s_{source_study_id}.txt"
+            )
+            target_sample_path = os.path.join(
+                target_study_location, f"s_{study_id}.txt"
+            )
+            write_audit_files(target_study_location)
+            shutil.copy(source_sample_path, target_sample_path)
+        except Exception as ex:
+            raise MetabolightsException(
+                message="Copy failed.",
+                http_code=400,
+            ) from ex
+
+
+class InvestigationFileSync(Resource):
+    @swagger.operation(
+        summary="Copy investigation file sections from other study",
+        notes="""Copy investigation file sections from other study.
+
+        Multiple sections can be provided with ; characters.
+        1- description
+        2- publicReleaseDate
+        3- contacts
+        4- designDesctiptors
+        5- protocols
+        6- publications,
+        7- funders
+        8- relatedDatasets
+
+        Example section input: description;publicReleaseDate;designDesctiptors;protocols;factors;publications;funders
+
+        Notes:
+        1- Source study metadata values will overriden with the selected sections of the target study.
+        2- Source protocol content will be copied if same protocol is defined in target study.
+        3- Related datasets will be merged.
+
+        """,
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string",
+            },
+            {
+                "name": "x-source-study-id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+            },
+            {
+                "name": "x-study-sections",
+                "description": "Study metadata sections",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+            },
+            {
+                "name": "user-token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            },
+        ],
+    )
+    @metabolights_exception_handler
+    def post(self, study_id):
+        log_request(request)
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        source_study_id = request.args.get("x-source-study-id")
+        selected_sections = [
+            x.strip()
+            for x in request.args.get("x-study-sections", "").split(";")
+            if x and x.strip()
+        ]
+        if not source_study_id or source_study_id != study_id:
+            raise MetabolightsException(
+                message="Source study id is not valid.", http_code=400
+            )
+        auth_manager = AuthenticationManager.get_instance()
+        UserService.get_instance(auth_manager).validate_permissions(
+            study_id=source_study_id,
+            permissions=PermissionFilter(
+                filters=[
+                    ScopeFilter(
+                        scopes={
+                            StudyResource.METADATA_FILES: [StudyResourceScope.VIEW]
+                        },
+                    )
+                ]
+            ),
+            user_token=result.context.user_api_token,
+            jwt=result.context.validated_jwt,
+            user_required=False,
+        )
+        try:
+            source_study_location = get_study_metadata_path(source_study_id)
+            target_study_location = get_study_metadata_path(study_id)
+            write_audit_files(target_study_location)
+            source_isa_study, _, _ = iac.get_isa_study(
+                study_id,
+                None,
+                skip_load_tables=False,
+                study_location=source_study_location,
+            )
+            target_isa_study, target_isa_inv, _ = iac.get_isa_study(
+                study_id,
+                None,
+                skip_load_tables=False,
+                study_location=target_study_location,
+            )
+
+            for section in selected_sections:
+                if section == "description":
+                    target_isa_study.description = source_isa_study.description
+                elif section == "publicReleaseDate":
+                    target_isa_study.public_release_date = (
+                        source_isa_study.public_release_date
+                    )
+                elif section == "contacts":
+                    target_isa_study.contacts = source_isa_study.contacts
+                elif section == "publications":
+                    target_isa_study.publications = source_isa_study.publications
+                elif section == "designDesctiptors":
+                    target_isa_study.publications = source_isa_study.design_descriptors
+                elif section == "protocols":
+                    source_protocols = {
+                        x.name.lower(): x for x in source_isa_study.protocols
+                    }
+                    new_protocols = []
+                    for item in target_isa_study.protocols:
+                        protocol: model.Protocol = item
+                        key = protocol.name.lower()
+                        if key in source_protocols:
+                            new_protocols.append(source_protocols.get(key))
+                        else:
+                            new_protocols.append(protocol)
+
+                    target_isa_study.protocols = new_protocols
+                elif section == "funders" or section == "relatedDatasets":
+                    target_comments = []
+                    if section == "funders":
+                        target_comments.extend(
+                            ["Funder", "Funder ROR ID", "Grant Identifier"]
+                        )
+                    if section == "relatedDatasets":
+                        target_comments.extend(
+                            ["Related Data Repository", "Related Data Accession"]
+                        )
+                    source_comments = {
+                        x.name: x.value
+                        for x in source_isa_study.comments
+                        if x.name in target_comments
+                    }
+                    updated_comments = []
+                    for item in target_isa_study.comments:
+                        comment: model.Comment = item
+                        if comment.name in source_comments:
+                            comment.value = source_comments[comment.name]
+                            updated_comments.append(comment.name)
+                    for name in target_comments:
+                        if name not in updated_comments and name in source_comments:
+                            target_isa_study.comments.append(
+                                model.Comment(name=name, value=source_comments[name])
+                            )
+
+            iac.write_isa_study(
+                target_isa_inv,
+                None,
+                target_study_location,
+                save_investigation_copy=False,
+                save_assays_copy=False,
+                save_samples_copy=False,
+            )
+
+        except Exception as ex:
+            raise MetabolightsException(
+                message="Copy failed.",
+                http_code=400,
+            ) from ex
 
 
 class StudyAssay(Resource):
