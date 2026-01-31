@@ -475,6 +475,7 @@ class AssayFile(Resource):
                 template_version=study.template_version,
                 measurment_type_name=measurment_type_name,
                 additional_assay_comments=additional_assay_comments,
+                populate_rows_from_samples=True
             )
             if success:
                 return {

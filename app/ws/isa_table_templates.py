@@ -223,6 +223,7 @@ def add_new_assay_sheet(
         "targeted metabolite profiling",
     ] = "metabolite profiling",
     additional_assay_comments: Optional[dict[str, str]] = None,
+    populate_rows_from_samples=False,
 ):
     study_settings = get_study_settings()
     study_metadata_location = os.path.join(
@@ -260,6 +261,18 @@ def add_new_assay_sheet(
 
     default_column_values["Metabolite Assignment File"] = maf_file_name
 
+    sample_names = []
+    if populate_rows_from_samples:
+        sample_df = None
+        sample_file_path = os.path.join(
+            study_metadata_location, isa_study.filename or f"s_{study_id}.txt"
+        )
+        try:
+            sample_df = read_tsv(sample_file_path)
+            if "Sample Name" in sample_df.columns:
+                sample_names = list(sample_df["Sample Name"])
+        except FileNotFoundError:
+            logger.warning("sample file not loaded")
     success, technology_platform = create_assay_sheet(
         study_path=study_metadata_location,
         assay_file_name=assay_file_name,
@@ -268,6 +281,7 @@ def add_new_assay_sheet(
         column_type=column_type or "",
         default_column_values=default_column_values or {},
         template_version=template_version,
+        sample_names=sample_names,
     )
     if not success:
         return False, None, None
@@ -368,7 +382,10 @@ def create_assay_sheet(
     default_column_values: None | dict[str, str | OntologyValue | NumericValue] = None,
     template_version: None | str = None,
     override_current: bool = False,
+    sample_names: None | list[str] = None,
 ) -> str:
+    if not sample_names:
+        sample_names = []
     if not default_column_values:
         default_column_values = {}
     assay_file_path = os.path.join(study_path, assay_file_name)
@@ -390,7 +407,9 @@ def create_assay_sheet(
                 header["defaultValue"] = default_column_values[
                     header.get("columnHeader")
                 ]
-        create_file_from_template(assay_file_path, assay_template)
+        create_file_from_template(
+            assay_file_path, assay_template, sample_names=sample_names
+        )
 
         return True, technology_platform
 
@@ -609,23 +628,26 @@ def create_file_from_template(
 ):
     if not template:
         return False
+    if not sample_names:
+        sample_names = []
     header_row: list[str] = []
-    initial_row: list[str] = []
+    default_row: list[str] = []
     try:
         for header in template.get("headers", []):
             default_value = header.get("defaultValue", None) or ""
             column_structure = header.get("columnStructure", "")
             header_name = header.get("columnHeader", "") or ""
             add_new_columns(
-                header_row, initial_row, header_name, column_structure, default_value
+                header_row, default_row, header_name, column_structure, default_value
             )
-        if sample_names:
-            for sample_name in sample_names:
-                header_row.append(sample_name)
-                initial_row.append("")
         with Path(sample_file_fullpath).open("w") as f:
             f.write("\t".join(header_row) + "\n")
-            f.write("\t".join(initial_row) + "\n")
+            if sample_names:
+                for sample_name in sample_names:
+                    default_row[0] = sample_name
+                    f.write("\t".join(default_row) + "\n")
+            else:
+                f.write("\t".join(default_row) + "\n")
 
         return True
     except Exception as ex:

@@ -1129,8 +1129,8 @@ class ProvisionalStudy(Resource):
         )
         study.title = study_title
         study.description = new_study_input.description
-        new_publications = []
-        study.publications = new_publications
+        if not study.publications:
+            study.publications = []
         ontologies = {}
         default_publication_status = OntologyTerm(
             annotation_value="in preparation",
@@ -1160,9 +1160,10 @@ class ProvisionalStudy(Resource):
                 ontology_source_name = new_publication.status.term_source.name
                 if ontology_source_name:
                     ontologies[ontology_source_name] = new_publication.status
-                new_publications.append(new_publication)
+                study.publications.append(new_publication)
 
-        for contact in study.contacts:
+        for item in study.contacts:
+            contact: isa_model.Person = item
             for role in contact.roles:
                 if role.term_source and role.term_source.name:
                     ontologies[role.term_source.name] = role.term_source
@@ -1198,10 +1199,13 @@ class ProvisionalStudy(Resource):
                 "Grant Identifier",
                 "Related Data Repository",
                 "Related Data Accession",
+                "Linked Study Accession",
             ]:
                 new_comments.append(comment)
         study.comments = new_comments
+        related_mtbls_study_ids = related_mtbls_study_ids or []
         related_datasets = new_study_input.related_datasets.copy()
+        linked_studies = related_mtbls_study_ids.copy()
         for related_study_id in related_mtbls_study_ids:
             related_datasets.append(
                 RelatedDataset(repository="MetaboLights", accession=related_study_id)
@@ -1247,6 +1251,10 @@ class ProvisionalStudy(Resource):
                 (
                     "Related Data Accession",
                     ";".join([x.accession or "" for x in related_datasets]),
+                ),
+                (
+                    "Linked Study Accession",
+                    ";".join([x or "" for x in linked_studies]),
                 ),
             ]
         )
