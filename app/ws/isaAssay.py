@@ -895,32 +895,44 @@ class InvestigationFileSync(Resource):
                             new_protocols.append(protocol)
 
                     target_isa_study.protocols = new_protocols
-                elif section == "funders" or section == "relatedDatasets":
-                    target_comments = []
-                    if section == "funders":
-                        target_comments.extend(
-                            ["Funder", "Funder ROR ID", "Grant Identifier"]
-                        )
-                    if section == "relatedDatasets":
-                        target_comments.extend(
-                            ["Related Data Repository", "Related Data Accession"]
-                        )
-                    source_comments = {
-                        x.name: x.value
-                        for x in source_isa_study.comments
-                        if x.name in target_comments
-                    }
-                    updated_comments = []
-                    for item in target_isa_study.comments:
+                elif section == "funders":
+                    target_comments = ["Funder", "Funder ROR ID", "Grant Identifier"]
+                    self.update_comments(
+                        source_isa_study, target_isa_study, target_comments
+                    )
+                elif section == "relatedDatasets":
+                    target_comments = [
+                        "Related Data Repository",
+                        "Related Data Accession",
+                    ]
+                    self.update_comments(
+                        source_isa_study, target_isa_study, target_comments
+                    )
+                    indx = None
+                    repo_comment = None
+                    for item in source_isa_study.comments:
                         comment: model.Comment = item
-                        if comment.name in source_comments:
-                            comment.value = source_comments[comment.name]
-                            updated_comments.append(comment.name)
-                    for name in target_comments:
-                        if name not in updated_comments and name in source_comments:
-                            target_isa_study.comments.append(
-                                model.Comment(name=name, value=source_comments[name])
-                            )
+                        if comment.name == "Related Data Accession":
+                            values = [x for x in comment.value.split(";")]
+                            try:
+                                indx = values.index(study_id)
+                                if repo_comment is not None:
+                                    break
+                            except ValueError:
+                                pass
+
+                        elif comment.name == "Related Data Repository":
+                            repo_comment = comment
+                            if indx is not None:
+                                break
+                if indx is not None and repo_comment:
+                    repo_comment.value = ";".join(
+                        [
+                            x
+                            for idx, x in enumerate(repo_comment.value.split(";"))
+                            if idx != indx
+                        ]
+                    )
             write_audit_files(target_study_location)
             iac.write_isa_study(
                 target_isa_inv,
@@ -936,6 +948,30 @@ class InvestigationFileSync(Resource):
                 message="Copy failed.",
                 http_code=400,
             ) from ex
+
+    def update_comments(
+        self,
+        source_isa_study: model.Study,
+        target_isa_study: model.Study,
+        target_comments: dict[str, model.Comment],
+        excludes: list[tuple[str, str]],
+    ):
+        source_comments = {
+            x.name: x.value
+            for x in source_isa_study.comments
+            if x.name in target_comments
+        }
+        updated_comments = []
+        for item in target_isa_study.comments:
+            comment: model.Comment = item
+            if comment.name in source_comments:
+                comment.value = source_comments[comment.name]
+                updated_comments.append(comment.name)
+        for name in target_comments:
+            if name not in updated_comments and name in source_comments:
+                target_isa_study.comments.append(
+                    model.Comment(name=name, value=source_comments[name])
+                )
 
 
 class StudyAssay(Resource):

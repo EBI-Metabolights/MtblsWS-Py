@@ -52,7 +52,7 @@ from app.ws.chebi_ws import (
     ChebiOntologyChildren,
 )
 from app.ws.cluster_jobs import LsfUtils
-from app.ws.comments import AssayComments, StudyComments, StudyDesignDescriptorComments
+from app.ws.comments import AssayComments, StudyComments, StudyDesignDescriptorComments, StudyFactorComments
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.compress import CompressRawDataFolders
 from app.ws.cronjob import cronjob
@@ -354,6 +354,11 @@ def initialize_app(flask_app):
         StudyDesignDescriptorComments,
         res_path + "/studies/<string:study_id>/design-descriptors/comments",
     )
+    api.add_resource(
+        StudyFactorComments,
+        res_path + "/studies/<string:study_id>/study-factors/comments",
+    )
+
 
     api.add_resource(EbEyeStudies, res_path + "/studies/eb-eye/<string:consumer>")
     api.add_resource(MtblsPrivateStudies, res_path + "/studies/private")

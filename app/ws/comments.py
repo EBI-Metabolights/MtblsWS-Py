@@ -67,7 +67,7 @@ class StudyComments(Resource):
         ],
     )
     @metabolights_exception_handler
-    def put(self, study_id):
+    def patch(self, study_id):
         result = validate_submission_update(request)
         study_id = result.context.study_id
         if request.data is None or not request.is_json:
@@ -84,6 +84,8 @@ class StudyComments(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(
             study_id, None, skip_load_tables=True, study_location=study_location
         )
+        if not isa_study:
+            abort(400, message="study is not found.")
         if isa_study.comments is None:
             isa_study.comments = []
         study_comments = {comment.name: comment for comment in isa_study.comments}
@@ -160,7 +162,7 @@ class AssayComments(Resource):
         ],
     )
     @metabolights_exception_handler
-    def put(self, study_id):
+    def patch(self, study_id):
         result = validate_submission_update(request)
         study_id = result.context.study_id
         if request.data is None or not request.is_json:
@@ -184,6 +186,8 @@ class AssayComments(Resource):
             if assay.filename == assay_filename:
                 isa_assay = assay
                 break
+        if not isa_assay:
+            abort(400, message="assay is not found.")
         if isa_assay.comments is None:
             isa_assay.comments = []
         isa_comments = {comment.name: comment for comment in isa_assay.comments}
@@ -260,7 +264,7 @@ class StudyDesignDescriptorComments(Resource):
         ],
     )
     @metabolights_exception_handler
-    def put(self, study_id):
+    def patch(self, study_id):
         result = validate_submission_update(request)
         study_id = result.context.study_id
         if request.data is None or not request.is_json:
@@ -284,6 +288,8 @@ class StudyDesignDescriptorComments(Resource):
             if ontology.term == descriptor_name:
                 design_descriptor = item
                 break
+        if not design_descriptor:
+            abort(400, message="design descriptor is not found.")
         if design_descriptor.comments is None:
             design_descriptor.comments = []
         isa_comments = {
@@ -298,6 +304,110 @@ class StudyDesignDescriptorComments(Resource):
                 isa_comments[name.lower()].value = value or ""
             else:
                 design_descriptor.add_comment(name=name, value_=value or "")
+
+        iac.write_isa_study(
+            isa_inv,
+            None,
+            std_path,
+            save_investigation_copy=False,
+            save_assays_copy=False,
+            save_samples_copy=False,
+        )
+        return True
+
+
+class StudyFactorComments(Resource):
+    @swagger.operation(
+        summary="Update study factor comments",
+        notes="""Example input json format.
+        {
+            "comments": [
+                {
+                    "name": "Study Factor Value Format",
+                    "value": "Ontology"
+                },
+            ]
+        }
+
+        If there are multiple terms for comment value, use ; to separate them
+        """,
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string",
+            },
+            {
+                "name": "x-factor-name",
+                "description": "Factor name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+            },
+            {
+                "name": "user-token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False,
+            },
+            {
+                "name": "comments",
+                "description": "Comments in JSON format",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False,
+            },
+        ],
+    )
+    @metabolights_exception_handler
+    def patch(self, study_id):
+        result = validate_submission_update(request)
+        study_id = result.context.study_id
+        if request.data is None or not request.is_json:
+            abort(400)
+        input_comments: None | list[dict[str, Any]] = None
+        factor_name = request.headers.get("x-factor-name")
+        try:
+            data_dict = request.get_json()
+            input_comments = data_dict["comments"]
+        except Exception:
+            abort(400, message="invalid body input")
+        iac = IsaApiClient()
+        root_path = get_settings().study.mounted_paths.study_metadata_files_root_path
+        study_location = os.path.join(root_path, study_id)
+        isa_study, isa_inv, std_path = iac.get_isa_study(
+            study_id, None, skip_load_tables=True, study_location=study_location
+        )
+        study_factor: None | isa_model.StudyFactor = None
+        for item in isa_study.factors:
+            factor: isa_model.StudyFactor = item
+            if factor.name.lower() == factor_name.lower():
+                study_factor = item
+                break
+        if not study_factor:
+            abort(400, message="study factor is not found.")
+        if study_factor.comments is None:
+            study_factor.comments = []
+        isa_comments = {
+            comment.name.lower(): comment for comment in study_factor.comments
+        }
+        for comment in input_comments:
+            name = comment.get("name", "")
+            value = comment.get("value")
+            if not name:
+                continue
+            if name.lower() in isa_comments:
+                isa_comments[name.lower()].value = value or ""
+            else:
+                study_factor.add_comment(name=name, value_=value or "")
 
         iac.write_isa_study(
             isa_inv,
