@@ -660,6 +660,8 @@ def create_file_from_template(
                         f.write("\t".join(default_row) + "\n")
                 else:
                     f.write("\t".join(default_row) + "\n")
+            else:
+                f.write("\t".join(default_row) + "\n")
 
         return True
     except Exception as ex:
