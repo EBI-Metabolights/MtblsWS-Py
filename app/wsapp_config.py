@@ -307,7 +307,7 @@ def initialize_app(flask_app):
         resources={
             cors_resources_path: {
                 "origins": get_settings().server.service.cors_hosts,
-                "methods": {"GET, HEAD, POST, OPTIONS, PUT, DELETE"},
+                "methods": {"GET, HEAD, POST, OPTIONS, PUT, DELETE", "PATCH"},
             }
         },
     )
