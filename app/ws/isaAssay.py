@@ -908,31 +908,6 @@ class InvestigationFileSync(Resource):
                     self.update_comments(
                         source_isa_study, target_isa_study, target_comments
                     )
-                    indx = None
-                    repo_comment = None
-                    for item in source_isa_study.comments:
-                        comment: model.Comment = item
-                        if comment.name == "Related Data Accession":
-                            values = [x for x in comment.value.split(";")]
-                            try:
-                                indx = values.index(study_id)
-                                if repo_comment is not None:
-                                    break
-                            except ValueError:
-                                pass
-
-                        elif comment.name == "Related Data Repository":
-                            repo_comment = comment
-                            if indx is not None:
-                                break
-                if indx is not None and repo_comment:
-                    repo_comment.value = ";".join(
-                        [
-                            x
-                            for idx, x in enumerate(repo_comment.value.split(";"))
-                            if idx != indx
-                        ]
-                    )
             write_audit_files(target_study_location)
             iac.write_isa_study(
                 target_isa_inv,

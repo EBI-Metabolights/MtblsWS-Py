@@ -117,7 +117,11 @@ from app.ws.study_creation_model import (
     StudyCreationRequest,
     TermSource,
 )
-from app.ws.study_templates.models import StudyCategoryStr, TemplateSettings
+from app.ws.study_templates.models import (
+    ActiveStudyCategory,
+    StudyCategoryStr,
+    TemplateSettings,
+)
 from app.ws.study_templates.utils import get_template_settings
 from app.ws.utils import add_ontology_to_investigation, log_request, read_tsv, write_tsv
 
@@ -971,8 +975,15 @@ class ProvisionalStudy(Resource):
             version_settings = template_settings.versions.get(
                 new_study_input.selected_template_version,
             ) or template_settings.versions.get(default_template_version)
-
-            for category in new_study_input.selected_study_categories:
+            default_category = ActiveStudyCategory(order=1, visible=True)
+            categories = [x for x in new_study_input.selected_study_categories]
+            categories.sort(
+                key=lambda x: version_settings.active_study_categories.get(
+                    x, default_category
+                ).order,
+                reverse=True,
+            )
+            for category in categories:
                 category_definition = template_settings.study_categories.get(category)
                 study_title = new_study_input.title
                 if multiple_studies:
@@ -1129,8 +1140,6 @@ class ProvisionalStudy(Resource):
         )
         study.title = study_title
         study.description = new_study_input.description
-        if not study.publications:
-            study.publications = []
         ontologies = {}
         default_publication_status = OntologyTerm(
             annotation_value="in preparation",
@@ -1138,6 +1147,7 @@ class ProvisionalStudy(Resource):
             term_accession="http://www.ebi.ac.uk/efo/EFO_0001795",
         )
         if new_study_input.publications:
+            study.publications = []
             for publication in new_study_input.publications:
                 publication_status = publication.status or default_publication_status
                 new_publication = isa_model.Publication(
