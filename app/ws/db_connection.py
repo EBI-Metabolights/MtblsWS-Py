@@ -192,6 +192,10 @@ get_study_id_sql = """
 select acc from studies where id = %(unique_id)s;
 """
 
+increment_accession = """ UPDATE stableid SET seq = seq + 1
+ WHERE stableid.prefix = %(stable_id_prefix)s;
+ """
+
 get_user_id_sql = """
 select id from users where lower(username)=%(username)s;
 """
@@ -778,6 +782,8 @@ def reserve_mtbls_accession(study_id):
                 reserve_mtbls_accession_sql,
                 {"stable_id_prefix": "MTBLS", "table_id": table_id},
             )
+            cursor.execute(increment_accession, {"stable_id_prefix": "MTBLS"})
+
             conn.commit()
             get_reserved_acc_query = (
                 "select id, reserved_accession from studies where id = %(table_id)s;"

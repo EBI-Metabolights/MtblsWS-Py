@@ -929,7 +929,6 @@ class InvestigationFileSync(Resource):
         source_isa_study: model.Study,
         target_isa_study: model.Study,
         target_comments: dict[str, model.Comment],
-        excludes: list[tuple[str, str]],
     ):
         source_comments = {
             x.name: x.value
