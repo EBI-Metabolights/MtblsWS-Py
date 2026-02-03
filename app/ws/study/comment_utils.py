@@ -165,11 +165,11 @@ def consolidate_keywords(isa_study: model.Study):
         ontology = ontology_terms[part.lower()]
         ontology.term = part
         accessions = desc_comments.get("Omics Type Term Accession Number", [])
-        if len(accessions) > idx:
-            ontology.term_accession = accessions[idx]
+        if accessions:
+            ontology.term_accession = accessions[0]
         sources = desc_comments.get("Omics Type Term Source REF", [])
-        if len(sources) > idx:
-            ontology.term_source = sources[idx]
+        if sources:
+            ontology.term_source = sources[0]
 
     for parts in assay_type_comments.get("Assay Type", []):
         if not parts:
@@ -192,11 +192,11 @@ def consolidate_keywords(isa_study: model.Study):
         ontology = ontology_terms[part.lower()]
         ontology.term = part
         accessions = desc_comments.get("Assay Type Term Accession Number", [])
-        if len(accessions) > idx:
-            ontology.term_accession = accessions[idx]
+        if accessions:
+            ontology.term_accession = accessions[0]
         sources = desc_comments.get("Assay Type Term Source REF", [])
-        if len(sources) > idx:
-            ontology.term_source = sources[idx]
+        if sources:
+            ontology.term_source = sources[0]
 
     for item in isa_study.design_descriptors:
         descriptor: model.OntologyAnnotation = item
