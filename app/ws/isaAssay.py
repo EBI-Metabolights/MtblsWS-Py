@@ -535,11 +535,11 @@ class AssayFile(Resource):
             ),
             model.Comment(name="Omics Type", value=omics_type.term or ""),
             model.Comment(
-                name="Omics Type Source REF",
+                name="Omics Type Term Source REF",
                 value=omics_type.term_source_ref or "",
             ),
             model.Comment(
-                name="Omics Type Accession Number",
+                name="Omics Type TermAccession Number",
                 value=omics_type.term_accession_number or "",
             ),
         ]
