@@ -211,7 +211,7 @@ def consolidate_keywords(
 
 
 def get_instruments(
-    isa_study, study_path, source
+    isa_study: model.Study, study_path: str, source: str
 ) -> dict[str, model.OntologyAnnotation]:
     instruments: dict[str, model.OntologyAnnotation] = {}
     for item in isa_study.assays:
@@ -463,7 +463,7 @@ def update_license(isa_study: model.Study, dataset_license: None | str = None) -
 
 
 if __name__ == "__main__":
-    study_id = "MTBLS30008976"
+    study_id = "MTBLS30008974"
     study_location = get_study_metadata_path(study_id)
     iac = IsaApiClient()
     isa_study, isa_inv, std_path = iac.get_isa_study(

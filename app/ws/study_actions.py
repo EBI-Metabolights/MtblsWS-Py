@@ -397,6 +397,7 @@ class StudyStatus(Resource):
             study_id, None, skip_load_tables=True, study_location=study_location
         )
         isa_study: model.Study = isa_study_item
+        
         if status_updated:
             if new_study_status in (types.StudyStatus.PRIVATE,):
                 consolidate_keywords(
@@ -591,6 +592,15 @@ class StudyStatus(Resource):
                     "study_contacts": study_contacts,
                 }
                 send_email_for_new_accession_number.apply_async(kwargs=inputs)
+        elif status_updated:
+            iac.write_isa_study(
+                isa_inv,
+                None,
+                study_location,
+                save_investigation_copy=True,
+                save_assays_copy=True,
+                save_samples_copy=True,
+            )
         ElasticsearchService.get_instance()._reindex_study(updated_study_id, user_token)
         study = StudyService.get_instance().get_study_by_acc(updated_study_id)
         current_curation_request = CurationRequest(study.curation_request)
