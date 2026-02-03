@@ -270,7 +270,14 @@ def add_new_assay_sheet(
         try:
             sample_df = read_tsv(sample_file_path)
             if "Sample Name" in sample_df.columns:
-                sample_names = list(sample_df["Sample Name"])
+                unique_sample_names = {
+                    x.strip() for x in list(sample_df["Sample Name"]) if x and x.strip()
+                }
+                sample_names = [
+                    x.strip()
+                    for x in list(sample_df["Sample Name"])
+                    if x and x.strip() in unique_sample_names
+                ]
         except FileNotFoundError:
             logger.warning("sample file not loaded")
     success, technology_platform = create_assay_sheet(
@@ -291,6 +298,7 @@ def add_new_assay_sheet(
         maf_file_name=maf_file_name,
         main_technology_type=main_technology_type,
         template_version=template_version,
+        sample_names=sample_names,
     )
     # template_settings = get_template_settings()
     # version_settings = template_settings.versions.get(template_version)

@@ -349,7 +349,7 @@ class AssayFile(Resource):
                 "Parameter Value[Column type]": None,
             }
             for default_value in new_assay_input.assay_file_default_values:
-                column_name = f"Parameter Value[{default_value.field_name}]"
+                column_name = default_value.field_name
                 if column_name in selected_default_values:
                     selected_default_values[column_name] = (
                         default_value.default_value.annotation_value
