@@ -226,7 +226,9 @@ class StudyRevisionService:
         #     isa_study.public_release_date = study.releasedate.strftime("%Y-%m-%d")
         #     isa_inv_input.submission_date = study.submissiondate.strftime("%Y-%m-%d")
         #     isa_inv_input.public_release_date = study.releasedate.strftime("%Y-%m-%d")
-        consolidate_keywords(isa_study)
+        consolidate_keywords(
+            isa_study, study_metadata_location, "status-update-workflow"
+        )
         update_mhd_comments(
             isa_study,
             study_category=study.study_category,

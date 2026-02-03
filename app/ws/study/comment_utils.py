@@ -1,12 +1,17 @@
 import datetime
 import logging
+import os
+import re
 from typing import OrderedDict
 
 from isatools import model
 from pydantic import BaseModel
 
 from app.ws.db.types import StudyCategory
+from app.ws.isaApiClient import IsaApiClient
 from app.ws.study.isa_table_models import OntologyValue
+from app.ws.study.utils import get_study_metadata_path
+from app.ws.utils import read_tsv
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +63,14 @@ class CharacteristicDescription(BaseModel):
     format: str
 
 
-def consolidate_keywords(isa_study: model.Study):
+def consolidate_keywords(
+    isa_study: model.Study, study_path: str, source: str = "workflows"
+):
+    ontology_terms: OrderedDict[str, model.OntologyAnnotation] = OrderedDict()
     study_keywords: OrderedDict[str, model.OntologyAnnotation] = OrderedDict()
+    instruments = get_instruments(isa_study, study_path, source)
+    ontology_terms.update(instruments)
+
     desc_comments = OrderedDict(
         [
             ("Assay Descriptor", []),
@@ -85,8 +96,6 @@ def consolidate_keywords(isa_study: model.Study):
         ]
     )
 
-    ontology_terms: OrderedDict[str, model.OntologyAnnotation] = OrderedDict()
-
     for item in isa_study.assays:
         assay: model.Assay = item
         for comment in assay.comments:
@@ -110,8 +119,7 @@ def consolidate_keywords(isa_study: model.Study):
                                 value="measurement-type",
                             ),
                             model.Comment(
-                                name="Study Design Type Source",
-                                value="workflows",
+                                name="Study Design Type Source", value=source
                             ),
                         ],
                     )
@@ -143,9 +151,7 @@ def consolidate_keywords(isa_study: model.Study):
                 sources = desc_comments.get("Assay Descriptor Source", [])
                 if len(sources) > idx:
                     ontology.comments.append(
-                        model.Comment(
-                            name="Study Design Type Source", value="workflows"
-                        )
+                        model.Comment(name="Study Design Type Source", value=source)
                     )
 
         part = omics_type_comments.get("Omics Type", [""])[0]
@@ -156,10 +162,7 @@ def consolidate_keywords(isa_study: model.Study):
                         name="Study Design Type Category",
                         value="omics-type",
                     ),
-                    model.Comment(
-                        name="Study Design Type Source",
-                        value="workflows",
-                    ),
+                    model.Comment(name="Study Design Type Source", value=source),
                 ],
             )
             ontology = ontology_terms[part.lower()]
@@ -178,10 +181,7 @@ def consolidate_keywords(isa_study: model.Study):
                         name="Study Design Type Category",
                         value="assay-type",
                     ),
-                    model.Comment(
-                        name="Study Design Type Source",
-                        value="workflows",
-                    ),
+                    model.Comment(name="Study Design Type Source", value=source),
                 ],
             )
             ontology = ontology_terms[part.lower()]
@@ -200,6 +200,59 @@ def consolidate_keywords(isa_study: model.Study):
     for item in ontology_terms:
         if item not in study_keywords:
             isa_study.design_descriptors.append(ontology_terms[item])
+    remove_list = []
+    for keyword, onto in study_keywords.items():
+        if keyword not in ontology_terms:
+            comment = onto.get_comment("Study Design Type Category")
+            if comment and comment.value == source:
+                remove_list.append(onto)
+    for onto in remove_list:
+        isa_study.design_descriptors.remove(onto)
+
+
+def get_instruments(
+    isa_study, study_path, source
+) -> dict[str, model.OntologyAnnotation]:
+    instruments: dict[str, model.OntologyAnnotation] = {}
+    for item in isa_study.assays:
+        assay: model.Assay = item
+        assay_file_path = os.path.join(study_path, assay.filename)
+        if not os.path.exists(assay_file_path):
+            continue
+
+        df = read_tsv(assay_file_path)
+        for idx, column_name in enumerate(df.columns):
+            if "instrument" not in column_name.lower():
+                continue
+            result = re.match(r".+\[(.+)\].*", column_name)
+            category = result.groups()[0] if result else "instrument"
+            category = category.lower().replace(" ", "-")
+            unique_vals = set()
+            for row_idx, x in enumerate(df[column_name].tolist()):
+                if not x or not x.strip() or x.strip().lower() in unique_vals:
+                    continue
+                key = x.strip().lower()
+                unique_vals.add(key)
+                source_ref = None
+                accession = None
+                if len(df.columns) > idx + 2 and df.columns[idx + 2].startswith(
+                    "Term Accession Number"
+                ):
+                    source_ref = df[df.columns[idx + 1]][row_idx]
+                    accession = df[df.columns[idx + 2]][row_idx]
+                instruments[key] = model.OntologyAnnotation(
+                    term=x,
+                    term_accession=accession,
+                    term_source=model.OntologySource(name=source_ref),
+                    comments=[
+                        model.Comment(
+                            name="Study Design Type Category",
+                            value=category,
+                        ),
+                        model.Comment(name="Study Design Type Source", value=source),
+                    ],
+                )
+    return instruments
 
 
 @staticmethod
@@ -407,3 +460,14 @@ def update_license(isa_study: model.Study, dataset_license: None | str = None) -
         updated_comments.append(model.Comment(name="License", value=license_name))
     isa_study.comments = updated_comments
     return data_updated
+
+
+if __name__ == "__main__":
+    study_id = "MTBLS30008976"
+    study_location = get_study_metadata_path(study_id)
+    iac = IsaApiClient()
+    isa_study, isa_inv, std_path = iac.get_isa_study(
+        study_id, None, skip_load_tables=True, study_location=study_location
+    )
+    consolidate_keywords(isa_study, study_location, source="workflows-status-update")
+    print(isa_study.design_descriptors)

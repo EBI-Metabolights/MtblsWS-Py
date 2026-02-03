@@ -143,23 +143,12 @@ class StudyRevisions(Resource):
                     message="Submitter can only create first public revision of studies.",
                 )
 
-            validated, message = self.has_validated(study_id)
-            if not validated:
-                if "not ready" in message:
-                    raise MetabolightsException(
-                        http_code=403,
-                        message="Please run validation and fix any problems before attempting to change study status.",
-                    )
-                elif "Metadata files are updated" in message:
-                    raise MetabolightsException(
-                        http_code=403,
-                        message="Metadata files are updated after validation. Please re-run validation and fix any issues before attempting to change study status.",
-                    )
-                else:
-                    raise MetabolightsException(
-                        http_code=403,
-                        message="There are validation errors in the latest validation report. Please fix any issues before attempting to change study status.",
-                    )
+        validated, _ = self.has_validated(study_id)
+        if not validated:
+            raise MetabolightsException(
+                http_code=403,
+                message="Please re-run validation before creating a revision and fix if there is any error.",
+            )
 
         revision: StudyRevisionModel = StudyRevisionService.increment_study_revision(
             study_id, revision_comment=revision_comment, created_by=username
