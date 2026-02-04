@@ -850,7 +850,6 @@ class InvestigationFileSync(Resource):
                 skip_load_tables=True,
                 study_location=target_study_location,
             )
-
             for section in selected_sections:
                 if section == "description":
                     target_isa_study.description = source_isa_study.description
@@ -863,18 +862,17 @@ class InvestigationFileSync(Resource):
                 elif section == "publications":
                     target_isa_study.publications = source_isa_study.publications
                 elif section == "designDesctiptors":
-                    source_descriptors = {
+                    target_descriptors = {
                         x.term.lower(): x
-                        for x in source_isa_study.design_descriptors
+                        for x in target_isa_study.design_descriptors
                         if x and x.term
                     }
                     new_descriptors = []
                     for item in target_isa_study.design_descriptors:
                         key = item.term.lower()
-                        if item.term.lower() in source_descriptors:
-                            new_descriptors.append(source_descriptors[key])
-                        else:
-                            new_descriptors.append(item)
+                        if key not in target_descriptors:
+                            new_descriptors.append(target_descriptors[key])
+                    new_descriptors.extend(source_isa_study.design_descriptors.copy())
                     target_isa_study.design_descriptors = new_descriptors
                 elif section == "protocols":
                     source_protocols = {
