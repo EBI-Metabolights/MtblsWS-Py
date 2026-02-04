@@ -15,6 +15,8 @@ from app.ws.auth.permissions import (
     validate_submission_update,
 )
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.study_templates.models import PredefinedValueConfiguration
+from app.ws.study_templates.utils import get_template_settings
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +114,7 @@ class StudyComments(Resource):
 
 class AssayComments(Resource):
     @swagger.operation(
-        summary="Update study assay comments",
+        summary="Update study assay fields and comments",
         notes="""Example input json format.
         {
             "comments": [
@@ -120,7 +122,10 @@ class AssayComments(Resource):
                     "name": "Assay Type",
                     "value": "LC-MS"
                 }
-            ]
+            ],
+            "fields": {
+                "measurementType": "untargeted analysis"
+            }
         }
 
         If there are multiple terms for comment value, use ; to separate them
@@ -169,9 +174,11 @@ class AssayComments(Resource):
             abort(400)
         input_comments: None | list[dict[str, Any]] = None
         assay_filename = request.headers.get("x-assay-file-name")
+        measurement_type = None
         try:
             data_dict = request.get_json()
             input_comments = data_dict["comments"]
+            measurement_type = data_dict.get("fields", {}).get("measurementType")
         except Exception:
             abort(400, message="invalid body input")
         iac = IsaApiClient()
@@ -200,6 +207,21 @@ class AssayComments(Resource):
                 isa_comments[name].value = value or ""
             else:
                 isa_assay.add_comment(name=name, value_=value or "")
+        if measurement_type:
+            template_settings = get_template_settings()
+            config: None | PredefinedValueConfiguration = (
+                template_settings.measurement_types.get(measurement_type)
+            )
+            if not config or not config.ontology_term:
+                abort(400, message="measurement type is not valid.")
+
+            isa_assay.measurement_type = isa_model.OntologyAnnotation(
+                term=config.ontology_term.term or None,
+                term_accession=config.ontology_term.term_accession_number or None,
+                term_source=isa_model.OntologySource(
+                    name=config.ontology_term.term_source_ref
+                ),
+            )
 
         iac.write_isa_study(
             isa_inv,

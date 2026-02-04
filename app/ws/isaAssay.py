@@ -469,13 +469,9 @@ class AssayFile(Resource):
                 version_settings,
             )
             column_type = column_type.lower().replace(" ", "-").strip()
-            default_measurement_type: PredefinedValueConfiguration = (
-                template_settings.measurement_types.get(
-                    version_settings.default_measurement_type
-                ).ontology_term
-            )
-            measurement_type: OntologyTerm = template_settings.omics_types.get(
-                new_assay_input.selected_omics_type or "", default_measurement_type
+            measurement_type: OntologyTerm = template_settings.measurement_types.get(
+                new_assay_input.selected_measurement_type or "",
+                version_settings.default_measurement_type,
             ).ontology_term
 
             success, assay_file_name, maf_filename = add_new_assay_sheet(
@@ -486,7 +482,6 @@ class AssayFile(Resource):
                 measurement_type,
                 column_default_values,
                 template_version=study.template_version,
-                # measurment_type_name=measurment_type_name,
                 additional_assay_comments=additional_assay_comments,
                 populate_rows_from_samples=True,
             )
@@ -1217,12 +1212,17 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                 column_default_values["Parameter Value[Column type]"] = default_value
             else:
                 column_default_values[name] = default_value
-
+        measurement_type = OntologyTerm(
+            term="metabolite profiling assay",
+            term_source_ref="OBI",
+            term_accession_number="http://purl.obolibrary.org/obo/OBI_0000366",
+        )
         success, assay_file_name, maf_filename = add_new_assay_sheet(
             study_id,
             assay_type,
             polarity,
             column_type,
+            measurement_type=measurement_type,
             default_column_values=column_default_values,
             template_version=study.template_version,
         )

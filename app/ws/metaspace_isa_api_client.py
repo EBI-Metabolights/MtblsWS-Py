@@ -28,6 +28,7 @@ from isatools.isatab import dump
 from app.ws.isa_table_templates import add_new_assay_sheet
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study_creation_model import OntologyTerm
 from app.ws.utils import update_correct_sample_file_name
 
 logger = logging.getLogger("wslog")
@@ -93,8 +94,12 @@ class MetaSpaceIsaApiClient(Resource):
 
             # Create upload folder
             status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
-
-            add_new_assay_sheet(study_id, "MSImaging", "", "", {})
+            measurement_type = OntologyTerm(
+                term="metabolite profiling assay",
+                term_source_ref="OBI",
+                term_accession_number="http://purl.obolibrary.org/obo/OBI_0000366",
+            )
+            add_new_assay_sheet(study_id, "MSImaging", "", "", measurement_type)
             # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
             isa_study, sample_file_name = update_correct_sample_file_name(
                 isa_study, output_dir, study_id

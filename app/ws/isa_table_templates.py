@@ -212,16 +212,11 @@ def add_new_assay_sheet(
     assay_type: str,
     polarity,
     column_type,
-    measurement_type: Optional[OntologyTerm] = None,
+    measurement_type: OntologyTerm,
     default_column_values: None | dict[str, str | OntologyValue | NumericValue] = None,
     assay_file_name: None | str = None,
     maf_file_name: None | str = None,
     template_version: None | str = None,
-    measurment_type_name: Literal[
-        "metabolite profiling",
-        "untargeted metabolite profiling",
-        "targeted metabolite profiling",
-    ] = "metabolite profiling",
     additional_assay_comments: Optional[dict[str, str]] = None,
     populate_rows_from_samples=False,
 ):
@@ -229,23 +224,8 @@ def add_new_assay_sheet(
     study_metadata_location = os.path.join(
         study_settings.mounted_paths.study_metadata_files_root_path, study_id
     )
-    measurement_type = measurement_type or OntologyTerm(
-        term="metabolite profiling assay",
-        term_source_ref="OBI",
-        term_accession_number="http://purl.obolibrary.org/obo/OBI_0000366",
-    )
-    measurement_type_label = (
-        measurment_type_name.lower().replace("assay", "").strip().replace(" ", "_")
-    )
     file_name = "_".join(
-        [
-            "a",
-            study_id.upper(),
-            assay_type,
-            polarity,
-            column_type or "",
-            measurement_type_label or "",
-        ]
+        ["a", study_id.upper(), assay_type, polarity, column_type or ""]
     )
     if not assay_file_name:
         assay_file_name = get_valid_assay_file_name(file_name, study_metadata_location)

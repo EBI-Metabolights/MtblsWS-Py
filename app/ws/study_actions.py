@@ -397,7 +397,7 @@ class StudyStatus(Resource):
             study_id, None, skip_load_tables=True, study_location=study_location
         )
         isa_study: model.Study = isa_study_item
-        
+
         if status_updated:
             if new_study_status in (types.StudyStatus.PRIVATE,):
                 consolidate_keywords(
@@ -567,7 +567,7 @@ class StudyStatus(Resource):
             )
 
             self.refactor_study_folder(
-                context, study_location, None, study_id, updated_study_id
+                context, study_location, study_id, updated_study_id
             )
             ElasticsearchService.get_instance()._delete_study_index(
                 study_id, ignore_errors=True
@@ -826,7 +826,6 @@ class StudyStatus(Resource):
         self,
         context: StudyPermissionContext,
         study_location: str,
-        user_token,
         study_id: str,
         updated_study_id: str,
     ):

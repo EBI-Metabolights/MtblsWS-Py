@@ -930,17 +930,19 @@ class ProvisionalStudy(Resource):
 
         settings = get_settings()
         study_settings = settings.study
-        # now = current_utc_time_without_timezone()
-        # last_study_creation_delta = (now - last_study_datetime).total_seconds()
-        # threshold_seconds = study_settings.min_study_creation_interval_in_mins * 60
-        # if last_study_creation_delta < threshold_seconds:
-        #     logger.warning(
-        #         f"New study creation request from user {username} in {study_settings.min_study_creation_interval_in_mins} mins"
-        #     )
-        #     raise MetabolightsException(
-        #         message="Submitter can create only one study in five minutes.",
-        #         http_code=429,
-        #     )
+        if not settings.flask.TESTING:
+            now = current_utc_time_without_timezone()
+            last_study_creation_delta = (now - last_study_datetime).total_seconds()
+            threshold_seconds = study_settings.min_study_creation_interval_in_mins * 60
+            if last_study_creation_delta < threshold_seconds:
+                logger.warning(
+                    f"New study creation request from user {username} in"
+                    f" {study_settings.min_study_creation_interval_in_mins} mins"
+                )
+                raise MetabolightsException(
+                    message="Submitter can create only one study in five minutes.",
+                    http_code=429,
+                )
 
         if (
             len(provisional_studies) >= study_settings.max_study_in_provisional_status

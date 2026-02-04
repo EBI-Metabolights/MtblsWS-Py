@@ -69,7 +69,9 @@ def consolidate_keywords(
     ontology_terms: OrderedDict[str, model.OntologyAnnotation] = OrderedDict()
     study_keywords: OrderedDict[str, model.OntologyAnnotation] = OrderedDict()
     instruments = get_instruments(isa_study, study_path, source)
+    sample_descriptors = get_sample_descriptors(isa_study, study_path, source)
     ontology_terms.update(instruments)
+    ontology_terms.update(sample_descriptors)
 
     desc_comments = OrderedDict(
         [
@@ -196,14 +198,23 @@ def consolidate_keywords(
     for item in isa_study.design_descriptors:
         descriptor: model.OntologyAnnotation = item
         study_keywords[descriptor.term.lower()] = item
-
+    category_name = "Study Design Type Category"
     for item in ontology_terms:
         if item not in study_keywords:
             isa_study.design_descriptors.append(ontology_terms[item])
+        else:
+            descriptor_source = ontology_terms[item].get_comment(category_name)
+            category = study_keywords[item].get_comment(category_name)
+            if descriptor_source:
+                if not category:
+                    study_keywords[item].comments.append(descriptor_source)
+                elif category.value != descriptor_source.value:
+                    category.value = descriptor_source.value
+
     remove_list = []
     for keyword, onto in study_keywords.items():
         if keyword not in ontology_terms:
-            comment = onto.get_comment("Study Design Type Category")
+            comment = onto.get_comment(category_name)
             if comment and comment.value == source:
                 remove_list.append(onto)
     for onto in remove_list:
@@ -226,7 +237,6 @@ def get_instruments(
                 continue
             result = re.match(r".+\[(.+)\].*", column_name)
             category = result.groups()[0] if result else "instrument"
-            category = category.lower().replace(" ", "-")
             unique_vals = set()
             for row_idx, x in enumerate(df[column_name].tolist()):
                 if not x or not x.strip() or x.strip().lower() in unique_vals:
@@ -253,6 +263,54 @@ def get_instruments(
                     ],
                 )
     return instruments
+
+
+def get_sample_descriptors(
+    isa_study: model.Study, study_path: str, source: str
+) -> dict[str, model.OntologyAnnotation]:
+    descriptors: dict[str, model.OntologyAnnotation] = {}
+    sample_file_path = os.path.join(study_path, isa_study.filename)
+    if not os.path.exists(sample_file_path):
+        return {}
+
+    df = read_tsv(sample_file_path)
+    fields = ["Organism", "Organism part", "Disease", "Cell type", "Sample type"]
+    for idx, column_name in enumerate(df.columns):
+        match = False
+        category = ""
+        for field in fields:
+            if field.lower() in column_name.lower():
+                match = True
+                category = field
+                break
+        if not match:
+            continue
+        unique_vals = set()
+        for row_idx, x in enumerate(df[column_name].tolist()):
+            if not x or not x.strip() or x.strip().lower() in unique_vals:
+                continue
+            key = x.strip().lower()
+            unique_vals.add(key)
+            source_ref = None
+            accession = None
+            if len(df.columns) > idx + 2 and df.columns[idx + 2].startswith(
+                "Term Accession Number"
+            ):
+                source_ref = df[df.columns[idx + 1]][row_idx]
+                accession = df[df.columns[idx + 2]][row_idx]
+            descriptors[key] = model.OntologyAnnotation(
+                term=x,
+                term_accession=accession,
+                term_source=model.OntologySource(name=source_ref),
+                comments=[
+                    model.Comment(
+                        name="Study Design Type Category",
+                        value=category,
+                    ),
+                    model.Comment(name="Study Design Type Source", value=source),
+                ],
+            )
+    return descriptors
 
 
 @staticmethod
