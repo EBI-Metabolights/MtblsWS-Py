@@ -31,7 +31,6 @@ from app.ws.folder_maintenance import StudyFolderMaintenanceTask
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.comment_utils import (
-    consolidate_keywords,
     update_license,
     update_mhd_comments,
     update_revision_comments,
@@ -226,9 +225,9 @@ class StudyRevisionService:
         #     isa_study.public_release_date = study.releasedate.strftime("%Y-%m-%d")
         #     isa_inv_input.submission_date = study.submissiondate.strftime("%Y-%m-%d")
         #     isa_inv_input.public_release_date = study.releasedate.strftime("%Y-%m-%d")
-        consolidate_keywords(
-            isa_study, study_metadata_location, "status-update-workflow"
-        )
+        # consolidate_keywords(
+        #     isa_study, study_metadata_location, "status-update-workflow"
+        # )
         update_mhd_comments(
             isa_study,
             study_category=study.study_category,

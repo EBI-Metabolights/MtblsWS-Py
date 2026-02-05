@@ -174,6 +174,8 @@ class AssayComments(Resource):
             abort(400)
         input_comments: None | list[dict[str, Any]] = None
         assay_filename = request.headers.get("x-assay-file-name")
+        if not assay_filename:
+            abort(400, "assay file name is not provided.")
         measurement_type = None
         try:
             data_dict = request.get_json()
@@ -194,7 +196,11 @@ class AssayComments(Resource):
                 isa_assay = assay
                 break
         if not isa_assay:
-            abort(400, message="assay is not found.")
+            abort(
+                400,
+                message=f"assay {assay_filename} is not "
+                "found in i_Investigation.txt file.",
+            )
         if isa_assay.comments is None:
             isa_assay.comments = []
         isa_comments = {comment.name: comment for comment in isa_assay.comments}

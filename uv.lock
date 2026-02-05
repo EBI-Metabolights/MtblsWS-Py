@@ -1957,7 +1957,7 @@ wheels = [
 
 [[package]]
 name = "mtbls-mhd-integration"
-version = "0.0.14"
+version = "0.0.15"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "asyncpg" },
@@ -1969,9 +1969,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "sqlalchemy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ca/c4/76e38c10fc16dedfb4ea29ed19442e1e789144bb5c7a7d01d292e54f87ce/mtbls_mhd_integration-0.0.14.tar.gz", hash = "sha256:076a1e12cbd0a5756a82f81849aae79bc1c293757505f462cca4c992b661a212", size = 29447, upload-time = "2026-02-03T08:01:48.249Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/ad/72b298de88b21863b7adc6707a1720d8df918bbdc157ea1dc12693072f2a/mtbls_mhd_integration-0.0.15.tar.gz", hash = "sha256:7cd27c21e5cf7fe957ab302106aff4fb41044345d28702358f95252d7a362e4b", size = 29769, upload-time = "2026-02-05T15:23:54.778Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4f/00/83011a9eb338f90999da75fd08c76ddea580fa28aafd70821d9abb1cb172/mtbls_mhd_integration-0.0.14-py3-none-any.whl", hash = "sha256:160f37d4271748aaef5192cff099f8c23160bbc085563f26db2a3644640a8d7d", size = 33498, upload-time = "2026-02-03T08:01:47.004Z" },
+    { url = "https://files.pythonhosted.org/packages/de/46/46fc846a69b71e290b3995c9f0e652500cadf50e87819fb5b410450e509a/mtbls_mhd_integration-0.0.15-py3-none-any.whl", hash = "sha256:e333e0f59f84db6991783cae6b683170ba9fc51ac2661981d5c25dfe576d3ebb", size = 33824, upload-time = "2026-02-05T15:23:55.922Z" },
 ]
 
 [[package]]
@@ -2070,7 +2070,7 @@ requires-dist = [
     { name = "metabolights-utils", specifier = ">=1.4.18,<2" },
     { name = "metaspace2020", specifier = ">=2.0.9,<3" },
     { name = "mhd-model", specifier = ">=0.1.44" },
-    { name = "mtbls-mhd-integration", specifier = ">=0.0.14" },
+    { name = "mtbls-mhd-integration", specifier = ">=0.0.15" },
     { name = "mzml2isa", specifier = ">=1.1.1" },
     { name = "oauth2client", specifier = ">=4.1.3,<5" },
     { name = "owlready2", specifier = ">=0.47,<0.48" },

@@ -54,7 +54,7 @@ dependencies = [
     "psycopg[binary,pool]>=3.3.2",
     "sqlalchemy>=2.0.46",
     "python-multipart>=0.0.22",
-    "mtbls-mhd-integration>=0.0.14",
+    "mtbls-mhd-integration>=0.0.15",
     "flask>=3.1.2",
 ]
 
