@@ -1076,11 +1076,18 @@ class ProvisionalStudy(Resource):
             template_settings.descriptor_configuration.default_submitter_source or ""
         )
         for descriptor in study.design_descriptors:
-            for comment in descriptor.comments:
-                if comment.name == "Study Design Category" and not comment.value:
-                    comment.value = default_descriptor_category
-                elif comment.name == "Study Design Source" and not comment.value:
-                    comment.value = default_descriptor_source
+            category_comment = descriptor.get_comment("Study Design Category")
+            if not category_comment:
+                category_comment = isa_model.Comment(
+                    name="Study Design Category", value=default_descriptor_category
+                )
+
+            descriptor.comments = [
+                category_comment,
+                isa_model.Comment(
+                    name="Study Design Source", value=default_descriptor_source
+                ),
+            ]
 
         study.contacts.extend(
             [
