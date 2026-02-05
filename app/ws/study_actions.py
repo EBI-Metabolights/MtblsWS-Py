@@ -524,38 +524,42 @@ class StudyStatus(Resource):
                 and not context.mhd_accession
                 and not context.first_private_date
             ):
-                if get_settings().flask.TESTING:
-                    accession_type = "test"
-                else:
-                    if context.study_category == StudyCategory.MS_MHD_ENABLED:
-                        accession_type = "mhd"
-                    elif context.study_category == StudyCategory.MS_MHD_LEGACY:
-                        accession_type = "legacy"
-                try:
-                    mhd_accession = self.get_new_mhd_accession(
-                        updated_study_id, accession_type
-                    )
-                    if mhd_accession:
-                        self.update_mhd_accession_in_db(updated_study_id, mhd_accession)
-                except MhdClientError as e:
-                    inputs = {
-                        "subject": f"MHD accession request error for {updated_study_id}",
-                        "body": f"MHD accession request failed for {updated_study_id}<br/> {e}",
-                    }
-                    send_technical_issue_email.apply_async(kwargs=inputs)
-                    logger.error(e)
-                    raise e
+                test = get_settings().flask.TESTING
+                accession_type = ""
+                if context.study_category == StudyCategory.MS_MHD_ENABLED:
+                    accession_type = "test-mhd" if test else "mhd"
+                elif context.study_category == StudyCategory.MS_MHD_LEGACY:
+                    accession_type = "test-legacy" if test else "legacy"
+                if accession_type:
+                    try:
+                        mhd_accession = self.get_new_mhd_accession(
+                            updated_study_id, accession_type
+                        )
+                        if mhd_accession:
+                            self.update_mhd_accession_in_db(
+                                updated_study_id, mhd_accession
+                            )
+                    except MhdClientError as e:
+                        inputs = {
+                            "subject": f"MHD accession request error for {updated_study_id}",
+                            "body": f"MHD accession request failed for {updated_study_id}<br/> {e}",
+                        }
+                        send_technical_issue_email.apply_async(kwargs=inputs)
+                        logger.error(e)
+                        raise e
 
-                comment_updated = False
-                for comment in isa_study.comments:
-                    comment.name == "MHD Accession"
-                    comment.value = mhd_accession or ""
-                    comment_updated = True
-                    break
-                if not comment_updated:
-                    isa_study.comments.append(
-                        model.Comment(name="MHD Accession", value=mhd_accession or "")
-                    )
+                    comment_updated = False
+                    for comment in isa_study.comments:
+                        comment.name == "MHD Accession"
+                        comment.value = mhd_accession or ""
+                        comment_updated = True
+                        break
+                    if not comment_updated:
+                        isa_study.comments.append(
+                            model.Comment(
+                                name="MHD Accession", value=mhd_accession or ""
+                            )
+                        )
 
             iac.write_isa_study(
                 isa_inv,

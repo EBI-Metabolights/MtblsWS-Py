@@ -869,12 +869,14 @@ class InvestigationFileSync(Resource):
                             continue
                         comment = desc.get_comment("Study Design Type Source")
                         if not comment:
-                            desc.add_comment(name="Study Design Type Source", value_="submitter")
-                            source_descriptors[desc.term.lower()] = desc 
+                            desc.add_comment(
+                                name="Study Design Type Source", value_="submitter"
+                            )
+                            source_descriptors[desc.term.lower()] = desc
                         elif not comment.value or comment.value == "submitter":
                             comment.value = "submitter"
-                            source_descriptors[desc.term.lower()] = desc 
-                        
+                            source_descriptors[desc.term.lower()] = desc
+
                     new_descriptors = []
                     for item in target_isa_study.design_descriptors:
                         key = item.term.lower()
