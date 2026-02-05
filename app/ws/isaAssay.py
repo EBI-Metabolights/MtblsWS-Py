@@ -862,16 +862,24 @@ class InvestigationFileSync(Resource):
                 elif section == "publications":
                     target_isa_study.publications = source_isa_study.publications
                 elif section == "designDesctiptors":
-                    target_descriptors = {
-                        x.term.lower(): x
-                        for x in target_isa_study.design_descriptors
-                        if x and x.term
-                    }
+                    source_descriptors = OrderedDict()
+                    for item in source_isa_study.design_descriptors:
+                        desc: model.OntologyAnnotation = item
+                        if not desc or not desc.term or not desc.term.lower():
+                            continue
+                        comment = desc.get_comment("Study Design Type Source")
+                        if not comment:
+                            desc.add_comment(name="Study Design Type Source", value_="submitter")
+                            source_descriptors[desc.term.lower()] = desc 
+                        elif not comment.value or comment.value == "submitter":
+                            comment.value = "submitter"
+                            source_descriptors[desc.term.lower()] = desc 
+                        
                     new_descriptors = []
                     for item in target_isa_study.design_descriptors:
                         key = item.term.lower()
-                        if key not in target_descriptors:
-                            new_descriptors.append(target_descriptors[key])
+                        if key not in source_descriptors:
+                            new_descriptors.append(item)
                     new_descriptors.extend(source_isa_study.design_descriptors.copy())
                     target_isa_study.design_descriptors = new_descriptors
                 elif section == "protocols":
