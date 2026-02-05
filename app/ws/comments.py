@@ -175,7 +175,7 @@ class AssayComments(Resource):
         input_comments: None | list[dict[str, Any]] = None
         assay_filename = request.headers.get("x-assay-file-name")
         if not assay_filename:
-            abort(400, "assay file name is not provided.")
+            abort(400, message="assay file name is not provided.")
         measurement_type = None
         try:
             data_dict = request.get_json()

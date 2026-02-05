@@ -209,7 +209,7 @@ def consolidate_keywords(
     remove_list = []
     for keyword, onto in study_keywords.items():
         if keyword not in ontology_terms:
-            comment = onto.get_comment(category_name)
+            comment = onto.get_comment(source_name)
             if comment and comment.value == source:
                 remove_list.append(onto)
     for onto in remove_list:
@@ -272,11 +272,11 @@ def get_sample_descriptors(
     fields = ["Organism", "Organism part", "Disease", "Cell type", "Sample type"]
     for idx, column_name in enumerate(df.columns):
         match = False
-        category = ""
+        category_name = ""
         for field in fields:
-            if field.lower() in column_name.lower():
+            if f"[{field.lower()}]" in column_name.lower():
                 match = True
-                category = field
+                category_name = field
                 break
         if not match:
             continue
@@ -300,7 +300,7 @@ def get_sample_descriptors(
                 comments=[
                     model.Comment(
                         name="Study Design Type Category",
-                        value=category,
+                        value=category_name,
                     ),
                     model.Comment(name="Study Design Type Source", value=source),
                 ],
