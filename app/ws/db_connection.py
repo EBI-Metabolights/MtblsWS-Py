@@ -583,6 +583,7 @@ def get_all_studies_for_user(user_token):
         revision_status = None
         revision_task_message = None
         revision_comment = None
+        revision_mhd_submission_status = None
         if revision_number > 0:
             revision_success, revision = get_study_revision(
                 study_id=study_id, revision_number=row[6]
@@ -591,6 +592,7 @@ def get_all_studies_for_user(user_token):
                 revision_comment = revision[3] or ""
                 revision_status = revision[4]
                 revision_task_message = revision[5] or ""
+                revision_mhd_submission_status = revision[6] or ""
 
         revision_datetime = row[7].isoformat() if row[7] else None
         first_private_date = row[8].isoformat() if row[8] else None
@@ -617,6 +619,7 @@ def get_all_studies_for_user(user_token):
                 "revisionStatus": revision_status,
                 "revisionComment": revision_comment,
                 "revisionTaskMessage": revision_task_message,
+                "mhdSubmissionStatus": revision_mhd_submission_status,
                 "studyHttpUrl": http_url,
                 "studyFtpUrl": ftp_url,
                 "studyGlobusUrl": globus_url,
@@ -951,7 +954,7 @@ def biostudies_accession(study_id, biostudies_id, method):
 
 
 def get_study_revision(study_id, revision_number):
-    query = "select accession_number, revision_datetime, revision_number, revision_comment, status, task_message from study_revisions where accession_number=%(study_id)s and revision_number=%(revision_number)s;"
+    query = "select accession_number, revision_datetime, revision_number, revision_comment, status, task_message, mhd_submission_status from study_revisions where accession_number=%(study_id)s and revision_number=%(revision_number)s;"
     try:
         with get_connection() as (conn, cursor):
             cursor.execute(

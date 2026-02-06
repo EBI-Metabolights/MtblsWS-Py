@@ -50,12 +50,12 @@ dependencies = [
     "mzml2isa>=1.1.1",
     "python-keycloak>=5.8.1",
     "cachetools~=6.2.2",
-    "mhd-model>=0.1.44",
     "psycopg[binary,pool]>=3.3.2",
     "sqlalchemy>=2.0.46",
     "python-multipart>=0.0.22",
-    "mtbls-mhd-integration>=0.0.15",
     "flask>=3.1.2",
+    "mhd-model>=0.1.46",
+    "mtbls-mhd-integration>=0.0.17",
 ]
 
 [dependency-groups]

@@ -4,7 +4,7 @@ from typing import Dict, List, Union
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 from pydantic.alias_generators import to_camel, to_pascal
 
-from app.ws.db.types import StudyRevisionStatus
+from app.ws.db.types import MhdSubmissionStatus, StudyRevisionStatus
 from app.ws.db.utils import datetime_to_int
 
 
@@ -15,6 +15,7 @@ class StudyRevisionModel(BaseModel):
     revision_comment: Union[None, str] = None
     created_by: Union[None, str] = None
     status: Union[None, StudyRevisionStatus] = None
+    mhd_share_status: Union[None, MhdSubmissionStatus] = None
     task_started_at: Union[None, datetime.datetime] = None
     task_completed_at: Union[None, datetime.datetime] = None
     task_message: Union[None, str] = None
