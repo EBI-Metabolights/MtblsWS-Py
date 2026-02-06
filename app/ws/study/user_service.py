@@ -106,6 +106,11 @@ class UserService(object):
 
                 query = db_session.query(Study)
                 study: Study = query.filter(*filters).first()
+
+                if study:
+                    permission_context.study_category = StudyCategory(
+                        study.study_category
+                    )
                 if study and obfuscation_code in {study.obfuscationcode, None}:
                     permission_context.obfuscation_code = study.obfuscationcode
                     permission_context.study_id = study.acc
@@ -115,9 +120,6 @@ class UserService(object):
                     )
                     permission_context.mhd_accession = study.mhd_accession
                     permission_context.mhd_model_version = study.mhd_model_version
-                    permission_context.study_category = StudyCategory(
-                        study.study_category
-                    )
                     permission_context.sample_template = study.sample_type
                     permission_context.template_version = study.template_version
 

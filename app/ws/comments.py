@@ -219,7 +219,12 @@ class AssayComments(Resource):
                 template_settings.measurement_types.get(measurement_type)
             )
             if not config or not config.ontology_term:
-                abort(400, message="measurement type is not valid.")
+                valid_values = ", ".join(template_settings.measurement_types.keys())
+                abort(
+                    400,
+                    message=f"measurement type  '{measurement_type}' is not valid. "
+                    f"Expected values: {valid_values}",
+                )
 
             isa_assay.measurement_type = isa_model.OntologyAnnotation(
                 term=config.ontology_term.term or None,
