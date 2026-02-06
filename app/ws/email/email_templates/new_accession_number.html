@@ -20,9 +20,9 @@
 Dear {{ submitter_fullname }},<br/><br/>
 
 {% if mhd_accession -%}
-We are happy to inform you that your study "{{ study_title }}" {% if provisional_id -%}with provisional ID {{ provisional_id }}{% endif -%} has been successfully submitted to MetaboLights as <b>{{ mhd_accession}} ({{ mtbls_accession }})</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
+We are happy to inform you that your study "{{ study_title }}"{% if provisional_id -%} with provisional ID <b>{{ provisional_id }}</b> {% endif -%} has been successfully submitted to MetaboLights as <b>{{ mhd_accession}} ({{ mtbls_accession }})</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
 {% else -%}
-We are happy to inform you that your study "{{ study_title }}" {% if provisional_id -%}with provisional ID {{ provisional_id }}{% endif -%} has been successfully submitted to MetaboLights as <b>{{ mtbls_accession }}</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
+We are happy to inform you that your study "{{ study_title }}"{% if provisional_id -%} with provisional ID <b>{{ provisional_id }}</b> {% endif -%} has been successfully submitted to MetaboLights as <b>{{ mtbls_accession }}</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
 {% endif -%}
 <br/><br/>
 
