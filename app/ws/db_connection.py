@@ -954,7 +954,15 @@ def biostudies_accession(study_id, biostudies_id, method):
 
 
 def get_study_revision(study_id, revision_number):
-    query = "select accession_number, revision_datetime, revision_number, revision_comment, status, task_message, mhd_submission_status from study_revisions where accession_number=%(study_id)s and revision_number=%(revision_number)s;"
+    query = (
+        "select "
+        "accession_number, revision_datetime, revision_number, "
+        "revision_comment, status, task_message, mhd_share_status "
+        "from "
+        "study_revisions "
+        "where "
+        "accession_number=%(study_id)s and revision_number=%(revision_number)s;"
+    )
     try:
         with get_connection() as (conn, cursor):
             cursor.execute(
