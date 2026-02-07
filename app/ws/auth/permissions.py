@@ -88,6 +88,23 @@ def validate_submission_update(
     )
 
 
+def validate_submission_delete(
+    request, fail_silently: bool = False, user_required=True
+) -> StudyPermissionEvaluationResult:
+    return validate_permissions(
+        request,
+        permissions=PermissionFilter(
+            filters=[
+                ScopeFilter(
+                    scopes={StudyResource.SUBMISSION: [StudyResourceScope.DELETE]},
+                )
+            ]
+        ),
+        fail_silently=fail_silently,
+        user_required=user_required,
+    )
+
+
 def validate_metadata_files_delete(
     request, fail_silently: bool = False, user_required=True
 ) -> StudyPermissionEvaluationResult:

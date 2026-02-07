@@ -79,6 +79,7 @@ from app.ws.auth.permissions import (
     validate_data_files_upload,
     validate_study_index_delete,
     validate_study_index_update,
+    validate_submission_delete,
     validate_submission_update,
     validate_submission_view,
     validate_user_has_curator_role,
@@ -98,6 +99,7 @@ from app.ws.db_connection import (
     create_empty_study,
     get_all_private_studies_for_user,
     get_all_studies_for_user,
+    get_connection,
     get_id_list_by_req_id,
     get_public_studies_with_methods,
     query_study_submitters,
@@ -870,7 +872,7 @@ class PublicStudyDetail(Resource):
         return result
 
 
-class ProvisionalStudy(Resource):
+class ProvisionalStudies(Resource):
     @swagger.operation(
         summary="Create a new provisional study",
         notes="""Create a provisional new study, with upload folder</br>
@@ -980,9 +982,11 @@ class ProvisionalStudy(Resource):
             default_category = ActiveStudyCategory(order=1, visible=True)
             categories = [x for x in new_study_input.selected_study_categories]
             categories.sort(
-                key=lambda x: version_settings.active_study_categories.get(
-                    x, default_category
-                ).order,
+                key=lambda x: (
+                    version_settings.active_study_categories.get(
+                        x, default_category
+                    ).order
+                ),
                 reverse=True,
             )
             for category in categories:
@@ -1333,13 +1337,13 @@ class ProvisionalStudy(Resource):
                         sample_df[f"Unit.{suffix}"] = (
                             default_unit.term if default_unit else ""
                         )
+                    sample_df[f"Term Accession Number.{suffix}"] = (
+                        default_unit.term_accession if default_unit and numeric else ""
+                    )
                     sample_df[f"Term Source REF.{suffix}"] = (
                         default_unit.term_source.name
                         if default_unit and numeric
                         else ""
-                    )
-                    sample_df[f"Term Accession Number.{suffix}"] = (
-                        default_unit.term_accession if default_unit and numeric else ""
                     )
 
             write_tsv(sample_df, sample_file_path)
@@ -1607,6 +1611,141 @@ class ProvisionalStudy(Resource):
         return new_study_input
 
 
+class ProvisionalStudy(Resource):
+    @swagger.operation(
+        summary="Delete provisional study",
+        notes="""Delete provisional study""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Existing Study to delete",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string",
+            },
+            {
+                "name": "delete_option",
+                "description": "Delete options: reset-metadata, reset-ftp-data, reset-metadata-and-ftp-data, delete-permanently",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "string",
+                "defaultValue": "false",
+                "enum": [
+                    "reset-metadata",
+                    "reset-ftp-data",
+                    "reset-metadata-and-ftp-data",
+                    "delete-permanently",
+                ],
+            },
+            {
+                "name": "user-token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            },
+        ],
+        responseMessages=[
+            {"code": 200, "message": "OK."},
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication.",
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token",
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
+    )
+    @metabolights_exception_handler
+    def delete(self, study_id):
+        result = validate_submission_delete(request)
+        status = result.context.study_status
+
+        if status != StudyStatus.PROVISIONAL:
+            abort(401, message="It is not allowed to delete a private or public study")
+
+        if result.context.first_private_date or result.context.reserved_accession:
+            abort(401, message="It is not allowed to delete accessioned study.")
+        delete_option = request.args.get("delete_option")
+        if not delete_option or delete_option not in {
+            "reset-metadata",
+            "reset-ftp-data",
+            "reset-metadata-and-ftp-data",
+            "delete-permanently",
+        }:
+            abort(401, message="delete option is not valid")
+        logger.info("Deleting study %s", study_id)
+        if delete_option == "delete-permanently":
+            dormant_study_query = (
+                "UPDATE studies SET status = 4, "
+                "status_date = CURRENT_DATE, updatedate = CURRENT_DATE "
+                "WHERE acc = %(study_id)s;"
+            )
+            unlink_submitters = (
+                "DELETE FROM study_user "
+                "WHERE studyid IN (SELECT id FROM studies WHERE acc = %(study_id)s);"
+            )
+            try:
+                with get_connection() as (conn, cursor):
+                    cursor.execute(dormant_study_query, {"study_id": study_id})
+                    cursor.execute(unlink_submitters, {"study_id": study_id})
+            except Exception as e:
+                logger.error(
+                    "Database update of study status failed with error " + str(e)
+                )
+                raise e
+        if delete_option in {
+            "reset-metadata",
+            "reset-metadata-and-ftp-data",
+            "delete-permanently",
+        }:
+            delete_study_folders(
+                study_id=study_id,
+                force_to_maintain=True,
+                delete_private_ftp_storage_folders=False,
+                delete_metadata_storage_folders=True,
+                task_name=f"DELETE_STUDY_{study_id}",
+                failing_gracefully=False,
+                recreate_folders=delete_option != "delete-permanently",
+            )
+        if delete_option in {
+            "reset-ftp-data",
+            "reset-metadata-and-ftp-data",
+            "delete-permanently",
+        }:
+            inputs = {
+                "study_id": study_id,
+                "task_name": f"DELETE_STUDY_{study_id}",
+                "force_to_maintain": True,
+                "delete_private_ftp_storage_folders": True,
+                "delete_metadata_storage_folders": False,
+                "recreate_folders": delete_option != "delete-permanently",
+            }
+            cluster_settings = get_cluster_settings()
+            task = delete_study_folders.apply_async(kwargs=inputs)
+            task.get(timeout=cluster_settings.task_get_timeout_in_seconds * 2)
+
+        if delete_option in {"reset-metadata", "reset-metadata-and-ftp-data"}:
+            status, message = wsc.reindex_study(study_id)
+            if not status:
+                abort(500, error="Could not reindex the study")
+
+        return {
+            "Success": delete_option
+            + " operation has been completed for study "
+            + study_id
+        }
+
+
 class CreateAccession(Resource):
     @swagger.operation(
         summary="Create a new study",
@@ -1649,6 +1788,7 @@ class CreateAccession(Resource):
     )
     @metabolights_exception_handler
     def get(self):
+        raise_deprecation_error(request)
         result = validate_user_has_submitter_or_super_user_role(request)
         user_token = result.context.user_api_token
         user_role = result.context.user_role

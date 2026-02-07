@@ -36,7 +36,11 @@ from isatools.model import (
 
 from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.auth.auth_manager import AuthenticationManager
-from app.ws.auth.permissions import validate_submission_update, validate_submission_view
+from app.ws.auth.permissions import (
+    raise_deprecation_error,
+    validate_submission_update,
+    validate_submission_view,
+)
 from app.ws.db import schemes as db_model
 from app.ws.db.permission_scopes import (
     PermissionFilter,
@@ -384,8 +388,8 @@ class AssayFile(Resource):
                     ("Assay Field Name", []),
                     ("Assay Field Default Value", []),
                     ("Assay Field Default Unit", []),
-                    ("Assay Field Default Value Source REF", []),
                     ("Assay Field Default Value Accession Number", []),
+                    ("Assay Field Default Value Source REF", []),
                 ]
             )
 
@@ -395,8 +399,8 @@ class AssayFile(Resource):
                     "Assay Field Name": column_name,
                     "Assay Field Default Value": field.default_value.annotation_value,
                     "Assay Field Default Unit": "",
-                    "Assay Field Default Value Source REF": "",
                     "Assay Field Default Value Accession Number": "",
+                    "Assay Field Default Value Source REF": "",
                 }
                 if field.default_value and field.default_value.unit:
                     unit = field.default_value.unit
@@ -744,13 +748,13 @@ class InvestigationFileSync(Resource):
         1- description
         2- publicReleaseDate
         3- contacts
-        4- designDesctiptors
+        4- designDescriptors
         5- protocols
         6- publications,
         7- funders
         8- relatedDatasets
 
-        Example section input: description,publicReleaseDate,designDesctiptors,protocols,factors,publications,funders
+        Example section input: description,publicReleaseDate,designDescriptors,protocols,publications,funders
 
         Notes:
         1- Source study metadata values will overriden with the selected sections of the target study.
@@ -785,7 +789,7 @@ class InvestigationFileSync(Resource):
                     "description",
                     "publicReleaseDate",
                     "contacts",
-                    "designDesctiptors",
+                    "designDescriptors",
                     "protocols",
                     "publications",
                     "funders",
@@ -861,16 +865,16 @@ class InvestigationFileSync(Resource):
                     target_isa_study.contacts = source_isa_study.contacts
                 elif section == "publications":
                     target_isa_study.publications = source_isa_study.publications
-                elif section == "designDesctiptors":
+                elif section == "designDescriptors":
                     source_descriptors = OrderedDict()
                     for item in source_isa_study.design_descriptors:
                         desc: model.OntologyAnnotation = item
                         if not desc or not desc.term or not desc.term.lower():
                             continue
-                        comment = desc.get_comment("Study Design Type Source")
+                        comment = desc.get_comment("Study Design Source")
                         if not comment:
                             desc.add_comment(
-                                name="Study Design Type Source", value_="submitter"
+                                name="Study Design Source", value_="submitter"
                             )
                             source_descriptors[desc.term.lower()] = desc
                         elif not comment.value or comment.value == "submitter":
@@ -1152,6 +1156,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
     )
     @metabolights_exception_handler
     def post(self, study_id):
+        raise_deprecation_error(request)
         log_request(request)
         result = validate_submission_update(request)
         study_id = result.context.study_id

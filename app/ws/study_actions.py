@@ -584,7 +584,9 @@ class StudyStatus(Resource):
                 study_title = isa_study.title
                 additional_cc_emails = get_principal_investigator_emails(isa_study)
                 study_contacts = get_study_contacts(isa_study)
-                expected_release_date = context.expected_release_date.strftime("%Y-%m-%d")
+                expected_release_date = context.expected_release_date.strftime(
+                    "%Y-%m-%d"
+                )
                 inputs = {
                     "user_token": user_token,
                     "provisional_id": study_id,

@@ -43,10 +43,9 @@ def update_revision_comments(
         revision_comments.extend(revision_logs)
         comment = model.Comment(name="Revision", value=str(revision_number))
         isa_study.comments.append(comment)
-        revision_datetime = ""
         if revision_datetime and isinstance(revision_datetime, datetime.datetime):
             revision_datetime = revision_datetime.strftime("%Y-%m-%d")
-        comment = model.Comment(name="Revision Date", value=revision_datetime)
+        comment = model.Comment(name="Revision Date", value=revision_datetime or "")
         isa_study.comments.append(comment)
         log = revision_comment or ""
         log = log.strip().replace("\t", " ").replace("\n", " ")
@@ -97,8 +96,8 @@ def consolidate_keywords(
             ("Assay Type Term Source REF", []),
         ]
     )
-    category_name = "Study Design Type Category"
-    source_name = "Study Design Type Source"
+    category_name = "Study Design Category"
+    source_name = "Study Design Source"
     for item in isa_study.assays:
         assay: model.Assay = item
         for comment in assay.comments:
@@ -251,10 +250,10 @@ def get_instruments(
                     term_source=model.OntologySource(name=source_ref),
                     comments=[
                         model.Comment(
-                            name="Study Design Type Category",
+                            name="Study Design Category",
                             value=category,
                         ),
-                        model.Comment(name="Study Design Type Source", value=source),
+                        model.Comment(name="Study Design Source", value=source),
                     ],
                 )
     return instruments
@@ -299,10 +298,10 @@ def get_sample_descriptors(
                 term_source=model.OntologySource(name=source_ref),
                 comments=[
                     model.Comment(
-                        name="Study Design Type Category",
+                        name="Study Design Category",
                         value=category_name,
                     ),
-                    model.Comment(name="Study Design Type Source", value=source),
+                    model.Comment(name="Study Design Source", value=source),
                 ],
             )
     return descriptors

@@ -236,7 +236,9 @@ class IsaInvestigation(Resource):
         response["mtblsStudy"]["datasetLicense"] = license
         response["mtblsStudy"]["datasetLicenseUrl"] = dataset_license_url
         response["mtblsStudy"]["templateVersion"] = study.template_version or ""
-        response["mtblsStudy"]["mhdSubmissionStatus"] = revision_mhd_submission_status or ""
+        response["mtblsStudy"]["mhdSubmissionStatus"] = (
+            revision_mhd_submission_status or ""
+        )
         response["mtblsStudy"]["studyPermission"] = result.permission.model_dump(
             by_alias=True
         )
