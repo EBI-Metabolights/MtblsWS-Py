@@ -1337,13 +1337,13 @@ class ProvisionalStudies(Resource):
                         sample_df[f"Unit.{suffix}"] = (
                             default_unit.term if default_unit else ""
                         )
-                    sample_df[f"Term Accession Number.{suffix}"] = (
-                        default_unit.term_accession if default_unit and numeric else ""
-                    )
                     sample_df[f"Term Source REF.{suffix}"] = (
                         default_unit.term_source.name
                         if default_unit and numeric
                         else ""
+                    )
+                    sample_df[f"Term Accession Number.{suffix}"] = (
+                        default_unit.term_accession if default_unit and numeric else ""
                     )
 
             write_tsv(sample_df, sample_file_path)
