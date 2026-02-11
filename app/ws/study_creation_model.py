@@ -28,6 +28,7 @@ class OntologyTerm(CamelCaseBaseModel):
 class RelatedDataset(CamelCaseBaseModel):
     repository: str
     accession: str
+    url: str = ""
 
 
 class Funding(CamelCaseBaseModel):

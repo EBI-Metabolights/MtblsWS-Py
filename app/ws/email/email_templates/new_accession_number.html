@@ -55,14 +55,22 @@ Remote folder : <code> {{ new_ftp_folder }}</code> {% if provisional_id != mtbls
 <b>CITATION</b><br/>
 Please add to your manuscript the following sentence (typically in the "Methods" section or just before/in the Acknowledgements): <br/><br/>
 <i>
+{% if mhd_accession -%}
+    "The metabolomics data have been deposited to MetaboLights[1] repository with the study identifier {{ mhd_accession }}".<br/>
+{% else -%}
     "The metabolomics data have been deposited to MetaboLights[1] repository with the study identifier {{ mtbls_accession }}".<br/>
+{% endif -%}
     </i><br/>
     MetaboLights reference:<br/>
     [1] Yurekten O, Payne T, Tejera N, Amaladoss FX, Martin C, Williams M, O'Donovan C. MetaboLights: open data repository for metabolomics.
     Nucleic Acids Res. 2024 Jan 5;52(D1):D640-D646. doi:<a href="https://doi.org/10.1093/nar/gkad1045">10.1093/nar/gkad1045</a>. PMID:37971328.<br/>
 
 <br/>
+{% if mhd_accession -%}
+We would recommend you to also include this information in a much abridged form into the abstract itself, e.g. "Data are available via MetaboLights with identifier {{ mhd_accession }}."
+{% else -%}
 We would recommend you to also include this information in a much abridged form into the abstract itself, e.g. "Data are available via MetaboLights with identifier {{ mtbls_accession }}."
+{% endif -%}
 <br/><br/>
 Thank you for choosing MetaboLights for the dissemination of your data. We look forward to receiving more of your data in the future.
 <br/><br/>
