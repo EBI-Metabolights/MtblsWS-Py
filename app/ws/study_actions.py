@@ -528,8 +528,8 @@ class StudyStatus(Resource):
                 accession_type = ""
                 if context.study_category == StudyCategory.MS_MHD_ENABLED:
                     accession_type = "test-mhd" if test else "mhd"
-                elif context.study_category == StudyCategory.MS_MHD_LEGACY:
-                    accession_type = "test-legacy" if test else "legacy"
+                # elif context.study_category == StudyCategory.MS_MHD_LEGACY:
+                #     accession_type = "test-legacy" if test else "legacy"
                 if accession_type:
                     try:
                         mhd_accession = self.get_new_mhd_accession(
