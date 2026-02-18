@@ -1,0 +1,118 @@
+#!/bin/bash
+
+#################################
+#  Configurable Options  #
+#################################
+
+EMAIL_TO={{ EMAIL_TO }}
+STUDY_METADATA_PATH={{ STUDY_METADATA_PATH }}
+STUDY_PRIVATE_FTP_PATH={{ STUDY_PRIVATE_FTP_PATH }}
+OBJECT_STORAGE_URL={{ OBJECT_STORAGE_URL }}
+OBJECT_STORAGE_BUCKET_NAME={{ OBJECT_STORAGE_BUCKET_NAME }}
+OBJECT_STORAGE_SUBFOLDER={{ OBJECT_STORAGE_SUBFOLDER }}
+OBJECT_STORAGE_ACCESS_KEY_ID={{ OBJECT_STORAGE_ACCESS_KEY_ID }}
+OBJECT_STORAGE_SECRET_ACCESS_KEY={{ OBJECT_STORAGE_SECRET_ACCESS_KEY }}
+OBJECT_STORAGE_REGION={{ OBJECT_STORAGE_REGION }}
+UPDATE_URL={{ UPDATE_URL }}
+USER_TOKEN={{ USER_TOKEN }}
+DATA_FILES_HASH_PATH={{ DATA_FILES_HASH_PATH }}
+ROOT_DATA_FILES_HASH_PATH={{ ROOT_DATA_FILES_HASH_PATH }}
+
+#################################
+#  End of Configurable Options  #
+#################################
+
+
+echo "S3 SYNC TASK STARTED at $CURRENT_TIME"
+echo "STUDY_METADATA_PATH:  $STUDY_METADATA_PATH"
+echo "STUDY_PRIVATE_FTP_PATH:  $STUDY_PRIVATE_FTP_PATH"
+echo "OBJECT_STORAGE_URL:  $OBJECT_STORAGE_URL"
+echo "OBJECT_STORAGE_BUCKET_NAME:  $OBJECT_STORAGE_BUCKET_NAME"
+echo "OBJECT_STORAGE_ACCESS_KEY_ID:  $OBJECT_STORAGE_ACCESS_KEY_ID"
+echo "UPDATE_URL:  $UPDATE_URL"
+echo "DATA_FILES_HASH_PATH:  $DATA_FILES_HASH_PATH"
+echo "ROOT_DATA_FILES_HASH_PATH:  $ROOT_DATA_FILES_HASH_PATH"
+
+export AWS_ACCESS_KEY_ID=${OBJECT_STORAGE_ACCESS_KEY_ID}
+export AWS_SECRET_ACCESS_KEY=${OBJECT_STORAGE_SECRET_ACCESS_KEY}
+export AWS_DEFAULT_REGION=${OBJECT_STORAGE_REGION}
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+echo  curl -X PUT --header \"Status: In Progress\" --header \"task-started-at: ${CURRENT_TIME}\" --header \"Task-Message: Public S3 Folder sync task started.\" --header \"User-Token: ${USER_TOKEN:0:3}xxx\" \"${UPDATE_URL}\"
+STATUS_UPDATE=$(curl -s -w "%{http_code}" -X PUT --header "Status: In Progress" --header "task-started-at: $CURRENT_TIME" --header "Task-Message: Public S3 Folder sync task started." --header "User-Token: ${USER_TOKEN}" "${UPDATE_URL}")
+RETURN=$?
+HTTP_RESPONSE=${STATUS_UPDATE: -3}
+echo "$CURRENT_TIME: Revision task status update is ended. Exit code: $RETURN HTTP response code: $HTTP_RESPONSE"
+
+if [[ "$HTTP_RESPONSE" == "200" || "$HTTP_RESPONSE" == "201" ]];
+then
+echo "${UPDATE_URL} is used to update revision S3 sync status to 'In Progress'"
+else
+echo "${UPDATE_URL} : Failed to update revision S3 sync status to 'In Progress'"
+exit $RETURN
+fi
+
+echo "----------------------------"
+echo "CREATE PUBLIC  on S3 Storage"
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$CURRENT_TIME: Syncing Study files to  S3 storage folder started."
+
+
+echo "SYNC S3 Storage FROM PRIVATE FTP FOLDER"
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "aws --endpoint-url '$OBJECT_STORAGE_URL' s3 sync '$STUDY_PRIVATE_FTP_PATH/' 's3://${OBJECT_STORAGE_BUCKET_NAME}/${OBJECT_STORAGE_SUBFOLDER}/FILES' --exclude='.*' --exclude '[asi]_*.txt' --exclude 'm_*.tsv' --no-follow-symlinks"
+aws --endpoint-url "$OBJECT_STORAGE_URL" s3 sync "$STUDY_PRIVATE_FTP_PATH/" "s3://${OBJECT_STORAGE_BUCKET_NAME}/${OBJECT_STORAGE_SUBFOLDER}/FILES" --exclude='.*' --exclude '[asi]_*.txt' --exclude 'm_*.tsv' --no-follow-symlinks
+DATA_RETURN=$?
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$CURRENT_TIME: ENDPOINT CALL sync exit code: $DATA_RETURN"
+if [ $DATA_RETURN -eq 0 ];
+then
+echo "----------------------------"
+#echo "sync from ${STUDY_METADATA_PATH}/ to ${OBJECT_STORAGE_BUCKET_NAME}/${OBJECT_STORAGE_SUBFOLDER}"
+echo "aws --endpoint-url '$OBJECT_STORAGE_URL' s3 sync '$STUDY_METADATA_PATH/' 's3://${OBJECT_STORAGE_BUCKET_NAME}/${OBJECT_STORAGE_SUBFOLDER}/FILES' --exclude='.*' --exclude 'FILES/*' --exclude 'AUDIT_FILES/*' --exclude 'INTERNAL_FILES/*' --delete"
+aws --endpoint-url "$OBJECT_STORAGE_URL" s3 sync "$STUDY_METADATA_PATH/" "s3://${OBJECT_STORAGE_BUCKET_NAME}/${OBJECT_STORAGE_SUBFOLDER}" --exclude='.*' --exclude 'FILES/*' --exclude 'AUDIT_FILES/*' --exclude 'INTERNAL_FILES/*' --no-follow-symlinks --delete
+
+METADATA_RETURN=$?
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$CURRENT_TIME: ENDPOINT CALL sync exit code: $METADATA_RETURN"
+fi
+
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$CURRENT_TIME: REVISION STATUS UPDATE_URL: ${UPDATE_URL}"
+
+if [ $((DATA_RETURN + METADATA_RETURN)) -eq 0 ];
+then
+echo "S3 SYNC task completed successfully."
+
+
+echo  curl -X PUT --header \"Status: Completed\" --header \"task-completed-at: ${CURRENT_TIME}\" --header \"Task-Message: Public FTP Folder sync task completed.\" --header \"User-Token: ${USER_TOKEN:0:3}xxx\" \"${UPDATE_URL}\"
+STATUS_UPDATE=$(curl -s -w "%{http_code}" -X PUT --header "Status: Completed" --header "task-completed-at: ${CURRENT_TIME}" --header "Task-Message: Public FTP Folder sync task completed." --header "User-Token: ${USER_TOKEN}" "${UPDATE_URL}")
+RETURN_COMPLETED=$?
+HTTP_RESPONSE=${STATUS_UPDATE: -3}
+echo "$CURRENT_TIME: Revision update endpoint exit code: $RETURN_COMPLETED"
+
+if [[ "$HTTP_RESPONSE" == "200" || "$HTTP_RESPONSE" == "201" ]];
+then
+echo "${UPDATE_URL}-  Revision status updated to 'Completed'"
+else
+echo "${UPDATE_URL}- Failed to update revision status to 'Completed'."
+exit 1
+fi
+
+exit 0
+else
+echo "S3 SYNC failed."
+echo  curl -X PUT --header \"Status: Failed\" --header \"task-completed-at: ${CURRENT_TIME}\" --header \"Task-Message: Public FTP Folder sync task failed.\" --header \"User-Token: ${USER_TOKEN:0:3}xxx\" \"${UPDATE_URL}\"
+STATUS_UPDATE=$(curl -s -w "%{http_code}" -X PUT --header "Status: Failed" --header "task-completed-at: ${CURRENT_TIME}" --header "Task-Message: S3 Folder Sync Task Failed." --header "User-Token: ${USER_TOKEN}" "${UPDATE_URL}")
+RETURN_FAILED=$?
+HTTP_RESPONSE=${STATUS_UPDATE: -3}
+echo "$CURRENT_TIME: Revision update endpoint call: exit code: $RETURN_FAILED"
+if [[ "$HTTP_RESPONSE" == "200" || "$HTTP_RESPONSE" == "201" ]];
+then
+echo "${UPDATE_URL}- Updated revision status: Failed."
+else
+echo "${UPDATE_URL}- Failed to update revision status to 'Failed'."
+fi
+
+exit 1
+fi

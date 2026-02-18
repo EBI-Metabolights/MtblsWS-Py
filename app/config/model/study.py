@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -69,3 +71,11 @@ class StudySettings(BaseModel):
     missing_files_name: str = "missing_files.txt"
     max_validation_messages_count_in_response: int = 50
     metabolights_website_link: str = "https://www.ebi.ac.uk/metabolights"
+    public_study_storage_type: Literal["nfs", "object-storage"] = "object-storage"
+    ## Object storage related settings:
+    public_study_object_storage_url: None | str = None
+    public_study_object_storage_bucket_name: None | str = None
+    public_study_object_storage_subfolder: None | str = None
+    public_study_object_storage_access_key_id: None | str = None
+    public_study_object_storage_secret_access_key: None | str = None
+    public_study_object_storage_region: None | str = None
