@@ -8,10 +8,10 @@ class MetaspaceConnection(BaseModel):
 
 
 class MetaspaceConfiguration(BaseModel):
-    metaspace_database: str
-    metaspace_fdr: str
+    metaspace_database: str = "HMDB-v4"
+    metaspace_fdr: str = "0.1"
 
 
 class MetaspaceSettings(BaseModel):
     connection: MetaspaceConnection
-    configuration: MetaspaceConfiguration
+    configuration: MetaspaceConfiguration = MetaspaceConfiguration()

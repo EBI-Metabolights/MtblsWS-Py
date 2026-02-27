@@ -16,11 +16,6 @@ class EmailServiceConfiguration(BaseModel):
     technical_issue_recipient_email_address: str
     hpc_cluster_job_track_email_address: str
 
-
-class EmailTemplateConfiguration(BaseModel):
-    ftp_upload_help_doc_url: str
-
-
 class EmailServiceSettings(BaseModel):
     connection: EmailServiceConnection
     configuration: EmailServiceConfiguration
@@ -28,4 +23,3 @@ class EmailServiceSettings(BaseModel):
 
 class EmailSettings(BaseModel):
     email_service: EmailServiceSettings
-    template_email_configuration: EmailTemplateConfiguration

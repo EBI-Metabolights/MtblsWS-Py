@@ -34,14 +34,13 @@ class ServerService(BaseModel):
     mtbls_ws_host: str
     resources_path: str
     cors_hosts: str = "*"
-    allowed_host_domains: List[str] = [r"https://.+\.ebi\.ac\.uk"]
-    cors_resources_path: str
-    api_doc: str
+    allowed_host_domains: List[str] = [r".+"]
+    cors_resources_path: str = "/*"
+    api_doc: str = "/api/spec"
     maintenance_mode: bool = False
-    config_file_check_period_in_seconds: int = 60
     banner_check_period_in_seconds: int = 60
-    enabled_endpoints_under_maintenance: List[EndpointDescription]
-    disabled_endpoints: List[EndpointDescription]
+    enabled_endpoints_under_maintenance: List[EndpointDescription] = []
+    disabled_endpoints: List[EndpointDescription] = []
 
 
 class ServerDescription(BaseModel):
@@ -65,5 +64,5 @@ class LogSettings(BaseModel):
 class ServerSettings(BaseModel):
     service: ServerService
     description: ServerDescription = ServerDescription()
-    log: LogSettings
-    temp_directory_path: str
+    log: LogSettings = LogSettings()
+    temp_directory_path: str = "/tmp"

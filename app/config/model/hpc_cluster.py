@@ -72,5 +72,5 @@ class HpcComputeSettings(HpcClusterDefaultSettings):
 class HpcClusterSettings(BaseModel):
     datamover: HpcDataMoverSettings
     compute: HpcComputeSettings
-    ssh_command: str = "ssh"
-    configuration: HpcClusterConfiguration
+    ssh_command: str = "/usr/bin/ssh"
+    configuration: HpcClusterConfiguration = HpcClusterConfiguration()

@@ -47,7 +47,6 @@ from app.ws.chebi.wsproxy import get_chebi_ws_proxy
 from app.ws.chebi_workflow import ChEBIPipeLine, ChEBIPipeLineLoad, SplitMaf
 from app.ws.chebi_ws import (
     ChebiEntity,
-    ChebiImageProxy,
     ChebiLiteEntity,
     ChebiOntologyChildren,
 )
@@ -702,7 +701,3 @@ def initialize_app(flask_app):
     api.add_resource(IntegrationCheck, res_path + "/ebi-internal/integration-check")
 
     api.add_resource(DataFolders, res_path + "/ebi-internal/data-folders")
-
-    api.add_resource(
-        ChebiImageProxy, res_path + "/proxy/images/chebi/<chebiIdentifier>"
-    )
