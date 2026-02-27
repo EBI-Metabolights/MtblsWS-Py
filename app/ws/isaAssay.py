@@ -477,7 +477,11 @@ class AssayFile(Resource):
                 new_assay_input.selected_measurement_type or "",
                 version_settings.default_measurement_type,
             ).ontology_term
-
+            sample_file_mappings=  new_assay_input.sample_file_mappings
+            if sample_file_mappings:
+                row_creation_stragegy = "use-sample-file-mappings"
+            else:
+                row_creation_stragegy= "use-sample-file"
             success, assay_file_name, maf_filename = add_new_assay_sheet(
                 study_id,
                 selected_assay_type,
@@ -487,7 +491,8 @@ class AssayFile(Resource):
                 column_default_values,
                 template_version=study.template_version,
                 additional_assay_comments=additional_assay_comments,
-                populate_rows_from_samples=True,
+                row_creation_stragegy=row_creation_stragegy,
+                sample_file_mappings=sample_file_mappings
             )
             if success:
                 return {
