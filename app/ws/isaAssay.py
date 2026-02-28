@@ -281,10 +281,12 @@ class StudyAssayDelete(Resource):
             save_assays_copy=save_audit_copy,
             save_samples_copy=save_audit_copy,
         )
+        assay_files = []
         try:
-            remove_file(
+            removed, message = remove_file(
                 study_location, a_file, always_remove=True, is_curator=is_curator
             )  # We have to remove active metadata files
+            assay_files.append(a_file)
             if maf_name is not None:
                 remove_file(
                     study_location, maf_name, always_remove=True, is_curator=is_curator
@@ -293,8 +295,27 @@ class StudyAssayDelete(Resource):
             logger.error(
                 "Failed to remove assay file " + a_file + " from study " + study_id
             )
-
-        return {"success": "The assay was removed from study " + study_id}
+        if assay_files:
+            isa_study, isa_inv, _ = iac.get_isa_study(
+                study_id=study_id,
+                skip_load_tables=True,
+                study_location=study_location,
+            )
+            assays = {x.filename: x for x in isa_study.assays}
+            removed_assays = []
+            for name in assay_files:
+                if name in assays:
+                    isa_study.assays.remove(assays[name])
+                    removed_assays.append(name)
+            logger.info(
+                "Assay file references are removed from investigation file:",
+                removed_assays,
+            )
+            return {"success": f"The assay was removed from study {study_id} {a_file}"}
+        else:
+            return {
+                "error": f"Failed to remove assay file from study {study_id} {a_file}"
+            }
 
 
 class AssayFile(Resource):
@@ -477,11 +498,11 @@ class AssayFile(Resource):
                 new_assay_input.selected_measurement_type or "",
                 version_settings.default_measurement_type,
             ).ontology_term
-            sample_file_mappings=  new_assay_input.sample_file_mappings
+            sample_file_mappings = new_assay_input.sample_file_mappings
             if sample_file_mappings:
                 row_creation_stragegy = "use-sample-file-mappings"
             else:
-                row_creation_stragegy= "use-sample-file"
+                row_creation_stragegy = "use-sample-file"
             success, assay_file_name, maf_filename = add_new_assay_sheet(
                 study_id,
                 selected_assay_type,
@@ -492,7 +513,7 @@ class AssayFile(Resource):
                 template_version=study.template_version,
                 additional_assay_comments=additional_assay_comments,
                 row_creation_stragegy=row_creation_stragegy,
-                sample_file_mappings=sample_file_mappings
+                sample_file_mappings=sample_file_mappings,
             )
             if success:
                 return {

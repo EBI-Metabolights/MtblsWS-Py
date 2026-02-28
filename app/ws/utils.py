@@ -904,22 +904,27 @@ def remove_file(
     file_to_delete = os.path.join(file_location, file_name)
     # file_status == 'active' of a file is actively used as metadata
     file_type, file_status, folder = map_file_type(file_name, file_location)
-
+    active_file = True if file_status == "active" else False
     try:
-        if (
-            file_type == "metadata_investigation"
-            or file_type == "metadata_assay"
-            or file_type == "metadata_sample"
-            or file_type == "metadata_maf"
-        ):
-            if (
-                file_status == "active" and not always_remove
-            ):  # If active metadata and "remove anyway" flag if not set
-                return (
-                    False,
-                    file_name
-                    + " is referenced in metadata file. Referenced files can not be deleted.",
-                )
+        allow_to_delete = True
+        reason = ""
+        if file_type == "metadata_investigation" and active_file:
+            allow_to_delete = False
+            reason = "It is not allowed to delete active investigation file"
+        elif file_type == "metadata_sample" and active_file:
+            allow_to_delete = False
+            reason = "It is not allowed to delete active sample file"
+        elif file_type == "metadata_maf" and active_file:
+            allow_to_delete = False
+            reason = "It is not allowed to delete active MAF file"
+        elif file_type == "metadata_assay" and active_file and not always_remove:
+            allow_to_delete = False
+            reason = (
+                "Select force option to delete an assay file. "
+                "It is not allowed to delete active Assay file."
+            )
+        if not allow_to_delete:
+            return False, reason + " " + file_name
         if os.path.exists(file_to_delete):  # First, does the file/folder exist?
             dirname = os.path.dirname(file_to_delete)
             mode = os.stat(dirname).st_mode
