@@ -632,6 +632,8 @@ def create_file_from_template(
         return False
     if not sample_names:
         sample_names = []
+    if not sample_file_mappings:
+        sample_file_mappings = []
     header_row: list[str] = []
     default_row: list[str] = []
     try:
