@@ -145,9 +145,15 @@ class StudyRevisions(Resource):
 
         validated, _ = self.has_validated(study_id)
         if not validated:
+            message = (
+                "creating a revision"
+                if study.revision_number > 0
+                else "making a study public"
+            )
             raise MetabolightsException(
                 http_code=403,
-                message="Please re-run validation before creating a revision and fix if there is any error.",
+                message=f"Please re-run validation before {message}, "
+                "and fix if there is any error.",
             )
 
         revision: StudyRevisionModel = StudyRevisionService.increment_study_revision(
