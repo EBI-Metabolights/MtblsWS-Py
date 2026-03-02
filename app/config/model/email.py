@@ -16,6 +16,7 @@ class EmailServiceConfiguration(BaseModel):
     technical_issue_recipient_email_address: str
     hpc_cluster_job_track_email_address: str
 
+
 class EmailServiceSettings(BaseModel):
     connection: EmailServiceConnection
     configuration: EmailServiceConfiguration

@@ -24,7 +24,7 @@ import pathlib
 import re
 import shutil
 import time
-from typing import Any, Dict, OrderedDict
+from typing import Dict, OrderedDict
 
 from flask import request
 from flask.json import jsonify
@@ -78,7 +78,6 @@ from app.ws.utils import (
     delete_remote_file,
     get_assay_file_list,
     log_request,
-    map_file_type,
     remove_file,
 )
 
@@ -199,7 +198,7 @@ class StudyFiles(Resource):
         elif val.startswith("i_"):
             return 5
         return 10
-            
+
     @swagger.operation(
         summary="Delete files from a given folder",
         nickname="Delete files",

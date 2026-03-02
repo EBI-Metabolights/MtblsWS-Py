@@ -110,9 +110,11 @@ class AssayFieldDefaultValue(CamelCaseBaseModel):
     field_format: Annotated[str, Field()]
     default_value: Annotated[DefaultValue, Field()]
 
+
 class SampleFileMapping(CamelCaseBaseModel):
     sample_name: str
     files: dict[str, list[str]]
+
 
 class AssayCreationRequest(CamelCaseBaseModel):
     selected_assay_file_template: str
