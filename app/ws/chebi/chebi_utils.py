@@ -13,7 +13,7 @@ def chebi_search_v2(search_term=""):
     chebi_es_search = f"{chebi_ws2_url}/public/es_search/?"
     try:
         log(f"-- Querying ChEBI web services v2 with term {search_term}")
-        url = f"{chebi_es_search}term={search_term}&page=1&size=15"
+        url = f"{chebi_es_search}term={search_term}&page=1&size=1"
         resp = requests.get(url, timeout=10)
         if resp.status_code == 200:
             json_resp = resp.json()

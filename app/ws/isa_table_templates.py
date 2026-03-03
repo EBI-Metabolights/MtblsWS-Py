@@ -2,7 +2,7 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Any, Literal, OrderedDict
+from typing import Any, Literal, Optional, OrderedDict
 
 import httpx
 import pandas as pd
@@ -13,7 +13,11 @@ from app.config import get_settings
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.isa_table_models import NumericValue, OntologyValue
-from app.ws.study_templates.models import InvestigationFileTemplate
+from app.ws.study_creation_model import SampleFileMapping
+from app.ws.study_templates.models import (
+    InvestigationFileTemplate,
+    OntologyTerm,
+)
 from app.ws.utils import (
     get_legacy_assay_mapping,
     get_maf_name_from_assay_name,
@@ -22,43 +26,6 @@ from app.ws.utils import (
 
 logger = logging.getLogger(__name__)
 iac = IsaApiClient()
-
-
-MEASURMENT_TYPE_ONTOLOGY_TERMS = {
-    "metabolite profiling": (
-        "metabolite profiling assay",
-        "OBI",
-        "http://purl.obolibrary.org/obo/OBI_0000366",
-    ),
-    "targeted metabolite profiling": (
-        "targeted metabolite profiling",
-        "MSIO",
-        "http://purl.obolibrary.org/obo/MSIO_0000100",
-    ),
-    "untargeted metabolite profiling": (
-        "untargeted metabolite profiling",
-        "MSIO",
-        "http://purl.obolibrary.org/obo/MSIO_0000101",
-    ),
-}
-ASSAY_TYPE_ONTOLOGY_TERMS = {
-    "LC-MS": (
-        "metabolite profiling assay",
-        "OBI",
-        "http://purl.obolibrary.org/obo/OBI_0000366",
-    ),
-    "targeted metabolite profiling": (
-        "targeted metabolite profiling",
-        "MSIO",
-        "http://purl.obolibrary.org/obo/MSIO_0000100",
-    ),
-    "untargeted metabolite profiling": (
-        "untargeted metabolite profiling",
-        "MSIO",
-        "http://purl.obolibrary.org/obo/MSIO_0000101",
-    ),
-}
-DEFAULT_MEASUREMENT_TYPE = "metabolite profiling"
 
 TECHNOLOGY_TYPE_ONTOLOGY_TERMS = {
     "MS": (
@@ -246,32 +213,23 @@ def add_new_assay_sheet(
     assay_type: str,
     polarity,
     column_type,
+    measurement_type: OntologyTerm,
     default_column_values: None | dict[str, str | OntologyValue | NumericValue] = None,
     assay_file_name: None | str = None,
     maf_file_name: None | str = None,
     template_version: None | str = None,
-    measurment_type_name: Literal[
-        "metabolite profiling",
-        "untargeted metabolite profiling",
-        "targeted metabolite profiling",
-    ] = "metabolite profiling",
+    additional_assay_comments: Optional[dict[str, str]] = None,
+    row_creation_stragegy: Literal[
+        "use-sample-file", "use-sample-file-mappings"
+    ] = "use-sample-file",
+    sample_file_mappings: None | list[SampleFileMapping] = None,
 ):
     study_settings = get_study_settings()
     study_metadata_location = os.path.join(
         study_settings.mounted_paths.study_metadata_files_root_path, study_id
     )
-    measurement_type_label = (
-        measurment_type_name.lower().replace("assay", "").strip().replace(" ", "_")
-    )
     file_name = "_".join(
-        [
-            "a",
-            study_id.upper(),
-            assay_type,
-            polarity,
-            column_type or "",
-            measurement_type_label or "",
-        ]
+        ["a", study_id.upper(), assay_type, polarity, column_type or ""]
     )
     if not assay_file_name:
         assay_file_name = get_valid_assay_file_name(file_name, study_metadata_location)
@@ -287,6 +245,25 @@ def add_new_assay_sheet(
 
     default_column_values["Metabolite Assignment File"] = maf_file_name
 
+    sample_names = []
+    if row_creation_stragegy == "use-sample-file":
+        sample_df = None
+        sample_file_path = os.path.join(
+            study_metadata_location, isa_study.filename or f"s_{study_id}.txt"
+        )
+        try:
+            sample_df = read_tsv(sample_file_path)
+            if "Sample Name" in sample_df.columns:
+                unique_sample_names = {
+                    x.strip() for x in list(sample_df["Sample Name"]) if x and x.strip()
+                }
+                sample_names = [
+                    x.strip()
+                    for x in list(sample_df["Sample Name"])
+                    if x and x.strip() in unique_sample_names
+                ]
+        except FileNotFoundError:
+            logger.warning("sample file not loaded")
     success, technology_platform = create_assay_sheet(
         study_path=study_metadata_location,
         assay_file_name=assay_file_name,
@@ -295,6 +272,8 @@ def add_new_assay_sheet(
         column_type=column_type or "",
         default_column_values=default_column_values or {},
         template_version=template_version,
+        sample_names=sample_names,
+        sample_file_mappings=sample_file_mappings,
     )
     if not success:
         return False, None, None
@@ -304,8 +283,10 @@ def add_new_assay_sheet(
         maf_file_name=maf_file_name,
         main_technology_type=main_technology_type,
         template_version=template_version,
+        sample_names=sample_names,
     )
-
+    # template_settings = get_template_settings()
+    # version_settings = template_settings.versions.get(template_version)
     ontology_source_references = get_ontology_source_references()
 
     term, term_source, term_accession = TECHNOLOGY_TYPE_ONTOLOGY_TERMS.get(
@@ -318,31 +299,21 @@ def add_new_assay_sheet(
         ),
         term_accession=term_accession,
     )
-
-    if not measurment_type_name:
-        measurment_type_name = DEFAULT_MEASUREMENT_TYPE
-    term, term_source, term_accession = MEASURMENT_TYPE_ONTOLOGY_TERMS.get(
-        measurment_type_name
-    )
-    measurement_type = model.OntologyAnnotation(
-        term=term,
+    measurement_type_ontology = model.OntologyAnnotation(
+        term=measurement_type.term,
         term_source=update_ontology_sources(
-            isa_inv, ontology_source_references, term_source
+            isa_inv, ontology_source_references, measurement_type.term_source_ref
         ),
-        term_accession=term_accession,
+        term_accession=measurement_type.term_accession_number,
     )
     assay = model.Assay(
         filename=assay_file_name,
         technology_platform=technology_platform,
         technology_type=technology_type,
-        measurement_type=measurement_type,
-        comments=[
-            model.Comment(name="Assay Type Label", value=assay_type),
-            model.Comment(name="Assay Type", value=assay_type),
-            model.Comment(name="Assay Type Term Accession Number", value=""),
-            model.Comment(name="Assay Type Term Source REF", value=""),
-        ],
+        measurement_type=measurement_type_ontology,
     )
+    if additional_assay_comments:
+        assay.comments.extend(additional_assay_comments)
 
     assays: list[model.Assay] = isa_study.assays
     assays.append(assay)
@@ -404,12 +375,17 @@ def create_assay_sheet(
     default_column_values: None | dict[str, str | OntologyValue | NumericValue] = None,
     template_version: None | str = None,
     override_current: bool = False,
+    sample_names: None | list[str] = None,
+    sample_file_mappings: None | list[SampleFileMapping] = None,
 ) -> str:
+    if not sample_names:
+        sample_names = []
+    if not default_column_values:
+        default_column_values = {}
     assay_file_path = os.path.join(study_path, assay_file_name)
     override_file = True
     if not override_current:
         override_file = is_empty_isa_table_sheet(assay_file_path)
-
     if override_file:
         assay_template = get_assay_template(
             assay_type=assay_type, template_version=template_version
@@ -425,7 +401,13 @@ def create_assay_sheet(
                 header["defaultValue"] = default_column_values[
                     header.get("columnHeader")
                 ]
-        create_file_from_template(assay_file_path, assay_template)
+        create_file_from_template(
+            assay_file_path,
+            assay_template,
+            sample_names=sample_names,
+            sample_file_mappings=sample_file_mappings,
+            add_samples="as_row",
+        )
 
         return True, technology_platform
 
@@ -451,7 +433,9 @@ def create_maf_sheet(
         override_maf = is_empty_isa_table_sheet(maf_file_path)
 
     if override_maf:
-        create_file_from_template(maf_file_path, maf_template, sample_names)
+        create_file_from_template(
+            maf_file_path, maf_template, sample_names or [], add_samples="as_column"
+        )
         logger.info("%s maf file is created.", maf_file_name)
         return True
     else:
@@ -641,26 +625,83 @@ def create_file_from_template(
     sample_file_fullpath: str,
     template: dict[str, Any],
     sample_names: None | list[str] = None,
+    add_samples: Literal["as_row", "as_column"] = "as_row",
+    sample_file_mappings: None | list[SampleFileMapping] = None,
 ):
     if not template:
         return False
+    if not sample_names:
+        sample_names = []
+    if not sample_file_mappings:
+        sample_file_mappings = []
     header_row: list[str] = []
-    initial_row: list[str] = []
+    default_row: list[str] = []
     try:
+        max_file_columns: dict[str, int] = {}
+        for mapping in sample_file_mappings:
+            for column_name, files in mapping.files.items():
+                if column_name not in max_file_columns:
+                    max_file_columns[column_name] = 1
+                max_file_columns[column_name] = max(
+                    max_file_columns[column_name], len(files)
+                )
+        column_header_indices: dict[str, list[int]] = {}
+        column_idx = 0
         for header in template.get("headers", []):
             default_value = header.get("defaultValue", None) or ""
             column_structure = header.get("columnStructure", "")
             header_name = header.get("columnHeader", "") or ""
+            if header_name not in column_header_indices:
+                column_header_indices[header_name] = []
+            if column_structure == "SINGLE_COLUMN_AND_UNIT_ONTOLOGY":
+                reserved_column_count = 4
+            elif column_structure == "ONTOLOGY_COLUMN":
+                reserved_column_count = 3
+            else:
+                reserved_column_count = 1
+
+            repeat_count = max_file_columns.get(header_name, 1)
+
             add_new_columns(
-                header_row, initial_row, header_name, column_structure, default_value
+                header_row,
+                default_row,
+                header_name,
+                column_structure,
+                default_value,
+                repeat_count,
             )
-        if sample_names:
+            for r in range(repeat_count):
+                column_header_indices[header_name].append(
+                    reserved_column_count * r + column_idx
+                )
+            column_idx += reserved_column_count * repeat_count
+
+        if add_samples == "as_column":
             for sample_name in sample_names:
                 header_row.append(sample_name)
-                initial_row.append("")
+                default_row.append("")
+
         with Path(sample_file_fullpath).open("w") as f:
             f.write("\t".join(header_row) + "\n")
-            f.write("\t".join(initial_row) + "\n")
+            if add_samples == "as_row":
+                if sample_file_mappings:
+                    for mapping in sample_file_mappings:
+                        row = default_row.copy()
+                        row[0] = mapping.sample_name
+                        for column_name, files in mapping.files.items():
+                            indices = column_header_indices.get(column_name)
+                            for index, file in zip(indices, files):
+                                row[index] = file
+                        f.write("\t".join(row) + "\n")
+                elif sample_names:
+                    for sample_name in sample_names:
+                        row = default_row.copy()
+                        row[0] = sample_name
+                        f.write("\t".join(row) + "\n")
+                else:
+                    f.write("\t".join(default_row) + "\n")
+            else:
+                f.write("\t".join(default_row) + "\n")
 
         return True
     except Exception as ex:
@@ -674,64 +715,66 @@ def add_new_columns(
     header_name: str,
     column_structure: str,
     default_value: str | OntologyValue | NumericValue,
+    repeat_count: int = 1,
 ):
-    header_row.append(header_name or "")
-    if isinstance(default_value, NumericValue):
-        term = default_value.unit.term
-        term_source = default_value.unit.term_source_ref
-        term_accession = default_value.unit.term_accession_number
-        value = default_value.value
-        if column_structure == "SINGLE_COLUMN_AND_UNIT_ONTOLOGY":
-            header_row.append("Unit")
-            header_row.append("Term Source REF")
-            header_row.append("Term Accession Number")
-            initial_row.append(value)
-            initial_row.append(term)
-            initial_row.append(term_source)
-            initial_row.append(term_accession)
-        elif column_structure == "ONTOLOGY_COLUMN":
-            header_row.append("Term Source REF")
-            header_row.append("Term Accession Number")
-            initial_row.append(value)
-            initial_row.append("")
-            initial_row.append("")
-        elif column_structure == "SINGLE_COLUMN":
-            initial_row.append(value)
-    elif isinstance(default_value, OntologyValue):
-        term = default_value.term
-        term_source = default_value.term_source_ref
-        term_accession = default_value.term_accession_number
-        if column_structure == "SINGLE_COLUMN_AND_UNIT_ONTOLOGY":
-            header_row.append("Unit")
-            header_row.append("Term Source REF")
-            header_row.append("Term Accession Number")
-            initial_row.append(term)
-            initial_row.append("")
-            initial_row.append("")
-            initial_row.append("")
-        elif column_structure == "ONTOLOGY_COLUMN":
-            header_row.append("Term Source REF")
-            header_row.append("Term Accession Number")
-            initial_row.append(term)
-            initial_row.append(term_source)
-            initial_row.append(term_accession)
-        elif column_structure == "SINGLE_COLUMN":
-            initial_row.append(term)
-    else:
-        text = str(default_value)
-        if column_structure == "SINGLE_COLUMN_AND_UNIT_ONTOLOGY":
-            header_row.append("Unit")
-            header_row.append("Term Source REF")
-            header_row.append("Term Accession Number")
-            initial_row.append(text)
-            initial_row.append("")
-            initial_row.append("")
-            initial_row.append("")
-        elif column_structure == "ONTOLOGY_COLUMN":
-            header_row.append("Term Source REF")
-            header_row.append("Term Accession Number")
-            initial_row.append(text)
-            initial_row.append("")
-            initial_row.append("")
-        elif column_structure == "SINGLE_COLUMN":
-            initial_row.append(text)
+    for _ in range(repeat_count):
+        header_row.append(header_name or "")
+        if isinstance(default_value, NumericValue):
+            term = default_value.unit.term
+            term_source = default_value.unit.term_source_ref
+            term_accession = default_value.unit.term_accession_number
+            value = default_value.value
+            if column_structure == "SINGLE_COLUMN_AND_UNIT_ONTOLOGY":
+                header_row.append("Unit")
+                header_row.append("Term Source REF")
+                header_row.append("Term Accession Number")
+                initial_row.append(value)
+                initial_row.append(term)
+                initial_row.append(term_source)
+                initial_row.append(term_accession)
+            elif column_structure == "ONTOLOGY_COLUMN":
+                header_row.append("Term Source REF")
+                header_row.append("Term Accession Number")
+                initial_row.append(value)
+                initial_row.append("")
+                initial_row.append("")
+            elif column_structure == "SINGLE_COLUMN":
+                initial_row.append(value)
+        elif isinstance(default_value, OntologyValue):
+            term = default_value.term
+            term_source = default_value.term_source_ref
+            term_accession = default_value.term_accession_number
+            if column_structure == "SINGLE_COLUMN_AND_UNIT_ONTOLOGY":
+                header_row.append("Unit")
+                header_row.append("Term Source REF")
+                header_row.append("Term Accession Number")
+                initial_row.append(term)
+                initial_row.append("")
+                initial_row.append("")
+                initial_row.append("")
+            elif column_structure == "ONTOLOGY_COLUMN":
+                header_row.append("Term Source REF")
+                header_row.append("Term Accession Number")
+                initial_row.append(term)
+                initial_row.append(term_source)
+                initial_row.append(term_accession)
+            elif column_structure == "SINGLE_COLUMN":
+                initial_row.append(term)
+        else:
+            text = str(default_value)
+            if column_structure == "SINGLE_COLUMN_AND_UNIT_ONTOLOGY":
+                header_row.append("Unit")
+                header_row.append("Term Source REF")
+                header_row.append("Term Accession Number")
+                initial_row.append(text)
+                initial_row.append("")
+                initial_row.append("")
+                initial_row.append("")
+            elif column_structure == "ONTOLOGY_COLUMN":
+                header_row.append("Term Source REF")
+                header_row.append("Term Accession Number")
+                initial_row.append(text)
+                initial_row.append("")
+                initial_row.append("")
+            elif column_structure == "SINGLE_COLUMN":
+                initial_row.append(text)

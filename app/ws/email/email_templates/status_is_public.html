@@ -19,16 +19,24 @@
 
 Dear {{ submitter_fullname }},
 <br/><br/>
-We are happy to inform you that your MetaboLights study "{{ study_title }}" with identifier <b>{{ mtbls_accession }}</b> has been successfully made public.
+{% if mhd_accession -%}
+We are happy to inform you that your MetaboLights study "{{ study_title }}" with identifier <b> {{ mhd_accession }} ({{ mtbls_accession }})</b> has been successfully made public.
+{% else -%}
+We are happy to inform you that your MetaboLights study "{{ study_title }}" with identifier <b> {{ mtbls_accession }}</b> has been successfully made public.
+{% endif -%}
 <br/><br/>
 <b>SUBMISSION DETAILS</b><br/>
+{% if mhd_accession  -%}
+Accession number: <code>{{ mhd_accession }}</code><br/>
+{% else -%}
+Accession number: <code>{{ mtbls_accession }}</code><br/>
+{% endif -%}
+Study title: <code>{{ study_title }}</code><br/>
 Public release date: <code>{{ release_date }}</code><br/>
-MetaboLights study title: <code>{{ study_title }}</code><br/>
-MetaboLights accession: <code>{{ mtbls_accession }}</code><br/>
-MetaboLights study contacts: <code>{{ study_contacts }}</code><br/>
+Study contacts: <code>{{ study_contacts }}</code><br/>
 Publication DOI: <code>{{ publication_doi }}</code><br/>
 Publication PubMed ID: <code>{{ publication_pubmed_id }}</code><br/>
-MetaboLights study URL: <code> <a href="{{ mtbls_accession_url }}">{{ mtbls_accession_url }}</a></code><br/><br/>
+Study URL: <code> <a href="{{ mtbls_accession_url }}">{{ mtbls_accession_url }}</a></code><br/><br/>
 
 
 <i>Please note that once Public, it is essential that you notify us of publications where you cite your MetaboLights data or where other edits are required.</i>

@@ -19,10 +19,10 @@
 
 Dear {{ submitter_fullname }},<br/><br/>
 
-{% if provisional_id != mtbls_accession  -%}
-We are happy to inform you that your study "{{ study_title }}" with provisional ID {{ provisional_id }} has been successfully submitted to MetaboLights as <b>{{ mtbls_accession }}</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
+{% if mhd_accession -%}
+We are happy to inform you that your study "{{ study_title }}"{% if provisional_id -%} with provisional ID <b>{{ provisional_id }}</b> {% endif -%} has been successfully submitted to MetaboLights as <b>{{ mhd_accession}} ({{ mtbls_accession }})</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
 {% else -%}
-We are happy to inform you that your study "{{ study_title }}" has been successfully submitted to MetaboLights as <b>{{ mtbls_accession }}</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
+We are happy to inform you that your study "{{ study_title }}"{% if provisional_id -%} with provisional ID <b>{{ provisional_id }}</b> {% endif -%} has been successfully submitted to MetaboLights as <b>{{ mtbls_accession }}</b>. The data is currently private, and can only be accessed with your user credentials or with a private reviewer link.
 {% endif -%}
 <br/><br/>
 
@@ -33,9 +33,13 @@ The requested Study Public Release Date is <b>{{ release_date }}</b>. <br> <br>
 For immediate release simply change the status from Private to Public. If you do not extend the release date, the study will be released to the public on the date that was previously selected (<b>{{ release_date }}</b>). MetaboLights will also automatically release datasets to the public upon notification of the corresponding publication (automatically, via e.g. information sent by the journal or available in EuropePMC).<br> <br>
 
 <b>SUBMISSION DETAILS</b><br/>
-MetaboLights study title: <code>{{ study_title }}</code><br/>
-MetaboLights accession: <code>{{ mtbls_accession }}</code><br/>
-MetaboLights study contacts: <code>{{ study_contacts }}</code><br/>
+{% if mhd_accession  -%}
+Accession number: <code>{{ mhd_accession }}</code><br/>
+{% else -%}
+Accession number: <code>{{ mtbls_accession }}</code><br/>
+{% endif -%}
+Study title: <code>{{ study_title }}</code><br/>
+Study contacts: <code>{{ study_contacts }}</code><br/>
 Public release date: <code>{{ release_date }}</code><br/>
 
 <br/>
@@ -51,14 +55,22 @@ Remote folder : <code> {{ new_ftp_folder }}</code> {% if provisional_id != mtbls
 <b>CITATION</b><br/>
 Please add to your manuscript the following sentence (typically in the "Methods" section or just before/in the Acknowledgements): <br/><br/>
 <i>
+{% if mhd_accession -%}
+    "The metabolomics data have been deposited to MetaboLights[1] repository with the study identifier {{ mhd_accession }}".<br/>
+{% else -%}
     "The metabolomics data have been deposited to MetaboLights[1] repository with the study identifier {{ mtbls_accession }}".<br/>
+{% endif -%}
     </i><br/>
     MetaboLights reference:<br/>
     [1] Yurekten O, Payne T, Tejera N, Amaladoss FX, Martin C, Williams M, O'Donovan C. MetaboLights: open data repository for metabolomics.
     Nucleic Acids Res. 2024 Jan 5;52(D1):D640-D646. doi:<a href="https://doi.org/10.1093/nar/gkad1045">10.1093/nar/gkad1045</a>. PMID:37971328.<br/>
 
 <br/>
+{% if mhd_accession -%}
+We would recommend you to also include this information in a much abridged form into the abstract itself, e.g. "Data are available via MetaboLights with identifier {{ mhd_accession }}."
+{% else -%}
 We would recommend you to also include this information in a much abridged form into the abstract itself, e.g. "Data are available via MetaboLights with identifier {{ mtbls_accession }}."
+{% endif -%}
 <br/><br/>
 Thank you for choosing MetaboLights for the dissemination of your data. We look forward to receiving more of your data in the future.
 <br/><br/>

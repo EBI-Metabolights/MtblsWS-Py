@@ -164,6 +164,7 @@ class IsaInvestigation(Resource):
         revision_status = None
         revision_comment = None
         revision_task_message = None
+        revision_mhd_submission_status = None
         if study.revision_number > 0:
             revision: StudyRevisionModel = StudyRevisionService.get_study_revision(
                 study.acc, revision_number=study.revision_number
@@ -172,6 +173,7 @@ class IsaInvestigation(Resource):
                 revision_status = revision.status.value
                 revision_comment = revision.revision_comment or ""
                 revision_task_message = revision.task_message or ""
+                revision_mhd_submission_status = revision.mhd_share_status.value
         http_url = None
         ftp_url = None
         globus_url = None
@@ -210,6 +212,7 @@ class IsaInvestigation(Resource):
         response["mtblsStudy"]["revisionStatus"] = revision_status
         response["mtblsStudy"]["revisionComment"] = revision_comment
         response["mtblsStudy"]["revisionTaskMessage"] = revision_task_message
+        response["mtblsStudy"]["mhdSubmissionStatus"] = revision_mhd_submission_status
 
         response["mtblsStudy"]["studyHttpUrl"] = http_url
         response["mtblsStudy"]["studyFtpUrl"] = ftp_url
@@ -233,6 +236,9 @@ class IsaInvestigation(Resource):
         response["mtblsStudy"]["datasetLicense"] = license
         response["mtblsStudy"]["datasetLicenseUrl"] = dataset_license_url
         response["mtblsStudy"]["templateVersion"] = study.template_version or ""
+        response["mtblsStudy"]["mhdSubmissionStatus"] = (
+            revision_mhd_submission_status or ""
+        )
         response["mtblsStudy"]["studyPermission"] = result.permission.model_dump(
             by_alias=True
         )

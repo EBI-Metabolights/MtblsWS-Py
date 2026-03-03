@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -55,7 +57,7 @@ class StudySettings(BaseModel):
     data_files_maintenance_file_name: str = "data_files_summary.txt"
 
     files_list_json_file_name: str = "files-all.json"
-    files_list_json_file_creation_timeout: int = 900
+    files_list_json_file_creation_timeout: int = 90
 
     investigation_file_name: str = "i_Investigation.txt"
     internal_logs_folder_name: str = "logs"
@@ -63,9 +65,12 @@ class StudySettings(BaseModel):
     internal_backup_folder_name: str = "internal-backup"
 
     validation_report_file_name: str = "validation_report.json"
-    validation_files_json_name: str = "validation_files.json"
-    validation_files_limit: int = 10000
-    validation_script: str = "/nfs/www-prod/web_hx2/cm/metabolights/scripts/cluster_scripts/val/validation.sh"
-    missing_files_name: str = "missing_files.txt"
-    max_validation_messages_count_in_response: int = 50
     metabolights_website_link: str = "https://www.ebi.ac.uk/metabolights"
+    public_study_storage_type: Literal["nfs", "object-storage"] = "nfs"
+    ## Object storage related settings:
+    public_study_object_storage_url: None | str = None
+    public_study_object_storage_bucket_name: None | str = None
+    public_study_object_storage_subfolder: None | str = None
+    public_study_object_storage_access_key_id: None | str = None
+    public_study_object_storage_secret_access_key: None | str = None
+    public_study_object_storage_region: None | str = None

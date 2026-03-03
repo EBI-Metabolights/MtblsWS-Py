@@ -17,4 +17,4 @@ class ElasticsearchConfiguration(BaseModel):
 
 class ElasticsearchSettings(BaseModel):
     connection: ElasticsearchConnection
-    configuration: ElasticsearchConfiguration
+    configuration: ElasticsearchConfiguration = ElasticsearchConfiguration()

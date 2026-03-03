@@ -106,6 +106,11 @@ class UserService(object):
 
                 query = db_session.query(Study)
                 study: Study = query.filter(*filters).first()
+
+                if study:
+                    permission_context.study_category = StudyCategory(
+                        study.study_category
+                    )
                 if study and obfuscation_code in {study.obfuscationcode, None}:
                     permission_context.obfuscation_code = study.obfuscationcode
                     permission_context.study_id = study.acc
@@ -115,9 +120,6 @@ class UserService(object):
                     )
                     permission_context.mhd_accession = study.mhd_accession
                     permission_context.mhd_model_version = study.mhd_model_version
-                    permission_context.study_category = StudyCategory(
-                        study.study_category
-                    )
                     permission_context.sample_template = study.sample_type
                     permission_context.template_version = study.template_version
 
@@ -599,9 +601,6 @@ class UserService(object):
             user_token, [UserRole.ROLE_SUBMITTER.value, UserRole.ROLE_SUPER_USER.value]
         )
 
-    def validate_user_has_submitter_role(self, user_token):
-        return self.validate_user_by_token(user_token, [UserRole.ROLE_SUBMITTER.value])
-
     def validate_user_by_username(
         self, user_name, allowed_role_list, allowed_status_list=None
     ):
@@ -659,10 +658,10 @@ class UserService(object):
             )
 
         if db_user:
-            if int(db_user[3]) not in allowed_status_list:
+            if int(db_user.status) not in allowed_status_list:
                 raise MetabolightsAuthorizationException(message="Invalid user status")
 
-            if db_user[2] not in allowed_role_list:
+            if db_user.role not in allowed_role_list:
                 raise MetabolightsAuthorizationException(message="Invalid user role")
             return db_user
         else:

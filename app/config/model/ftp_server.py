@@ -17,7 +17,7 @@ class PrivateFtpServerConfiguration(BaseModel):
 
 class PrivateFtpServerSettings(BaseModel):
     connection: FtpServerConnection
-    configuration: PrivateFtpServerConfiguration
+    configuration: PrivateFtpServerConfiguration = PrivateFtpServerConfiguration()
 
 
 class PublicFtpServerConfiguration(BaseModel):
@@ -34,7 +34,7 @@ class PublicFtpServerConfiguration(BaseModel):
 
 
 class PublicFtpServerSettings(BaseModel):
-    configuration: PublicFtpServerConfiguration
+    configuration: PublicFtpServerConfiguration = PublicFtpServerConfiguration()
 
 
 class FtpServerSettings(BaseModel):

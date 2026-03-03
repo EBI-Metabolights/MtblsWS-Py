@@ -18,15 +18,17 @@
 
 
 import glob
+import json
 import logging
 import os
 import re
 from datetime import datetime
-from typing import Union
+from typing import OrderedDict, Union
 
 from flask import jsonify, make_response, request, send_file
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
+from isatools import model as isa_model
 
 from app.config import get_settings
 from app.services.external.eb_eye_search import EbEyeSearchService
@@ -77,6 +79,7 @@ from app.ws.auth.permissions import (
     validate_data_files_upload,
     validate_study_index_delete,
     validate_study_index_update,
+    validate_submission_delete,
     validate_submission_update,
     validate_submission_view,
     validate_user_has_curator_role,
@@ -96,6 +99,7 @@ from app.ws.db_connection import (
     create_empty_study,
     get_all_private_studies_for_user,
     get_all_studies_for_user,
+    get_connection,
     get_id_list_by_req_id,
     get_public_studies_with_methods,
     query_study_submitters,
@@ -109,7 +113,19 @@ from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.study.utils import get_study_metadata_path
-from app.ws.utils import log_request
+from app.ws.study_creation_model import (
+    OntologyTerm,
+    RelatedDataset,
+    StudyCreationRequest,
+    TermSource,
+)
+from app.ws.study_templates.models import (
+    ActiveStudyCategory,
+    StudyCategoryStr,
+    TemplateSettings,
+)
+from app.ws.study_templates.utils import get_template_settings
+from app.ws.utils import add_ontology_to_investigation, log_request, read_tsv, write_tsv
 
 logger = logging.getLogger("wslog")
 wsc = WsClient()
@@ -856,6 +872,885 @@ class PublicStudyDetail(Resource):
         return result
 
 
+class ProvisionalStudies(Resource):
+    @swagger.operation(
+        summary="Create a new provisional study",
+        notes="""Create a provisional new study, with upload folder</br>
+        Please note that this includes an empty sample file, which will require at least
+        one additional data row to be ISA-Tab compliant""",
+        parameters=[
+            {
+                "name": "user-token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            },
+            {
+                "name": "study_input_information",
+                "description": "Input information for the new study in JSON format",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False,
+            },
+        ],
+        responseMessages=[
+            {"code": 200, "message": "OK."},
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication.",
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token",
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
+    )
+    @metabolights_exception_handler
+    def post(self):
+        result = validate_user_has_submitter_or_super_user_role(request)
+        user_token = result.context.user_api_token
+        user_role = result.context.user_role
+        partner_user = result.context.partner_user
+        username = result.context.username
+        auth_manager = AuthenticationManager.get_instance()
+        studies = UserService.get_instance(auth_manager).get_user_studies(user_token)
+        provisional_studies = []
+        last_study_datetime = datetime.fromtimestamp(0)
+        for study in studies:
+            if study.status == StudyStatus.PROVISIONAL.value:
+                provisional_studies.append(study)
+            if study.submissiondate.timestamp() > last_study_datetime.timestamp():
+                last_study_datetime = study.submissiondate
+
+        settings = get_settings()
+        study_settings = settings.study
+        if not settings.flask.TESTING:
+            now = current_utc_time_without_timezone()
+            last_study_creation_delta = (now - last_study_datetime).total_seconds()
+            threshold_seconds = study_settings.min_study_creation_interval_in_mins * 60
+            if last_study_creation_delta < threshold_seconds:
+                logger.warning(
+                    f"New study creation request from user {username} in"
+                    f" {study_settings.min_study_creation_interval_in_mins} mins"
+                )
+                raise MetabolightsException(
+                    message="Submitter can create only one study in five minutes.",
+                    http_code=429,
+                )
+
+        if (
+            len(provisional_studies) >= study_settings.max_study_in_provisional_status
+            and user_role != UserRole.ROLE_SUPER_USER
+            and user_role != UserRole.SYSTEM_ADMIN
+            and not partner_user
+        ):
+            logger.warning(
+                f"New study creation request from user {username}. "
+                f"User has already {study_settings.max_study_in_provisional_status} study in Provisional status."
+            )
+            raise MetabolightsException(
+                message="The user can have at most two studies in Provisional status. "
+                "Please complete and update status of your current studies.",
+                http_code=400,
+            )
+
+        logger.info(
+            f"Step 1: New study creation request is received from user {username}"
+        )
+        new_study_input = None
+        settings = get_study_settings()
+        study_root_location = settings.mounted_paths.study_metadata_files_root_path
+        template_settings = get_template_settings()
+        try:
+            data_dict = json.loads(request.data.decode("utf-8"))
+            new_study_input = self.validate_study_input(template_settings, data_dict)
+            multiple_studies = len(new_study_input.selected_study_categories) > 1
+            study_titles = OrderedDict()
+            study_categories = OrderedDict()
+            default_template_version = template_settings.default_template_version
+            version_settings = template_settings.versions.get(
+                new_study_input.selected_template_version,
+            ) or template_settings.versions.get(default_template_version)
+            default_category = ActiveStudyCategory(order=1, visible=True)
+            categories = [x for x in new_study_input.selected_study_categories]
+            categories.sort(
+                key=lambda x: (
+                    version_settings.active_study_categories.get(
+                        x, default_category
+                    ).order
+                ),
+                reverse=True,
+            )
+            for category in categories:
+                category_definition = template_settings.study_categories.get(category)
+                study_title = new_study_input.title
+                if multiple_studies:
+                    study_title += f" ({category_definition.label})"
+                mhd_model_version = None
+                if category in version_settings.active_mhd_profiles:
+                    profile = version_settings.active_mhd_profiles.get(category)
+                    mhd_model_version = profile.default_version
+                licence_key = version_settings.default_dataset_license
+                licence = template_settings.dataset_licenses.get(licence_key)
+                study_id = self.create_provisional_study(
+                    user_token,
+                    username,
+                    new_study_input,
+                    study_category=category,
+                    study_title=study_title,
+                    mhd_model_version=mhd_model_version,
+                    dataset_license=licence.name or "",
+                    dataset_license_version=licence.version or "",
+                    data_policy_agreement=new_study_input.dataset_policy_agreement,
+                )
+                study_titles[study_id] = study_title
+                study_categories[study_id] = category
+
+            study_id_set = set(study_titles.keys())
+            for study_id, study_title in study_titles.items():
+                related_mtbls_study_ids = []
+                if multiple_studies:
+                    related_studies = study_id_set.copy()
+                    related_studies.discard(study_id)
+                    related_mtbls_study_ids = list(related_studies)
+                    related_mtbls_study_ids.sort()
+                category = study_categories.get(study_id)
+                self.update_initial_metadata_files(
+                    new_study_input,
+                    study_root_location,
+                    study_title,
+                    study_id,
+                    related_mtbls_study_ids,
+                    template_settings,
+                )
+            return {"studies": study_titles}
+        except Exception as err:
+            logger.error(err)
+            abort(400, message=str(err))
+
+    def update_initial_metadata_files(
+        self,
+        new_study_input: StudyCreationRequest,
+        study_root_location: str,
+        study_title: str,
+        study_id: str,
+        related_mtbls_study_ids: list[str],
+        template_settings: TemplateSettings,
+    ):
+        study_location = os.path.join(study_root_location, study_id)
+        isa_study, isa_inv, std_path = iac.get_isa_study(
+            study_id, None, skip_load_tables=True, study_location=study_location
+        )
+        study: isa_model.Study = isa_study
+        isa_inv: isa_model.Investigation = isa_inv
+
+        study.design_descriptors.extend(
+            [
+                isa_model.OntologyAnnotation(
+                    term=x.annotation_value,
+                    term_source=isa_model.OntologySource(
+                        name=x.term_source.name or "",
+                        file=x.term_source.file or "",
+                        version=x.term_source.version or "",
+                        description=x.term_source.description or "",
+                    )
+                    if x.term_source
+                    else None,
+                    term_accession=x.term_accession or None,
+                    comments=[
+                        isa_model.Comment(name=comment.name, value=comment.value)
+                        for comment in x.comments
+                    ],
+                )
+                for x in new_study_input.design_descriptors
+            ]
+        )
+        default_descriptor_category = (
+            template_settings.descriptor_configuration.default_descriptor_category or ""
+        )
+        default_descriptor_source = (
+            template_settings.descriptor_configuration.default_submitter_source or ""
+        )
+        for descriptor in study.design_descriptors:
+            category_comment = descriptor.get_comment("Study Design Category")
+            if not category_comment:
+                category_comment = isa_model.Comment(
+                    name="Study Design Category", value=default_descriptor_category
+                )
+
+            descriptor.comments = [
+                category_comment,
+                isa_model.Comment(
+                    name="Study Design Source", value=default_descriptor_source
+                ),
+            ]
+
+        study.contacts.extend(
+            [
+                isa_model.Person(
+                    first_name=x.first_name,
+                    last_name=x.last_name,
+                    mid_initials=x.mid_initials,
+                    email=x.email,
+                    phone=x.phone,
+                    fax=x.fax,
+                    address=x.address,
+                    affiliation=x.affiliation,
+                    roles=[
+                        isa_model.OntologyAnnotation(
+                            term=role.annotation_value or "",
+                            term_source=isa_model.OntologySource(
+                                name=role.term_source.name or "",
+                                file=role.term_source.file or "",
+                                version=role.term_source.version or "",
+                                description=role.term_source.description or "",
+                            )
+                            if role.term_source
+                            else "",
+                            term_accession=role.term_accession or "",
+                        )
+                        for role in x.roles
+                    ],
+                    comments=[
+                        isa_model.Comment(name=comment.name, value=comment.value)
+                        for comment in x.comments
+                    ],
+                )
+                for x in new_study_input.contacts
+            ]
+        )
+        study.factors.extend(
+            [
+                isa_model.StudyFactor(
+                    name=self.first_character_uppercase(x.factor_name),
+                    factor_type=isa_model.OntologyAnnotation(
+                        term=x.factor_type.annotation_value or "",
+                        term_source=isa_model.OntologySource(
+                            name=x.factor_type.term_source.name or "",
+                            file=x.factor_type.term_source.file or "",
+                            version=x.factor_type.term_source.version or "",
+                            description=x.factor_type.term_source.description or "",
+                        )
+                        if x.factor_type and x.factor_name
+                        else None,
+                        term_accession=x.factor_type.term_accession or "",
+                    ),
+                    comments=[
+                        isa_model.Comment(name=comment.name, value=comment.value)
+                        for comment in x.comments
+                    ],
+                )
+                for x in new_study_input.factors
+            ]
+        )
+        study.title = study_title
+        study.description = new_study_input.description
+        ontologies = {}
+        default_publication_status = OntologyTerm(
+            annotation_value="in preparation",
+            term_source=TermSource(name="EFO"),
+            term_accession="http://www.ebi.ac.uk/efo/EFO_0001795",
+        )
+        if new_study_input.publications:
+            study.publications = []
+            for publication in new_study_input.publications:
+                publication_status = publication.status or default_publication_status
+                new_publication = isa_model.Publication(
+                    title=publication.title or new_study_input.title,
+                    author_list=publication.author_list,
+                    pubmed_id=publication.pubmed_id,
+                    doi=publication.doi or None,
+                    status=isa_model.OntologyAnnotation(
+                        term=publication_status.annotation_value or "",
+                        term_source=isa_model.OntologySource(
+                            name=publication_status.term_source.name or "",
+                            file=publication_status.term_source.file or "",
+                            version=publication_status.term_source.version or "",
+                            description=publication_status.term_source.description
+                            or "",
+                        ),
+                        term_accession=publication_status.term_accession or "",
+                    ),
+                )
+                ontology_source_name = new_publication.status.term_source.name
+                if ontology_source_name:
+                    ontologies[ontology_source_name] = new_publication.status
+                study.publications.append(new_publication)
+
+        for item in study.contacts:
+            contact: isa_model.Person = item
+            for role in contact.roles:
+                if role.term_source and role.term_source.name:
+                    ontologies[role.term_source.name] = role.term_source
+        ontologies.update(
+            {
+                x.term_source.name: x.term_source
+                for x in study.design_descriptors
+                if x.term_source
+            }
+        )
+        ontologies.update(
+            {
+                x.factor_type.term_source.name: x.factor_type.term_source
+                for x in study.factors
+                if x.factor_type and x.factor_type.term_source
+            }
+        )
+        ontologies.update(
+            {
+                x.status.term_source.name: x.status.term_source
+                for x in study.publications
+                if x and x.status and x.status.term_source
+            }
+        )
+
+        for ontology in ontologies:
+            add_ontology_to_investigation(isa_inv, ontology, "", "", "")
+        new_comments = []
+        for comment in study.comments:
+            if comment.name not in [
+                "Funder",
+                "Funder ROR ID",
+                "Grant Identifier",
+                "Related Data Repository",
+                "Related Data Accession",
+                "Related Data URL",
+                "Linked Study Accession",
+            ]:
+                new_comments.append(comment)
+        study.comments = new_comments
+        related_mtbls_study_ids = related_mtbls_study_ids or []
+        related_datasets = new_study_input.related_datasets.copy()
+        linked_studies = related_mtbls_study_ids.copy()
+        for related_study_id in related_mtbls_study_ids:
+            related_datasets.append(
+                RelatedDataset(repository="MetaboLights", accession=related_study_id)
+            )
+
+        study_comments = OrderedDict(
+            [
+                (
+                    "Funder",
+                    ";".join(
+                        [
+                            x.funding_organization.annotation_value or ""
+                            if x and x.funding_organization
+                            else ""
+                            for x in new_study_input.funding
+                        ]
+                    ),
+                ),
+                (
+                    "Funder ROR ID",
+                    ";".join(
+                        [
+                            x.funding_organization.term_accession or ""
+                            if x.funding_organization
+                            else ""
+                            for x in new_study_input.funding
+                        ]
+                    ),
+                ),
+                (
+                    "Grant Identifier",
+                    ";".join(
+                        [
+                            x.grant_identifier or "" if x.grant_identifier else ""
+                            for x in new_study_input.funding
+                        ]
+                    ),
+                ),
+                (
+                    "Related Data Repository",
+                    ";".join([x.repository or "" for x in related_datasets]),
+                ),
+                (
+                    "Related Data Accession",
+                    ";".join([x.accession or "" for x in related_datasets]),
+                ),
+                (
+                    "Related Data URL",
+                    ";".join([x.url or "" for x in related_datasets]),
+                ),
+                (
+                    "Linked Study Accession",
+                    ";".join([x or "" for x in linked_studies]),
+                ),
+            ]
+        )
+        for k, v in study_comments.items():
+            study.comments.append(isa_model.Comment(name=k, value=v))
+        iac.write_isa_study(isa_inv, None, std_path)
+        sample_file_path = study_location = os.path.join(
+            study_root_location, study_id, study.filename
+        )
+        if os.path.exists(sample_file_path):
+            sample_df = read_tsv(sample_file_path)
+            for factor in study.factors:
+                suffix = len(sample_df.columns)
+                if factor.name not in sample_df.columns:
+                    formats = [
+                        x
+                        for x in factor.comments
+                        if x.name == "Study Factor Value Format"
+                    ]
+                    format = "Ontology"
+                    if formats and formats[0].value.lower() == "numeric":
+                        format = "Numeric"
+
+                    unit_terms = [
+                        x for x in factor.comments if x.name == "Study Factor Unit"
+                    ]
+                    unit_term_source_ref = [
+                        x
+                        for x in factor.comments
+                        if x.name == "Study Factor Unit Term Source REF"
+                    ]
+                    unit_accessions = [
+                        x
+                        for x in factor.comments
+                        if x.name == "Study Factor Unit Term Accession Number"
+                    ]
+                    numeric = False
+                    default_unit = None
+                    if format == "Numeric":
+                        numeric = True
+                        if unit_terms:
+                            default_unit = isa_model.OntologyAnnotation(
+                                term=unit_terms[0].value or "" if unit_terms else "",
+                                term_source=isa_model.OntologySource(
+                                    name=unit_term_source_ref[0].value or ""
+                                    if unit_term_source_ref
+                                    else "",
+                                    file="",
+                                ),
+                                term_accession=unit_accessions[0].value or ""
+                                if unit_accessions
+                                else "",
+                            )
+
+                    sample_df[f"Factor Value[{factor.name}]"] = ""
+                    if numeric:
+                        sample_df[f"Unit.{suffix}"] = (
+                            default_unit.term if default_unit else ""
+                        )
+                    sample_df[f"Term Source REF.{suffix}"] = (
+                        default_unit.term_source.name
+                        if default_unit and numeric
+                        else ""
+                    )
+                    sample_df[f"Term Accession Number.{suffix}"] = (
+                        default_unit.term_accession if default_unit and numeric else ""
+                    )
+
+            write_tsv(sample_df, sample_file_path)
+
+    def first_character_uppercase(self, factor: str):
+        if not factor or not factor.strip():
+            return ""
+        terms = " ".join(factor.split("_"))
+        terms = [x.strip() for x in terms.split() if x and x.strip()]
+        new_terms = []
+        for idx, term in enumerate(terms):
+            sub_terms = [x.strip() for x in term.split("-") if x and x and x.strip()]
+            new_sub_terms = []
+            for idx_2, sub_term in enumerate(sub_terms):
+                if len(sub_term) > 1 and sub_term.isupper():
+                    new_sub_terms.append(sub_term)
+                elif idx == 0 and idx_2 == 0:
+                    if len(sub_term) > 1:
+                        new_sub_terms.append(sub_term[0].upper() + sub_term[1:])
+                    else:
+                        new_sub_terms.append(sub_term.upper())
+                else:
+                    new_sub_terms.append(sub_term.lower())
+            new_terms.append("-".join(new_sub_terms))
+        return " ".join(new_terms)
+
+    def create_provisional_study(
+        self,
+        user_token: str,
+        username: str,
+        new_study_input: StudyCreationRequest,
+        study_category: str,
+        study_title: str,
+        mhd_model_version: None | str,
+        dataset_license: str,
+        dataset_license_version: str,
+        data_policy_agreement: bool,
+    ) -> dict:
+        new_accession_number = True
+        study_acc: Union[None, str] = None
+        try:
+            # study_config = get_settings().study
+            template_version = new_study_input.selected_template_version
+            sample_template_name = new_study_input.selected_sample_file_template
+            study_template_name = new_study_input.selected_investigation_file_template
+            study_acc = create_empty_study(
+                user_token,
+                study_id=study_acc,
+                template_version=template_version,
+                study_category_name=study_category,
+                sample_template_name=sample_template_name,
+                study_template_name=study_template_name,
+                mhd_model_version=mhd_model_version,
+                dataset_license=dataset_license,
+                dataset_license_version=dataset_license_version,
+                data_policy_agreement=1 if data_policy_agreement else 0,
+            )
+            # study = StudyService.get_instance().get_study_by_acc(study_id=study_acc)
+
+            if study_acc:
+                logger.info(f"Step 2: Study id {study_acc} is created on DB.")
+            else:
+                raise MetabolightsException(
+                    message="Could not create a new study in db", http_code=503
+                )
+        except Exception as exc:
+            inputs = {
+                "subject": "Study id creation on DB was failed.",
+                "body": f"Study id on db creation was failed: folder: {study_acc}, user: {username} <p> {str(exc)}",
+            }
+            send_technical_issue_email.apply_async(kwargs=inputs)
+            logger.error(
+                f"Study id creation on DB was failed. Temp folder: {study_acc}. {str(inputs)}"
+            )
+            if isinstance(exc, MetabolightsException):
+                raise exc
+            else:
+                raise MetabolightsException(
+                    message="Study id creation on db was failed.",
+                    http_code=501,
+                    exception=exc,
+                )
+
+        inputs = {
+            "user_token": user_token,
+            "study_id": study_acc,
+            "send_email_to_submitter": False,
+            "task_name": "INITIAL_METADATA",
+            "maintain_metadata_storage": True,
+            "maintain_private_ftp_storage": False,
+            "force_to_maintain": True,
+        }
+        try:
+            maintain_storage_study_folders(**inputs)
+            logger.info(
+                f"Step 4.1: 'Create initial files and folders' task completed for study {study_acc}"
+            )
+        except Exception as exc:
+            logger.info(
+                f"Step 4.1: 'Create initial files and folders' task failed for study {study_acc}. {str(exc)}"
+            )
+
+        inputs.update(
+            {
+                "maintain_metadata_storage": False,
+                "maintain_private_ftp_storage": True,
+                "task_name": "INITIAL_FTP_FOLDERS",
+            }
+        )
+        create_ftp_folders_task = maintain_storage_study_folders.apply_async(
+            kwargs=inputs
+        )
+        logger.info(
+            "Step 4.3: 'Create study FTP folders' task has been started for study "
+            "%s with task id: %s",
+            study_acc,
+            create_ftp_folders_task.id,
+        )
+
+        if new_accession_number:
+            study: Study = StudyService.get_instance().get_study_by_acc(study_acc)
+            ftp_folder_name = study_acc.lower() + "-" + study.obfuscationcode
+            inputs = {
+                "user_token": user_token,
+                "study_id": study_acc,
+                "folder_name": ftp_folder_name,
+                "study_title": study_title,
+            }
+            send_email_for_new_provisional_study.apply_async(kwargs=inputs)
+            logger.info("Step 5: Sending FTP folder email for the study %s", study_acc)
+        else:
+            logger.info("Step 5: Skipping FTP folder email for the study %s", study_acc)
+
+        # # Start ftp folder creation task
+        # Start reindex task
+        inputs = {"user_token": user_token, "study_id": study_acc}
+        reindex_task = reindex_study.apply_async(kwargs=inputs)
+        logger.info(
+            f"Step 6: Reindex task is started for study {study_acc} with task id: {reindex_task.id}"
+        )
+
+        return study_acc
+
+    def validate_study_input(
+        self, template_settings: TemplateSettings, data_dict: dict
+    ) -> StudyCreationRequest:
+        new_study_input = StudyCreationRequest.model_validate(data_dict)
+
+        if not new_study_input.dataset_policy_agreement:
+            raise MetabolightsException(
+                message="Dataset policy agreement is required to create a new study.",
+                http_code=400,
+            )
+        if not new_study_input.dataset_license_agreement:
+            raise MetabolightsException(
+                message="Dataset license agreement is required to create a new study.",
+                http_code=400,
+            )
+        if not new_study_input.title:
+            raise MetabolightsException(
+                message="Dataset title is empty.",
+                http_code=400,
+            )
+        if not new_study_input.description:
+            raise MetabolightsException(
+                message="Dataset description is empty.",
+                http_code=400,
+            )
+        if not new_study_input.selected_template_version:
+            new_study_input.selected_template_version = (
+                template_settings.default_template_version
+            )
+        version_settings = template_settings.versions.get(
+            new_study_input.selected_template_version
+        )
+        if not version_settings:
+            raise MetabolightsException(
+                message=f"Selected template version "
+                f"'{new_study_input.selected_template_version}' is not valid "
+                "to create a new study.",
+                http_code=400,
+            )
+        if not new_study_input.selected_study_categories:
+            raise MetabolightsException(
+                message="Selected study categories are required to create a new study.",
+                http_code=400,
+            )
+        else:
+            unexpected_inputs: dict[str, list[str]] = {}
+            selected_study_categories = new_study_input.selected_study_categories
+            for (
+                study_category,
+                assay_templates,
+            ) in selected_study_categories.items():
+                active_study_categories = version_settings.active_study_categories
+
+                category = (
+                    StudyCategoryStr(study_category)
+                    if study_category in StudyCategoryStr
+                    else None
+                )
+                if (
+                    not category
+                    or not assay_templates
+                    or category not in active_study_categories
+                ):
+                    if category not in unexpected_inputs:
+                        unexpected_inputs[category] = []
+                    continue
+
+                for assay_template in assay_templates:
+                    if (
+                        not assay_template
+                        or assay_template
+                        not in version_settings.active_assay_file_templates
+                    ):
+                        if category not in unexpected_inputs:
+                            unexpected_inputs[category] = []
+                        unexpected_inputs[category].append(assay_template)
+                        continue
+                    if (
+                        assay_template
+                        not in version_settings.assay_file_type_mappings[category]
+                    ):
+                        if category not in unexpected_inputs:
+                            unexpected_inputs[category] = []
+                        unexpected_inputs[category].append(assay_template)
+                        continue
+
+            if unexpected_inputs:
+                raise MetabolightsException(
+                    message="Unexpected study category or assay templates "
+                    "for the selected template version: "
+                    + str(unexpected_inputs)
+                    + ".",
+                    http_code=400,
+                )
+
+        if not new_study_input.selected_investigation_file_template:
+            new_study_input.selected_investigation_file_template = (
+                version_settings.default_investigation_file_template
+            )
+        if (
+            new_study_input.selected_investigation_file_template
+            not in version_settings.active_investigation_file_templates
+        ):
+            raise MetabolightsException(
+                message="Selected investigation file template is not valid "
+                "to create a new study for the selected template version.",
+                http_code=400,
+            )
+        if not new_study_input.selected_sample_file_template:
+            new_study_input.selected_sample_file_template = (
+                version_settings.default_sample_file_template
+            )
+        if (
+            new_study_input.selected_sample_file_template
+            not in version_settings.active_sample_file_templates
+        ):
+            raise MetabolightsException(
+                message="Selected sample file template is not valid "
+                "to create a new study for the selected template version.",
+                http_code=400,
+            )
+        return new_study_input
+
+
+class ProvisionalStudy(Resource):
+    @swagger.operation(
+        summary="Delete provisional study",
+        notes="""Delete provisional study""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Existing Study to delete",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string",
+            },
+            {
+                "name": "delete_option",
+                "description": "Delete options: reset-metadata, reset-ftp-data, reset-metadata-and-ftp-data, delete-permanently",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "string",
+                "defaultValue": "false",
+                "enum": [
+                    "reset-metadata",
+                    "reset-ftp-data",
+                    "reset-metadata-and-ftp-data",
+                    "delete-permanently",
+                ],
+            },
+            {
+                "name": "user-token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False,
+            },
+        ],
+        responseMessages=[
+            {"code": 200, "message": "OK."},
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication.",
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token",
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
+    )
+    @metabolights_exception_handler
+    def delete(self, study_id):
+        result = validate_submission_delete(request)
+        status = result.context.study_status
+
+        if status != StudyStatus.PROVISIONAL:
+            abort(401, message="It is not allowed to delete a private or public study")
+
+        if result.context.first_private_date or result.context.reserved_accession:
+            abort(401, message="It is not allowed to delete accessioned study.")
+        delete_option = request.args.get("delete_option")
+        if not delete_option or delete_option not in {
+            "reset-metadata",
+            "reset-ftp-data",
+            "reset-metadata-and-ftp-data",
+            "delete-permanently",
+        }:
+            abort(401, message="delete option is not valid")
+        logger.info("Deleting study %s", study_id)
+        if delete_option == "delete-permanently":
+            dormant_study_query = (
+                "UPDATE studies SET status = 4, "
+                "status_date = CURRENT_DATE, updatedate = CURRENT_DATE "
+                "WHERE acc = %(study_id)s;"
+            )
+            unlink_submitters = (
+                "DELETE FROM study_user "
+                "WHERE studyid IN (SELECT id FROM studies WHERE acc = %(study_id)s);"
+            )
+            try:
+                with get_connection() as (conn, cursor):
+                    cursor.execute(dormant_study_query, {"study_id": study_id})
+                    cursor.execute(unlink_submitters, {"study_id": study_id})
+            except Exception as e:
+                logger.error(
+                    "Database update of study status failed with error " + str(e)
+                )
+                raise e
+        if delete_option in {
+            "reset-metadata",
+            "reset-metadata-and-ftp-data",
+            "delete-permanently",
+        }:
+            delete_study_folders(
+                study_id=study_id,
+                force_to_maintain=True,
+                delete_private_ftp_storage_folders=False,
+                delete_metadata_storage_folders=True,
+                task_name=f"DELETE_STUDY_{study_id}",
+                failing_gracefully=False,
+                recreate_folders=delete_option != "delete-permanently",
+            )
+        if delete_option in {
+            "reset-ftp-data",
+            "reset-metadata-and-ftp-data",
+            "delete-permanently",
+        }:
+            inputs = {
+                "study_id": study_id,
+                "task_name": f"DELETE_STUDY_{study_id}",
+                "force_to_maintain": True,
+                "delete_private_ftp_storage_folders": True,
+                "delete_metadata_storage_folders": False,
+                "recreate_folders": delete_option != "delete-permanently",
+            }
+            cluster_settings = get_cluster_settings()
+            task = delete_study_folders.apply_async(kwargs=inputs)
+            task.get(timeout=cluster_settings.task_get_timeout_in_seconds * 2)
+
+        if delete_option in {"reset-metadata", "reset-metadata-and-ftp-data"}:
+            status, message = wsc.reindex_study(study_id)
+            if not status:
+                abort(500, error="Could not reindex the study")
+
+        return {
+            "Success": delete_option
+            + " operation has been completed for study "
+            + study_id
+        }
+
+
 class CreateAccession(Resource):
     @swagger.operation(
         summary="Create a new study",
@@ -898,6 +1793,7 @@ class CreateAccession(Resource):
     )
     @metabolights_exception_handler
     def get(self):
+        raise_deprecation_error(request)
         result = validate_user_has_submitter_or_super_user_role(request)
         user_token = result.context.user_api_token
         user_role = result.context.user_role

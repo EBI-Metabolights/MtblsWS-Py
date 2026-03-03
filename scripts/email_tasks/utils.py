@@ -106,7 +106,7 @@ def create_task(study_id, task_name: str) -> StudyTask:
         if tasks:
             task: StudyTask = tasks[0]
         else:
-            now = datetime.datetime.now(datetime.UTC)
+            now = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
             task = StudyTask()
             task.study_acc = study_id
             task.task_name = task_name

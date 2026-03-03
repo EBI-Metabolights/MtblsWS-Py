@@ -9,7 +9,11 @@ from typing import List, Union
 
 from isatools import model
 
+from app.config import get_settings
 from app.tasks.common_tasks.basic_tasks.elasticsearch import reindex_study
+from app.tasks.common_tasks.basic_tasks.mhd import (
+    submit_announcement_file_task,
+)
 from app.tasks.common_tasks.basic_tasks.send_email import send_email_on_public
 from app.tasks.datamover_tasks.basic_tasks.ftp_operations import (
     sync_private_ftp_data_files,
@@ -22,7 +26,7 @@ from app.utils import (
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyRevisionModel
 from app.ws.db.schemes import Study, StudyRevision
-from app.ws.db.types import StudyRevisionStatus, StudyStatus
+from app.ws.db.types import MhdSubmissionStatus, StudyRevisionStatus, StudyStatus
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.folder_maintenance import StudyFolderMaintenanceTask
 from app.ws.isaApiClient import IsaApiClient
@@ -222,7 +226,9 @@ class StudyRevisionService:
         #     isa_study.public_release_date = study.releasedate.strftime("%Y-%m-%d")
         #     isa_inv_input.submission_date = study.submissiondate.strftime("%Y-%m-%d")
         #     isa_inv_input.public_release_date = study.releasedate.strftime("%Y-%m-%d")
-
+        # consolidate_keywords(
+        #     isa_study, study_metadata_location, "status-update-workflow"
+        # )
         update_mhd_comments(
             isa_study,
             study_category=study.study_category,
@@ -230,6 +236,7 @@ class StudyRevisionService:
             mhd_accession=study.mhd_accession,
             mhd_model_version=study.mhd_model_version,
             template_version=study.template_version,
+            study_template=study.study_template,
             created_at=study.created_at,
         )
         update_license(isa_study, study.dataset_license)
@@ -339,7 +346,7 @@ class StudyRevisionService:
                         raise MetabolightsException(
                             http_code=401, message="Revision task is already completed."
                         )
-
+                prev_revision_status = StudyRevisionStatus(study_revision.status)
                 study_revision.status = status.value
                 if task_started_at:
                     study_revision.task_started_at = task_started_at
@@ -380,8 +387,34 @@ class StudyRevisionService:
                                 ),
                             }
                             send_email_on_public.apply_async(kwargs=inputs)
-
+                        if prev_revision_status != status:
+                            study_revision.mhd_share_status == MhdSubmissionStatus.IN_PROGRESS.value
                 db_session.commit()
+                mhd_settings = get_settings().mhd
+                mhd_accession = study.mhd_accession or study.reserved_accession
+                if mhd_settings.submit_announcement_file_immediately:
+                    inputs = {
+                        "study_id": study.acc,
+                        "revision_number": revision_number,
+                        "mhd_id": mhd_accession,
+                        "announcement_reason": study_revision.revision_comment or "",
+                    }
+                    submit_announcement_file_task.apply_async(kwargs=inputs)
+                    logger(
+                        "Announcement file submission task started for %s revision number %s: %s",
+                        study.acc,
+                        revision_number,
+                        mhd_accession,
+                    )
+                else:
+                    logger(
+                        "Immediate announcement file submission is disabled. "
+                        "Announcement file submission is postponed for %s revision number %s: %s",
+                        study.acc,
+                        revision_number,
+                        mhd_accession,
+                    )
+
                 try:
                     inputs = {"user_token": None, "study_id": study_id}
                     reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
@@ -535,10 +568,25 @@ class StudyRevisionService:
 
             os.makedirs(metadata_revisions_path, exist_ok=True)
 
+            def copy_mhd_files(audit_folder_path: str):
+                mhd_files_root_path = os.path.join(
+                    maintenance_task.study_internal_files_path, "DATA_FILES"
+                )
+                for file_path in Path(mhd_files_root_path).glob(
+                    "*.json", case_sensitive=False
+                ):
+                    if file_path.is_file() and (
+                        file_path.name.lower().endswith(".mhd.json")
+                        or file_path.name.lower().endswith(".announcement.json")
+                    ):
+                        target_file = os.path.join(audit_folder_path, file_path.name)
+                        shutil.copy2(str(file_path), target_file)
+
             dest_path = maintenance_task.create_audit_folder(
                 audit_folder_root_path=metadata_revisions_path,
                 folder_name=revision_folder_name,
                 stage=None,
+                after_creation_callback=copy_mhd_files,
             )
 
             # delete previous version files on PUBLIC_METADATA top folder

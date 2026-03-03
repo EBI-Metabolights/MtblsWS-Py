@@ -89,6 +89,7 @@ if __name__ == "__main__":
             sample_template=study.sample_type,
             dataset_license=study.dataset_license,
             template_version=study.template_version,
+            created_at=study.created_at,
             study_template=study.study_template,
         )
         audit_folder_path = maintenance_task.study_audit_files_path

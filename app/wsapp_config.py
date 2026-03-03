@@ -47,11 +47,16 @@ from app.ws.chebi.wsproxy import get_chebi_ws_proxy
 from app.ws.chebi_workflow import ChEBIPipeLine, ChEBIPipeLineLoad, SplitMaf
 from app.ws.chebi_ws import (
     ChebiEntity,
-    ChebiImageProxy,
     ChebiLiteEntity,
     ChebiOntologyChildren,
 )
 from app.ws.cluster_jobs import LsfUtils
+from app.ws.comments import (
+    AssayComments,
+    StudyComments,
+    StudyDesignDescriptorComments,
+    StudyFactorComments,
+)
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.compress import CompressRawDataFolders
 from app.ws.cronjob import cronjob
@@ -77,7 +82,13 @@ from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.internal import BannerMessage
 from app.ws.isa_table_sheet import StudySampleTemplate
-from app.ws.isaAssay import StudyAssay, StudyAssayDelete
+from app.ws.isaAssay import (
+    AssayFile,
+    InvestigationFileSync,
+    StudyAssay,
+    StudyAssayDelete,
+    StudySampleFileSync,
+)
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaStudy import (
     StudyContacts,
@@ -132,6 +143,8 @@ from app.ws.mtblsStudy import (
     MtblsStudyFolders,
     MyMtblsStudies,
     MyMtblsStudiesDetailed,
+    ProvisionalStudies,
+    ProvisionalStudy,
     PublicStudyDetail,
     ReindexStudy,
     RetryReindexStudies,
@@ -294,7 +307,7 @@ def initialize_app(flask_app):
         resources={
             cors_resources_path: {
                 "origins": get_settings().server.service.cors_hosts,
-                "methods": {"GET, HEAD, POST, OPTIONS, PUT, DELETE"},
+                "methods": {"GET, HEAD, POST, OPTIONS, PUT, DELETE", "PATCH"},
             }
         },
     )
@@ -337,6 +350,20 @@ def initialize_app(flask_app):
     # api.add_resource(V1StudyDetail, res_path + "/v1/security/studies/obfuscationcode/<string:obfuscationcode>/view")
 
     api.add_resource(MtblsStudies, res_path + "/studies")
+
+    api.add_resource(StudyComments, res_path + "/studies/<string:study_id>/comments")
+    api.add_resource(
+        AssayComments, res_path + "/studies/<string:study_id>/assays/comments"
+    )
+    api.add_resource(
+        StudyDesignDescriptorComments,
+        res_path + "/studies/<string:study_id>/design-descriptors/comments",
+    )
+    api.add_resource(
+        StudyFactorComments,
+        res_path + "/studies/<string:study_id>/study-factors/comments",
+    )
+
     api.add_resource(EbEyeStudies, res_path + "/studies/eb-eye/<string:consumer>")
     api.add_resource(MtblsPrivateStudies, res_path + "/studies/private")
     api.add_resource(MtblsStudiesWithMethods, res_path + "/studies/technology")
@@ -384,12 +411,28 @@ def initialize_app(flask_app):
         StudySampleTemplate, res_path + "/studies/<string:study_id>/sample-template"
     )
     api.add_resource(IsaTabAssayFile, res_path + "/studies/<string:study_id>/assay")
+    api.add_resource(
+        AssayFile, res_path + "/studies/<string:study_id>/metadata-files/assays"
+    )
+    api.add_resource(
+        StudySampleFileSync,
+        res_path + "/studies/<string:study_id>/metadata-files/sample-file/copy-from",
+    )
+    api.add_resource(
+        InvestigationFileSync,
+        res_path + "/studies/<string:study_id>/metadata-files/investigation/copy-from",
+    )
     api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays")
     api.add_resource(
         StudyAssayDelete,
         res_path + "/studies/<string:study_id>/assays/<string:assay_file_name>",
     )
     api.add_resource(CreateAccession, res_path + "/studies/create")
+    api.add_resource(ProvisionalStudies, res_path + "/provisional-studies")
+    api.add_resource(
+        ProvisionalStudy, res_path + "/provisional-studies/<string:study_id>"
+    )
+
     api.add_resource(CloneAccession, res_path + "/studies/clone")
     api.add_resource(DeleteStudy, res_path + "/studies/<string:study_id>/delete")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/upload")
@@ -658,7 +701,3 @@ def initialize_app(flask_app):
     api.add_resource(IntegrationCheck, res_path + "/ebi-internal/integration-check")
 
     api.add_resource(DataFolders, res_path + "/ebi-internal/data-folders")
-
-    api.add_resource(
-        ChebiImageProxy, res_path + "/proxy/images/chebi/<chebiIdentifier>"
-    )

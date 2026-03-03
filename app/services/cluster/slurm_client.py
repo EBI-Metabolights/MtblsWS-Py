@@ -50,6 +50,7 @@ class SlurmClient(HpcClient):
         cpu: int = 1,
         mem: str = "",
         mail_type="START,END,FAIL",
+        modules: Union[None, str] = None,
     ) -> SubmittedJobResult:
         logger.info("===Submit HPC job request received===")
         if not queue:
@@ -65,6 +66,7 @@ class SlurmClient(HpcClient):
             cpu=cpu,
             mem=mem,
             mail_type=mail_type,
+            modules=modules,
         )
         max_retries = 10
         delay_period_in_seconds = 20
@@ -234,6 +236,7 @@ class SlurmClient(HpcClient):
         cpu: int = 1,
         mem: str = "",
         mail_type: str = "START,END,FAIL",
+        modules: Union[None, str] = None,
     ) -> int:
         script_file_path = self._prepare_script_to_submit_on_hpc(
             script_path=script_path,
@@ -246,6 +249,7 @@ class SlurmClient(HpcClient):
             cpu=cpu,
             mem=mem,
             mail_type=mail_type,
+            modules=modules,
         )
         print(pathlib.Path(script_file_path).read_text())
         submission_command = f"sbatch < {script_file_path}"
@@ -263,6 +267,7 @@ class SlurmClient(HpcClient):
         cpu: int = 1,
         mem: str = "",
         mail_type: str = "START,END,FAIL",
+        modules: Union[None, str] = None,
     ):
         if not os.path.exists(script_path):
             raise MetabolightsException(
@@ -309,8 +314,28 @@ class SlurmClient(HpcClient):
         hpc_comments.append(f"-n {str(cpu)}")
 
         hpc_comments = [f"#SBATCH {x}" for x in hpc_comments]
+        hpc_modules = []
+        if modules:
+            hpc_modules = [
+                "source /etc/profile.d/modules.sh 2>/dev/null || true",
+                "source /usr/share/lmod/lmod/init/bash 2>/dev/null || true",
+                "module purge",
+            ]
+            for module in modules.split(","):
+                if module.strip():
+                    hpc_modules.append(f"module load {module.strip()}")
+            hpc_modules.extend(
+                [
+                    'echo "Loaded modules:"',
+                    "module list",
+                ]
+            )
+
         content = ["#!/bin/bash"]
+        content.append("")
         content.extend(hpc_comments)
+        content.append("")
+        content.extend(hpc_modules)
         content.append("")
         content.extend(inputs)
         basename = os.path.basename(script_path).replace(".", "_")

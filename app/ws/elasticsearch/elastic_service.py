@@ -438,7 +438,7 @@ class ElasticsearchService(object):
             if tasks:
                 task = tasks[0]
             else:
-                now = current_time()
+                now = current_time(utc_timezone=True).replace(tzinfo=None)
                 task = StudyTask()
                 task.study_acc = study_id
                 task.task_name = task_name
@@ -486,7 +486,9 @@ class ElasticsearchService(object):
                         task.last_execution_status = (
                             StudyTaskStatus.EXECUTION_SUCCESSFUL
                         )
-                        task.last_execution_time = current_time()
+                        task.last_execution_time = current_time(
+                            utc_timezone=True
+                        ).replace(tzinfo=None)
                         task.last_execution_message = message
                         db_session.add(task)
                         db_session.commit()

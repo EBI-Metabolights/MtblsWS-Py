@@ -188,6 +188,17 @@ class StudyFiles(Resource):
 
     # 'uploadPath': upload_location[0], for local testing
 
+    def sort_by_type(self, val: str):
+        if val.startswith("a_"):
+            return 0
+        elif val.startswith("m_"):
+            return 1
+        elif val.startswith("s_"):
+            return 2
+        elif val.startswith("i_"):
+            return 5
+        return 10
+
     @swagger.operation(
         summary="Delete files from a given folder",
         nickname="Delete files",
@@ -271,7 +282,7 @@ without setting the "force" parameter to True""",
         obfuscation_code = result.context.obfuscation_code
         study_location = get_study_metadata_path(study_id)
 
-        files = request.args.get("files") if request.args.get("files") else None
+        files = request.args.get("files")
         file_location = request.args.get("location", "study")
 
         always_remove = (
@@ -283,10 +294,9 @@ without setting the "force" parameter to True""",
 
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
-            data = data_dict["files"]
-            if data is None:
-                abort(412)
-            files = data
+            files: list[str, str] = data_dict.get("files", [])
+            if not files:
+                abort(412, message="Input body is empty")
         except (ValidationError, Exception):
             abort(400, message="Incorrect JSON provided")
 
@@ -302,6 +312,8 @@ without setting the "force" parameter to True""",
 
             pattern = re.compile(r"([asi]_.*\.txt)|(m_.*\.tsv)")
             metadata_update = False
+
+            files.sort(key=lambda x: self.sort_by_type(x.get("name", "")))
             for file in files:
                 f_name = file["name"]
                 match = pattern.match(f_name)
@@ -316,41 +328,60 @@ without setting the "force" parameter to True""",
             message = None
             for file in files:
                 try:
-                    f_name = file["name"]
-
-                    if (
-                        f_name.startswith("i_")
-                        and f_name.endswith(".txt")
-                        and not is_curator
-                    ):
+                    f_name: str = file.get("name", "")
+                    status, message = remove_file(
+                        study_location, f_name, always_remove, is_curator=is_curator
+                    )
+                    if not status:
                         errors.append(
-                            {
-                                "status": "error",
-                                "message": "Only MetaboLights curators can remove the investigation file",
-                                "file": f_name,
-                            }
+                            {"status": "error", "message": message, "file": f_name}
                         )
-                    elif file_location == "study":
-                        status, message = remove_file(
-                            study_location, f_name, always_remove, is_curator=is_curator
+                    else:
+                        deleted_files.append(
+                            {"status": "success", "message": message, "file": f_name}
                         )
-                        if not status:
-                            errors.append(
-                                {"status": "error", "message": message, "file": f_name}
-                            )
-                        else:
-                            deleted_files.append(
-                                {
-                                    "status": "success",
-                                    "message": message,
-                                    "file": f_name,
-                                }
-                            )
                 except Exception as exc:
                     errors.append(
                         {"status": "error", "message": str(exc), "file": f_name}
                     )
-
+            assay_files = []
+            for deleted_file in deleted_files:
+                filename = deleted_file.get("file")
+                if filename.startswith("a_") and filename.endswith(".txt"):
+                    assay_files.append(filename)
+            if assay_files:
+                isa_study, isa_inv, _ = iac.get_isa_study(
+                    study_id=study_id,
+                    skip_load_tables=True,
+                    study_location=study_location,
+                )
+                assays = {x.filename: x for x in isa_study.assays}
+                removed_assays = []
+                for name in assay_files:
+                    if name in assays:
+                        isa_study.assays.remove(assays[name])
+                        removed_assays.append(name)
+                iac.write_isa_study(
+                    isa_inv,
+                    None,
+                    study_location,
+                    save_investigation_copy=False,
+                    save_assays_copy=False,
+                    save_samples_copy=False,
+                )
+                logger.info(
+                    "Assay file references are removed from investigation file: %s %s",
+                    study_id,
+                    removed_assays,
+                )
+            if deleted_files:
+                logger.info(
+                    "Files are deleted: %s %s",
+                    study_id,
+                    [x.get("file") for x in deleted_files],
+                )
+            if errors:
+                logger.info("Files are not deleted: %s %s", study_id, errors)
             return {"errors": errors, "deleted_files": deleted_files}
         else:
             result = validate_data_files_upload(request)
