@@ -9,6 +9,7 @@ from typing import List, Union
 
 from isatools import model
 
+from app.config import get_settings
 from app.tasks.common_tasks.basic_tasks.elasticsearch import reindex_study
 from app.tasks.common_tasks.basic_tasks.mhd import (
     submit_announcement_file_task,
@@ -389,13 +390,30 @@ class StudyRevisionService:
                         if prev_revision_status != status:
                             study_revision.mhd_share_status == MhdSubmissionStatus.IN_PROGRESS.value
                 db_session.commit()
-                inputs = {
-                    "study_id": study.acc,
-                    "revision_number": revision_number,
-                    "mhd_id": study.mhd_accession or study.reserved_accession,
-                    "announcement_reason": study_revision.revision_comment,
-                }
-                submit_announcement_file_task.apply_async(kwargs=inputs)
+                mhd_settings = get_settings().mhd
+                mhd_accession = study.mhd_accession or study.reserved_accession
+                if mhd_settings.submit_announcement_file_immediately:
+                    inputs = {
+                        "study_id": study.acc,
+                        "revision_number": revision_number,
+                        "mhd_id": mhd_accession,
+                        "announcement_reason": study_revision.revision_comment or "",
+                    }
+                    submit_announcement_file_task.apply_async(kwargs=inputs)
+                    logger(
+                        "Announcement file submission task started for %s revision number %s: %s",
+                        study.acc,
+                        revision_number,
+                        mhd_accession,
+                    )
+                else:
+                    logger(
+                        "Immediate announcement file submission is disabled. "
+                        "Announcement file submission is postponed for %s revision number %s: %s",
+                        study.acc,
+                        revision_number,
+                        mhd_accession,
+                    )
 
                 try:
                     inputs = {"user_token": None, "study_id": study_id}

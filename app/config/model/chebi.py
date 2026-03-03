@@ -5,7 +5,7 @@ class ChebiServiceConnection(BaseModel):
     chebi_ws_wsdl: str = "https://www.ebi.ac.uk/chebi/backend/api"
     chebi_ws_wsdl_service: str = "ChebiWebServiceService"
     chebi_ws_wsdl_service_port: str = "ChebiWebServicePort"
-    
+
 
 class ChebiServiceConfiguration(BaseModel):
     chebi_ws_service_binding_log_level: str = "ERROR"
