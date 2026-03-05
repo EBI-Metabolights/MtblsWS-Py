@@ -113,6 +113,11 @@ class UserService(object):
                     )
                 if study and obfuscation_code in {study.obfuscationcode, None}:
                     permission_context.obfuscation_code = study.obfuscationcode
+                    permission_context.validated_obfuscation_code = (
+                        obfuscation_code
+                        if obfuscation_code == study.obfuscationcode
+                        else None
+                    )
                     permission_context.study_id = study.acc
                     permission_context.reserved_accession = study.reserved_accession
                     permission_context.reserved_submission_id = (
@@ -140,7 +145,7 @@ class UserService(object):
                 user_filter = [User.status == UserStatus.ACTIVE.value]
                 if username:
                     user_filter.append(User.username == username)
-                else:
+                if user_token:
                     user_filter.append(User.apitoken == user_token)
 
                 token_user: User = base_query.filter(*user_filter).first() or None
@@ -399,11 +404,11 @@ class UserService(object):
                 return permission
             if (
                 context.study_status in (StudyStatus.INREVIEW, StudyStatus.PRIVATE)
-                and context.obfuscation_code
+                and context.validated_obfuscation_code
             ):
                 permission.study_id = context.study_id
                 permission.study_status = context.study_status.name
-                permission.obfuscation_code = context.obfuscation_code
+                permission.obfuscation_code = context.validated_obfuscation_code
                 permission.study_category = category
                 self.copy_scopes(permission, scopes.REVIEWER_PRIVATE_STUDY_PAGE_SCOPES)
                 permission.reason = "reason-04"

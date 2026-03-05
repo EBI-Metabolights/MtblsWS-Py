@@ -115,6 +115,7 @@ class StudyPermissionContext(BaseScopeModel):
     study_id: None | str = None
     study_status: None | StudyStatus = None
     obfuscation_code: None | str = None
+    validated_obfuscation_code: None | str = None
     template_version: None | str = None
     sample_template: None | str = None
     study_template: None | str = None
