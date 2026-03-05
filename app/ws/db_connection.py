@@ -521,7 +521,7 @@ def get_all_studies_for_user(user_token):
         complete_study_location = os.path.join(study_location, study_id)
         complete_file_name = os.path.join(complete_study_location, file_name)
 
-        logger.info(
+        logger.debug(
             "Trying to load the investigation file (%s) for Study %s",
             file_name,
             study_id,
