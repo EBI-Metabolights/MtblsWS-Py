@@ -30,7 +30,11 @@ from app.ws.auth.permissions import validate_submission_view
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import get_basic_files
-from app.ws.study.utils import get_study_metadata_path
+from app.ws.study.utils import (
+    get_study_audit_files_path,
+    get_study_internal_files_path,
+    get_study_metadata_path,
+)
 
 logger = logging.getLogger("wslog")
 # MetaboLights (Java-Based) WebService client
@@ -241,13 +245,25 @@ class SendFilesPrivate(Resource):
     def get(self, study_id, obfuscation_code):
         result = validate_submission_view(request)
         study_id = result.context.study_id
-        obfuscation_code = result.context.obfuscation_code
-        study_metadata_location = get_study_metadata_path(study_id)
-        file_name = request.args.get("file") or None
+        file_name = request.args.get("file") or ""
 
-        if file_name is None:
+        if not file_name:
             logger.info("No file name given")
-            abort(404)
+            abort(404, message="No file name given")
+
+        parts = file_name.split("/")
+        initial_path = parts[0]
+        study_metadata_location = get_study_metadata_path(study_id)
+        basename = os.path.basename(file_name)
+        target_path = os.path.join(study_metadata_location, file_name)
+        if initial_path == "INTERNAL_FILES":
+            root_path = get_study_internal_files_path(study_id)
+            subpath = file_name.replace("INTERNAL_FILES", "", 1).lstrip("/")
+            target_path = os.path.join(root_path, subpath)
+        elif initial_path == "AUDIT_FILES":
+            root_path = get_study_audit_files_path(study_id)
+            subpath = file_name.replace("INTERNAL_FILES", "", 1).lstrip("/")
+            target_path = os.path.join(root_path, subpath)
         files = ""
         if file_name == "metadata":
             file_list = get_basic_files(
@@ -265,9 +281,7 @@ class SendFilesPrivate(Resource):
         zip_name = None
         try:
             download_folder_path = os.path.join(
-                study_metadata_location,
-                get_study_settings().internal_files_symbolic_link_name,
-                "temp",
+                get_study_internal_files_path(study_id), "temp"
             )
             os.makedirs(download_folder_path, exist_ok=True)
             short_zip = (
@@ -308,8 +322,8 @@ class SendFilesPrivate(Resource):
                     safe_path = zip_name
                     file_name = short_zip
                 else:
-                    head, tail = os.path.split(file_name)
-                    file_name = tail
+                    file_name = basename
+                    safe_path = target_path
 
             resp = make_response(
                 send_file(

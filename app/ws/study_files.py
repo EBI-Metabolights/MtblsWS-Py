@@ -56,7 +56,7 @@ from app.ws.db.permission_scopes import (
     StudyResource,
     StudyResourceScope,
 )
-from app.ws.db.types import UserRole
+from app.ws.db.types import StudyStatus, UserRole
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
@@ -1821,7 +1821,7 @@ def get_study_metadata_and_data_files(
                 if item_parent_path == directory:
                     descriptor = FileDescriptor.model_validate(private_data_files[x])
                     private_directory_files[item_relative_path] = descriptor
-            if study.first_public_date:
+            if StudyStatus(study.status) in {StudyStatus.PUBLIC}:
                 for x in public_data_files:
                     item_relative_path = public_data_files[x]["relative_path"]
                     item_parent_path = public_data_files[x]["parent_relative_path"]
