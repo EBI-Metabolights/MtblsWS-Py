@@ -298,6 +298,10 @@ def get_auth_data(request) -> AuthInputData:
     obfuscation_code = request.headers.get("obfuscation_code", None) or None
     if not obfuscation_code:
         obfuscation_code = request.view_args.get("obfuscation_code", None) or None
+    if not obfuscation_code:
+        obfuscation_code = request.args.get("reviewCode", None) or None
+        if obfuscation_code:
+            obfuscation_code = obfuscation_code.replace("reviewer", "", 1)
 
     jwt_data = None
     if "authorization" in request.headers:
