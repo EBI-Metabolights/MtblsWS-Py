@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Union
 
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.acl import Acl
+from app.tasks.bash_client import BashClient
 from app.tasks.worker import MetabolightsTask, celery
 from app.ws.study_folder_utils import evaluate_files, get_directory_files
 
@@ -266,12 +267,15 @@ def copy(self, source_path: str, target_path: str):
                 basename = os.path.basename(new_path)
                 temp_file_path = os.path.join(new_path_parent, f".{basename}")
                 os.makedirs(new_path_parent, exist_ok=True)
+                BashClient.execute_command(
+                    f'cp -r "{input_path}" "{temp_file_path}" && sync {temp_file_path}'
+                )
                 if os.path.isdir(input_path):
-                    shutil.copytree(input_path, temp_file_path)
+                    # shutil.copytree(input_path, temp_file_path)
                     os.system("sync")
                     os.rename(temp_file_path, new_path)
                 else:
-                    shutil.copy2(input_path, temp_file_path)
+                    # shutil.copy2(input_path, temp_file_path)
                     with open(new_path, "ab") as f:
                         os.fsync(f.fileno())
                     os.rename(temp_file_path, new_path)

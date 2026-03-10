@@ -445,6 +445,8 @@ class SendFilesPrivate(Resource):
             task = copy.apply_async(kwargs=inputs, expires=60)
             result = task.get(timeout=120)
             if result and result.get("status"):
+                files = os.listdir(target_folder)
+                logger.info("Files: %s", files)
                 if process_folder:
                     zip_file_path = shared_target_path + ".zip"
                     if os.path.isfile(zip_file_path):
