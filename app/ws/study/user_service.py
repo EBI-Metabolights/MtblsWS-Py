@@ -392,7 +392,7 @@ class UserService(object):
         permission.user_name = context.username
         permission.partner = context.partner_user
         permission.submitter_of_study = context.owner
-
+        permission.first_private_date = context.first_private_date or ""
         if user_role not in ActiveUserRoles and user_required:
             permission.reason = "reason-02"
             self.copy_scopes(permission, scopes.STUDY_PAGE_EMPTY_SCOPES)
@@ -406,7 +406,6 @@ class UserService(object):
         if not context.owner and context.user_role not in curator_roles:
             if context.study_status == StudyStatus.PUBLIC:
                 permission.study_id = context.study_id
-                permission.first_private_date = context.first_private_date
                 permission.study_status = context.study_status.name
                 permission.study_category = category
                 permission.reason = "reason-03"
@@ -417,7 +416,6 @@ class UserService(object):
                 and context.validated_obfuscation_code
             ):
                 permission.study_id = context.study_id
-                permission.first_private_date = context.first_private_date
                 permission.study_status = context.study_status.name
                 permission.obfuscation_code = context.validated_obfuscation_code
                 permission.study_category = category
@@ -432,7 +430,6 @@ class UserService(object):
         permission.study_id = context.study_id
         permission.study_status = context.study_status.name
         permission.obfuscation_code = context.obfuscation_code
-        permission.first_private_date = context.first_private_date
         permission.study_category = category
         if context.user_role in curator_roles:
             if context.study_status == StudyStatus.PUBLIC:
