@@ -17,6 +17,12 @@ from app.tasks.worker import (
 from app.utils import MetabolightsDBException, current_time
 from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.db.dbmanager import DBManager
+from app.ws.db.permission_scopes import (
+    PermissionFilter,
+    ScopeFilter,
+    StudyResource,
+    StudyResourceScope,
+)
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus
 from app.ws.folder_maintenance import StudyFolderMaintenanceTask
@@ -272,20 +278,32 @@ def maintain_storage_study_folders(
         with DBManager.get_instance().session_maker() as db_session:
             auth_manager = AuthenticationManager.get_instance()
             if study_id:
-                user: User = UserService.get_instance(
-                    auth_manager
-                ).validate_user_has_write_access(user_token, study_id=study_id)
+                result = UserService.get_instance(auth_manager).validate_permissions(
+                    study_id=study_id,
+                    permissions=PermissionFilter(
+                        filters=[
+                            ScopeFilter(
+                                scopes={
+                                    StudyResource.SUBMISSION: [
+                                        StudyResourceScope.UPDATE
+                                    ],
+                                },
+                            )
+                        ]
+                    ),
+                    user_token=user_token,
+                )
+                email = result.context.username
             else:
                 user: User = UserService.get_instance(
                     auth_manager
                 ).validate_user_has_curator_role(user_token)
+                email = user.username if user else None
 
-            if not user:
+            if not email:
                 raise MetabolightsDBException("No user")
 
-            email = user[1]
-
-            if not email or not isinstance(email, str):
+            if not isinstance(email, str):
                 raise MetabolightsDBException("User email is not valid")
 
             if study_id:

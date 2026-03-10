@@ -219,8 +219,14 @@ def move(self, source_path: str, target_path: str):
     if os.path.exists(input_path):
         if not os.path.exists(new_path):
             try:
-                shutil.move(input_path, new_path)
-                if not os.path.exists(input_path) and os.path.exists(new_path):
+                if os.path.isdir(input_path):
+                    shutil.copytree(input_path, new_path)
+                    shutil.rmtree(input_path)
+                else:
+                    shutil.copy2(input_path, new_path)
+                    os.remove(input_path)
+
+                if os.path.exists(new_path):
                     return {
                         "status": True,
                         "message": f"'{input_path}' was moved to {new_path}.",
@@ -238,6 +244,71 @@ def move(self, source_path: str, target_path: str):
         else:
             return {"status": False, "message": f"'{new_path}' already exists."}
     else:
+        return {"status": False, "message": f"'{new_path}'  does not exist."}
+
+
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    name="app.tasks.datamover_tasks.basic_tasks.file_management.copy",
+)
+def copy(self, source_path: str, target_path: str):
+    input_path = source_path
+    new_path = target_path
+
+    if not input_path or not new_path:
+        return {"status": False, "message": "inputs are not valid."}
+
+    if os.path.exists(input_path):
+        if not os.path.exists(new_path):
+            try:
+                new_path_parent = os.path.dirname(new_path)
+                basename = os.path.basename(new_path)
+                temp_file_path = os.path.join(new_path_parent, f".{basename}")
+                os.makedirs(new_path_parent, exist_ok=True)
+                if os.path.isdir(input_path):
+                    shutil.copytree(input_path, temp_file_path)
+                    os.system("sync")
+                    os.rename(temp_file_path, new_path)
+                else:
+                    shutil.copy2(input_path, temp_file_path)
+                    with open(new_path, "ab") as f:
+                        os.fsync(f.fileno())
+                    os.rename(temp_file_path, new_path)
+                logger.info("Folder path: %s", new_path_parent)
+                for file in os.listdir(new_path_parent):
+                    logger.info("File in folder: %s", file)
+
+                if os.path.exists(new_path):
+                    logger.info("File copy: %s -> %s", input_path, new_path)
+                    return {
+                        "status": True,
+                        "message": f"'{input_path}' was copied to {new_path}.",
+                    }
+                else:
+                    logger.info("File copy failed: %s -> %s", input_path, new_path)
+                    return {
+                        "status": False,
+                        "message": f"Unexpected status: {input_path} could not be moved to {new_path} successfully.",
+                    }
+            except Exception as ex:
+                logger.info("File copy failed: %s -> %s", input_path, new_path)
+                logger.exception(ex)
+                return {
+                    "status": False,
+                    "message": f"Path '{input_path}' could not be copied to {new_path}. Root cause: {str(ex)}",
+                }
+        else:
+            logger.info(
+                "File copy failed. Target file exists: %s -> %s", input_path, new_path
+            )
+            return {"status": False, "message": f"'{new_path}' already exists."}
+    else:
+        logger.info(
+            "File copy failed. Source file does not exist: %s -> %s",
+            input_path,
+            new_path,
+        )
         return {"status": False, "message": f"'{new_path}'  does not exist."}
 
 

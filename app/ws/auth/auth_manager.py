@@ -6,7 +6,7 @@ from datetime import timedelta
 from typing import Any, List, Union
 
 import jwt
-from keycloak import KeycloakAuthenticationError, KeycloakOpenID
+from keycloak import KeycloakAdmin, KeycloakAuthenticationError, KeycloakOpenID
 from passlib.context import CryptContext
 from sqlalchemy import func
 
@@ -31,18 +31,38 @@ logger = logging.getLogger("wslog")
 
 
 class KeycloakAuthService:
+    _keycloak_openid = None
+    _keycloak_admin = None
+
     def __init__(self, config: AuthConfiguration):
         self.config = config
 
+    def get_keycloak_admin(self) -> KeycloakAdmin:
+        if self._keycloak_admin:
+            return self._keycloak_admin
+
+        settings = self.config.openid_connect_admin
+        self._keycloak_admin = KeycloakAdmin(
+            server_url=settings.server_url,
+            realm_name=settings.realm_name,
+            username=settings.username,
+            password=settings.password,
+            verify=True,
+        )
+        return self._keycloak_admin
+
     def get_keycloak_openid(self) -> KeycloakOpenID:
+        if self._keycloak_openid:
+            return self._keycloak_openid
+
         settings = self.config.openid_connect_client
-        keycloak_openid = KeycloakOpenID(
+        self._keycloak_openid = KeycloakOpenID(
             server_url=settings.server_url,
             realm_name=settings.realm_name,
             client_id=settings.client_id,
             client_secret_key=settings.client_secret,
         )
-        return keycloak_openid
+        return self._keycloak_openid
 
     def authenticate(self, username: str, password: str) -> AuthToken:
         try:
@@ -72,6 +92,40 @@ class KeycloakAuthService:
             logger.error(message)
             raise MetabolightsAuthenticationException(message=message)
 
+    def get_user_profile(self, username: str) -> AuthUser:
+        user_id = self.get_keycloak_admin().get_user_id(username)
+        if not user_id:
+            return None
+        user = self.get_keycloak_admin().get_user(
+            user_id=user_id, user_profile_metadata=True
+        )
+        if user:
+            roles = self.get_keycloak_admin().get_composite_realm_roles_of_user(user_id)
+            return self.convert_auth_user_info_from_dict(user, roles)
+        return None
+
+    def convert_auth_user_info_from_dict(
+        self, dict_data: dict, roles: list[dict]
+    ) -> AuthUser:
+        user = AuthUser()
+        if not dict_data:
+            return user
+
+        payload = dict_data
+        attributes: dict = dict_data.get("attributes", {})
+        orcid = attributes.get("orcid", [""])[0].replace("https://orcid.org/", "") or ""
+        user.email = payload.get("email")
+        user.email_verified = payload.get("emailVerified")
+        user.first_name = payload.get("firstName")
+        user.last_name = payload.get("lastName")
+        user.orcid = orcid
+        user.roles = [x["name"] for x in roles] if roles else []
+        user.country = attributes.get("country", [""])[0]
+        user.affiliation = attributes.get("affiliation", [""])[0]
+        user.affiliation_url = attributes.get("affiliationUrl", [""])[0]
+        user.globus_username = attributes.get("globusUserName", [""])[0]
+        return user
+
     def set_auth_user_info(
         self, jwt_token: str, user: None | AuthUser = None
     ) -> AuthUser:
@@ -91,6 +145,7 @@ class KeycloakAuthService:
         user.country = payload.get("address", {}).get("country", "")
         user.affiliation = payload.get("affiliation", "")
         user.affiliation_url = payload.get("affiliation_url", "")
+        user.globus_username = payload.get("globus_username", "")
 
         return user
 
@@ -127,6 +182,12 @@ class AuthenticationManager(AbstractAuthManager):
             self.external_auth_service = KeycloakAuthService(self.settings)
 
     instance = None
+
+    def get_user_profile(self, username: str) -> AuthUser:
+        if self.external_auth_service:
+            return self.external_auth_service.get_user_profile(username)
+
+        raise NotImplementedError("Local profile is not supported.")
 
     def validate_standalone_jwt_token(
         self,
@@ -425,6 +486,7 @@ class AuthenticationManager(AbstractAuthManager):
             if not db_user:
                 self.create_user_in_db(auth_user)
             user = SimplifiedUserModel.model_validate(db_user)
+            user.globusUserName = auth_user.globus_username
             return user
 
         return self.validate_standalone_jwt_token(

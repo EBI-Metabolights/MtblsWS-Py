@@ -25,8 +25,10 @@ class AuthConfiguration(BaseModel):
     access_token_allowed_audience: str = "Metabolights Editor"
     access_token_issuer_name: str = "Metabolights PythonWS"
     application_secret_key: str
-    one_time_token_expires_in_seconds: int = 300
+    one_time_token_expires_in_seconds: int = 600
     openid_connect_client: OpenIdConnnectClient
+    openid_connect_admin: OpenIdConnnectAdmin
+
     active_authentication_service: Literal["standalone", "keycloak"] = "standalone"
 
 

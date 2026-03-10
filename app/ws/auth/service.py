@@ -13,6 +13,7 @@ class AuthUser(BaseModel):
     affiliation: str = ""
     affiliation_url: str = ""
     country: str = ""
+    globus_username: str = ""
 
 
 class AuthToken(AuthUser):
@@ -47,3 +48,5 @@ class AbstractAuthManager:
         scopes: list[str] = [],
         exp_period_in_mins: int = -1,
     ) -> tuple[str, str]: ...
+
+    def get_user_profile(self, username: str) -> AuthUser: ...

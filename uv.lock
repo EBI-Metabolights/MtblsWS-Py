@@ -932,6 +932,20 @@ wheels = [
 ]
 
 [[package]]
+name = "globus-sdk"
+version = "4.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "pyjwt", extra = ["crypto"] },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/26/a1/bc5d03d673ab22bb8d1ca1437b341e0d305d573343ddd6f62b9b531aec55/globus_sdk-4.4.1.tar.gz", hash = "sha256:587bcc941d4f97ca28ea5317713a0987b709fc394ca0229cd158b9d8fdae7bbb", size = 269291, upload-time = "2026-02-27T17:08:33.441Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5b/d4/363505476f61f3da72ca09637ff93ba622f2b06b7e80a65a61af6c6f687a/globus_sdk-4.4.1-py3-none-any.whl", hash = "sha256:4a4b782f347f344624bf04b63095d411b75236ece4492802564dbc9fc2046b85", size = 414609, upload-time = "2026-02-27T17:08:30.419Z" },
+]
+
+[[package]]
 name = "google-api-core"
 version = "2.29.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1964,6 +1978,7 @@ dependencies = [
     { name = "flask-restful" },
     { name = "flask-restful-swagger" },
     { name = "fuzzywuzzy" },
+    { name = "globus-sdk" },
     { name = "google-api-python-client" },
     { name = "gspread" },
     { name = "gspread-dataframe" },
@@ -1985,6 +2000,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyjwt" },
+    { name = "python-dateutil" },
     { name = "python-keycloak" },
     { name = "python-levenshtein" },
     { name = "python-multipart" },
@@ -2026,6 +2042,7 @@ requires-dist = [
     { name = "flask-restful", specifier = ">=0.3.10,<0.4" },
     { name = "flask-restful-swagger", git = "https://github.com/EBI-Metabolights/flask-restful-swagger.git?rev=master" },
     { name = "fuzzywuzzy", specifier = ">=0.18.0,<0.19" },
+    { name = "globus-sdk", specifier = ">=4.4.1" },
     { name = "google-api-python-client", specifier = ">=2.163.0,<3" },
     { name = "gspread", specifier = ">=6.2.0,<7" },
     { name = "gspread-dataframe", specifier = ">=4.0.0,<5" },
@@ -2047,6 +2064,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.10.6,<3" },
     { name = "pydantic-settings", specifier = ">=2.8.1,<3" },
     { name = "pyjwt", specifier = ">=2.10.1,<3" },
+    { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "python-keycloak", specifier = ">=5.8.1" },
     { name = "python-levenshtein", specifier = ">=0.27.1,<0.28" },
     { name = "python-multipart", specifier = ">=0.0.22" },
@@ -2680,6 +2698,11 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/5c/5a/b46fa56bf322901eee5b0454a34343cdbdae202cd421775a8ee4e42fd519/pyjwt-2.11.0.tar.gz", hash = "sha256:35f95c1f0fbe5d5ba6e43f00271c275f7a1a4db1dab27bf708073b75318ea623", size = 98019, upload-time = "2026-01-30T19:59:55.694Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6f/01/c26ce75ba460d5cd503da9e13b21a33804d38c2165dec7b716d06b13010c/pyjwt-2.11.0-py3-none-any.whl", hash = "sha256:94a6bde30eb5c8e04fee991062b534071fd1439ef58d2adc9ccb823e7bcd0469", size = 28224, upload-time = "2026-01-30T19:59:54.539Z" },
+]
+
+[package.optional-dependencies]
+crypto = [
+    { name = "cryptography" },
 ]
 
 [[package]]

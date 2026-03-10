@@ -1,3 +1,5 @@
+import logging
+
 from app.utils import DeprecationError
 from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.auth.one_time_token import get_jwt_with_one_time_token
@@ -14,6 +16,8 @@ from app.ws.db.permission_scopes import (
 )
 from app.ws.db.types import UserRole
 from app.ws.study.user_service import UserService
+
+logger = logging.getLogger(__name__)
 
 
 def auth_endpoint(request):
@@ -298,6 +302,10 @@ def get_auth_data(request) -> AuthInputData:
     obfuscation_code = request.headers.get("obfuscation_code", None) or None
     if not obfuscation_code:
         obfuscation_code = request.view_args.get("obfuscation_code", None) or None
+    if not obfuscation_code:
+        obfuscation_code = request.args.get("reviewCode", None) or None
+        if obfuscation_code:
+            obfuscation_code = obfuscation_code.replace("reviewer", "", 1)
 
     jwt_data = None
     if "authorization" in request.headers:
@@ -312,6 +320,13 @@ def get_auth_data(request) -> AuthInputData:
     if not jwt_data:
         passcode = request.args.get("passcode", None)
         jwt_data = get_jwt_with_one_time_token(passcode)
+        passcode_str = ""
+        if passcode:
+            passcode_str = passcode if len(passcode) < 6 else passcode[-6:]
+        if not jwt_data and passcode:
+            logger.warning("There is no JWT token for passcode: %s...", passcode_str)
+        elif jwt_data and passcode:
+            logger.info("Authentication with passcode: %s...", passcode_str)
 
     study_id = request.view_args.get("study_id", "").upper() or None
     if not study_id:

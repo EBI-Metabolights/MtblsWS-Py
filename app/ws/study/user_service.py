@@ -85,6 +85,8 @@ class UserService(object):
                 username = user.email
                 email_verified = UserStatus(user.status) == UserStatus.ACTIVE
                 permission_context.validated_jwt = jwt
+                permission_context.globus_username = user.globusUserName
+                permission_context.orcid = user.orcid
                 permission_context.username = username
                 permission_context.email_verified = email_verified
             except Exception as ex:
@@ -115,7 +117,8 @@ class UserService(object):
                     permission_context.obfuscation_code = study.obfuscationcode
                     permission_context.validated_obfuscation_code = (
                         obfuscation_code
-                        if obfuscation_code == study.obfuscationcode
+                        if obfuscation_code
+                        and obfuscation_code == study.obfuscationcode
                         else None
                     )
                     permission_context.study_id = study.acc
@@ -154,8 +157,14 @@ class UserService(object):
                     permission_context.user_role = UserRole(token_user.role)
                     permission_context.user_api_token = token_user.apitoken
                     permission_context.partner_user = token_user.partner == 1
+                    try:
+                        info = self.auth_manager.get_user_profile(token_user.username)
+                        permission_context.globus_username = info.globus_username
+                    except Exception as ex:
+                        logger.exception(ex)
             if permission_context.username and permission_context.study_id:
-                owner_filter = user_filter.copy()
+                owner_filter = [User.status == UserStatus.ACTIVE.value]
+                user_filter.append(User.username == permission_context.username)
                 owner_filter.append(Study.acc == permission_context.study_id)
                 query = base_query.join(Study, User.studies)
 
@@ -397,6 +406,7 @@ class UserService(object):
         if not context.owner and context.user_role not in curator_roles:
             if context.study_status == StudyStatus.PUBLIC:
                 permission.study_id = context.study_id
+                permission.first_private_date = context.first_private_date
                 permission.study_status = context.study_status.name
                 permission.study_category = category
                 permission.reason = "reason-03"
@@ -407,6 +417,7 @@ class UserService(object):
                 and context.validated_obfuscation_code
             ):
                 permission.study_id = context.study_id
+                permission.first_private_date = context.first_private_date
                 permission.study_status = context.study_status.name
                 permission.obfuscation_code = context.validated_obfuscation_code
                 permission.study_category = category
@@ -421,6 +432,7 @@ class UserService(object):
         permission.study_id = context.study_id
         permission.study_status = context.study_status.name
         permission.obfuscation_code = context.obfuscation_code
+        permission.first_private_date = context.first_private_date
         permission.study_category = category
         if context.user_role in curator_roles:
             if context.study_status == StudyStatus.PUBLIC:
@@ -472,126 +484,6 @@ class UserService(object):
         resources: dict[str, list] = scope_dict.get("resources", {})
 
         permission.scopes = {k: v for k, v in resources.items() if v}
-
-    def validate_user_is_submitter_of_study_or_has_curator_role(
-        self, user_token, study_id
-    ):
-        user = None
-        exception = None
-
-        try:
-            user = self.validate_user_has_curator_role(user_token)
-        except Exception as ex:
-            exception = ex
-            submitters = self.get_study_submitters(study_id)
-            if submitters:
-                for submitter in submitters:
-                    if submitter.apitoken == user_token:
-                        user = {
-                            "id": submitter.id,
-                            "username": submitter.username,
-                            "role": submitter.role,
-                            "status": submitter.status,
-                            "apitoken": submitter.apitoken,
-                            "password": submitter.password,
-                            "partner": submitter.partner,
-                        }
-
-        if not user:
-            raise MetabolightsAuthorizationException(
-                message="Error while retreiving user from database", exception=exception
-            )
-        return user
-
-    def validate_user_has_write_access(self, user_token, study_id):
-        try:
-            with DBManager.get_instance().session_maker() as db_session:
-                base_query = db_session.query(
-                    User.id,
-                    User.username,
-                    User.role,
-                    User.status,
-                    User.apitoken,
-                    User.partner,
-                    Study.status,
-                )
-                query = base_query.join(Study, User.studies)
-                result = query.filter(
-                    Study.acc == study_id,
-                    User.apitoken == user_token,
-                    User.status == UserStatus.ACTIVE.value,
-                ).first()
-                if result and StudyStatus(result[6]) in {StudyStatus.PROVISIONAL}:
-                    return result
-        except Exception as e:
-            raise MetabolightsAuthorizationException(
-                message="Error while retreiving user from database", exception=e
-            )
-
-        with DBManager.get_instance().session_maker() as db_session:
-            study = db_session.query(Study.acc).filter(Study.acc == study_id).first()
-            if study:
-                return self.validate_user_has_curator_role(user_token)
-            raise MetabolightsAuthorizationException(message="Not a valid study id")
-
-    def validate_user_has_read_access(self, user_token, study_id, obfuscationcode=None):
-        if not study_id:
-            raise MetabolightsAuthorizationException(message="Not a valid study id")
-        try:
-            with DBManager.get_instance().session_maker() as db_session:
-                base_query = db_session.query(
-                    Study.acc, Study.status, Study.obfuscationcode
-                )
-                study = base_query.filter(Study.acc == study_id).first()
-                if not study:
-                    raise MetabolightsAuthorizationException(
-                        message="Not a valid study id"
-                    )
-                else:
-                    if study[1] == StudyStatus.PUBLIC.value:
-                        return True
-                    else:
-                        if obfuscationcode:
-                            if study[2] == obfuscationcode and study[1] in (
-                                StudyStatus.INREVIEW.value,
-                                StudyStatus.PRIVATE.value,
-                                StudyStatus.PROVISIONAL.value,
-                            ):
-                                return True
-                            if study[2] != obfuscationcode:
-                                raise MetabolightsAuthorizationException(
-                                    message="Not a valid study id or obfuscation code"
-                                )
-
-        except Exception as e:
-            raise MetabolightsAuthorizationException(
-                message="Error while retreiving user from database", exception=e
-            )
-        try:
-            with DBManager.get_instance().session_maker() as db_session:
-                base_query = db_session.query(
-                    User.id,
-                    User.username,
-                    User.role,
-                    User.status,
-                    User.apitoken,
-                    User.partner,
-                    Study.status,
-                )
-                query = base_query.join(Study, User.studies)
-                result = query.filter(
-                    Study.acc == study_id,
-                    User.apitoken == user_token,
-                    User.status == UserStatus.ACTIVE.value,
-                ).first()
-                if result:
-                    return True
-                self.validate_user_has_curator_role(user_token)
-        except Exception as e:
-            raise MetabolightsAuthorizationException(
-                message="Error while retreiving user from database", exception=e
-            )
-        return True
 
     def validate_user_has_curator_role(self, user_token):
         return self.validate_user_by_token(user_token, [UserRole.ROLE_SUPER_USER.value])

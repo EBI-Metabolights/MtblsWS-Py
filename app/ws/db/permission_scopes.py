@@ -2,7 +2,7 @@ import datetime
 import enum
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel, to_pascal
 
 from app.ws.db.types import CurationRequest, StudyCategory, StudyStatus, UserRole
@@ -108,7 +108,19 @@ class StudyAccessPermission(BaseScopeModel):
     edit: bool = False
     delete: bool = False
     reason: str = ""
+    first_private_date: str = ""
     scopes: PermisionScopeDict = {}
+
+    @field_validator("first_private_date")
+    @classmethod
+    def datetime_validation(cls, value):
+        if not value:
+            return None
+        if isinstance(value, datetime.datetime):
+            return value.strftime("%Y-%m-%d")
+        elif isinstance(value, (float, int)):
+            return datetime.datetime.fromtimestamp(value).strftime("%Y-%m-%d")
+        return value
 
 
 class StudyPermissionContext(BaseScopeModel):
@@ -139,6 +151,8 @@ class StudyPermissionContext(BaseScopeModel):
     owner: None | bool = None
     email_verified: None | bool = None
     expected_release_date: None | datetime.datetime = None
+    globus_username: None | str = None
+    orcid: None | str = None
 
 
 class RoleEvaluationResult(BaseScopeModel):
