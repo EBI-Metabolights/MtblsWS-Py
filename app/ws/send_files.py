@@ -17,11 +17,13 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import datetime
+import io
 import json
 import logging
 import os
 import pathlib
 import random
+import shutil
 import time
 import uuid
 from pathlib import Path
@@ -68,6 +70,32 @@ def generate_file_chunks_with_cleanup(file_path, cleanup_func, chunk_size=8192):
     finally:
         cleanup_func()
 
+class AutoCleanupFile(io.BufferedReader):
+    def __init__(self, file_path: str | Path, mode: str = "rb"):
+        self.file_path = Path(file_path).resolve()
+        self.parent_dir = self.file_path.parent
+        raw = open(self.file_path, mode)
+        super().__init__(raw)
+        self._closed_once = False
+
+    def close(self):
+        if self._closed_once:
+            return
+
+        self._closed_once = True
+
+        try:
+            super().close()
+        finally:
+            if self.parent_dir.exists():
+                shutil.rmtree(self.parent_dir, ignore_errors=True)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.close()
+        return False
 
 class SendFiles(Resource):
     @swagger.operation(
@@ -445,8 +473,6 @@ class SendFilesPrivate(Resource):
             task = copy.apply_async(kwargs=inputs, expires=60)
             result = task.get(timeout=120)
             if result and result.get("status"):
-                files = os.listdir(target_folder)
-                logger.info("Files: %s", files)
                 if process_folder:
                     zip_file_path = shared_target_path + ".zip"
                     if os.path.isfile(zip_file_path):
@@ -476,7 +502,7 @@ class SendFilesPrivate(Resource):
                 #         "Content-Disposition": f'attachment; filename=basename'
                 #     },
                 # )
-                # target_file  = AutoCleanupFile(file_path=shared_target_path)
+                target_file  = AutoCleanupFile(file_path=shared_target_path)
                 for _ in range(3):
                     if os.path.exists(shared_target_path):
                         break
@@ -485,7 +511,7 @@ class SendFilesPrivate(Resource):
                     abort(404, message="file not found")
                 response = make_response(
                     send_file(
-                        shared_target_path,
+                        target_file,
                         as_attachment=True,
                         download_name=basename,
                         max_age=0,
