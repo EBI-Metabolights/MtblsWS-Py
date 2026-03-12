@@ -1395,7 +1395,7 @@ class ProvisionalStudies(Resource):
             sample_template_name = new_study_input.selected_sample_file_template
             study_template_name = new_study_input.selected_investigation_file_template
             study_acc = create_empty_study(
-                user_token,
+                username,
                 study_id=study_acc,
                 template_version=template_version,
                 study_category_name=study_category,
@@ -1856,7 +1856,7 @@ class CreateAccession(Resource):
             sample_template_name = study_config.default_metadata_sample_template_name
             study_template_name = study_config.default_metadata_study_template_name
             study_acc = create_empty_study(
-                user_token,
+                username,
                 study_id=study_acc,
                 template_version=template_version,
                 study_category_name=study_category,

@@ -78,11 +78,11 @@ class StudyFolderIndex(BaseModel):
 
 def get_directory_files(
     root_path: str,
-    subpath: str,
+    subpath: None | str,
     recursive=False,
     search_pattern="**/*",
     exclude_list=None,
-    include_metadata_files=True,
+    include_metadata_files: bool = True,
 ):
     source_file_descriptors: Dict[str, FileDescriptor] = {}
     if not exclude_list:
@@ -161,7 +161,9 @@ def evaluate_files_in_detail(
             metadata.type = "metadata_sample"
         elif file_extension == ".txt" and name.startswith("a_"):
             metadata.type = "metadata_assay"
-        elif file_extension == ".txt" and name.startswith("i_"):
+        elif file_extension == ".txt" and (
+            name.startswith("i_") or "investigation" in name.lower()
+        ):
             metadata.type = "metadata_investigation"
         elif file_extension in derived_file_extensions:
             metadata.type = "derived"
@@ -183,12 +185,18 @@ def evaluate_files_in_detail(
             ".zip",
         ):
             metadata.type = "compressed"
-
-        if file.relative_path.startswith(
-            settings.study.audit_files_symbolic_link_name
-        ) or file.relative_path.startswith(
-            settings.study.internal_files_symbolic_link_name
-        ):
+        parts = file.relative_path.split("/")
+        subfolder = parts[0]
+        if subfolder not in [
+            "FILES",
+            "AUDIT_FILES",
+            "INTERNAL_FILES",
+        ] and not metadata.type.startswith("metadata_"):
+            metadata.type = "metadata_unknown"
+        elif subfolder in [
+            "AUDIT_FILES",
+            "INTERNAL_FILES",
+        ]:
             metadata.type = "audit"
         metadata.relative_path = file.relative_path
         metadata.is_stop_folder = file.is_stop_folder
