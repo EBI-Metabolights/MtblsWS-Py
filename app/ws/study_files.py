@@ -56,7 +56,7 @@ from app.ws.db.permission_scopes import (
     StudyResource,
     StudyResourceScope,
 )
-from app.ws.db.types import UserRole
+from app.ws.db.types import StudyStatus, UserRole
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
@@ -68,6 +68,7 @@ from app.ws.study.folder_utils import (
 from app.ws.study.study_service import StudyService
 from app.ws.study.utils import get_study_metadata_path
 from app.ws.study_folder_utils import (
+    LiteFileMetadata,
     LiteFileSearchResult,
     evaluate_files,
     get_directory_files,
@@ -1714,11 +1715,11 @@ class StudyFilesTree(Resource):
 
 
 def get_study_metadata_and_data_files(
-    study_id,
-    location,
+    study_id: str,
+    location: str,
     include_internal_files,
-    directory,
-    include_sub_dir,
+    directory: str,
+    include_sub_dir: bool,
     scopes: None | PermisionScopeDict = None,
 ):
     settings = get_settings()
@@ -1737,16 +1738,24 @@ def get_study_metadata_and_data_files(
         study_metadata_location = os.path.join(
             settings.mounted_paths.study_metadata_files_root_path, study_id
         )
+        study_audit_files_path = os.path.join(
+            settings.mounted_paths.study_audit_files_root_path, study_id, "audit"
+        )
+        study_internal_files_path = os.path.join(
+            settings.mounted_paths.study_internal_files_root_path, study_id
+        )
 
         # files_list_json_file = os.path.join(study_metadata_location, settings.readonly_files_symbolic_link_name, files_list_json)
         referenced_files = get_referenced_file_set(
             study_id=study_id, metadata_path=study_metadata_location
         )
-        exclude_list = set()
-        for item in get_settings().file_filters.rsync_exclude_list:
-            exclude_list.add(
-                os.path.join(settings.readonly_files_symbolic_link_name, item)
-            )
+        exclude_list = set(
+            [
+                settings.readonly_files_symbolic_link_name,
+                settings.audit_files_symbolic_link_name,
+                settings.internal_files_symbolic_link_name,
+            ]
+        )
         audit_files_view = (
             True
             if StudyResourceScope.LIST in scopes.get(StudyResource.AUDIT_FILES, [])
@@ -1762,17 +1771,23 @@ def get_study_metadata_and_data_files(
         if not include_internal_files or not audit_files_view:
             exclude_list.add(settings.audit_files_symbolic_link_name)
 
-        include_metadata_files = True
-        if directory == settings.readonly_files_symbolic_link_name:
-            include_metadata_files = False
-        directory_path = study_metadata_location
+        target_directory = directory
+        directory_root_path = study_metadata_location
         if directory:
-            directory_path: str = os.path.join(study_metadata_location, directory)
+            if directory.startswith(settings.audit_files_symbolic_link_name):
+                directory_root_path = study_audit_files_path
+                selected_subfolder = settings.audit_files_symbolic_link_name
+            elif directory.startswith(settings.internal_files_symbolic_link_name):
+                directory_root_path = study_internal_files_path
+                selected_subfolder = settings.internal_files_symbolic_link_name
+            else:
+                selected_subfolder = ""
+
+            target_directory = directory.replace(selected_subfolder, "", 1).lstrip("/")
         private_directory_files: Dict[str, FileDescriptor] = {}
         public_directory_files: Dict[str, FileDescriptor] = {}
         directory_files = {}
-        files_path = os.path.join(study_metadata_location, "FILES")
-        if directory_path.startswith(files_path):
+        if directory and directory.startswith("FILES"):
             mounted_paths = get_settings().study.mounted_paths
             target_root_path = os.path.join(
                 mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES"
@@ -1803,7 +1818,7 @@ def get_study_metadata_and_data_files(
                 if item_parent_path == directory:
                     descriptor = FileDescriptor.model_validate(private_data_files[x])
                     private_directory_files[item_relative_path] = descriptor
-            if study.first_public_date:
+            if StudyStatus(study.status) in {StudyStatus.PUBLIC}:
                 for x in public_data_files:
                     item_relative_path = public_data_files[x]["relative_path"]
                     item_parent_path = public_data_files[x]["parent_relative_path"]
@@ -1827,28 +1842,27 @@ def get_study_metadata_and_data_files(
             directory_files = OrderedDict(
                 sorted(private_directory_files.items(), key=lambda x: x[0])
             )
-
         else:
             directory_files = get_directory_files(
-                study_metadata_location,
-                directory,
+                directory_root_path,
+                target_directory,
                 search_pattern="**/*",
                 recursive=include_sub_dir,
                 exclude_list=exclude_list,
-                include_metadata_files=include_metadata_files,
             )
-            # EMULATE the FILES directory
-            if not directory and "FILES" not in directory_files:
-                directory_files["FILES"] = FileDescriptor(
-                    name="FILES",
-                    parent_relative_path="",
-                    relative_path="FILES",
-                    is_dir=True,
-                    modified_time=int(current_time(utc_timezone=True).timestamp()),
-                )
-        # metadata_files = get_all_metadata_files()
-        # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
-        # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
+            # EMULATE the FILES, AUDIT_FILES and INTERNAL_FILES directory
+            if not directory and directory_root_path == study_metadata_location:
+                for subfolder in ["FILES", "AUDIT_FILES", "INTERNAL_FILES"]:
+                    if subfolder not in directory_files:
+                        directory_files[subfolder] = FileDescriptor(
+                            name=subfolder,
+                            parent_relative_path="",
+                            relative_path=subfolder,
+                            is_dir=True,
+                            modified_time=int(
+                                current_time(utc_timezone=True).timestamp()
+                            ),
+                        )
         search_result = evaluate_files(directory_files, referenced_files)
     data_files_index_view = (
         True
@@ -1863,12 +1877,29 @@ def get_study_metadata_and_data_files(
                 ftp_folder_path = os.path.join(
                     ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}"
                 )
-                if directory:
-                    ftp_folder_path = os.path.join(ftp_folder_path, directory)
 
-                ftp_search_result = get_private_ftp_files(
-                    include_sub_dir, settings, ftp_folder_path
-                )
+                if not directory:
+                    for subfolder in ["FILES"]:
+                        current = current_time().strftime("%y-%m-%d-%m_%H:%M:%S")
+                        ftp_search_result = LiteFileSearchResult(
+                            study=[
+                                LiteFileMetadata(
+                                    directory=True,
+                                    file="FILES",
+                                    createdAt=current,
+                                    timestamp=current,
+                                )
+                            ]
+                        )
+                else:
+                    target_dir = directory
+                    target_dir = target_dir.replace("FILES", "", 1).lstrip("/")
+                    if target_dir:
+                        ftp_folder_path = os.path.join(ftp_folder_path, target_dir)
+
+                    ftp_search_result = get_private_ftp_files(
+                        include_sub_dir, settings, ftp_folder_path
+                    )
                 if search_result:
                     search_result.privateFtpAccessible = (
                         ftp_search_result.privateFtpAccessible
@@ -1876,8 +1907,6 @@ def get_study_metadata_and_data_files(
                     search_result.latest = ftp_search_result.study
                 else:
                     search_result = ftp_search_result
-                # search_result.latest = search_result.study
-                # search_result.study = []
             except Exception as exc:
                 logger.error(f"Error for study {study.acc}: {str(exc)}")
                 raise MetabolightsException(

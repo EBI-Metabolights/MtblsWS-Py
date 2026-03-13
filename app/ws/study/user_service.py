@@ -115,7 +115,8 @@ class UserService(object):
                     permission_context.obfuscation_code = study.obfuscationcode
                     permission_context.validated_obfuscation_code = (
                         obfuscation_code
-                        if obfuscation_code == study.obfuscationcode
+                        if obfuscation_code
+                        and obfuscation_code == study.obfuscationcode
                         else None
                     )
                     permission_context.study_id = study.acc
@@ -155,7 +156,8 @@ class UserService(object):
                     permission_context.user_api_token = token_user.apitoken
                     permission_context.partner_user = token_user.partner == 1
             if permission_context.username and permission_context.study_id:
-                owner_filter = user_filter.copy()
+                owner_filter = [User.status == UserStatus.ACTIVE.value]
+                user_filter.append(User.username == permission_context.username)
                 owner_filter.append(Study.acc == permission_context.study_id)
                 query = base_query.join(Study, User.studies)
 
