@@ -41,7 +41,7 @@ def create_user_in_db(user):
 
 
 def create_test_study_in_db(user, study_id):
-    create_empty_study(user.user_token, study_id)
+    create_empty_study(user.username, study_id)
 
 
 def delete_test_user_from_db(user):

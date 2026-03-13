@@ -26,6 +26,7 @@ def get_db_connection_pool():
             db_url,
             min_size=conn_pool_min,
             max_size=conn_pool_max,
-            close_returns=True,
+            max_lifetime=3600,
+            max_idle=600,
         )
     return global_postgresql_pool

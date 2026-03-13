@@ -1756,9 +1756,6 @@ def get_study_metadata_and_data_files(
                 settings.internal_files_symbolic_link_name,
             ]
         )
-        # exclude_list.update(
-        #     [os.path.join(settings.readonly_files_symbolic_link_name, item)]
-        # )
         audit_files_view = (
             True
             if StudyResourceScope.LIST in scopes.get(StudyResource.AUDIT_FILES, [])
@@ -1903,7 +1900,6 @@ def get_study_metadata_and_data_files(
                     ftp_search_result = get_private_ftp_files(
                         include_sub_dir, settings, ftp_folder_path
                     )
-
                 if search_result:
                     search_result.privateFtpAccessible = (
                         ftp_search_result.privateFtpAccessible
