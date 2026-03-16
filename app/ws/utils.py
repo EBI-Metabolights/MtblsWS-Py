@@ -1002,25 +1002,10 @@ def map_file_type(file_name, directory, assay_file_list=None):
             else:
                 return "metadata_maf", none_active_status, folder
         elif fname.startswith("i_"):
-            investigation = os.path.join(directory, "i_")
-            default_investigation = os.path.join(directory, "i_Investigation.txt")
-            if os.sep + "audit" + os.sep in directory:
+            if os.sep + "audit" + os.sep in directory or fname != "i_Investigation.txt":
                 return "metadata_investigation", none_active_status, folder
-            if os.path.exists(default_investigation):
-                with open(
-                    default_investigation, encoding="utf8", errors="ignore"
-                ) as file:
-                    if file.read():
-                        return "metadata_investigation", active_status, folder
-                    else:
-                        return "metadata_investigation", none_active_status, folder
-            # try others
-            for invest_file in glob.glob(
-                investigation + "*"
-            ):  # Default investigation file pattern
-                with open(invest_file, encoding="utf8", errors="ignore") as file:
-                    if file.read():
-                        return "metadata_investigation", active_status, folder
+            return "metadata_investigation", active_status, folder
+
         return "metadata", none_active_status, folder
     elif final_filename in ("fid", "fid.txt"):  # NMR data
         return "fid", active_status, folder
