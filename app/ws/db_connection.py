@@ -1150,7 +1150,7 @@ def get_provisional_study_ids_for_user(user_token):
 
 
 def create_empty_study(
-    user_token,
+    username,
     template_version="1.0",
     study_category_name="other",
     sample_template_name="minimum",
@@ -1162,9 +1162,6 @@ def create_empty_study(
     dataset_license_version=None,
     data_policy_agreement=0,
 ):
-    email = get_email(user_token)
-    # val_email(email)
-    email = email.lower()
     req_id = study_id
     current_time = current_utc_time_without_timezone()
     releasedate = current_time + datetime.timedelta(days=365)
@@ -1173,13 +1170,13 @@ def create_empty_study(
     with get_connection() as (conn, cursor):
         try:
             user_id = None
-            cursor.execute(get_user_id_sql, {"username": email})
+            cursor.execute(get_user_id_sql, {"username": username})
             result = cursor.fetchone()
             if result:
                 user_id = result[0] if result else None
 
             if not user_id:
-                message = f"User detail for {email} is not fetched."
+                message = f"User detail for {username} is not fetched."
                 logger.error(message)
                 raise MetabolightsDBException(http_code=501, message=message)
 
@@ -1195,7 +1192,7 @@ def create_empty_study(
                 "req_id": req_id,
                 "obfuscationcode": obfuscationcode,
                 "releasedate": releasedate,
-                "email": email,
+                "email": username,
                 "new_unique_id": new_unique_id,
                 "userid": user_id,
                 "current_time": current_time,

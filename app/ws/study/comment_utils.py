@@ -148,7 +148,8 @@ def consolidate_keywords(
             if len(sources) > idx:
                 ontology.comments.append(model.Comment(name=source_name, value=source))
 
-        part = omics_type_comments.get("Omics Type", [""])[0]
+        parts = omics_type_comments.get("Omics Type", [""])
+        part = parts[0] if parts else ""
         if part and part.lower() not in ontology_terms:
             ontology_terms[part.lower()] = model.OntologyAnnotation(
                 comments=[
@@ -158,13 +159,16 @@ def consolidate_keywords(
             )
             ontology = ontology_terms[part.lower()]
             ontology.term = part
-            ontology.term_accession = omics_type_comments.get(
+            accession = omics_type_comments.get(
                 "Omics Type Term Accession Number", [""]
-            )[0]
-            ontology.term_source = model.OntologySource(
-                name=omics_type_comments.get("Omics Type Term Source REF", [""])[0]
             )
-        part = assay_type_comments.get("Assay Type", [""])[0]
+            ontology.term_accession = accession[0] if accession else ""
+            source = omics_type_comments.get("Omics Type Term Source REF", [""])
+            ontology.term_source = model.OntologySource(
+                name=source[0] if source else ""
+            )
+        part = assay_type_comments.get("Assay Type", [""])
+        part = parts[0] if parts else ""
         if part and part.lower() not in ontology_terms:
             ontology_terms[part.lower()] = model.OntologyAnnotation(
                 comments=[
@@ -177,11 +181,13 @@ def consolidate_keywords(
             )
             ontology = ontology_terms[part.lower()]
             ontology.term = part
-            ontology.term_accession = assay_type_comments.get(
+            accession = assay_type_comments.get(
                 "Assay Type Term Accession Number", [""]
-            )[0]
+            )
+            ontology.term_accession = accession[0] if accession else ""
+            source = assay_type_comments.get("Assay Type Term Source REF", [""])
             ontology.term_source = model.OntologySource(
-                name=assay_type_comments.get("Assay Type Term Source REF", [""])[0]
+                name=source[0] if source else ""
             )
 
     for item in isa_study.design_descriptors:
