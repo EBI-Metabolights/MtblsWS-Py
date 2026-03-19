@@ -157,7 +157,7 @@ class UserService(object):
                     permission_context.partner_user = token_user.partner == 1
             if permission_context.username and permission_context.study_id:
                 owner_filter = [User.status == UserStatus.ACTIVE.value]
-                user_filter.append(User.username == permission_context.username)
+                owner_filter.append(User.username == permission_context.username)
                 owner_filter.append(Study.acc == permission_context.study_id)
                 query = base_query.join(Study, User.studies)
 
