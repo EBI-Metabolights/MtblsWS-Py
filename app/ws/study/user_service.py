@@ -164,7 +164,7 @@ class UserService(object):
                         logger.exception(ex)
             if permission_context.username and permission_context.study_id:
                 owner_filter = [User.status == UserStatus.ACTIVE.value]
-                user_filter.append(User.username == permission_context.username)
+                owner_filter.append(User.username == permission_context.username)
                 owner_filter.append(Study.acc == permission_context.study_id)
                 query = base_query.join(Study, User.studies)
 
