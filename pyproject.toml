@@ -53,7 +53,7 @@ dependencies = [
     "sqlalchemy>=2.0.46",
     "python-multipart>=0.0.22",
     "flask>=3.1.2",
-    "mhd-model>=0.1.48",
+    "mhd-model>=0.1.53",
     "isatools",
 ]
 
