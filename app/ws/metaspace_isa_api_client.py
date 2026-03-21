@@ -28,6 +28,7 @@ from isatools.isatab import dump
 from app.ws.isa_table_templates import add_new_assay_sheet
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.commons import create_ftp_folder
 from app.ws.study_creation_model import OntologyTerm
 from app.ws.utils import update_correct_sample_file_name
 
@@ -65,7 +66,7 @@ class MetaSpaceIsaApiClient(Resource):
         mtspc_obj,
         output_dir,
         study_id=None,
-        user_token=None,
+        username=None,
         obfuscation_code=None,
         persist=False,
     ):
@@ -93,7 +94,8 @@ class MetaSpaceIsaApiClient(Resource):
             )
 
             # Create upload folder
-            status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
+            status = create_ftp_folder(study_id, obfuscation_code, username)
+
             measurement_type = OntologyTerm(
                 term="metabolite profiling assay",
                 term_source_ref="OBI",
@@ -181,7 +183,6 @@ class MetaSpaceIsaApiClient(Resource):
         if persist:
             isa_api.write_isa_study(
                 isa_inv,
-                user_token,
                 output_dir,
                 save_investigation_copy=True,
                 save_samples_copy=True,

@@ -70,6 +70,7 @@ def generate_file_chunks_with_cleanup(file_path, cleanup_func, chunk_size=8192):
     finally:
         cleanup_func()
 
+
 class AutoCleanupFile(io.BufferedReader):
     def __init__(self, file_path: str | Path, mode: str = "rb"):
         self.file_path = Path(file_path).resolve()
@@ -96,6 +97,7 @@ class AutoCleanupFile(io.BufferedReader):
     def __exit__(self, exc_type, exc, tb):
         self.close()
         return False
+
 
 class SendFiles(Resource):
     @swagger.operation(
@@ -502,7 +504,7 @@ class SendFilesPrivate(Resource):
                 #         "Content-Disposition": f'attachment; filename=basename'
                 #     },
                 # )
-                target_file  = AutoCleanupFile(file_path=shared_target_path)
+                target_file = AutoCleanupFile(file_path=shared_target_path)
                 for _ in range(3):
                     if os.path.exists(shared_target_path):
                         break

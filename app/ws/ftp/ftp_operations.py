@@ -32,7 +32,7 @@ from app.ws.ftp.ftp_utils import (
     get_ftp_folder_access_status,
     toogle_ftp_folder_permission,
 )
-from app.ws.mtblsWSclient import WsClient
+from app.ws.study.commons import create_ftp_folder
 from app.ws.study.study_service import StudyService
 from app.ws.utils import log_request
 
@@ -447,8 +447,11 @@ class PrivateFtpFolder(Resource):
 
         logger.info("Creating a new study upload folder for study %s", study_id)
         study = StudyService.get_instance().get_study_by_acc(study_id)
-        return WsClient.create_upload_folder(
-            study_id, study.obfuscationcode, user_token, send_email=send_email
+        return create_ftp_folder(
+            study_id,
+            study.obfuscationcode,
+            result.context.username,
+            send_email=send_email,
         )
 
 

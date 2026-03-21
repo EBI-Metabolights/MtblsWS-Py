@@ -563,7 +563,6 @@ class StudyStatus(Resource):
 
             iac.write_isa_study(
                 isa_inv,
-                None,
                 study_location,
                 save_investigation_copy=True,
                 save_assays_copy=True,
@@ -601,7 +600,6 @@ class StudyStatus(Resource):
         elif status_updated:
             iac.write_isa_study(
                 isa_inv,
-                None,
                 study_location,
                 save_investigation_copy=True,
                 save_assays_copy=True,
@@ -877,7 +875,6 @@ class StudyStatus(Resource):
                 assay.filename = assay.filename.replace(study_id, updated_study_id, 1)
             iac.write_isa_study(
                 isa_inv,
-                None,
                 study_location,
                 save_investigation_copy=False,
                 save_assays_copy=False,
@@ -898,9 +895,9 @@ class StudyStatus(Resource):
                 for column in assay_df.columns:
                     if "Metabolite Assignment File" in column:
                         assay_df[column] = assay_df[column].apply(
-                            lambda x: x.replace(study_id, updated_study_id, 1)
-                            if x
-                            else ""
+                            lambda x: (
+                                x.replace(study_id, updated_study_id, 1) if x else ""
+                            )
                         )
                         maintenance_task.write_tsv_file(assay_df, metadata_file)
             new_name = os.path.basename(metadata_file).replace(

@@ -24,6 +24,7 @@ from app.ws.auth.permissions import (
     validate_submission_view,
     validate_user_has_submitter_or_super_user_role,
 )
+from app.ws.auth.service import UserProfile
 from app.ws.db.models import UserModel
 from app.ws.db.types import UserRole
 from app.ws.study.user_service import UserService
@@ -530,7 +531,9 @@ class AuthUser(Resource):
                 401,
             ), None
         try:
-            user = AuthenticationManager.get_instance().validate_oauth2_token(jwt_data)
+            user: UserProfile = (
+                AuthenticationManager.get_instance().validate_oauth2_token(jwt_data)
+            )
             resp = make_response(
                 jsonify(
                     {
@@ -543,7 +546,7 @@ class AuthUser(Resource):
             )
             resp.headers["Access-Control-Expose-Headers"] = "Jwt, User"
             resp.headers["Jwt"] = jwt_data
-            resp.headers["User"] = user.userName
+            resp.headers["User"] = user.username
             return resp
         except Exception as ex:
             return make_response(

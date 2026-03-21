@@ -351,7 +351,6 @@ Please use the GET method above to retrieve the structure of your study prior to
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
             isa_inv,
-            None,
             std_path,
             save_investigation_copy=save_audit_copy,
             save_samples_copy=save_audit_copy,

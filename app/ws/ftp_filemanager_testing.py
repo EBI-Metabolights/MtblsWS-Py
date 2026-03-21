@@ -27,63 +27,8 @@ from app.services.storage_service.unmounted.data_mover_client import (
     DataMoverAvailableStorage,
 )
 from app.ws.auth.permissions import validate_user_has_curator_role
-from app.ws.db_connection import check_access_rights
 
 logger = logging.getLogger("wslog")
-
-
-def get_permissions(study_id, user_token, obfuscation_code=None):
-    """
-    Check MTBLS-WS for permissions on this Study for this user
-
-    Study       User    Submitter   Curator     Reviewer/Read-only
-    PROVISIONAL   ----    Read+Write  Read+Write  Read
-    PRIVATE  ----    Read        Read+Write  Read
-    INREVIEW    ----    Read        Read+Write  Read
-    PUBLIC      Read    Read        Read+Write  Read
-
-    :param obfuscation_code:
-    :param study_id:
-    :param user_token:
-    :return: study details and permission levels
-
-    """
-    if not user_token:
-        user_token = "public_access_only"
-
-    # Reviewer access will pass the study obfuscation code instead of api_key
-    if study_id and not obfuscation_code and user_token.startswith("ocode:"):
-        logger.info("Study obfuscation code passed instead of user API_CODE")
-        obfuscation_code = user_token.replace("ocode:", "")
-
-    (
-        is_curator,
-        read_access,
-        write_access,
-        obfuscation_code,
-        study_location,
-        release_date,
-        submission_date,
-        updated_date,
-        study_status,
-    ) = check_access_rights(
-        user_token, study_id.upper(), study_obfuscation_code=obfuscation_code
-    )
-
-    logger.info(
-        "Read access: " + str(read_access) + ". Write access: " + str(write_access)
-    )
-
-    return (
-        is_curator,
-        read_access,
-        write_access,
-        obfuscation_code,
-        study_location,
-        release_date,
-        submission_date,
-        study_status,
-    )
 
 
 class FTPRemoteFileManager(Resource):

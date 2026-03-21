@@ -188,7 +188,7 @@ class SimplifiedUserModel(BaseModel):
     partner: Union[bool, int] = Field(..., alias="partner")  # excluded from es
     userName: str = Field(..., alias="username")  # assigned as not_analyzed in es
     apiToken: str = Field(..., alias="apitoken")  # excluded from es
-    globusUserName: None | str = None
+    globusUserName: None | str = Field(None, alias="globususername")
     model_config = ConfigDict(from_attributes=True)
 
     @field_validator("joinDate", check_fields=False)

@@ -103,7 +103,6 @@ class StudyComments(Resource):
 
         iac.write_isa_study(
             isa_inv,
-            None,
             std_path,
             save_investigation_copy=False,
             save_assays_copy=False,
@@ -236,7 +235,6 @@ class AssayComments(Resource):
 
         iac.write_isa_study(
             isa_inv,
-            None,
             std_path,
             save_investigation_copy=False,
             save_assays_copy=False,
@@ -340,7 +338,6 @@ class StudyDesignDescriptorComments(Resource):
 
         iac.write_isa_study(
             isa_inv,
-            None,
             std_path,
             save_investigation_copy=False,
             save_assays_copy=False,
@@ -444,7 +441,6 @@ class StudyFactorComments(Resource):
 
         iac.write_isa_study(
             isa_inv,
-            None,
             std_path,
             save_investigation_copy=False,
             save_assays_copy=False,

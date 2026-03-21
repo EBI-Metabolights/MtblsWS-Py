@@ -86,7 +86,7 @@ def prepare_revisions():
                         study_id,
                         revision_comment="Initial study revision.",
                         revision_datetime=db_study.first_public_date,
-                        created_by=user.email,
+                        created_by=user.username,
                     )
                     db_session.refresh(db_study)
                     db_study.revision_datetime = revision.revision_datetime

@@ -52,7 +52,7 @@ def flask_app_with_test_data_01(flask_app, data_01_user_list: List[utils.UserTes
                 utils.delete_test_study_from_db(study_id)
             utils.create_user_in_db(user)
             for study_id in user.studies:
-                create_empty_study(user.user_token, study_id)
+                create_empty_study(user.username, study_id)
         yield flask_app
         for user in data_01_user_list:
             utils.delete_test_user_from_db(user)

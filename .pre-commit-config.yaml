@@ -66,8 +66,6 @@ repos:
     - --no-cache
   - id: ruff-format
     name: 🐍 python · Format with Ruff
-    args:
-    - --check
 - repo: https://github.com/seddonym/import-linter.git
   rev: "v2.7"
   hooks:

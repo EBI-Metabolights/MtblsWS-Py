@@ -454,7 +454,7 @@ def import_metaspace(
     study_id=None,
     dataset_ids=None,
     study_location=None,
-    user_token=None,
+    username=None,
     obfuscation_code=None,
     sm_instance=None,
 ):
@@ -502,7 +502,7 @@ def import_metaspace(
         mtspc_obj,
         output_dir,
         study_id=study_id,
-        user_token=user_token,
+        username=username,
         obfuscation_code=obfuscation_code,
         persist=True,
     )

@@ -321,7 +321,6 @@ class IsaApiClient:
     def write_isa_study(
         self,
         inv_obj,
-        api_key,
         std_path,
         save_investigation_copy=True,
         save_samples_copy=False,

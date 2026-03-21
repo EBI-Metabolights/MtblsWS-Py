@@ -5,6 +5,7 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 from pydantic.alias_generators import to_camel, to_pascal
 
+from app.ws.auth.service import UserProfile
 from app.ws.db.types import CurationRequest, StudyCategory, StudyStatus, UserRole
 
 
@@ -164,6 +165,7 @@ class StudyPermissionContext(BaseScopeModel):
     expected_release_date: None | datetime.datetime = None
     globus_username: None | str = None
     orcid: None | str = None
+    user_profile: None | UserProfile = None
 
 
 class RoleEvaluationResult(BaseScopeModel):
@@ -171,6 +173,7 @@ class RoleEvaluationResult(BaseScopeModel):
     success: bool = False
     reason: None | str = None
     messages: None | list[str] = None
+    user_profile: None | UserProfile = None
 
 
 class StudyPermissionEvaluationResult(RoleEvaluationResult):

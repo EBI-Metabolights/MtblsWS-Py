@@ -275,7 +275,6 @@ class StudyAssayDelete(Resource):
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
             isa_inv,
-            None,
             std_path,
             save_investigation_copy=save_audit_copy,
             save_assays_copy=save_audit_copy,
@@ -751,7 +750,6 @@ class StudySampleFileSync(Resource):
 
             iac.write_isa_study(
                 target_isa_inv,
-                None,
                 target_study_location,
                 save_investigation_copy=False,
                 save_assays_copy=False,
@@ -944,7 +942,6 @@ class InvestigationFileSync(Resource):
             write_audit_files(target_study_location)
             iac.write_isa_study(
                 target_isa_inv,
-                None,
                 target_study_location,
                 save_investigation_copy=False,
                 save_assays_copy=False,

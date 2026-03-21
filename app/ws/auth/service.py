@@ -1,22 +1,32 @@
+import datetime
+
 from pydantic import BaseModel
 
-from app.ws.db.models import SimplifiedUserModel
+from app.ws.db.types import UserRole, UserStatus
 
 
-class AuthUser(BaseModel):
+class UserProfile(BaseModel):
+    username: str = ""
+    full_name: str = ""
     email: str = ""
     email_verified: bool = False
     first_name: str = ""
     last_name: str = ""
     orcid: str = ""
-    roles: list[str] = []
+    role: None | UserRole = None
+    address: str = ""
     affiliation: str = ""
     affiliation_url: str = ""
     country: str = ""
     globus_username: str = ""
+    enabled: bool = False
+    join_date: None | datetime.datetime = None
+    status: None | UserStatus = None
+    partner: bool = False
+    api_token: str = ""
 
 
-class AuthToken(AuthUser):
+class AuthToken(UserProfile):
     access_token: str
     refresh_token: str
 
@@ -28,7 +38,7 @@ class AbstractAuthManager:
         audience: None | str = None,
         issuer_name: None | str = None,
         db_session=None,
-    ) -> None | SimplifiedUserModel: ...
+    ) -> UserProfile: ...
 
     def create_oauth2_token(
         self,
@@ -49,4 +59,4 @@ class AbstractAuthManager:
         exp_period_in_mins: int = -1,
     ) -> tuple[str, str]: ...
 
-    def get_user_profile(self, username: str) -> AuthUser: ...
+    def get_user_profile(self, username: str) -> UserProfile: ...

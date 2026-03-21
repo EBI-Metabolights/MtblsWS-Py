@@ -109,6 +109,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_cluster_settings, get_study_settings
 from app.ws.study import identifier_service
+from app.ws.study.commons import create_ftp_folder
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
@@ -306,6 +307,7 @@ class MyMtblsStudies(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self):
         log_request(request)
         raise_deprecation_error(request)
@@ -338,6 +340,7 @@ class MyMtblsStudiesDetailed(Resource):
             },
         ],
     )
+    @metabolights_exception_handler
     def get(self):
         log_request(request)
         result = validate_user_has_submitter_or_super_user_role(request)
@@ -713,7 +716,7 @@ class CreateUploadFolder(Resource):
         obfuscation_code = result.context.obfuscation_code
         user_token = result.context.user_api_token
         logger.info("Creating a new study upload folder for study %s", study_id)
-        status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
+        status = create_ftp_folder(study_id, obfuscation_code, result.context.username)
         return status
 
 
@@ -1288,7 +1291,7 @@ class ProvisionalStudies(Resource):
         )
         for k, v in study_comments.items():
             study.comments.append(isa_model.Comment(name=k, value=v))
-        iac.write_isa_study(isa_inv, None, std_path)
+        iac.write_isa_study(isa_inv, std_path)
         sample_file_path = study_location = os.path.join(
             study_root_location, study_id, study.filename
         )
@@ -1472,7 +1475,7 @@ class ProvisionalStudies(Resource):
             study: Study = StudyService.get_instance().get_study_by_acc(study_acc)
             ftp_folder_name = study_acc.lower() + "-" + study.obfuscationcode
             inputs = {
-                "user_token": user_token,
+                "user_email": username,
                 "study_id": study_acc,
                 "folder_name": ftp_folder_name,
                 "study_title": study_title,
@@ -1929,7 +1932,7 @@ class CreateAccession(Resource):
             study: Study = StudyService.get_instance().get_study_by_acc(study_acc)
             ftp_folder_name = study_acc.lower() + "-" + study.obfuscationcode
             inputs = {
-                "user_token": user_token,
+                "user_email": username,
                 "study_id": study_acc,
                 "folder_name": ftp_folder_name,
             }

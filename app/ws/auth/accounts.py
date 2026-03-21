@@ -102,7 +102,7 @@ class UserAccounts(Resource):
                         User.username == user_name
                     )
                 elif email:
-                    filter_clause = lambda query: query.filter(User.email == email)
+                    filter_clause = lambda query: query.filter(User.username == email)
                 elif user_id:
                     filter_clause = lambda query: query.filter(User.id == user_id)
                 auth_manager = AuthenticationManager.get_instance()
@@ -404,7 +404,7 @@ class UserAccounts(Resource):
                         User.username == user_name
                     )
                 elif email:
-                    filter_clause = lambda query: query.filter(User.email == email)
+                    filter_clause = lambda query: query.filter(User.username == email)
                 elif user_id:
                     filter_clause = lambda query: query.filter(User.id == user_id)
                 db_session = DBManager.get_instance().session_maker()
