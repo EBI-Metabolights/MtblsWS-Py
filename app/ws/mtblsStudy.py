@@ -1226,6 +1226,7 @@ class ProvisionalStudies(Resource):
                 "Related Data Repository",
                 "Related Data Accession",
                 "Related Data URL",
+                "Related Data Description",
                 "Linked Study Accession",
             ]:
                 new_comments.append(comment)
@@ -1282,6 +1283,10 @@ class ProvisionalStudies(Resource):
                 (
                     "Related Data URL",
                     ";".join([x.url or "" for x in related_datasets]),
+                ),
+                (
+                    "Related Data Description",
+                    ";".join([x.description or "" for x in related_datasets]),
                 ),
                 (
                     "Linked Study Accession",

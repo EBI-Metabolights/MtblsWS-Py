@@ -29,6 +29,7 @@ class RelatedDataset(CamelCaseBaseModel):
     repository: str
     accession: str
     url: str = ""
+    description: str = ""
 
 
 class Funding(CamelCaseBaseModel):

@@ -935,6 +935,8 @@ class InvestigationFileSync(Resource):
                     target_comments = [
                         "Related Data Repository",
                         "Related Data Accession",
+                        "Related Data URL",
+                        "Related Data Description",
                     ]
                     self.update_comments(
                         source_isa_study, target_isa_study, target_comments
