@@ -89,7 +89,7 @@ class User(Base):
     )
     username = Column(String(255), unique=True)
     apitoken = Column(String(255), unique=True)
-    # TODO: Move KEYCLOAK
+    # TODO: Move to KEYCLOAK
     # role = Column(BigInteger, nullable=False)
     # address = Column(String(255))
     # affiliation = Column(String(255))

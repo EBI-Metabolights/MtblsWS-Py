@@ -17,6 +17,7 @@ from app.config.model.auth import AuthConfiguration
 from app.utils import (
     MetabolightsAuthenticationException,
     MetabolightsAuthorizationException,
+    MetabolightsException,
     current_time,
 )
 from app.ws.auth.service import AbstractAuthManager, AuthToken, UserProfile
@@ -98,7 +99,9 @@ class KeycloakAuthService:
     def get_user_profile(self, username: str) -> UserProfile:
         user_id = self.get_keycloak_admin().get_user_id(username)
         if not user_id:
-            return None
+            raise MetabolightsException(
+                message=f"Username '{username}' is not in auth service", http_code=501
+            )
         user = self.get_keycloak_admin().get_user(
             user_id=user_id, user_profile_metadata=True
         )
@@ -305,13 +308,19 @@ class AuthenticationManager(AbstractAuthManager):
 
         return user
 
-    def create_simplified_user_model(self, user: User) -> None | SimplifiedUserModel:
-        if not self.auth_manager or not user.username:
-            return None
-        user: UserProfile = self.auth_manager.get_user_profile(username=user.username)
+    def create_simplified_user_model(self, db_user: User) -> None | SimplifiedUserModel:
+        if not self.external_auth_service or not db_user or not db_user.username:
+            username = db_user.username if db_user and db_user.username else ""
+            raise MetabolightsException(
+                message=f"Auth service or user is not defined. {username}"
+            )
+        user: UserProfile = self.external_auth_service.get_user_profile(
+            username=db_user.username
+        )
         if not user:
-            # keep current values. reset profile fields in future
-            return None
+            raise MetabolightsException(
+                message=f"Username is not in auth service '{db_user.username}'"
+            )
         return SimplifiedUserModel(
             address=user.country,
             affiliation=user.affiliation,

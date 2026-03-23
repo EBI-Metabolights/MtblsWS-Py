@@ -672,14 +672,18 @@ class UserService(object):
         return users
 
     def create_user_model(self, db_user: User) -> None | UserModel:
-        if not self.auth_manager or not db_user.username:
-            return None
+        if not self.auth_manager or not db_user or not db_user.username:
+            username = db_user.username if db_user and db_user.username else ""
+            raise MetabolightsException(
+                message=f"Auth service or user is not defined. {username}"
+            )
         user: UserProfile = self.auth_manager.get_user_profile(
             username=db_user.username
         )
         if not user:
-            # keep current values. reset profile fields in future
-            return None
+            raise MetabolightsException(
+                message=f"Username is not in auth service '{db_user.username}'"
+            )
         return UserModel(
             address=user.country,
             affiliation=user.affiliation,
@@ -703,13 +707,19 @@ class UserService(object):
             apitoken=db_user.apitoken,
         )
 
-    def create_simplified_user_model(self, user: User) -> None | SimplifiedUserModel:
-        if not self.auth_manager or not user.username:
-            return None
-        user: UserProfile = self.auth_manager.get_user_profile(username=user.username)
+    def create_simplified_user_model(self, db_user: User) -> None | SimplifiedUserModel:
+        if not self.auth_manager or not db_user or not db_user.username:
+            username = db_user.username if db_user and db_user.username else ""
+            raise MetabolightsException(
+                message=f"Auth service or user is not defined. {username}"
+            )
+        user: UserProfile = self.auth_manager.get_user_profile(
+            username=db_user.username
+        )
         if not user:
-            # keep current values. reset profile fields in future
-            return None
+            raise MetabolightsException(
+                message=f"Username is not in auth service '{user.username}'"
+            )
         return SimplifiedUserModel(
             address=user.country,
             affiliation=user.affiliation,
