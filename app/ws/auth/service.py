@@ -1,3 +1,4 @@
+import abc
 import datetime
 
 from pydantic import BaseModel
@@ -31,7 +32,8 @@ class AuthToken(UserProfile):
     refresh_token: str
 
 
-class AbstractAuthManager:
+class AbstractAuthManager(abc.ABC):
+    @abc.abstractmethod
     def validate_oauth2_token(
         self,
         token: str,
@@ -40,6 +42,7 @@ class AbstractAuthManager:
         db_session=None,
     ) -> UserProfile: ...
 
+    @abc.abstractmethod
     def create_oauth2_token(
         self,
         username,
@@ -50,6 +53,7 @@ class AbstractAuthManager:
         exp_period_in_mins: int = -1,
     ) -> tuple[str, str]: ...
 
+    @abc.abstractmethod
     def refresh_token(
         self,
         token: str,
@@ -59,4 +63,5 @@ class AbstractAuthManager:
         exp_period_in_mins: int = -1,
     ) -> tuple[str, str]: ...
 
+    @abc.abstractmethod
     def get_user_profile(self, username: str) -> UserProfile: ...

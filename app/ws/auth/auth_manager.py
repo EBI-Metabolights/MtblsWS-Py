@@ -177,14 +177,22 @@ class KeycloakAuthService:
             role = UserRole.REVIEWER
         else:
             role = UserRole.ANONYMOUS
-
-        user.email = payload.get("email")
+        user.partner == "partner" in roles
+        user.email = payload.get("email", "")
         user.username = user.email
-        user.email_verified = payload.get("email_verified")
-        user.first_name = payload.get("given_name")
-        user.last_name = payload.get("family_name")
+        user.email_verified = payload.get("email_verified", None)
+        user.first_name = payload.get("given_name", "")
+        user.last_name = payload.get("family_name", "")
+        user.full_name = payload.get("name", f"{user.first_name} {user.last_name}")
         user.orcid = orcid
         user.role = role
+        user.enabled = payload.get("enabled", None)
+
+        try:
+            created_at = int(payload.get("created_datetime", 0)) / 1000.0
+        except Exception:
+            created_at = None
+        user.join_date = datetime.datetime.fromtimestamp(created_at)
         user.country = payload.get("address", {}).get("country", "")
         user.affiliation = payload.get("affiliation", "")
         user.affiliation_url = payload.get("affiliation_url", "")
