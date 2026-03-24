@@ -1,6 +1,6 @@
 from typing import Annotated, Any, Dict, List, Optional, Self
 
-from pydantic import Field, ValidationError, model_validator
+from pydantic import Field, ValidationError, field_validator, model_validator
 
 from app.ws.db.models import CamelCaseBaseModel
 
@@ -110,6 +110,13 @@ class AssayFieldDefaultValue(CamelCaseBaseModel):
     field_name: Annotated[str, Field()]
     field_format: Annotated[str, Field()]
     default_value: Annotated[DefaultValue, Field()]
+
+    @field_validator("field_format", check_fields=False)
+    @classmethod
+    def datetime_validation(cls, value):
+        if not value:
+            return "ontology"
+        return value.lower()
 
 
 class SampleFileMapping(CamelCaseBaseModel):

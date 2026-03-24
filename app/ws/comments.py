@@ -354,7 +354,7 @@ class StudyFactorComments(Resource):
             "comments": [
                 {
                     "name": "Study Factor Value Format",
-                    "value": "Ontology"
+                    "value": "ontology"
                 },
             ]
         }

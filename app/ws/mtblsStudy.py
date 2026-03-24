@@ -1310,9 +1310,9 @@ class ProvisionalStudies(Resource):
                         for x in factor.comments
                         if x.name == "Study Factor Value Format"
                     ]
-                    format = "Ontology"
+                    format = "ontology"
                     if formats and formats[0].value.lower() == "numeric":
-                        format = "Numeric"
+                        format = "numeric"
 
                     unit_terms = [
                         x for x in factor.comments if x.name == "Study Factor Unit"
@@ -1329,7 +1329,7 @@ class ProvisionalStudies(Resource):
                     ]
                     numeric = False
                     default_unit = None
-                    if format == "Numeric":
+                    if format == "numeric":
                         numeric = True
                         if unit_terms:
                             default_unit = isa_model.OntologyAnnotation(
