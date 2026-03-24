@@ -443,12 +443,6 @@ class StudyStatus(Resource):
                     isa_inv.public_release_date = new_date
                     isa_study.public_release_date = new_date
                     release_date = new_date
-                self.update_status(
-                    study_id,
-                    new_study_status.to_camel_case_str(),
-                    first_public_date=first_public_date_baseline,
-                    first_private_date=first_private_date_baseline,
-                )
             # update_curation_request(study_id, curation_request)
         else:
             if not status_updated:
@@ -492,12 +486,6 @@ class StudyStatus(Resource):
                             message="There are validation errors in the latest validation report. Please fix any issues before attempting to change study status.",
                         )
 
-            self.update_status(
-                study_id,
-                new_study_status.to_camel_case_str(),
-                first_public_date=first_public_date_baseline,
-                first_private_date=first_private_date_baseline,
-            )
         # current_study_status = types.StudyStatus.from_int(study.status)
         # requested_study_status = types.StudyStatus.from_name(study_status.upper())
 
@@ -506,6 +494,12 @@ class StudyStatus(Resource):
             context.study_status,
             new_study_status,
             context.reserved_accession,
+        )
+        self.update_status(
+            study_id,
+            new_study_status.to_camel_case_str(),
+            first_public_date=first_public_date_baseline,
+            first_private_date=first_private_date_baseline,
         )
         user_token = context.user_api_token
 
