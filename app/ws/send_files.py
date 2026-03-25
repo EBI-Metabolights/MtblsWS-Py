@@ -262,7 +262,7 @@ class SendFilesPrivate(Resource):
             target_path = os.path.join(root_path, subpath)
         elif initial_path == "AUDIT_FILES":
             root_path = get_study_audit_files_path(study_id)
-            subpath = file_name.replace("INTERNAL_FILES", "", 1).lstrip("/")
+            subpath = file_name.replace("AUDIT_FILES", "", 1).lstrip("/")
             target_path = os.path.join(root_path, subpath)
         files = ""
         if file_name == "metadata":

@@ -39,7 +39,7 @@ dependencies = [
     "gunicorn>=23.0.0,<24",
     "charset-normalizer>=3.4.2",
     "email-validator>=2.2.0,<3",
-    "metabolights-utils>=1.4.18,<2",
+    "metabolights-utils>=1.4.21,<2",
     "python-levenshtein>=0.27.1,<0.28",
     "pyyaml>=6.0.3,<7",
     "pyjwt>=2.10.1,<3",
@@ -48,12 +48,12 @@ dependencies = [
     "pronto>=2.7.2",
     "mzml2isa>=1.1.1",
     "python-keycloak>=5.8.1",
-    "cachetools~=6.2.2",
+    "cachetools>=6.2.2",
     "psycopg[binary,pool]>=3.3.2",
     "sqlalchemy>=2.0.46",
     "python-multipart>=0.0.22",
     "flask>=3.1.2",
-    "mhd-model>=0.1.56",
+    "mhd-model>=0.1.68",
     "isatools",
 ]
 
