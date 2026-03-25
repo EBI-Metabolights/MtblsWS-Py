@@ -193,3 +193,16 @@ class StudyRevisionStatus(enum.IntEnum):
         if name == "IN_PROGRESS":
             return "In Progress"
         return name.capitalize()
+
+
+class MhdSubmissionStatus(enum.IntEnum):
+    INITIATED = 0
+    IN_PROGRESS = 1
+    FAILED = 2
+    COMPLETED = 3
+
+    def get_as_string(self):
+        name = self.name
+        if name == "IN_PROGRESS":
+            return "In Progress"
+        return name.capitalize()

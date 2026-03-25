@@ -279,25 +279,46 @@ def sync_public_ftp_folder_with_revisions(
     out_log_path = os.path.join(task_log_path, f"{task_name}_out.log")
     err_log_path = os.path.join(task_log_path, f"{task_name}_err.log")
 
-    inputs = {
-        "EMAIL_TO": email,
-        "STUDY_METADATA_PATH": source_path,
-        "STUDY_PUBLIC_FTP_PATH": target_path,
-        "STUDY_PRIVATE_FTP_PATH": study_private_ftp_path,
-        "DATA_FILES_HASH_PATH": data_files_hash_path,
-        "ROOT_DATA_FILES_HASH_PATH": root_data_files_hash_path,
-        "UPDATE_URL": update_url,
-        "USER_TOKEN": user_token,
-    }
-
-    hpc_queue_name = settings.hpc_cluster.datamover.default_queue
-
-    script_template = "sync_public_ftp_folder_with_revisions.sh.j2"
+    modules = None
+    if settings.study.public_study_storage_type == "nfs":
+        inputs = {
+            "EMAIL_TO": email,
+            "STUDY_METADATA_PATH": source_path,
+            "STUDY_PUBLIC_FTP_PATH": target_path,
+            "STUDY_PRIVATE_FTP_PATH": study_private_ftp_path,
+            "DATA_FILES_HASH_PATH": data_files_hash_path,
+            "ROOT_DATA_FILES_HASH_PATH": root_data_files_hash_path,
+            "UPDATE_URL": update_url,
+            "USER_TOKEN": user_token,
+        }
+        script_template = "sync_public_ftp_folder_with_revisions.sh.j2"
+    else:
+        root_subfolder = settings.study.public_study_object_storage_subfolder
+        subfolder = f"{root_subfolder}/{study_id}"
+        inputs = {
+            "EMAIL_TO": email,
+            "STUDY_METADATA_PATH": source_path,
+            "STUDY_PRIVATE_FTP_PATH": study_private_ftp_path,
+            "DATA_FILES_HASH_PATH": data_files_hash_path,
+            "ROOT_DATA_FILES_HASH_PATH": root_data_files_hash_path,
+            "OBJECT_STORAGE_URL": settings.study.public_study_object_storage_url,
+            "OBJECT_STORAGE_BUCKET_NAME": settings.study.public_study_object_storage_bucket_name,
+            "OBJECT_STORAGE_SUBFOLDER": subfolder,
+            "OBJECT_STORAGE_ACCESS_KEY_ID": settings.study.public_study_object_storage_access_key_id,
+            "OBJECT_STORAGE_SECRET_ACCESS_KEY": settings.study.public_study_object_storage_secret_access_key,
+            "OBJECT_STORAGE_REGION": settings.study.public_study_object_storage_region,
+            "UPDATE_URL": update_url,
+            "USER_TOKEN": user_token,
+        }
+        script_template = "sync_public_object_storage_with_revisions.sh.j2"
+        modules = "awscli"
     script_path = BashClient.prepare_script_from_template(script_template, **inputs)
-    logger.info("sync_public_ftp_folder script is ready.")
+    logger.info("sync_public script is ready.")
     logger.info(Path(script_path).read_text())
 
     try:
+        hpc_queue_name = settings.hpc_cluster.datamover.default_queue
+
         submission_result = client.submit_hpc_job(
             script_path,
             task_name,
@@ -309,6 +330,7 @@ def sync_public_ftp_folder_with_revisions(
             mem="5G",
             cpu=2,
             runtime_limit="24:00:00",
+            modules=modules,
         )
         job_id = submission_result.job_ids[0] if submission_result else None
 
@@ -358,32 +380,36 @@ if __name__ == "__main__":
         try:
             # db_session.query(StudyRevision).delete()
             # db_session.commit()
-            result = db_session.query(
-                Study.acc,
-                Study.revision_number,
-                Study.revision_datetime,
-                Study.status,
-                Study.studysize,
-            ).all()
+            result = (
+                db_session.query(
+                    Study.acc,
+                    Study.revision_number,
+                    Study.revision_datetime,
+                    Study.status,
+                    Study.studysize,
+                )
+                .where(Study.acc == "MTBLS1")
+                .all()
+            )
             if result:
                 studies = list(result)
                 studies.sort(
-                    key=lambda x: int(x["acc"].replace("MTBLS", "").replace("REQ", ""))
+                    key=lambda x: int(x[0].replace("MTBLS", "").replace("REQ", ""))
                 )
 
         except Exception as e:
             db_session.rollback()
             raise e
     selected_studies = [
-        (x["acc"], x["studysize"])
+        (x[0], x[4])
         for x in studies
-        if x["revision_number"] == 1
+        if x[0] == "MTBLS1"
         # if int(x["acc"].replace("MTBLS", "").replace("REQ", "")) >= 10000
     ]
     selected_studies.sort(key=lambda x: x[1])
     studies = [x[0] for x in selected_studies]
 
-    # studies = ["MTBLS8"]
+    # studies = ["MTBLS3"]
     for study_id in studies:
         study: Study = StudyService.get_instance().get_study_by_acc(study_id)
         study_status = StudyStatus(study.status)

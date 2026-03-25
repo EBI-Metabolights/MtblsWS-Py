@@ -143,23 +143,18 @@ class StudyRevisions(Resource):
                     message="Submitter can only create first public revision of studies.",
                 )
 
-            validated, message = self.has_validated(study_id)
-            if not validated:
-                if "not ready" in message:
-                    raise MetabolightsException(
-                        http_code=403,
-                        message="Please run validation and fix any problems before attempting to change study status.",
-                    )
-                elif "Metadata files are updated" in message:
-                    raise MetabolightsException(
-                        http_code=403,
-                        message="Metadata files are updated after validation. Please re-run validation and fix any issues before attempting to change study status.",
-                    )
-                else:
-                    raise MetabolightsException(
-                        http_code=403,
-                        message="There are validation errors in the latest validation report. Please fix any issues before attempting to change study status.",
-                    )
+        validated, _ = self.has_validated(study_id)
+        if not validated:
+            message = (
+                "creating a revision"
+                if study.revision_number > 0
+                else "making a study public"
+            )
+            raise MetabolightsException(
+                http_code=403,
+                message=f"Please re-run validation before {message}, "
+                "and fix if there is any error.",
+            )
 
         revision: StudyRevisionModel = StudyRevisionService.increment_study_revision(
             study_id, revision_comment=revision_comment, created_by=username
@@ -433,7 +428,6 @@ class StudyRevision(Resource):
         task_started_at = request.headers.get("task-started-at", None)
         task_message = request.headers.get("task-message", None)
         revision_comment = request.headers.get("revision-comment", None)
-
         task_completed_at = (
             datetime.datetime.fromisoformat(task_completed_at)
             if task_completed_at

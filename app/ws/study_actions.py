@@ -31,6 +31,7 @@ from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 from isatools import model
+from mhd_model.mhd_client import MhdClient, MhdClientError
 from pydantic import BaseModel
 
 from app.config import get_settings
@@ -41,7 +42,9 @@ from app.tasks.common_tasks.basic_tasks.send_email import (
     get_principal_investigator_emails,
     get_study_contacts,
     send_email_for_new_accession_number,
+    send_technical_issue_email,
 )
+from app.tasks.common_tasks.curation_tasks.chebi_pipeline import maf_post_curation_task
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import (
     rename_folder_on_private_storage,
 )
@@ -56,12 +59,19 @@ from app.ws.auth.permissions import (
     validate_user_has_curator_role,
 )
 from app.ws.db import types
+from app.ws.db.dbmanager import DBManager
 from app.ws.db.permission_scopes import (
     StudyPermissionContext,
     StudyResource,
     StudyResourceDbScope,
 )
-from app.ws.db.types import CurationRequest, StudyRevisionStatus, UserRole
+from app.ws.db.schemes import Study
+from app.ws.db.types import (
+    CurationRequest,
+    StudyCategory,
+    StudyRevisionStatus,
+    UserRole,
+)
 from app.ws.db_connection import (
     reserve_mtbls_accession,
     update_curation_request,
@@ -78,10 +88,16 @@ from app.ws.ftp.ftp_utils import (
 )
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study.comment_utils import update_license, update_mhd_comments
+from app.ws.study.comment_utils import (
+    consolidate_keywords,
+    update_license,
+    update_mhd_comments,
+)
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
 from app.ws.study.utils import get_study_metadata_path
+from app.ws.study_templates.models import TemplateSettings
+from app.ws.study_templates.utils import get_template_settings
 
 logger = logging.getLogger("wslog")
 
@@ -381,7 +397,12 @@ class StudyStatus(Resource):
             study_id, None, skip_load_tables=True, study_location=study_location
         )
         isa_study: model.Study = isa_study_item
+
         if status_updated:
+            if new_study_status in (types.StudyStatus.PRIVATE,):
+                consolidate_keywords(
+                    isa_study, study_location, source="status-update-workflow"
+                )
             update_license(isa_study, dataset_license=context.dataset_license)
             update_mhd_comments(
                 isa_study,
@@ -487,7 +508,59 @@ class StudyStatus(Resource):
             context.reserved_accession,
         )
         user_token = context.user_api_token
+
         if study_id != updated_study_id:
+            template_settings: TemplateSettings = get_template_settings()
+            version_settings = template_settings.versions.get(context.template_version)
+            if not version_settings:
+                version_settings = template_settings.versions.get(
+                    template_settings.default_template_version
+                )
+
+            mhd_accession = context.mhd_accession
+            if (
+                context.study_category.name
+                in [x.name for x in version_settings.active_mhd_profiles]
+                and not context.mhd_accession
+                and not context.first_private_date
+            ):
+                test = get_settings().flask.TESTING
+                accession_type = ""
+                if context.study_category == StudyCategory.MS_MHD_ENABLED:
+                    accession_type = "test-mhd" if test else "mhd"
+                # elif context.study_category == StudyCategory.MS_MHD_LEGACY:
+                #     accession_type = "test-legacy" if test else "legacy"
+                if accession_type:
+                    try:
+                        mhd_accession = self.get_new_mhd_accession(
+                            updated_study_id, accession_type
+                        )
+                        if mhd_accession:
+                            self.update_mhd_accession_in_db(
+                                updated_study_id, mhd_accession
+                            )
+                    except MhdClientError as e:
+                        inputs = {
+                            "subject": f"MHD accession request error for {updated_study_id}",
+                            "body": f"MHD accession request failed for {updated_study_id}<br/> {e}",
+                        }
+                        send_technical_issue_email.apply_async(kwargs=inputs)
+                        logger.error(e)
+                        raise e
+
+                    comment_updated = False
+                    for comment in isa_study.comments:
+                        comment.name == "MHD Accession"
+                        comment.value = mhd_accession or ""
+                        comment_updated = True
+                        break
+                    if not comment_updated:
+                        isa_study.comments.append(
+                            model.Comment(
+                                name="MHD Accession", value=mhd_accession or ""
+                            )
+                        )
+
             iac.write_isa_study(
                 isa_inv,
                 None,
@@ -498,7 +571,7 @@ class StudyStatus(Resource):
             )
 
             self.refactor_study_folder(
-                context, study_location, None, study_id, updated_study_id
+                context, study_location, study_id, updated_study_id
             )
             ElasticsearchService.get_instance()._delete_study_index(
                 study_id, ignore_errors=True
@@ -511,7 +584,9 @@ class StudyStatus(Resource):
                 study_title = isa_study.title
                 additional_cc_emails = get_principal_investigator_emails(isa_study)
                 study_contacts = get_study_contacts(isa_study)
-                expected_release_date = context.expected_release_date
+                expected_release_date = context.expected_release_date.strftime(
+                    "%Y-%m-%d"
+                )
                 inputs = {
                     "user_token": user_token,
                     "provisional_id": study_id,
@@ -523,6 +598,15 @@ class StudyStatus(Resource):
                     "study_contacts": study_contacts,
                 }
                 send_email_for_new_accession_number.apply_async(kwargs=inputs)
+        elif status_updated:
+            iac.write_isa_study(
+                isa_inv,
+                None,
+                study_location,
+                save_investigation_copy=True,
+                save_assays_copy=True,
+                save_samples_copy=True,
+            )
         ElasticsearchService.get_instance()._reindex_study(updated_study_id, user_token)
         study = StudyService.get_instance().get_study_by_acc(updated_study_id)
         current_curation_request = CurationRequest(study.curation_request)
@@ -543,6 +627,17 @@ class StudyStatus(Resource):
             "obfuscation_code": obfuscation_code,
             "study_table_id": study.id,
         }
+
+        # RUN post curation tasks if study is converted to PRIVATE
+        if (
+            context.study_status != new_study_status
+            and new_study_status
+            in (types.StudyStatus.PRIVATE, types.StudyStatus.INREVIEW)
+            and context.study_status == types.StudyStatus.PROVISIONAL
+        ):
+            inputs = {"study_id": updated_study_id}
+            maf_post_curation_task.apply_async(kwargs=inputs)
+
         # Explictly changing the FTP folder permission for Private and Provisional state
         if context.study_status != new_study_status:
             if new_study_status in (
@@ -587,6 +682,27 @@ class StudyStatus(Resource):
                 }
             )
             return response
+
+    def get_new_mhd_accession(self, study_id: str, accession_type: str) -> str:
+        api_key = get_settings().mhd.api_key
+        mhd_submission_url = get_settings().mhd.mhd_webservice_base_url
+        client = MhdClient(mhd_submission_url, api_key)
+        return client.get_new_mhd_accession(study_id, accession_type)
+
+    def update_mhd_accession_in_db(self, study_id: str, accession: str):
+        db_session = DBManager.get_instance().session_maker()
+        try:
+            with db_session:
+                query = db_session.query(Study)
+                query_filter = query.filter(Study.reserved_accession == study_id)
+                db_param = query_filter.first()
+
+                db_param.mhd_accession = accession
+                db_session.commit()
+                db_session.refresh(db_param)
+        except Exception as ex:
+            db_session.rollback()
+            raise MetabolightsException(http_code=400, message="DB error", exception=ex)
 
     def get_validation_summary_result_files_from_history(
         self, study_id: str
@@ -716,7 +832,6 @@ class StudyStatus(Resource):
         self,
         context: StudyPermissionContext,
         study_location: str,
-        user_token,
         study_id: str,
         updated_study_id: str,
     ):
@@ -739,6 +854,7 @@ class StudyStatus(Resource):
             sample_template=context.sample_template,
             dataset_license=context.dataset_license,
             template_version=context.template_version,
+            created_at=context.created_at,
             study_template=context.study_template,
         )
         date_format = "%Y-%m-%d_%H-%M-%S"

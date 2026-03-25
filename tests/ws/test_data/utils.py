@@ -1,4 +1,15 @@
-from app.ws.db_connection import create_empty_study, execute_query_with_parameter
+from app.ws.db_connection import create_empty_study, get_connection
+
+
+def execute_query_with_parameter(query, parameters):
+    with get_connection() as (conn, cursor):
+        try:
+            cursor.execute(query, parameters)
+            conn.commit()
+        except Exception as e:
+            if conn:
+                conn.rollback()
+            return None
 
 
 class UserTestData:
@@ -30,7 +41,7 @@ def create_user_in_db(user):
 
 
 def create_test_study_in_db(user, study_id):
-    create_empty_study(user.user_token, study_id)
+    create_empty_study(user.username, study_id)
 
 
 def delete_test_user_from_db(user):

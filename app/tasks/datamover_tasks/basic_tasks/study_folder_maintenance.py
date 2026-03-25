@@ -95,6 +95,7 @@ def delete_study_folders(
     delete_metadata_storage_folders=True,
     delete_private_ftp_storage_folders=True,
     failing_gracefully=False,
+    recreate_folders=True,
     task_name=None,
 ):
     try:
@@ -123,14 +124,15 @@ def delete_study_folders(
                 sample_template=study.sample_type,
                 dataset_license=study.dataset_license,
                 template_version=study.template_version,
+                created_at=study.created_at,
                 study_template=study.study_template,
             )
-            all_results = []
-            if delete_metadata_storage_folders:
-                maintenance_task.delete_rw_storage_folders()
-            if delete_private_ftp_storage_folders:
-                maintenance_task.delete_private_ftp_storage_folders()
-
+        all_results = []
+        if delete_metadata_storage_folders:
+            maintenance_task.delete_rw_storage_folders()
+        if delete_private_ftp_storage_folders:
+            maintenance_task.delete_private_ftp_storage_folders()
+        if recreate_folders:
             create_study_folders(
                 all_results,
                 study,
@@ -316,6 +318,7 @@ def maintain_storage_study_folders(
                     sample_template=study.sample_type,
                     dataset_license=study.dataset_license,
                     template_version=study.template_version,
+                    created_at=study.created_at,
                     study_template=study.study_template,
                 )
 

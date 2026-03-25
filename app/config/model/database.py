@@ -10,10 +10,10 @@ class DatabaseConnection(BaseModel):
 
 
 class DatabaseConfiguration(BaseModel):
-    conn_pool_min: int = 1
-    conn_pool_max: int = 3
+    conn_pool_min: int = 2
+    conn_pool_max: int = 5
 
 
 class DatabaseSettings(BaseModel):
     connection: DatabaseConnection
-    configuration: DatabaseConfiguration
+    configuration: DatabaseConfiguration = DatabaseConfiguration()

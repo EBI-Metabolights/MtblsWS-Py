@@ -56,7 +56,7 @@ from app.ws.db.permission_scopes import (
     StudyResource,
     StudyResourceScope,
 )
-from app.ws.db.types import UserRole
+from app.ws.db.types import StudyStatus, UserRole
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
@@ -68,6 +68,7 @@ from app.ws.study.folder_utils import (
 from app.ws.study.study_service import StudyService
 from app.ws.study.utils import get_study_metadata_path
 from app.ws.study_folder_utils import (
+    LiteFileMetadata,
     LiteFileSearchResult,
     evaluate_files,
     get_directory_files,
@@ -188,6 +189,17 @@ class StudyFiles(Resource):
 
     # 'uploadPath': upload_location[0], for local testing
 
+    def sort_by_type(self, val: str):
+        if val.startswith("a_"):
+            return 0
+        elif val.startswith("m_"):
+            return 1
+        elif val.startswith("s_"):
+            return 2
+        elif val.startswith("i_"):
+            return 5
+        return 10
+
     @swagger.operation(
         summary="Delete files from a given folder",
         nickname="Delete files",
@@ -271,7 +283,7 @@ without setting the "force" parameter to True""",
         obfuscation_code = result.context.obfuscation_code
         study_location = get_study_metadata_path(study_id)
 
-        files = request.args.get("files") if request.args.get("files") else None
+        files = request.args.get("files")
         file_location = request.args.get("location", "study")
 
         always_remove = (
@@ -283,10 +295,9 @@ without setting the "force" parameter to True""",
 
         try:
             data_dict = json.loads(request.data.decode("utf-8"))
-            data = data_dict["files"]
-            if data is None:
-                abort(412)
-            files = data
+            files: list[str, str] = data_dict.get("files", [])
+            if not files:
+                abort(412, message="Input body is empty")
         except (ValidationError, Exception):
             abort(400, message="Incorrect JSON provided")
 
@@ -302,6 +313,8 @@ without setting the "force" parameter to True""",
 
             pattern = re.compile(r"([asi]_.*\.txt)|(m_.*\.tsv)")
             metadata_update = False
+
+            files.sort(key=lambda x: self.sort_by_type(x.get("name", "")))
             for file in files:
                 f_name = file["name"]
                 match = pattern.match(f_name)
@@ -316,41 +329,60 @@ without setting the "force" parameter to True""",
             message = None
             for file in files:
                 try:
-                    f_name = file["name"]
-
-                    if (
-                        f_name.startswith("i_")
-                        and f_name.endswith(".txt")
-                        and not is_curator
-                    ):
+                    f_name: str = file.get("name", "")
+                    status, message = remove_file(
+                        study_location, f_name, always_remove, is_curator=is_curator
+                    )
+                    if not status:
                         errors.append(
-                            {
-                                "status": "error",
-                                "message": "Only MetaboLights curators can remove the investigation file",
-                                "file": f_name,
-                            }
+                            {"status": "error", "message": message, "file": f_name}
                         )
-                    elif file_location == "study":
-                        status, message = remove_file(
-                            study_location, f_name, always_remove, is_curator=is_curator
+                    else:
+                        deleted_files.append(
+                            {"status": "success", "message": message, "file": f_name}
                         )
-                        if not status:
-                            errors.append(
-                                {"status": "error", "message": message, "file": f_name}
-                            )
-                        else:
-                            deleted_files.append(
-                                {
-                                    "status": "success",
-                                    "message": message,
-                                    "file": f_name,
-                                }
-                            )
                 except Exception as exc:
                     errors.append(
                         {"status": "error", "message": str(exc), "file": f_name}
                     )
-
+            assay_files = []
+            for deleted_file in deleted_files:
+                filename = deleted_file.get("file")
+                if filename.startswith("a_") and filename.endswith(".txt"):
+                    assay_files.append(filename)
+            if assay_files:
+                isa_study, isa_inv, _ = iac.get_isa_study(
+                    study_id=study_id,
+                    skip_load_tables=True,
+                    study_location=study_location,
+                )
+                assays = {x.filename: x for x in isa_study.assays}
+                removed_assays = []
+                for name in assay_files:
+                    if name in assays:
+                        isa_study.assays.remove(assays[name])
+                        removed_assays.append(name)
+                iac.write_isa_study(
+                    isa_inv,
+                    None,
+                    study_location,
+                    save_investigation_copy=False,
+                    save_assays_copy=False,
+                    save_samples_copy=False,
+                )
+                logger.info(
+                    "Assay file references are removed from investigation file: %s %s",
+                    study_id,
+                    removed_assays,
+                )
+            if deleted_files:
+                logger.info(
+                    "Files are deleted: %s %s",
+                    study_id,
+                    [x.get("file") for x in deleted_files],
+                )
+            if errors:
+                logger.info("Files are not deleted: %s %s", study_id, errors)
             return {"errors": errors, "deleted_files": deleted_files}
         else:
             result = validate_data_files_upload(request)
@@ -1683,11 +1715,11 @@ class StudyFilesTree(Resource):
 
 
 def get_study_metadata_and_data_files(
-    study_id,
-    location,
+    study_id: str,
+    location: str,
     include_internal_files,
-    directory,
-    include_sub_dir,
+    directory: str,
+    include_sub_dir: bool,
     scopes: None | PermisionScopeDict = None,
 ):
     settings = get_settings()
@@ -1706,16 +1738,24 @@ def get_study_metadata_and_data_files(
         study_metadata_location = os.path.join(
             settings.mounted_paths.study_metadata_files_root_path, study_id
         )
+        study_audit_files_path = os.path.join(
+            settings.mounted_paths.study_audit_files_root_path, study_id, "audit"
+        )
+        study_internal_files_path = os.path.join(
+            settings.mounted_paths.study_internal_files_root_path, study_id
+        )
 
         # files_list_json_file = os.path.join(study_metadata_location, settings.readonly_files_symbolic_link_name, files_list_json)
         referenced_files = get_referenced_file_set(
             study_id=study_id, metadata_path=study_metadata_location
         )
-        exclude_list = set()
-        for item in get_settings().file_filters.rsync_exclude_list:
-            exclude_list.add(
-                os.path.join(settings.readonly_files_symbolic_link_name, item)
-            )
+        exclude_list = set(
+            [
+                settings.readonly_files_symbolic_link_name,
+                settings.audit_files_symbolic_link_name,
+                settings.internal_files_symbolic_link_name,
+            ]
+        )
         audit_files_view = (
             True
             if StudyResourceScope.LIST in scopes.get(StudyResource.AUDIT_FILES, [])
@@ -1731,17 +1771,23 @@ def get_study_metadata_and_data_files(
         if not include_internal_files or not audit_files_view:
             exclude_list.add(settings.audit_files_symbolic_link_name)
 
-        include_metadata_files = True
-        if directory == settings.readonly_files_symbolic_link_name:
-            include_metadata_files = False
-        directory_path = study_metadata_location
+        target_directory = directory
+        directory_root_path = study_metadata_location
         if directory:
-            directory_path: str = os.path.join(study_metadata_location, directory)
+            if directory.startswith(settings.audit_files_symbolic_link_name):
+                directory_root_path = study_audit_files_path
+                selected_subfolder = settings.audit_files_symbolic_link_name
+            elif directory.startswith(settings.internal_files_symbolic_link_name):
+                directory_root_path = study_internal_files_path
+                selected_subfolder = settings.internal_files_symbolic_link_name
+            else:
+                selected_subfolder = ""
+
+            target_directory = directory.replace(selected_subfolder, "", 1).lstrip("/")
         private_directory_files: Dict[str, FileDescriptor] = {}
         public_directory_files: Dict[str, FileDescriptor] = {}
         directory_files = {}
-        files_path = os.path.join(study_metadata_location, "FILES")
-        if directory_path.startswith(files_path):
+        if directory and directory.startswith("FILES"):
             mounted_paths = get_settings().study.mounted_paths
             target_root_path = os.path.join(
                 mounted_paths.study_internal_files_root_path, study_id, "DATA_FILES"
@@ -1772,7 +1818,7 @@ def get_study_metadata_and_data_files(
                 if item_parent_path == directory:
                     descriptor = FileDescriptor.model_validate(private_data_files[x])
                     private_directory_files[item_relative_path] = descriptor
-            if study.first_public_date:
+            if StudyStatus(study.status) in {StudyStatus.PUBLIC}:
                 for x in public_data_files:
                     item_relative_path = public_data_files[x]["relative_path"]
                     item_parent_path = public_data_files[x]["parent_relative_path"]
@@ -1796,28 +1842,27 @@ def get_study_metadata_and_data_files(
             directory_files = OrderedDict(
                 sorted(private_directory_files.items(), key=lambda x: x[0])
             )
-
         else:
             directory_files = get_directory_files(
-                study_metadata_location,
-                directory,
+                directory_root_path,
+                target_directory,
                 search_pattern="**/*",
                 recursive=include_sub_dir,
                 exclude_list=exclude_list,
-                include_metadata_files=include_metadata_files,
             )
-            # EMULATE the FILES directory
-            if not directory and "FILES" not in directory_files:
-                directory_files["FILES"] = FileDescriptor(
-                    name="FILES",
-                    parent_relative_path="",
-                    relative_path="FILES",
-                    is_dir=True,
-                    modified_time=int(current_time(utc_timezone=True).timestamp()),
-                )
-        # metadata_files = get_all_metadata_files()
-        # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
-        # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
+            # EMULATE the FILES, AUDIT_FILES and INTERNAL_FILES directory
+            if not directory and directory_root_path == study_metadata_location:
+                for subfolder in ["FILES", "AUDIT_FILES", "INTERNAL_FILES"]:
+                    if subfolder not in directory_files:
+                        directory_files[subfolder] = FileDescriptor(
+                            name=subfolder,
+                            parent_relative_path="",
+                            relative_path=subfolder,
+                            is_dir=True,
+                            modified_time=int(
+                                current_time(utc_timezone=True).timestamp()
+                            ),
+                        )
         search_result = evaluate_files(directory_files, referenced_files)
     data_files_index_view = (
         True
@@ -1832,12 +1877,29 @@ def get_study_metadata_and_data_files(
                 ftp_folder_path = os.path.join(
                     ftp_root_path, f"{study.acc.lower()}-{study.obfuscationcode}"
                 )
-                if directory:
-                    ftp_folder_path = os.path.join(ftp_folder_path, directory)
 
-                ftp_search_result = get_private_ftp_files(
-                    include_sub_dir, settings, ftp_folder_path
-                )
+                if not directory:
+                    for subfolder in ["FILES"]:
+                        current = current_time().strftime("%y-%m-%d-%m_%H:%M:%S")
+                        ftp_search_result = LiteFileSearchResult(
+                            study=[
+                                LiteFileMetadata(
+                                    directory=True,
+                                    file="FILES",
+                                    createdAt=current,
+                                    timestamp=current,
+                                )
+                            ]
+                        )
+                else:
+                    target_dir = directory
+                    target_dir = target_dir.replace("FILES", "", 1).lstrip("/")
+                    if target_dir:
+                        ftp_folder_path = os.path.join(ftp_folder_path, target_dir)
+
+                    ftp_search_result = get_private_ftp_files(
+                        include_sub_dir, settings, ftp_folder_path
+                    )
                 if search_result:
                     search_result.privateFtpAccessible = (
                         ftp_search_result.privateFtpAccessible
@@ -1845,8 +1907,6 @@ def get_study_metadata_and_data_files(
                     search_result.latest = ftp_search_result.study
                 else:
                     search_result = ftp_search_result
-                # search_result.latest = search_result.study
-                # search_result.study = []
             except Exception as exc:
                 logger.error(f"Error for study {study.acc}: {str(exc)}")
                 raise MetabolightsException(

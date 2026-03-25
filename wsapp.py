@@ -82,7 +82,7 @@ def setup_logging():
     )
 
 
-MANAGED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"}
+MANAGED_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"}
 BYPASS_HTTP_METHODS = ("OPTIONS", "HEAD")
 
 

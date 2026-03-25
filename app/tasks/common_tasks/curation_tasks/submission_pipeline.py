@@ -34,7 +34,7 @@ def validate_study_task(self, params: dict[str, Any]):
         model = MakeStudyPrivateParameters.model_validate(params)
         logger.info(f"{model.study_id} validate_study_task is running...")
         user_token = get_settings().auth.service_account.api_token
-        validation_endpoint = "https://www6.ebi.ac.uk/metabolights/ws3"
+        validation_endpoint = "https://www.ebi.ac.uk/metabolights/ws3"
         url = f"{validation_endpoint}/auth/token"
         token_params = {"run_metadata_modifiers": True}
         token_headers = {

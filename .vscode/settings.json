@@ -1,8 +1,43 @@
 {
-    "files.exclude": {
-        "**/__pycache__": true
-    },
-    "python-envs.defaultEnvManager": "ms-python.python:system",
-    "python-envs.pythonProjects": [],
-    "python.analysis.typeCheckingMode": "off"
+  "files.exclude": {
+    "**/__pycache__": true,
+    ".*cache*": true,
+    ".*coverage*": true
+  },
+  "editor.scrollbar.verticalScrollbarSize": 0.3,
+  "editor.scrollbar.vertical": "visible",
+  "files.associations": {
+    "*.json": "json",
+    "*.py": "python"
+  },
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.unusedImports": "explicit"
+    }
+  },
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingModuleSource": "warning",
+    "reportUndefinedVariable": "warning"
+  },
+  "editor.defaultFormatter": "charliermarsh.ruff",
+  "python.analysis.exclude": [
+    "${workspaceFolder}/.old/**",
+    ".venv/**",
+    ".old*/**",
+    ".temp*/**",
+    "**/__pycache__",
+    "**/.*",
+    ".*/**",
+    "**/node_modules",
+    ".git",
+    ".poc/**"
+  ],
+  "python-envs.defaultEnvManager": "ms-python.python:venv",
 }

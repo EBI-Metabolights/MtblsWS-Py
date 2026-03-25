@@ -20,28 +20,34 @@ import os
 import zipfile
 from datetime import datetime
 
+import pandas as pd
+import requests
 from flask import jsonify, request
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 
 from app.config import get_settings
+from app.config.utils import get_host_internal_url
 from app.study_folder_utils import convert_relative_to_real_path
 from app.tasks.common_tasks.report_tasks.europe_pmc import europe_publication_report
 from app.ws.auth.permissions import (
     raise_deprecation_error,
     validate_user_has_curator_role,
 )
+from app.ws.db.types import StudyStatus
 from app.ws.db_connection import get_connection, get_study
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.report_builders.analytical_method_builder import AnalyticalMethodBuilder
 from app.ws.report_builders.europe_pmc_builder import EuropePmcReportBuilder
 from app.ws.study.folder_utils import get_all_files
+from app.ws.study.study_service import StudyService
 from app.ws.utils import (
     clean_json,
-    get_instruments_organism,
-    get_studytype,
+    get_instrument,
+    get_organisms,
     get_techniques,
+    getFileList,
     log_request,
     readDatafromFile,
     writeDataToFile,
@@ -50,6 +56,119 @@ from app.ws.utils import (
 logger = logging.getLogger("wslog")
 iac = IsaApiClient()
 wsc = WsClient()
+
+
+def get_instruments_organism(studyID=None):
+    if studyID:
+        studyIDs = [studyID]
+    else:
+        studies = StudyService.get_instance().get_study_ids_with_status(
+            StudyStatus.PUBLIC
+        )
+        studyIDs = [x[0] for x in studies]
+    # ========================== INSTRUMENTS ===============================
+    instruments_df = pd.DataFrame(columns=["studyID", "assay_name", "instrument"])
+    organism_df = pd.DataFrame(columns=["studyID", "organism", "organism_part"])
+    for studyID in studyIDs:
+        print(studyID)
+        assay_file, investigation_file, sample_file, maf_file = getFileList(studyID)
+
+        for assay in assay_file:
+            ins = get_instrument(studyID, assay)
+            if ins:
+                for i in ins["instruments"]:
+                    instruments_df.loc[len(instruments_df)] = [
+                        ins["studyID"],
+                        ins["assay_name"],
+                        i,
+                    ]
+
+        organism_df = pd.concat([organism_df, get_organisms(studyID, sample_file)])
+
+    instruments = {}
+    for index, row in instruments_df.iterrows():
+        term = row["instrument"]
+        assay_name = row["assay_name"]
+        studyID = row["studyID"]
+
+        if term in instruments:
+            if studyID in instruments[term]:
+                instruments[term][studyID].append(assay_name)
+            else:
+                instruments[term].update({studyID: [assay_name]})
+        else:
+            instruments[term] = {studyID: [assay_name]}
+
+    organisms = {}
+    organism_df = organism_df[
+        ~(
+            (organism_df["organism"].str.lower() == "blank")
+            | (organism_df["organism_part"].str.lower() == "blank")
+        )
+    ]
+    for index, row in organism_df.iterrows():
+        organism = row["organism"]
+        organism_part = row["organism_part"]
+        studyID = row["studyID"]
+
+        if organism not in organisms:
+            organisms[organism] = {organism_part: [studyID]}
+        else:
+            if organism_part not in organisms[organism]:
+                organisms[organism].update({organism_part: [studyID]})
+            else:
+                organisms[organism][organism_part].append(studyID)
+
+    return {"instruments": instruments}, {"organisms": organisms}
+
+
+def get_studytype(studyID=None):
+    study_type = {"targeted": [], "untargeted": [], "targeted_untargeted": []}
+
+    if not studyID:
+        studies = StudyService.get_instance().get_study_ids_with_status(
+            StudyStatus.PUBLIC
+        )
+        studyIDs = [x[0] for x in studies]
+
+    else:
+        studyIDs = [studyID]
+
+    for studyID in studyIDs:
+        untarget = False
+        target = False
+
+        source = "/ws/studies/{study_id}/descriptors".format(study_id=studyID)
+        ws_url = get_host_internal_url() + source
+        try:
+            resp = requests.get(
+                ws_url,
+                headers={"user_token": get_settings().auth.service_account.api_token},
+            )
+            data = resp.json()
+            for descriptor in data["studyDesignDescriptors"]:
+                term = str(descriptor["annotationValue"])
+                if term.startswith(("untargeted", "Untargeted", "non-targeted")):
+                    untarget = True
+                elif term.startswith("targeted"):
+                    target = True
+
+            if target and untarget:
+                # print(studyID + ' is targeted and untargeted')
+                study_type["targeted_untargeted"].append(studyID)
+                continue
+            elif target and not untarget:
+                # print(studyID + ' is targeted')
+                study_type["targeted"].append(studyID)
+                continue
+            elif not target and untarget:
+                # print(studyID + ' is untargeted')
+                study_type["untargeted"].append(studyID)
+                continue
+        except Exception as e:
+            print(e)
+
+    return {"study_type": study_type}
 
 
 class StudyAssayTypeReports(Resource):
@@ -436,9 +555,9 @@ class reports(Resource):
                 sql = open(
                     convert_relative_to_real_path("resources/study_report.sql"), "r"
                 ).read()
-                postgresql_pool, conn, cursor = get_connection()
-                cursor.execute(sql)
-                dates = cursor.fetchall()
+                with get_connection() as (conn, cursor):
+                    cursor.execute(sql)
+                    dates = cursor.fetchall()
                 data = {}
                 for dt in dates:
                     dict_temp = {
@@ -468,9 +587,9 @@ class reports(Resource):
             sql = open(
                 convert_relative_to_real_path("resources/user_report.sql"), "r"
             ).read()
-            postgresql_pool, conn, cursor = get_connection()
-            cursor.execute(sql)
-            result = cursor.fetchall()
+            with get_connection() as (conn, cursor):
+                cursor.execute(sql)
+                result = cursor.fetchall()
             data = {}
             user_count = 0
             active_user = 0
@@ -515,9 +634,9 @@ class reports(Resource):
             file_name = "user_report.json"
 
         if query == "study_stats":
-            postgresql_pool, conn, cursor = get_connection()
-            cursor.execute("select acc from studies")
-            studies = cursor.fetchall()
+            with get_connection() as (conn, cursor):
+                cursor.execute("select acc from studies")
+                studies = cursor.fetchall()
             data = {}
             for st in studies:
                 print(st[0])
@@ -626,9 +745,9 @@ class reports(Resource):
         if query == "file_extension":
             file_name = "file_extension.json"
 
-            postgresql_pool, conn, cursor = get_connection()
-            cursor.execute("select acc from studies where status = 3;")
-            studies = cursor.fetchall()
+            with get_connection() as (conn, cursor):
+                cursor.execute("select acc from studies where status = 3;")
+                studies = cursor.fetchall()
             file_ext = []
 
             for studyID in studies:

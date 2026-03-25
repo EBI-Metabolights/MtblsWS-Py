@@ -75,6 +75,7 @@ class StudyService(object):
                     or_(
                         Study.reserved_accession == identifier,
                         Study.reserved_submission_id == identifier,
+                        Study.mhd_accession == identifier,
                     )
                 ).first()
                 if result:

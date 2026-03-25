@@ -146,12 +146,12 @@ class IsaApiClient:
             )
             std_path = get_study_metadata_path(study_id)
         else:
-            logger.info("Study location is: %s", study_location)
+            logger.debug("Study location is: %s", study_location)
             std_path = study_location
 
         try:
             i_filename = glob.glob(os.path.join(std_path, "i_*.txt"))[0]
-            fp = open(i_filename, encoding="utf-8", errors="ignore")
+            fp = open(i_filename, encoding="utf-8")
             # loading tables also load Samples and Assays
             isa_inv = load(fp, skip_load_tables)
             # ToDo. Add MAF to isa_study
@@ -211,16 +211,15 @@ class IsaApiClient:
                     return None, None, None
                 else:
                     abort(417, message=f"Error: {str(e)}")
-
         except Exception as e:
             logger.exception(
                 "Failed to find Investigation file %s from %s", study_id, std_path
             )
-            logger.error(str(e))
+            logger.error(type(e), str(e))
             if failing_gracefully:
                 return None, None, None
             else:
-                abort(417, message=f"Error: {str(e)}")
+                raise e
         else:
             return isa_study, isa_inv, std_path
 

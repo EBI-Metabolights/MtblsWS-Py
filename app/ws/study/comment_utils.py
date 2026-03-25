@@ -1,12 +1,17 @@
 import datetime
 import logging
+import os
+import re
 from typing import OrderedDict
 
 from isatools import model
 from pydantic import BaseModel
 
 from app.ws.db.types import StudyCategory
+from app.ws.isaApiClient import IsaApiClient
 from app.ws.study.isa_table_models import OntologyValue
+from app.ws.study.utils import get_study_metadata_path
+from app.ws.utils import read_tsv
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +43,9 @@ def update_revision_comments(
         revision_comments.extend(revision_logs)
         comment = model.Comment(name="Revision", value=str(revision_number))
         isa_study.comments.append(comment)
-        revision_datetime = ""
         if revision_datetime and isinstance(revision_datetime, datetime.datetime):
             revision_datetime = revision_datetime.strftime("%Y-%m-%d")
-        comment = model.Comment(name="Revision Date", value=revision_datetime)
+        comment = model.Comment(name="Revision Date", value=revision_datetime or "")
         isa_study.comments.append(comment)
         log = revision_comment or ""
         log = log.strip().replace("\t", " ").replace("\n", " ")
@@ -56,6 +60,257 @@ class CharacteristicDescription(BaseModel):
     name: str
     type: OntologyValue
     format: str
+
+
+def consolidate_keywords(
+    isa_study: model.Study, study_path: str, source: str = "workflows"
+):
+    ontology_terms: OrderedDict[str, model.OntologyAnnotation] = OrderedDict()
+    study_keywords: OrderedDict[str, model.OntologyAnnotation] = OrderedDict()
+    instruments = get_instruments(isa_study, study_path, source)
+    sample_descriptors = get_sample_descriptors(isa_study, study_path, source)
+    ontology_terms.update(instruments)
+    ontology_terms.update(sample_descriptors)
+
+    desc_comments = OrderedDict(
+        [
+            ("Assay Descriptor", []),
+            ("Assay Descriptor Term Accession Number", []),
+            ("Assay Descriptor Term Source REF", []),
+            ("Assay Descriptor Category", []),
+            ("Assay Descriptor Source", []),
+        ]
+    )
+
+    omics_type_comments = OrderedDict(
+        [
+            ("Omics Type", []),
+            ("Omics Type Term Accession Number", []),
+            ("Omics Type Term Source REF", []),
+        ]
+    )
+    assay_type_comments = OrderedDict(
+        [
+            ("Assay Type", []),
+            ("Assay Type Term Accession Number", []),
+            ("Assay Type Term Source REF", []),
+        ]
+    )
+    category_name = "Study Design Category"
+    source_name = "Study Design Source"
+    for item in isa_study.assays:
+        assay: model.Assay = item
+        for comment in assay.comments:
+            if comment.name in desc_comments:
+                desc_comments[comment.name].extend(comment.value.split(";"))
+            if comment.name in omics_type_comments:
+                omics_type_comments[comment.name].extend(comment.value.split(";"))
+
+            if comment.name in assay_type_comments:
+                assay_type_comments[comment.name].extend(comment.value.split(";"))
+            if assay.measurement_type and assay.measurement_type.term:
+                key = assay.measurement_type.term.lower()
+                if key not in ontology_terms:
+                    ontology_terms[key] = model.OntologyAnnotation(
+                        term=assay.measurement_type.term,
+                        term_accession=assay.measurement_type.term_accession,
+                        term_source=assay.measurement_type.term_source,
+                        comments=[
+                            model.Comment(
+                                name=category_name,
+                                value="measurement-type",
+                            ),
+                            model.Comment(name=source_name, value=source),
+                        ],
+                    )
+
+        for idx, desc_comment in enumerate(desc_comments.get("Assay Descriptor", [])):
+            if not desc_comment or desc_comment.lower() in ontology_terms:
+                continue
+            part = desc_comment
+            ontology_terms[part.lower()] = model.OntologyAnnotation()
+            ontology = ontology_terms[part.lower()]
+            ontology.term = part
+            accessions = desc_comments.get("Assay Descriptor Term Accession Number", [])
+            if len(accessions) > idx:
+                ontology.term_accession = accessions[idx]
+            sources = desc_comments.get("Assay Descriptor Term Source REF", [])
+            if len(sources) > idx:
+                ontology.term_source = model.OntologySource(name=sources[idx])
+            categories = desc_comments.get("Assay Descriptor Category", [])
+            if not ontology.comments:
+                ontology.comments = []
+            if len(categories) > idx:
+                ontology.comments.append(
+                    model.Comment(name=category_name, value=categories[idx])
+                )
+            sources = desc_comments.get("Assay Descriptor Source", [])
+            if len(sources) > idx:
+                ontology.comments.append(model.Comment(name=source_name, value=source))
+
+        parts = omics_type_comments.get("Omics Type", [""])
+        part = parts[0] if parts else ""
+        if part and part.lower() not in ontology_terms:
+            ontology_terms[part.lower()] = model.OntologyAnnotation(
+                comments=[
+                    model.Comment(name=category_name, value="omics-type"),
+                    model.Comment(name=source_name, value=source),
+                ],
+            )
+            ontology = ontology_terms[part.lower()]
+            ontology.term = part
+            accession = omics_type_comments.get(
+                "Omics Type Term Accession Number", [""]
+            )
+            ontology.term_accession = accession[0] if accession else ""
+            source = omics_type_comments.get("Omics Type Term Source REF", [""])
+            ontology.term_source = model.OntologySource(
+                name=source[0] if source else ""
+            )
+        part = assay_type_comments.get("Assay Type", [""])
+        part = parts[0] if parts else ""
+        if part and part.lower() not in ontology_terms:
+            ontology_terms[part.lower()] = model.OntologyAnnotation(
+                comments=[
+                    model.Comment(
+                        name=category_name,
+                        value="assay-type",
+                    ),
+                    model.Comment(name=source_name, value=source),
+                ],
+            )
+            ontology = ontology_terms[part.lower()]
+            ontology.term = part
+            accession = assay_type_comments.get(
+                "Assay Type Term Accession Number", [""]
+            )
+            ontology.term_accession = accession[0] if accession else ""
+            source = assay_type_comments.get("Assay Type Term Source REF", [""])
+            ontology.term_source = model.OntologySource(
+                name=source[0] if source else ""
+            )
+
+    for item in isa_study.design_descriptors:
+        descriptor: model.OntologyAnnotation = item
+        study_keywords[descriptor.term.lower()] = item
+        comment = descriptor.get_comment(category_name)
+        if not comment:
+            descriptor.add_comment(name=source_name, value_="submitter")
+        elif not comment.value:
+            comment.value = "submitter"
+
+    for item in ontology_terms:
+        if item not in study_keywords:
+            isa_study.design_descriptors.append(ontology_terms[item])
+        else:
+            descriptor_source = ontology_terms[item].get_comment(category_name)
+            category = study_keywords[item].get_comment(category_name)
+            if descriptor_source:
+                if not category:
+                    study_keywords[item].comments.append(descriptor_source)
+                elif category.value != descriptor_source.value:
+                    category.value = descriptor_source.value
+
+    remove_list = []
+    for keyword, onto in study_keywords.items():
+        if keyword not in ontology_terms:
+            comment = onto.get_comment(source_name)
+            if comment and comment.value == source:
+                remove_list.append(onto)
+    for onto in remove_list:
+        isa_study.design_descriptors.remove(onto)
+
+
+def get_instruments(
+    isa_study: model.Study, study_path: str, source: str
+) -> dict[str, model.OntologyAnnotation]:
+    instruments: dict[str, model.OntologyAnnotation] = {}
+    for item in isa_study.assays:
+        assay: model.Assay = item
+        assay_file_path = os.path.join(study_path, assay.filename)
+        if not os.path.exists(assay_file_path):
+            continue
+
+        df = read_tsv(assay_file_path)
+        for idx, column_name in enumerate(df.columns):
+            if "instrument" not in column_name.lower():
+                continue
+            result = re.match(r".+\[(.+)\].*", column_name)
+            category = result.groups()[0] if result else "instrument"
+            unique_vals = set()
+            for row_idx, x in enumerate(df[column_name].tolist()):
+                if not x or not x.strip() or x.strip().lower() in unique_vals:
+                    continue
+                key = x.strip().lower()
+                unique_vals.add(key)
+                source_ref = None
+                accession = None
+                if len(df.columns) > idx + 2 and df.columns[idx + 2].startswith(
+                    "Term Accession Number"
+                ):
+                    source_ref = df[df.columns[idx + 1]][row_idx]
+                    accession = df[df.columns[idx + 2]][row_idx]
+                instruments[key] = model.OntologyAnnotation(
+                    term=x,
+                    term_accession=accession,
+                    term_source=model.OntologySource(name=source_ref),
+                    comments=[
+                        model.Comment(
+                            name="Study Design Category",
+                            value=category,
+                        ),
+                        model.Comment(name="Study Design Source", value=source),
+                    ],
+                )
+    return instruments
+
+
+def get_sample_descriptors(
+    isa_study: model.Study, study_path: str, source: str
+) -> dict[str, model.OntologyAnnotation]:
+    descriptors: dict[str, model.OntologyAnnotation] = {}
+    sample_file_path = os.path.join(study_path, isa_study.filename)
+    if not os.path.exists(sample_file_path):
+        return {}
+
+    df = read_tsv(sample_file_path)
+    fields = ["Organism", "Organism part", "Disease", "Cell type", "Sample type"]
+    for idx, column_name in enumerate(df.columns):
+        match = False
+        category_name = ""
+        for field in fields:
+            if f"[{field.lower()}]" in column_name.lower():
+                match = True
+                category_name = field
+                break
+        if not match:
+            continue
+        unique_vals = set()
+        for row_idx, x in enumerate(df[column_name].tolist()):
+            if not x or not x.strip() or x.strip().lower() in unique_vals:
+                continue
+            key = x.strip().lower()
+            unique_vals.add(key)
+            source_ref = None
+            accession = None
+            if len(df.columns) > idx + 2 and df.columns[idx + 2].startswith(
+                "Term Accession Number"
+            ):
+                source_ref = df[df.columns[idx + 1]][row_idx]
+                accession = df[df.columns[idx + 2]][row_idx]
+            descriptors[key] = model.OntologyAnnotation(
+                term=x,
+                term_accession=accession,
+                term_source=model.OntologySource(name=source_ref),
+                comments=[
+                    model.Comment(
+                        name="Study Design Category",
+                        value=category_name,
+                    ),
+                    model.Comment(name="Study Design Source", value=source),
+                ],
+            )
+    return descriptors
 
 
 @staticmethod
@@ -93,7 +348,7 @@ def update_mhd_comments(
             study_category_name = category.get_label()
 
     mhd_comments_map: OrderedDict[str, model.Comment] = OrderedDict()
-    created = created_at.isoformat() if created_at else ""
+    created = created_at.strftime("%Y-%m-%d") if created_at else ""
     mhd_comments_map["created at"] = model.Comment(name="Created At", value=created)
     mhd_comments_map["study category"] = model.Comment(
         name="Study Category", value=str(study_category_name or "")
@@ -263,3 +518,14 @@ def update_license(isa_study: model.Study, dataset_license: None | str = None) -
         updated_comments.append(model.Comment(name="License", value=license_name))
     isa_study.comments = updated_comments
     return data_updated
+
+
+if __name__ == "__main__":
+    study_id = "MTBLS30008982"
+    study_location = get_study_metadata_path(study_id)
+    iac = IsaApiClient()
+    isa_study, isa_inv, std_path = iac.get_isa_study(
+        study_id, None, skip_load_tables=True, study_location=study_location
+    )
+    consolidate_keywords(isa_study, study_location, source="status-update-workflow")
+    print(isa_study.design_descriptors)
