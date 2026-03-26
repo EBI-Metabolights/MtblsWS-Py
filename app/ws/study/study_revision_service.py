@@ -405,7 +405,7 @@ class StudyRevisionService:
                         mhd_accession,
                     )
                 else:
-                    logger(
+                    logger.info(
                         "Immediate announcement file submission is disabled. "
                         "Announcement file submission is postponed for %s revision number %s: %s",
                         study.acc,
