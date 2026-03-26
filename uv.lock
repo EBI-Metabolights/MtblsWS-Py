@@ -1914,7 +1914,11 @@ wheels = [
 
 [[package]]
 name = "mhd-model"
+<<<<<<< HEAD
 version = "0.1.71"
+=======
+version = "0.1.70"
+>>>>>>> 24133a67 (fix: mhd model update.)
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bioregistry" },
@@ -1932,9 +1936,15 @@ dependencies = [
     { name = "pyyaml" },
     { name = "reachable" },
 ]
+<<<<<<< HEAD
 sdist = { url = "https://files.pythonhosted.org/packages/33/fd/8bdeb999b5fb4f11794d19f083359538a079d36e89f7590de2f597bf5b1f/mhd_model-0.1.71.tar.gz", hash = "sha256:c29f7836a7a5616ba7faa1eacbd4304b48276e0bc6b0911fea898eb309d5f645", size = 111781, upload-time = "2026-03-27T08:26:26.183Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/de/33/431136a182f5ae86727993f2f90ebfcba165f2c622dd01662ac8c0c51357/mhd_model-0.1.71-py3-none-any.whl", hash = "sha256:4c7784019e877cbe4efa94e9c479b3ff76041525fb8d0e1bd397ea69bd276eb2", size = 143812, upload-time = "2026-03-27T08:26:27.031Z" },
+=======
+sdist = { url = "https://files.pythonhosted.org/packages/d5/a9/97107a1263fea117579009bbb31e2b502cabc6576022e765270c49435b0d/mhd_model-0.1.70.tar.gz", hash = "sha256:649fd3e1bf3c62f587b1244fd86e031b8230a18d32fb0db1c5c5c192374fd182", size = 111684, upload-time = "2026-03-26T15:15:10.56Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4f/8d/55b851407e6f51baf38babcd5f776e0703c9bfed5ddfcb6596b8cbfc96bb/mhd_model-0.1.70-py3-none-any.whl", hash = "sha256:9e43eb8a34f647dd1a9c340a697d915d1a658ef11b77cf681240194d3f0b2e4d", size = 143780, upload-time = "2026-03-26T15:15:11.727Z" },
+>>>>>>> 24133a67 (fix: mhd model update.)
 ]
 
 [[package]]
@@ -2056,7 +2066,11 @@ requires-dist = [
     { name = "marshmallow", specifier = "==2.21.0" },
     { name = "metabolights-utils", specifier = ">=1.4.21,<2" },
     { name = "metaspace2020", specifier = ">=2.0.9,<3" },
+<<<<<<< HEAD
     { name = "mhd-model", specifier = ">=0.1.71" },
+=======
+    { name = "mhd-model", specifier = ">=0.1.70" },
+>>>>>>> 24133a67 (fix: mhd model update.)
     { name = "mzml2isa", specifier = ">=1.1.1" },
     { name = "oauth2client", specifier = ">=4.1.3,<5" },
     { name = "owlready2", specifier = ">=0.47,<0.48" },
