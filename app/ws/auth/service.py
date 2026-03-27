@@ -1,12 +1,13 @@
 import abc
 import datetime
 
-from pydantic import BaseModel
+from pydantic import field_serializer
 
+from app.ws.db.models import CamelCaseBaseModel
 from app.ws.db.types import UserRole, UserStatus
 
 
-class UserProfile(BaseModel):
+class UserProfile(CamelCaseBaseModel):
     username: str = ""
     full_name: str = ""
     email: str = ""
@@ -25,6 +26,13 @@ class UserProfile(BaseModel):
     status: None | UserStatus = None
     partner: bool = False
     api_token: str = ""
+
+    @field_serializer("join_date")
+    @classmethod
+    def datetime_serializer(cls, value):
+        if value:
+            return value.isoformat()
+        return ""
 
 
 class AuthToken(UserProfile):

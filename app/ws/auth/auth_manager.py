@@ -146,6 +146,7 @@ class KeycloakAuthService:
         user.email_verified = email_verified
         user.first_name = payload.get("firstName")
         user.last_name = payload.get("lastName")
+        user.full_name = f"{user.first_name} {user.last_name}"
         user.orcid = orcid
         user.role = role
         user.enabled = enabled

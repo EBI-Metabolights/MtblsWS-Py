@@ -71,16 +71,14 @@ class UserService(object):
             with DBManager.get_instance().session_maker() as db_session:
                 base_query = db_session.query(User)
                 query = base_query.join(Study, User.studies)
-                submitters = query.filter(
-                    Study.acc == study_id, User.status == UserStatus.ACTIVE.value
-                ).all()
+                submitters = query.filter(Study.acc == study_id).all()
                 users = []
                 for submitter in submitters:
                     users.append(self.create_user_profile(submitter))
             return users
         except Exception as e:
-            raise MetabolightsAuthorizationException(
-                message="Error while retreiving submittes from database", exception=e
+            raise MetabolightsException(
+                message="Error while retreiving submitters from database", exception=e
             )
 
     def get_user_profile(self, username) -> None | UserProfile:
@@ -94,7 +92,7 @@ class UserService(object):
             return users[0] if users else None
         except Exception as e:
             raise MetabolightsAuthorizationException(
-                message="Error while retreiving submittes from database", exception=e
+                message="Error while retreiving submitters from database", exception=e
             )
 
     def get_permission_context(
