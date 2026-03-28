@@ -773,31 +773,6 @@ def get_id_list_by_req_id(req_id: Union[None, str]):
     return data
 
 
-def reserve_mtbls_accession(study_id):
-    val_acc(study_id)
-    query = "select id from studies where acc = %(study_id)s;"
-    with get_connection() as (conn, cursor):
-        cursor.execute(query, {"study_id": study_id})
-        data = cursor.fetchall()
-        if data:
-            table_id = data[0][0]
-            cursor.execute(
-                reserve_mtbls_accession_sql,
-                {"stable_id_prefix": "MTBLS", "table_id": table_id},
-            )
-            cursor.execute(increment_accession, {"stable_id_prefix": "MTBLS"})
-
-            conn.commit()
-            get_reserved_acc_query = (
-                "select id, reserved_accession from studies where id = %(table_id)s;"
-            )
-            cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
-            data = cursor.fetchall()
-            if data:
-                return data[0][1]
-    return None
-
-
 def update_study_id_from_mtbls_accession(study_id):
     val_acc(study_id)
     query = "select id, reserved_accession from studies where acc = %(study_id)s;"
@@ -805,20 +780,33 @@ def update_study_id_from_mtbls_accession(study_id):
         try:
             cursor.execute(query, {"study_id": study_id})
             data = cursor.fetchall()
-            if data:
-                set_reserved_acc_query = "update studies set acc = %(reserved_accession)s where id = %(table_id)s;"
+            if not data:
+                raise MetabolightsDBException(f"study_id {study_id} is not found")
+            table_id = data[0][0]
+            reserved_accession = data[0][1]
+            if not reserved_accession:
+                cursor.execute("LOCK TABLE stableid IN ACCESS EXCLUSIVE MODE")
                 cursor.execute(
-                    set_reserved_acc_query,
-                    {"table_id": data[0][0], "reserved_accession": data[0][1]},
+                    reserve_mtbls_accession_sql,
+                    {"stable_id_prefix": "MTBLS", "table_id": table_id},
                 )
-                conn.commit()
-                get_reserved_acc_query = (
-                    "select id, acc from studies where id = %(table_id)s;"
-                )
-                cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
+                cursor.execute(increment_accession, {"stable_id_prefix": "MTBLS"})
+                cursor.execute(query, {"study_id": study_id})
                 data = cursor.fetchall()
-                if data:
-                    return data[0][1]
+                table_id = data[0][0]
+                reserved_accession = data[0][1]
+            cursor.execute(
+                "update studies set acc = %(reserved_accession)s where id = %(table_id)s;",
+                {"table_id": data[0][0], "reserved_accession": data[0][1]},
+            )
+            conn.commit()
+            get_reserved_acc_query = (
+                "select id, acc from studies where id = %(table_id)s;"
+            )
+            cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
+            data = cursor.fetchall()
+            if data:
+                return data[0][1]
         except Exception as e:
             conn.rollback()
             logger.error(str(e))
