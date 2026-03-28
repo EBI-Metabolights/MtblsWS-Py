@@ -73,7 +73,6 @@ from app.ws.db.types import (
     UserRole,
 )
 from app.ws.db_connection import (
-    reserve_mtbls_accession,
     update_curation_request,
     update_modification_time,
     update_study_id_from_mtbls_accession,
@@ -955,8 +954,6 @@ class StudyStatus(Resource):
             and current_study_status in provisional_id_states
             and not current_study_id.startswith(mtbls_prefix)
         ):
-            if not reserved_accession:
-                reserve_mtbls_accession(current_study_id)
             target_study_id = update_study_id_from_mtbls_accession(current_study_id)
             if not target_study_id:
                 raise MetabolightsException(
