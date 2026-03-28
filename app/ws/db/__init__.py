@@ -28,6 +28,6 @@ def get_db_connection_pool():
             max_size=conn_pool_max,
             max_lifetime=3600,
             max_idle=300,
-            check=ConnectionPool.check_connection
+            check=ConnectionPool.check_connection,
         )
     return global_postgresql_pool
