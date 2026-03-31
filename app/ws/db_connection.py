@@ -665,7 +665,7 @@ def get_public_studies():
     with get_connection() as (conn, cursor):
         cursor.execute(query)
         data = cursor.fetchall()
-    return data
+    return [x[0] for x in data]
 
 
 def get_private_studies():
@@ -673,7 +673,7 @@ def get_private_studies():
     with get_connection() as (conn, cursor):
         cursor.execute(query)
         data = cursor.fetchall()
-    return data
+    return [x[0] for x in data]
 
 
 def get_all_non_public_studies():
@@ -681,7 +681,7 @@ def get_all_non_public_studies():
     with get_connection() as (conn, cursor):
         cursor.execute(query)
         data = cursor.fetchall()
-    return data
+    return [x[0] for x in data]
 
 
 def get_study_by_type(sType, publicStudy=True):
@@ -755,7 +755,7 @@ def get_obfuscation_code(study_id):
     with get_connection() as (conn, cursor):
         cursor.execute(query, {"study_id": study_id})
         data = cursor.fetchall()
-    return data
+    return [x[0] for x in data]
 
 
 def get_id_list_by_req_id(req_id: Union[None, str]):
@@ -770,7 +770,7 @@ def get_id_list_by_req_id(req_id: Union[None, str]):
         data = cursor.fetchall()
     data = [x for x in data if x[0] == int(parts[1])]
 
-    return data
+    return [x[0] for x in data]
 
 
 def update_study_id_from_mtbls_accession(study_id):

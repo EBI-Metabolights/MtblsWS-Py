@@ -30,16 +30,16 @@ if __name__ == "__main__":
             if result:
                 studies = list(result)
                 studies.sort(
-                    key=lambda x: int(x["acc"].replace("MTBLS", "").replace("REQ", ""))
+                    key=lambda x: int(x.acc.replace("MTBLS", "").replace("REQ", ""))
                 )
 
         except Exception as e:
             db_session.rollback()
             raise e
     selected_studies = [
-        (x["acc"], x["obfuscationcode"])
+        (x.acc, x.obfuscationcode)
         for x in studies
-        # if int(x["acc"].replace("MTBLS", "").replace("REQ", "")) >= 10000
+        # if int(x.acc.replace("MTBLS", "").replace("REQ", "")) >= 10000
     ]
     # selected_studies.sort(key=lambda x: x[1])
     studies = [x[0] for x in selected_studies]
