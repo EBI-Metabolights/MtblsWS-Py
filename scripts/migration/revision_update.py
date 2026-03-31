@@ -31,7 +31,7 @@ def prepare_revisions():
             if result:
                 studies = list(result)
                 studies.sort(
-                    key=lambda x: int(x["acc"].replace("MTBLS", "").replace("REQ", ""))
+                    key=lambda x: int(x.acc.replace("MTBLS", "").replace("REQ", ""))
                 )
 
             audit_folder_root_path = (
@@ -50,9 +50,9 @@ def prepare_revisions():
             db_session.rollback()
             raise e
     studies = [
-        x["acc"]
+        x.acc
         for x in studies
-        if int(x["acc"].replace("MTBLS", "").replace("REQ", "")) >= 4381
+        if int(x.acc.replace("MTBLS", "").replace("REQ", "")) >= 4381
     ]
     # studies = ["MTBLS9"]
     for study_id in studies:
