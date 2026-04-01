@@ -79,9 +79,7 @@ class EbEyeSearchService:
         root.appendChild(entries)
         i = 0
         for study_id in study_list:
-            logger.info(
-                f"EB EYE search export processing for the study  - {study_id}"
-            )
+            logger.info(f"EB EYE search export processing for the study  - {study_id}")
             doc = EbEyeSearchService.process_study(
                 doc=doc,
                 root=entries,
