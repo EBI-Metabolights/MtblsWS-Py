@@ -45,12 +45,12 @@ class KeycloakAuthService:
         if self._keycloak_admin:
             return self._keycloak_admin
 
-        settings = self.config.openid_connect_admin
+        settings = self.config.openid_connect_client
         self._keycloak_admin = KeycloakAdmin(
             server_url=settings.server_url,
             realm_name=settings.realm_name,
-            username=settings.username,
-            password=settings.password,
+            client_secret=settings.client_secret,
+            client_id=settings.client_id,
             verify=True,
         )
         return self._keycloak_admin

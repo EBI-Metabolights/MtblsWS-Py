@@ -190,6 +190,7 @@ class UserService(object):
                         permission_context.globus_username = info.globus_username
                     except Exception as ex:
                         logger.exception(ex)
+                        raise ex
             if permission_context.username and permission_context.study_id:
                 owner_filter = []
                 owner_filter.append(User.username == permission_context.username)
