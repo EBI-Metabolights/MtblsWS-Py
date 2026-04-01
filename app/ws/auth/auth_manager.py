@@ -49,7 +49,7 @@ class KeycloakAuthService:
         self._keycloak_admin = KeycloakAdmin(
             server_url=settings.server_url,
             realm_name=settings.realm_name,
-            client_secret=settings.client_secret,
+            client_secret_key=settings.client_secret,
             client_id=settings.client_id,
             verify=True,
         )
