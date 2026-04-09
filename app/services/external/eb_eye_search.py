@@ -79,13 +79,11 @@ class EbEyeSearchService:
         root.appendChild(entries)
         i = 0
         for study_id in study_list:
-            logger.info(
-                f"EB EYE search export processing for the study  - {study_id[0]}"
-            )
+            logger.info(f"EB EYE search export processing for the study  - {study_id}")
             doc = EbEyeSearchService.process_study(
                 doc=doc,
                 root=entries,
-                study_id=study_id[0],
+                study_id=study_id,
                 thomson_reuters=thomson_reuters,
             )
             i = i + 1
@@ -124,7 +122,7 @@ class EbEyeSearchService:
         doc.appendChild(links)
         i = 0
         for study_id in study_list:
-            logger.info(f"Exporting  the study {study_id[0]} for EuropePMC")
+            logger.info(f"Exporting  the study {study_id} for EuropePMC")
             doc, study_linked, pubs_count = (
                 EbEyeSearchService.process_study_for_europmc(
                     doc=doc, root=links, study_id=study_id

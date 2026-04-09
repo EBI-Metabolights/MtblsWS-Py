@@ -253,9 +253,7 @@ class IsaInvestigation(Resource):
         response["mtblsStudy"]["createdAt"] = (
             study.created_at.isoformat() if study.created_at else ""
         )
-        response["mtblsStudy"]["submitters"] = [
-            x.username for x in submitters or []
-        ]
+        response["mtblsStudy"]["submitters"] = [x.username for x in submitters or []]
 
         # ToDo: Make sure this date is formatted YYYY-MM-DD and update the isa_inv, isa_study before returning
         # response['mtblsStudy']['release_date'] = release_date

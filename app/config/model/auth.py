@@ -27,7 +27,6 @@ class AuthConfiguration(BaseModel):
     application_secret_key: str
     one_time_token_expires_in_seconds: int = 300
     openid_connect_client: OpenIdConnnectClient
-
     active_authentication_service: Literal["standalone", "keycloak"] = "standalone"
 
 

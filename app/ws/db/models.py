@@ -499,7 +499,7 @@ class MetaboLightsCompoundModel(EntityModel):
     hasPathways: bool = Field(False, alias="has_pathways")
     hasNMR: bool = Field(False, alias="has_nmr")
     hasMS: bool = Field(False, alias="has_ms")
-    updatedDate: Union[None, datetime.datetime] = Field(None, alias="updated_date")
+    updatedDate: Union[None, datetime.datetime, str] = Field(None, alias="updated_date")
     metSpecies: Union[None, List[MetSpeciesModel]] = Field([], alias="met_species")
     crossReference: Union[None, List[MetCrossReferenceModel]] = Field(
         [], alias="ref_xref"
