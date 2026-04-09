@@ -21,6 +21,7 @@ from app.config.model.file_filters import FileFilters
 from app.config.model.file_resources import FileResources
 from app.config.model.flask import FlaskConfiguration
 from app.config.model.ftp_server import FtpServerSettings
+from app.config.model.globus import GlobusSettings
 from app.config.model.google import GoogleSettings
 from app.config.model.hpc_cluster import HpcClusterSettings
 from app.config.model.jira import JiraSettings
@@ -61,6 +62,7 @@ class ApplicationSettings(BaseModel):
     celery: CelerySettings
     external_dependencies: ExternalDependenciesSettings
     mhd: MhdSettings
+    globus: GlobusSettings
 
 
 _application_settings: Union[None, ApplicationSettings] = None

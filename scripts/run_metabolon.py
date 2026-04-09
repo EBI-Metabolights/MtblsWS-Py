@@ -42,7 +42,7 @@ if __name__ == "__main__":
     )
     # target_location = target_root_path / study_id / pathlib.Path("metabolon_pipeline")
     email = "metabolights-dev@ebi.ac.uk"
-    target_location = study_root_path / study_id
+    target_location = study_root_path / pathlib.Path(study_id)
     # convert_to_isa(study_location=str(study_location), study_id=study_id)
     # create_isa_files(study_id=study_id, study_location=str(study_location), target_location=target_location)
     # target_location = target_root_path / study_id / "metabolon_pipeline/MZML_0015"

@@ -73,7 +73,6 @@ from app.ws.db.types import (
     UserRole,
 )
 from app.ws.db_connection import (
-    reserve_mtbls_accession,
     update_curation_request,
     update_modification_time,
     update_study_id_from_mtbls_accession,
@@ -443,12 +442,6 @@ class StudyStatus(Resource):
                     isa_inv.public_release_date = new_date
                     isa_study.public_release_date = new_date
                     release_date = new_date
-                self.update_status(
-                    study_id,
-                    new_study_status.to_camel_case_str(),
-                    first_public_date=first_public_date_baseline,
-                    first_private_date=first_private_date_baseline,
-                )
             # update_curation_request(study_id, curation_request)
         else:
             if not status_updated:
@@ -492,12 +485,6 @@ class StudyStatus(Resource):
                             message="There are validation errors in the latest validation report. Please fix any issues before attempting to change study status.",
                         )
 
-            self.update_status(
-                study_id,
-                new_study_status.to_camel_case_str(),
-                first_public_date=first_public_date_baseline,
-                first_private_date=first_private_date_baseline,
-            )
         # current_study_status = types.StudyStatus.from_int(study.status)
         # requested_study_status = types.StudyStatus.from_name(study_status.upper())
 
@@ -506,6 +493,12 @@ class StudyStatus(Resource):
             context.study_status,
             new_study_status,
             context.reserved_accession,
+        )
+        self.update_status(
+            study_id,
+            new_study_status.to_camel_case_str(),
+            first_public_date=first_public_date_baseline,
+            first_private_date=first_private_date_baseline,
         )
         user_token = context.user_api_token
 
@@ -563,7 +556,6 @@ class StudyStatus(Resource):
 
             iac.write_isa_study(
                 isa_inv,
-                None,
                 study_location,
                 save_investigation_copy=True,
                 save_assays_copy=True,
@@ -601,7 +593,6 @@ class StudyStatus(Resource):
         elif status_updated:
             iac.write_isa_study(
                 isa_inv,
-                None,
                 study_location,
                 save_investigation_copy=True,
                 save_assays_copy=True,
@@ -877,7 +868,6 @@ class StudyStatus(Resource):
                 assay.filename = assay.filename.replace(study_id, updated_study_id, 1)
             iac.write_isa_study(
                 isa_inv,
-                None,
                 study_location,
                 save_investigation_copy=False,
                 save_assays_copy=False,
@@ -898,9 +888,9 @@ class StudyStatus(Resource):
                 for column in assay_df.columns:
                     if "Metabolite Assignment File" in column:
                         assay_df[column] = assay_df[column].apply(
-                            lambda x: x.replace(study_id, updated_study_id, 1)
-                            if x
-                            else ""
+                            lambda x: (
+                                x.replace(study_id, updated_study_id, 1) if x else ""
+                            )
                         )
                         maintenance_task.write_tsv_file(assay_df, metadata_file)
             new_name = os.path.basename(metadata_file).replace(
@@ -964,8 +954,6 @@ class StudyStatus(Resource):
             and current_study_status in provisional_id_states
             and not current_study_id.startswith(mtbls_prefix)
         ):
-            if not reserved_accession:
-                reserve_mtbls_accession(current_study_id)
             target_study_id = update_study_id_from_mtbls_accession(current_study_id)
             if not target_study_id:
                 raise MetabolightsException(

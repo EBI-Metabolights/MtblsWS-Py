@@ -18,6 +18,7 @@
 
 import socket
 
+from flask import Blueprint, jsonify
 from flask_cors import CORS
 from flask_mail import Mail
 from flask_restful import Api
@@ -79,6 +80,7 @@ from app.ws.ftp.ftp_operations import (
     SyncFromStudyFolder,
 )
 from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
+from app.ws.globus import GlobusIdentities, GlobusPermission, GlobusPermissions
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.internal import BannerMessage
 from app.ws.isa_table_sheet import StudySampleTemplate
@@ -321,6 +323,22 @@ def initialize_app(flask_app):
         api_spec_url=api_doc,
         resourcePath=context_path,
     )
+
+    ws_bp = Blueprint("metabolights_ws", __name__, url_prefix=context_path)
+
+    @ws_bp.route("/health", methods=["GET"])
+    def health_check():
+        # Return 200 OK for K8s Liveness/Readiness probes
+        return jsonify(
+            {
+                "status": "up",
+                "app": "metabolights-ws",
+                "version": get_settings().server.description.metabolights_api_version,
+            }
+        ), 200
+
+    flask_app.register_blueprint(ws_bp)
+
     res_path = context_path
     api.add_resource(About, res_path)
     api.add_resource(AboutServer, res_path + "/ebi-internal/server-info")
@@ -701,3 +719,13 @@ def initialize_app(flask_app):
     api.add_resource(IntegrationCheck, res_path + "/ebi-internal/integration-check")
 
     api.add_resource(DataFolders, res_path + "/ebi-internal/data-folders")
+
+    api.add_resource(
+        GlobusPermission,
+        res_path + "/<string:study_id>/globus-permission",
+    )
+    api.add_resource(
+        GlobusPermissions,
+        res_path + "/<string:study_id>/globus-permissions",
+    )
+    api.add_resource(GlobusIdentities, res_path + "/globus/identities")

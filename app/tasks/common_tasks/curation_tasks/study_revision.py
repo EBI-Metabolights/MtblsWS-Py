@@ -404,7 +404,7 @@ if __name__ == "__main__":
         (x[0], x[4])
         for x in studies
         if x[0] == "MTBLS1"
-        # if int(x["acc"].replace("MTBLS", "").replace("REQ", "")) >= 10000
+        # if int(x.acc.replace("MTBLS", "").replace("REQ", "")) >= 10000
     ]
     selected_studies.sort(key=lambda x: x[1])
     studies = [x[0] for x in selected_studies]

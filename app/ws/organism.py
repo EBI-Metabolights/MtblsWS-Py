@@ -236,9 +236,7 @@ class Organism(Resource):
         )
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         logger.info("Updated %s", existing_characteristics_value)
 
         return {"Success": " Sample sheet updated"}

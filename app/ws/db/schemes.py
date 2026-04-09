@@ -87,22 +87,22 @@ class User(Base):
         primary_key=True,
         server_default=hibernate_sequence.next_value(),
     )
-    address = Column(String(255))
-    affiliation = Column(String(255))
-    affiliationurl = Column(String(255))
-    apitoken = Column(String(255), unique=True)
-    email = Column(String(255))
-    firstname = Column(String(255))
-    joindate = Column(DateTime)
-    lastname = Column(String(255))
-    password = Column(String(255))
-    role = Column(BigInteger, nullable=False)
-    partner = Column(BigInteger, nullable=False, default=0)
-    status = Column(BigInteger, nullable=False)
     username = Column(String(255), unique=True)
-    orcid = Column(String(255))
-    metaspace_api_key = Column(String(255))
-
+    apitoken = Column(String(255), unique=True)
+    # TODO: Move to KEYCLOAK
+    # role = Column(BigInteger, nullable=False)
+    # address = Column(String(255))
+    # affiliation = Column(String(255))
+    # affiliationurl = Column(String(255))
+    # email = Column(String(255))
+    # firstname = Column(String(255))
+    # lastname = Column(String(255))
+    # password = Column(String(255))
+    # partner = Column(BigInteger, nullable=False, default=0)
+    # orcid = Column(String(255))
+    # metaspace_api_key = Column(String(255))
+    # joindate = Column(DateTime)
+    # status = Column(BigInteger, nullable=False)
     studies = relationship("Study", secondary="study_user", back_populates="users")
 
 

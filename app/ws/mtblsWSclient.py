@@ -125,24 +125,6 @@ class WsClient:
     def get_all_studies_for_user(user_token):
         return commons.get_all_studies_for_user(user_token)
 
-    @staticmethod
-    def get_permissions(study_id, user_token, obfuscation_code=None):
-        return commons.get_permissions(study_id, user_token, obfuscation_code)
-
-    @staticmethod
-    def get_user_email(user_token):
-        return commons.get_user_email(user_token)
-
-    @staticmethod
-    def create_upload_folder(study_id, obfuscation_code, user_token, send_email=True):
-        return commons.create_ftp_folder(
-            study_id,
-            obfuscation_code,
-            user_token,
-            email_service=WsClient.email_service,
-            send_email=send_email,
-        )
-
     def reindex_study(
         self,
         study_id,

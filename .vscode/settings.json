@@ -23,8 +23,8 @@
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "python.analysis.diagnosticSeverityOverrides": {
-    "reportMissingModuleSource": "none",
-    "reportUndefinedVariable": "none"
+    "reportMissingModuleSource": "warning",
+    "reportUndefinedVariable": "warning"
   },
   "editor.defaultFormatter": "charliermarsh.ruff",
   "python.analysis.exclude": [
@@ -40,4 +40,5 @@
     ".poc/**"
   ],
   "python-envs.defaultEnvManager": "ms-python.python:venv",
+  "python.analysis.autoImportCompletions": true
 }

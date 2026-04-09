@@ -175,7 +175,7 @@ class MetaspacePipeLine(Resource):
                         study_id=study_id,
                         dataset_ids=metaspace_dataset_ids,
                         study_location=study_location,
-                        user_token=user_token,
+                        username=result.context.username,
                         obfuscation_code=obfuscation_code,
                         sm_instance=sm,
                     )

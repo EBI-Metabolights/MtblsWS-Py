@@ -17,7 +17,9 @@ class DBManager(object):
         self.db_url = self._build_db_url()
         self.db_sqlalchemy_url = self._build_sqlachemy_db_url()
 
-        self._engine = create_engine(self.db_sqlalchemy_url, pool_pre_ping=True)
+        self._engine = create_engine(
+            self.db_sqlalchemy_url, pool_pre_ping=True, pool_recycle=1800
+        )
         self.session_maker = sessionmaker(
             autocommit=False, autoflush=False, bind=self._engine
         )

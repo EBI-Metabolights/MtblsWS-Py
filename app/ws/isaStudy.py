@@ -281,9 +281,7 @@ class StudyTitle(Resource):
         )
         isa_study.title = new_title
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         inputs = {"user_token": None, "study_id": study_id}
         reindex_study.apply_async(kwargs=inputs, expires=60)
         logger.info("Applied %s", new_title)
@@ -396,9 +394,7 @@ class StudyReleaseDate(Resource):
         isa_inv.public_release_date = new_date
         isa_study.public_release_date = new_date
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         # update database
         update_release_date(study_id, new_date)
         inputs = {"user_token": None, "study_id": study_id}
@@ -632,9 +628,7 @@ class StudyDescription(Resource):
             "#", ""
         )  # ISA-API can not deal with these
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         inputs = {"user_token": None, "study_id": study_id}
         reindex_task = reindex_study.apply_async(kwargs=inputs, expires=60)
         logger.info(
@@ -837,9 +831,7 @@ class StudyContacts(Resource):
         isa_study.contacts.extend(new_contacts)
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         inputs = {"user_token": None, "study_id": study_id}
         reindex_study.apply_async(kwargs=inputs, expires=60)
 
@@ -1188,9 +1180,7 @@ class StudyContacts(Resource):
         isa_study.contacts[contact_index] = updated_contact
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         inputs = {"user_token": None, "study_id": study_id}
         reindex_study.apply_async(kwargs=inputs, expires=60)
         logger.info("Updated %s", updated_contact.email)
@@ -1290,9 +1280,7 @@ class StudyContacts(Resource):
         person = isa_study.contacts.pop(int(contact_index))
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         logger.info("%s Contact at %s deleted ", study_id, contact_index)
 
         return PersonSchema().dump(person)
@@ -1447,9 +1435,7 @@ class StudyProtocols(Resource):
         # add obj
         isa_study.protocols.append(new_obj)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         logger.info("Added %s", new_obj.name)
 
         return mm_models.ProtocolSchema().dump(new_obj)
@@ -1677,7 +1663,7 @@ class StudyProtocols(Resource):
             isa_study.protocols.remove(protocol)
             logger.info("A copy of the previous files will %s saved", save_msg_str)
             iac.write_isa_study(
-                isa_inv, None, std_path, save_investigation_copy=save_audit_copy
+                isa_inv, std_path, save_investigation_copy=save_audit_copy
             )
             logger.info("Deleted %s", protocol.name)
         else:
@@ -1835,9 +1821,7 @@ class StudyProtocols(Resource):
         if not found:
             abort(404)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         logger.info("Updated %s", updated_protocol.name)
 
         return mm_models.ProtocolSchema().dump(updated_protocol)
@@ -1996,7 +1980,7 @@ class StudyFactors(Resource):
             )
 
             iac.write_isa_study(
-                isa_inv, None, std_path, save_investigation_copy=save_audit_copy
+                isa_inv, std_path, save_investigation_copy=save_audit_copy
             )
             logger.info("Added %s", new_obj.name)
         else:
@@ -2191,9 +2175,7 @@ class StudyFactors(Resource):
         # remove object
         isa_study.factors.remove(obj)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         logger.info("Deleted %s", obj.name)
 
         sch = mm_models.StudyFactorSchema()
@@ -2397,9 +2379,7 @@ class StudyFactors(Resource):
             )
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         logger.info("Updated %s", updated_factor.name)
 
         return mm_models.StudyFactorSchema().dump(updated_factor)
@@ -2553,9 +2533,7 @@ class StudyDescriptors(Resource):
         # add Study Descriptor
         isa_study.design_descriptors.append(new_obj)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         logger.info("Added %s", new_obj.term)
 
         return mm_models.StudyDesignDescriptorSchema().dump(new_obj)
@@ -2750,9 +2728,7 @@ class StudyDescriptors(Resource):
         if not found:
             abort(404)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         logger.info("Deleted %s", obj.term)
 
         return mm_models.StudyDesignDescriptorSchema().dump(obj)
@@ -2911,9 +2887,7 @@ class StudyDescriptors(Resource):
             term_source.description,
         )
 
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         logger.info("Updated %s", updated_descriptor.term)
 
         return mm_models.StudyDesignDescriptorSchema().dump(updated_descriptor)
@@ -3092,7 +3066,7 @@ class StudyPublications(Resource):
                 logger.info("Updated %s", new_publication.title)
         if updated:
             iac.write_isa_study(
-                isa_inv, None, std_path, save_investigation_copy=save_audit_copy
+                isa_inv, std_path, save_investigation_copy=save_audit_copy
             )
             # logger.info("A copy of the previous files will %s saved", save_msg_str)
 
@@ -3304,9 +3278,7 @@ class StudyPublications(Resource):
         if not found:
             abort(404, message="Requested publication title does not exist.")
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         logger.info("Deleted %s", publication.title)
 
         return mm_models.PublicationSchema().dump(publication)
@@ -3484,9 +3456,7 @@ class StudyPublications(Resource):
         #     add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
         #                                   term_source.file, term_source.description)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(
-            isa_inv, None, std_path, save_investigation_copy=save_audit_copy
-        )
+        iac.write_isa_study(isa_inv, std_path, save_investigation_copy=save_audit_copy)
         logger.info("Updated %s", updated_publication.title)
 
         return mm_models.PublicationSchema().dump(updated_publication)

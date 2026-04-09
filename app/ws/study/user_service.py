@@ -3,8 +3,12 @@ from typing import Any, List, Self, Union
 
 from sqlalchemy import func, or_
 
-from app.utils import MetabolightsAuthorizationException, MetabolightsException
-from app.ws.auth.service import AbstractAuthManager
+from app.utils import (
+    MetabolightsAuthenticationException,
+    MetabolightsAuthorizationException,
+    MetabolightsException,
+)
+from app.ws.auth.service import AbstractAuthManager, UserProfile
 from app.ws.db import permission_scopes as scopes
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import SimplifiedUserModel, UserModel
@@ -31,6 +35,19 @@ class UserService(object):
     def __init__(self, auth_manager: None | AbstractAuthManager = None):
         self.auth_manager = auth_manager
 
+    def create_user_profile(self, submitter: User) -> None | UserProfile:
+        if not self.auth_manager or not submitter.username:
+            return None
+        user: UserProfile = self.auth_manager.get_user_profile(
+            username=submitter.username
+        )
+        if not user:
+            # keep current values. reset profile fields in future
+            return None
+        user.api_token = submitter.apitoken
+        user.username = submitter.username
+        return user
+
     @classmethod
     def get_instance(cls, auth_manager: AbstractAuthManager) -> Self:
         input_hash = hash(auth_manager)
@@ -53,18 +70,33 @@ class UserService(object):
                 message="Error while retreiving user from database", exception=e
             )
 
-    def get_study_submitters(self, study_id):
+    def get_study_submitters(self, study_id) -> list[UserProfile]:
         try:
             with DBManager.get_instance().session_maker() as db_session:
                 base_query = db_session.query(User)
                 query = base_query.join(Study, User.studies)
-                submitters = query.filter(
-                    Study.acc == study_id, User.status == UserStatus.ACTIVE.value
-                ).all()
-                return submitters
+                submitters = query.filter(Study.acc == study_id).all()
+                users = []
+                for submitter in submitters:
+                    users.append(self.create_user_profile(submitter))
+            return users
+        except Exception as e:
+            raise MetabolightsException(
+                message="Error while retreiving submitters from database", exception=e
+            )
+
+    def get_user_profile(self, username) -> None | UserProfile:
+        try:
+            with DBManager.get_instance().session_maker() as db_session:
+                query = db_session.query(User)
+                submitters = query.filter(User.username == username).all()
+                users = []
+                for submitter in submitters:
+                    users.append(self.create_user_profile(submitter))
+            return users[0] if users else None
         except Exception as e:
             raise MetabolightsAuthorizationException(
-                message="Error while retreiving submittes from database", exception=e
+                message="Error while retreiving submitters from database", exception=e
             )
 
     def get_permission_context(
@@ -81,12 +113,14 @@ class UserService(object):
             if not self.auth_manager:
                 raise MetabolightsException("Authentication manager is not defined.")
             try:
-                user = self.auth_manager.validate_oauth2_token(jwt)
+                user: UserProfile = self.auth_manager.validate_oauth2_token(jwt)
+                permission_context.user_profile = user
                 username = user.email
-                email_verified = UserStatus(user.status) == UserStatus.ACTIVE
                 permission_context.validated_jwt = jwt
+                permission_context.globus_username = user.globus_username
+                permission_context.orcid = user.orcid
                 permission_context.username = username
-                permission_context.email_verified = email_verified
+                permission_context.email_verified = user.email_verified
             except Exception as ex:
                 messages.append(f"Invalid JWT token: {str(ex)}")
 
@@ -143,7 +177,7 @@ class UserService(object):
 
             if username or user_token:
                 base_query = db_session.query(User)
-                user_filter = [User.status == UserStatus.ACTIVE.value]
+                user_filter = []
                 if username:
                     user_filter.append(User.username == username)
                 if user_token:
@@ -152,12 +186,18 @@ class UserService(object):
                 token_user: User = base_query.filter(*user_filter).first() or None
                 if token_user:
                     permission_context.username = token_user.username
-                    permission_context.user_role = UserRole(token_user.role)
                     permission_context.user_api_token = token_user.apitoken
-                    permission_context.partner_user = token_user.partner == 1
+                    try:
+                        info = self.auth_manager.get_user_profile(token_user.username)
+                        permission_context.user_role = info.role
+                        permission_context.partner_user = info.partner
+                        permission_context.globus_username = info.globus_username
+                    except Exception as ex:
+                        logger.exception(ex)
+                        raise ex
             if permission_context.username and permission_context.study_id:
-                owner_filter = [User.status == UserStatus.ACTIVE.value]
-                user_filter.append(User.username == permission_context.username)
+                owner_filter = []
+                owner_filter.append(User.username == permission_context.username)
                 owner_filter.append(Study.acc == permission_context.study_id)
                 query = base_query.join(Study, User.studies)
 
@@ -200,7 +240,9 @@ class UserService(object):
             obfuscation_code=obfuscation_code,
         )
         result = scopes.RoleEvaluationResult(
-            context=permission_context, messages=messages
+            context=permission_context,
+            messages=messages,
+            user_profile=permission_context.user_profile,
         )
         if not permission_context.username:
             if fail_silently:
@@ -241,6 +283,16 @@ class UserService(object):
         "permission-08": "Does not match all permission filters",
         "permission-09": "Match all permission filters ",
     }
+
+    def raise_error(permission_context: scopes.StudyPermissionContext, message: str):
+        if (
+            permission_context.validated_jwt
+            or permission_context.validated_obfuscation_code
+            or permission_context.user_api_token
+        ):
+            raise MetabolightsAuthorizationException(message=message)
+        else:
+            raise MetabolightsAuthenticationException(message=message)
 
     def validate_permissions(
         self,
@@ -286,8 +338,8 @@ class UserService(object):
                 result.reason = "rule-03"
                 return result
             else:
-                raise MetabolightsAuthorizationException(
-                    message="No user or is not validated."
+                self.raise_error(
+                    permission_context, message="No user or is not validated."
                 )
 
         matches: list[bool] = []
@@ -327,8 +379,8 @@ class UserService(object):
                 result.reason = "permission-05"
                 return result
             else:
-                raise MetabolightsAuthorizationException(
-                    message="User has no permission to execute."
+                self.raise_error(
+                    permission_context, message="User has no permission to execute."
                 )
         if permissions.decision == scopes.DecisionType.NONE:
             if all([True if not x else False for x in matches]):
@@ -339,8 +391,9 @@ class UserService(object):
                 result.reason = "permission-07"
                 return result
             else:
-                raise MetabolightsAuthorizationException(
-                    message="User has unexpected permissions to execute."
+                self.raise_error(
+                    permission_context,
+                    message="User has unexpected permissions to execute.",
                 )
 
         if all(matches):
@@ -351,8 +404,9 @@ class UserService(object):
             result.reason = "permission-09"
             return result
         else:
-            raise MetabolightsAuthorizationException(
-                message="User has not enough permission to execute."
+            self.raise_error(
+                permission_context,
+                message="User has not enough permission to execute.",
             )
 
     REASON_CODE = {
@@ -385,7 +439,7 @@ class UserService(object):
         permission.user_name = context.username
         permission.partner = context.partner_user
         permission.submitter_of_study = context.owner
-
+        permission.first_private_date = context.first_private_date or ""
         if user_role not in ActiveUserRoles and user_required:
             permission.reason = "reason-02"
             self.copy_scopes(permission, scopes.STUDY_PAGE_EMPTY_SCOPES)
@@ -475,142 +529,26 @@ class UserService(object):
 
         permission.scopes = {k: v for k, v in resources.items() if v}
 
-    def validate_user_is_submitter_of_study_or_has_curator_role(
-        self, user_token, study_id
-    ):
-        user = None
-        exception = None
-
-        try:
-            user = self.validate_user_has_curator_role(user_token)
-        except Exception as ex:
-            exception = ex
-            submitters = self.get_study_submitters(study_id)
-            if submitters:
-                for submitter in submitters:
-                    if submitter.apitoken == user_token:
-                        user = {
-                            "id": submitter.id,
-                            "username": submitter.username,
-                            "role": submitter.role,
-                            "status": submitter.status,
-                            "apitoken": submitter.apitoken,
-                            "password": submitter.password,
-                            "partner": submitter.partner,
-                        }
-
-        if not user:
-            raise MetabolightsAuthorizationException(
-                message="Error while retreiving user from database", exception=exception
-            )
-        return user
-
-    def validate_user_has_write_access(self, user_token, study_id):
-        try:
-            with DBManager.get_instance().session_maker() as db_session:
-                base_query = db_session.query(
-                    User.id,
-                    User.username,
-                    User.role,
-                    User.status,
-                    User.apitoken,
-                    User.partner,
-                    Study.status,
-                )
-                query = base_query.join(Study, User.studies)
-                result = query.filter(
-                    Study.acc == study_id,
-                    User.apitoken == user_token,
-                    User.status == UserStatus.ACTIVE.value,
-                ).first()
-                if result and StudyStatus(result[6]) in {StudyStatus.PROVISIONAL}:
-                    return result
-        except Exception as e:
-            raise MetabolightsAuthorizationException(
-                message="Error while retreiving user from database", exception=e
-            )
-
-        with DBManager.get_instance().session_maker() as db_session:
-            study = db_session.query(Study.acc).filter(Study.acc == study_id).first()
-            if study:
-                return self.validate_user_has_curator_role(user_token)
-            raise MetabolightsAuthorizationException(message="Not a valid study id")
-
-    def validate_user_has_read_access(self, user_token, study_id, obfuscationcode=None):
-        if not study_id:
-            raise MetabolightsAuthorizationException(message="Not a valid study id")
-        try:
-            with DBManager.get_instance().session_maker() as db_session:
-                base_query = db_session.query(
-                    Study.acc, Study.status, Study.obfuscationcode
-                )
-                study = base_query.filter(Study.acc == study_id).first()
-                if not study:
-                    raise MetabolightsAuthorizationException(
-                        message="Not a valid study id"
-                    )
-                else:
-                    if study[1] == StudyStatus.PUBLIC.value:
-                        return True
-                    else:
-                        if obfuscationcode:
-                            if study[2] == obfuscationcode and study[1] in (
-                                StudyStatus.INREVIEW.value,
-                                StudyStatus.PRIVATE.value,
-                                StudyStatus.PROVISIONAL.value,
-                            ):
-                                return True
-                            if study[2] != obfuscationcode:
-                                raise MetabolightsAuthorizationException(
-                                    message="Not a valid study id or obfuscation code"
-                                )
-
-        except Exception as e:
-            raise MetabolightsAuthorizationException(
-                message="Error while retreiving user from database", exception=e
-            )
-        try:
-            with DBManager.get_instance().session_maker() as db_session:
-                base_query = db_session.query(
-                    User.id,
-                    User.username,
-                    User.role,
-                    User.status,
-                    User.apitoken,
-                    User.partner,
-                    Study.status,
-                )
-                query = base_query.join(Study, User.studies)
-                result = query.filter(
-                    Study.acc == study_id,
-                    User.apitoken == user_token,
-                    User.status == UserStatus.ACTIVE.value,
-                ).first()
-                if result:
-                    return True
-                self.validate_user_has_curator_role(user_token)
-        except Exception as e:
-            raise MetabolightsAuthorizationException(
-                message="Error while retreiving user from database", exception=e
-            )
-        return True
-
-    def validate_user_has_curator_role(self, user_token):
+    def validate_user_has_curator_role(self, user_token) -> None | UserModel:
         return self.validate_user_by_token(user_token, [UserRole.ROLE_SUPER_USER.value])
 
-    def validate_username_with_submitter_or_super_user_role(self, user_name):
+    def validate_username_with_submitter_or_super_user_role(
+        self, user_name
+    ) -> None | UserModel:
         return self.validate_user_by_username(
             user_name, [UserRole.ROLE_SUBMITTER.value, UserRole.ROLE_SUPER_USER.value]
         )
 
-    def validate_user_has_submitter_or_super_user_role(self, user_token):
+    def validate_user_has_submitter_or_super_user_role(
+        self, user_token
+    ) -> None | UserModel:
         return self.validate_user_by_token(
             user_token, [UserRole.ROLE_SUBMITTER.value, UserRole.ROLE_SUPER_USER.value]
         )
 
     def validate_user_by_username(
         self, user_name, allowed_role_list, allowed_status_list=None
-    ):
+    ) -> None | UserModel:
         if not user_name:
             raise MetabolightsException(message="Invalid user or credential")
 
@@ -624,7 +562,7 @@ class UserService(object):
 
     def validate_user_by_token(
         self, user_token, allowed_role_list, allowed_status_list=None
-    ):
+    ) -> None | UserModel:
         if not user_token:
             raise MetabolightsException(message="User token is not valid")
 
@@ -636,7 +574,7 @@ class UserService(object):
 
     def validate_user_by_user_field(
         self, filter_clause, allowed_role_list, allowed_status_list=None
-    ):
+    ) -> None | UserModel:
         if not allowed_role_list:
             raise MetabolightsAuthorizationException(
                 message="Define user role to validate"
@@ -647,17 +585,7 @@ class UserService(object):
 
         try:
             with DBManager.get_instance().session_maker() as db_session:
-                query = db_session.query(
-                    User.id,
-                    User.username,
-                    User.role,
-                    User.status,
-                    User.apitoken,
-                    User.password,
-                    User.partner,
-                    User.firstname,
-                    User.lastname,
-                )
+                query = db_session.query(User)
                 db_user = filter_clause(query).first()
         except Exception as e:
             raise MetabolightsAuthorizationException(
@@ -665,12 +593,13 @@ class UserService(object):
             )
 
         if db_user:
-            if int(db_user.status) not in allowed_status_list:
+            user_model = self.create_user_model(db_user)
+            if UserStatus(user_model.status).value not in allowed_status_list:
                 raise MetabolightsAuthorizationException(message="Invalid user status")
 
-            if db_user.role not in allowed_role_list:
+            if UserStatus(user_model.role).value not in allowed_role_list:
                 raise MetabolightsAuthorizationException(message="Invalid user role")
-            return db_user
+            return user_model
         else:
             raise MetabolightsAuthorizationException(
                 message="Invalid user or credential"
@@ -709,31 +638,17 @@ class UserService(object):
             )
 
         if db_user:
-            m_user = SimplifiedUserModel.model_validate(db_user)
-            m_user.email = m_user.email.lower()
-            m_user.userName = m_user.userName.lower()
-            m_user.fullName = m_user.firstName + " " + m_user.lastName
-            m_user.role = UserRole(m_user.role).name
-            m_user.partner = True if m_user.partner else False
-            m_user.status = UserStatus(m_user.status).name
-            m_user.joinDate = datetime_to_int(m_user.joinDate)
-            return m_user
+            return self.create_simplified_user_model(db_user)
         else:
             raise MetabolightsAuthorizationException(message="User not in database")
 
-    def get_db_user_by_user_token(self, user_token: str) -> Union[None, User]:
+    def get_db_user_by_user_token(self, user_token: str) -> Union[None, UserModel]:
         filter_clause = lambda query: query.filter(User.apitoken == user_token)
         return self.get_db_user_by_filter_clause(filter_clause=filter_clause)
 
     def get_db_user_by_user_name(self, user_name: str) -> Union[None, UserModel]:
         filter_clause = lambda query: query.filter(User.username == user_name)
-        m_user = self.get_db_user_by_filter_clause(filter_clause=filter_clause)
-        m_user.email = m_user.email.lower()
-        m_user.userName = m_user.userName.lower()
-        m_user.fullName = m_user.firstName + " " + m_user.lastName
-        m_user.status = UserStatus(m_user.status).name
-        m_user.joinDate = datetime_to_int(m_user.joinDate)
-        return m_user
+        return self.get_db_user_by_filter_clause(filter_clause=filter_clause)
 
     def get_db_user_by_filter_clause(self, filter_clause) -> Union[None, UserModel]:
         try:
@@ -746,7 +661,7 @@ class UserService(object):
             )
 
         if db_user:
-            m_user = UserModel.model_validate(db_user)
+            m_user = self.create_user_model(db_user)
             return m_user
         else:
             raise MetabolightsAuthorizationException(message="User not in database")
@@ -766,7 +681,73 @@ class UserService(object):
         users: List[UserModel] = []
         if db_users:
             for db_user in db_users:
-                m_user = UserModel.model_validate(db_user)
+                m_user = self.create_user_model(db_user)
                 users.append(m_user)
 
         return users
+
+    def create_user_model(self, db_user: User) -> None | UserModel:
+        if not self.auth_manager or not db_user or not db_user.username:
+            username = db_user.username if db_user and db_user.username else ""
+            raise MetabolightsException(
+                message=f"Auth service or user is not defined. {username}"
+            )
+        user: UserProfile = self.auth_manager.get_user_profile(
+            username=db_user.username
+        )
+        if not user:
+            raise MetabolightsException(
+                message=f"Username is not in auth service '{db_user.username}'"
+            )
+        return UserModel(
+            address=user.country,
+            affiliation=user.affiliation,
+            affiliationurl=user.affiliation_url,
+            curator=user.role in {UserRole.ROLE_SUPER_USER, UserRole.SYSTEM_ADMIN},
+            password="",
+            email=user.email.lower(),
+            firstname=user.first_name,
+            fullName=user.first_name + " " + user.last_name,
+            joindate=datetime_to_int(user.join_date),
+            lastname=user.last_name,
+            orcid=user.orcid,
+            role=user.role.value,
+            status=user.status.value,
+            partner=user.partner,
+            id=db_user.id,
+            username=user.username.lower(),
+            userVerifyDbPassword="",
+            mobilePhoneNumber="",
+            officePhoneNumber="",
+            apitoken=db_user.apitoken,
+        )
+
+    def create_simplified_user_model(self, db_user: User) -> None | SimplifiedUserModel:
+        if not self.auth_manager or not db_user or not db_user.username:
+            username = db_user.username if db_user and db_user.username else ""
+            raise MetabolightsException(
+                message=f"Auth service or user is not defined. {username}"
+            )
+        user: UserProfile = self.auth_manager.get_user_profile(
+            username=db_user.username
+        )
+        if not user:
+            raise MetabolightsException(
+                message=f"Username is not in auth service '{user.username}'"
+            )
+        return SimplifiedUserModel(
+            address=user.country,
+            affiliation=user.affiliation,
+            affiliationurl=user.affiliation_url,
+            email=user.email.lower(),
+            firstname=user.first_name,
+            fullName=user.first_name + " " + user.last_name,
+            joindate=datetime_to_int(user.join_date),
+            lastname=user.last_name,
+            orcid=user.orcid,
+            role=user.role.name,
+            status=user.status.name,
+            partner=user.partner,
+            username=user.username.lower(),
+            globususername=user.globus_username,
+        )

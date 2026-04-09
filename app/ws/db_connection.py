@@ -38,7 +38,6 @@ from app.ws.db.types import CurationRequest, StudyCategory, UserRole, UserStatus
 from app.ws.settings.utils import get_study_settings
 from app.ws.study import identifier_service
 from app.ws.utils import (
-    check_user_token,
     fixUserDictKeys,
     get_single_file_information,
     val_email,
@@ -62,8 +61,6 @@ stop_words = (
     "ebi_reporting",
     "exists",
 )
-
-query_curation_log = "select * from curation_log_temp order by acc_short asc;"
 
 query_all_studies = """
     select * from (
@@ -665,7 +662,7 @@ def get_public_studies():
     with get_connection() as (conn, cursor):
         cursor.execute(query)
         data = cursor.fetchall()
-    return data
+    return [x[0] for x in data]
 
 
 def get_private_studies():
@@ -673,7 +670,7 @@ def get_private_studies():
     with get_connection() as (conn, cursor):
         cursor.execute(query)
         data = cursor.fetchall()
-    return data
+    return [x[0] for x in data]
 
 
 def get_all_non_public_studies():
@@ -681,7 +678,7 @@ def get_all_non_public_studies():
     with get_connection() as (conn, cursor):
         cursor.execute(query)
         data = cursor.fetchall()
-    return data
+    return [x[0] for x in data]
 
 
 def get_study_by_type(sType, publicStudy=True):
@@ -755,7 +752,7 @@ def get_obfuscation_code(study_id):
     with get_connection() as (conn, cursor):
         cursor.execute(query, {"study_id": study_id})
         data = cursor.fetchall()
-    return data
+    return [x[0] for x in data]
 
 
 def get_id_list_by_req_id(req_id: Union[None, str]):
@@ -770,32 +767,7 @@ def get_id_list_by_req_id(req_id: Union[None, str]):
         data = cursor.fetchall()
     data = [x for x in data if x[0] == int(parts[1])]
 
-    return data
-
-
-def reserve_mtbls_accession(study_id):
-    val_acc(study_id)
-    query = "select id from studies where acc = %(study_id)s;"
-    with get_connection() as (conn, cursor):
-        cursor.execute(query, {"study_id": study_id})
-        data = cursor.fetchall()
-        if data:
-            table_id = data[0][0]
-            cursor.execute(
-                reserve_mtbls_accession_sql,
-                {"stable_id_prefix": "MTBLS", "table_id": table_id},
-            )
-            cursor.execute(increment_accession, {"stable_id_prefix": "MTBLS"})
-
-            conn.commit()
-            get_reserved_acc_query = (
-                "select id, reserved_accession from studies where id = %(table_id)s;"
-            )
-            cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
-            data = cursor.fetchall()
-            if data:
-                return data[0][1]
-    return None
+    return [x[0] for x in data]
 
 
 def update_study_id_from_mtbls_accession(study_id):
@@ -805,20 +777,33 @@ def update_study_id_from_mtbls_accession(study_id):
         try:
             cursor.execute(query, {"study_id": study_id})
             data = cursor.fetchall()
-            if data:
-                set_reserved_acc_query = "update studies set acc = %(reserved_accession)s where id = %(table_id)s;"
+            if not data:
+                raise MetabolightsDBException(f"study_id {study_id} is not found")
+            table_id = data[0][0]
+            reserved_accession = data[0][1]
+            if not reserved_accession:
+                cursor.execute("LOCK TABLE stableid IN ACCESS EXCLUSIVE MODE")
                 cursor.execute(
-                    set_reserved_acc_query,
-                    {"table_id": data[0][0], "reserved_accession": data[0][1]},
+                    reserve_mtbls_accession_sql,
+                    {"stable_id_prefix": "MTBLS", "table_id": table_id},
                 )
-                conn.commit()
-                get_reserved_acc_query = (
-                    "select id, acc from studies where id = %(table_id)s;"
-                )
-                cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
+                cursor.execute(increment_accession, {"stable_id_prefix": "MTBLS"})
+                cursor.execute(query, {"study_id": study_id})
                 data = cursor.fetchall()
-                if data:
-                    return data[0][1]
+                table_id = data[0][0]
+                reserved_accession = data[0][1]
+            cursor.execute(
+                "update studies set acc = %(reserved_accession)s where id = %(table_id)s;",
+                {"table_id": data[0][0], "reserved_accession": data[0][1]},
+            )
+            conn.commit()
+            get_reserved_acc_query = (
+                "select id, acc from studies where id = %(table_id)s;"
+            )
+            cursor.execute(get_reserved_acc_query, {"table_id": data[0][0]})
+            data = cursor.fetchall()
+            if data:
+                return data[0][1]
         except Exception as e:
             conn.rollback()
             logger.error(str(e))
@@ -1000,92 +985,6 @@ def mtblc_on_chebi_accession(chebi_id):
         return False, "No metabolite was found for this ChEBI id"
 
 
-def check_access_rights(user_token, study_id, study_obfuscation_code=None):
-    val_acc(study_id)
-    val_query_params(user_token)
-    val_query_params(study_obfuscation_code)
-
-    study_list = None
-    try:
-        study_list = execute_query(
-            query=query_user_access_rights,
-            user_token=user_token,
-            study_id=study_id,
-            study_obfuscation_code=study_obfuscation_code,
-        )
-    except Exception as e:
-        logger.error("Could not query the database " + str(e))
-
-    if study_list is None or not check_user_token(user_token):
-        return False, False, False, "ERROR", "ERROR", "ERROR", "ERROR", "ERROR", "ERROR"
-    settings = get_study_settings()
-    study_location = settings.mounted_paths.study_metadata_files_root_path
-    investigation_file_name = settings.investigation_file_name
-    complete_study_location = os.path.join(study_location, study_id)
-    complete_file_name = os.path.join(complete_study_location, investigation_file_name)
-    isa_date_format = "%Y-%m-%d"
-    is_curator = False
-    read_access = False
-    write_access = False
-    obfuscation_code = ""
-    release_date = None
-    submission_date = None
-    updated_date = None
-    study_status = ""
-
-    for i, row in enumerate(study_list):
-        role = row[0]
-        read_access = row[1]
-        if read_access == "True":
-            read_access = True
-        else:
-            read_access = False
-
-        write_access = row[2]
-        if write_access == "True":
-            write_access = True
-        else:
-            write_access = False
-
-        obfuscation_code = row[3]
-        release_date = row[4]
-        # release_date = release_date.strftime("%c")
-        release_date = release_date.strftime(isa_date_format)
-
-        submission_date = row[5]
-        submission_date = submission_date.strftime(isa_date_format)
-        study_status = row[6]
-        acc = row[7]
-
-        updated_date = get_single_file_information(complete_file_name)
-
-        if role == "curator":
-            is_curator = True
-            break  # The api-code gives you 100% access rights, so no need to check any further
-
-    return (
-        is_curator,
-        read_access,
-        write_access,
-        obfuscation_code,
-        complete_study_location,
-        release_date,
-        submission_date,
-        updated_date,
-        study_status,
-    )
-
-
-def get_email(user_token) -> Union[None, str]:
-    val_query_params(user_token)
-    user_email = None
-    try:
-        user_email = get_user_email(user_token)
-    except Exception as e:
-        logger.error("Could not query the database " + str(e))
-    return user_email
-
-
 def study_submitters(study_id, user_email, method):
     if not study_id or len(user_email) < 5:
         return None
@@ -1097,13 +996,13 @@ def study_submitters(study_id, user_email, method):
     if method == "add":
         query = """
             insert into study_user(userid, studyid)
-            select u.id, s.id from users u, studies s where lower(u.email) = %(email)s and acc=%(study_id)s;
+            select u.id, s.id from users u, studies s where lower(u.username) = %(email)s and acc=%(study_id)s;
         """
     elif method == "delete":
         query = """
             delete from study_user su where exists(
             select u.id, s.id from users u, studies s
-            where su.userid = u.id and su.studyid = s.id and lower(u.email) = %(email)s and acc=%(study_id)s);
+            where su.userid = u.id and su.studyid = s.id and lower(u.username) = %(email)s and acc=%(study_id)s);
         """
 
     try:
@@ -1124,18 +1023,6 @@ def get_all_study_acc():
         return data
     except Exception as e:
         return False
-
-
-def get_user_email(user_token) -> None | str:
-    input = "select lower(email) from users where apitoken = %(apitoken)s;"
-    try:
-        with get_connection() as (conn, cursor):
-            cursor.execute(input, {"apitoken": user_token})
-            data = cursor.fetchone()[0]
-            return data
-    except Exception as e:
-        logger.warning(f"User is not fetched for token {user_token}")
-    return None
 
 
 def get_provisional_study_ids_for_user(user_token):
@@ -1231,7 +1118,7 @@ def query_study_submitters(study_id):
         return None
 
     query = """
-        select u.email from users u, studies s, study_user su where
+        select u.username from users u, studies s, study_user su where
         su.userid = u.id and su.studyid = s.id and acc = %(study_id)s;
     """
     try:

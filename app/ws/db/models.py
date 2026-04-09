@@ -188,6 +188,7 @@ class SimplifiedUserModel(BaseModel):
     partner: Union[bool, int] = Field(..., alias="partner")  # excluded from es
     userName: str = Field(..., alias="username")  # assigned as not_analyzed in es
     apiToken: str = Field(..., alias="apitoken")  # excluded from es
+    globusUserName: None | str = Field(None, alias="globususername")
     model_config = ConfigDict(from_attributes=True)
 
     @field_validator("joinDate", check_fields=False)
@@ -498,7 +499,7 @@ class MetaboLightsCompoundModel(EntityModel):
     hasPathways: bool = Field(False, alias="has_pathways")
     hasNMR: bool = Field(False, alias="has_nmr")
     hasMS: bool = Field(False, alias="has_ms")
-    updatedDate: Union[None, datetime.datetime] = Field(None, alias="updated_date")
+    updatedDate: Union[None, datetime.datetime, str] = Field(None, alias="updated_date")
     metSpecies: Union[None, List[MetSpeciesModel]] = Field([], alias="met_species")
     crossReference: Union[None, List[MetCrossReferenceModel]] = Field(
         [], alias="ref_xref"

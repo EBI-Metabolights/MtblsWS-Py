@@ -247,9 +247,7 @@ class StudyRevisionService:
             revision_datetime=revision.revision_datetime,
             revision_comment=revision.revision_comment,
         )
-        iac.write_isa_study(
-            isa_inv_input, None, std_path, save_investigation_copy=False
-        )
+        iac.write_isa_study(isa_inv_input, std_path, save_investigation_copy=False)
 
     @staticmethod
     def start_study_revision_task(
@@ -407,7 +405,7 @@ class StudyRevisionService:
                         mhd_accession,
                     )
                 else:
-                    logger(
+                    logger.info(
                         "Immediate announcement file submission is disabled. "
                         "Announcement file submission is postponed for %s revision number %s: %s",
                         study.acc,

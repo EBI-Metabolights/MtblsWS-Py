@@ -61,16 +61,16 @@ def get_jwt_with_one_time_token(one_time_token: str) -> None | str:
         jwt_data = jwt_value.decode("utf-8") if jwt_value else ""
         logger.info(
             "Fetching JWT with one-time-token: ...%s, JWT TOKEN: ...%s",
-            one_time_token[-4:],
-            jwt_data[-4:],
+            one_time_token[-6:],
+            jwt_data[-6:],
         )
-        try:
-            redis.delete_value(token_key)
-            logger.info("one-time-token: ...%s is removed", one_time_token[-4:])
-        except Exception as ex:
-            logger.error("Error while deleting one-time-token: %s", ex)
+        # try:
+        #     redis.delete_value(token_key)
+        #     logger.info("one-time-token: ...%s is removed", one_time_token[-6:])
+        # except Exception as ex:
+        #     logger.error("Error while deleting one-time-token: %s", ex)
         return jwt_data
     except Exception as ex:
         logger.error("Error while fetching one-time-token: %s", ex)
-        redis.delete_value(token_key)
+        # redis.delete_value(token_key)
         return None

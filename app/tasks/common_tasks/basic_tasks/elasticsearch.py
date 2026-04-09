@@ -47,12 +47,10 @@ def reindex_all_public_studies(user_token, send_email_to_submitter=False):
         studies = []
 
         with DBManager.get_instance().session_maker() as db_session:
-            user = (
-                db_session.query(User.email).filter(User.apitoken == user_token).first()
-            )
+            user = db_session.query(User).filter(User.apitoken == user_token).first()
             if not user:
                 raise MetabolightsDBException("No user")
-            email = user.email
+            email = user.username
 
             result = (
                 db_session.query(Study.acc, Study.updatedate)
@@ -64,7 +62,7 @@ def reindex_all_public_studies(user_token, send_email_to_submitter=False):
                 raise MetabolightsDBException("No studies found on db.")
             for study in result:
                 studies.append(study)
-            studies.sort(key=lambda x: sort_by_study_id(x["acc"]), reverse=True)
+            studies.sort(key=lambda x: sort_by_study_id(x.acc), reverse=True)
 
         result = reindex_studies_in_list(user_token, studies)
         result_str = json.dumps(result, indent=4)
@@ -91,12 +89,12 @@ def reindex_all_studies(user_token, send_email_to_submitter=False):
         studies = []
 
         with DBManager.get_instance().session_maker() as db_session:
-            user = (
-                db_session.query(User.email).filter(User.apitoken == user_token).first()
+            user: User = (
+                db_session.query(User).filter(User.apitoken == user_token).first()
             )
             if not user:
                 raise MetabolightsDBException("No user")
-            email = user.email
+            email = user.username
 
             result = db_session.query(Study.acc, Study.updatedate).all()
 
@@ -104,7 +102,7 @@ def reindex_all_studies(user_token, send_email_to_submitter=False):
                 raise MetabolightsDBException("No studies found on db.")
             for study in result:
                 studies.append(study)
-            studies.sort(key=lambda x: sort_by_study_id(x["acc"]), reverse=True)
+            studies.sort(key=lambda x: sort_by_study_id(x.acc), reverse=True)
         result = reindex_studies_in_list(user_token, studies)
         result_str = json.dumps(result, indent=4)
         result_str = result_str.replace("\n", "<p>")
@@ -130,11 +128,11 @@ def reindex_studies_in_list(user_token, studies):
         for item in studies:
             try:
                 es._reindex_study(
-                    item["acc"], user_token, include_validation_results=False, sync=True
+                    item.acc, user_token, include_validation_results=False, sync=True
                 )
-                indexed_studies.append(item["acc"])
+                indexed_studies.append(item.acc)
             except Exception as ex:
-                failed_indexed_studies[item["acc"]] = str(ex)
+                failed_indexed_studies[item.acc] = str(ex)
     except Exception as exc:
         raise exc
     return {
@@ -190,10 +188,10 @@ def reindex_all_compounds(email, send_email_to_submitter=False):
         try:
             for item in compounds:
                 try:
-                    es._reindex_compound(item["acc"])
-                    indexed_compounds.append(item["acc"])
+                    es._reindex_compound(item.acc)
+                    indexed_compounds.append(item.acc)
                 except Exception as ex:
-                    failed_indexed_compounds[item["acc"]] = str(ex)
+                    failed_indexed_compounds[item.acc] = str(ex)
 
         except Exception as exc:
             raise exc

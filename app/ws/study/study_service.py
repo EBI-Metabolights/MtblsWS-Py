@@ -11,15 +11,17 @@ from app.utils import (
     MetabolightsException,
     MetabolightsFileOperationException,
 )
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyModel
-from app.ws.db.schemes import Stableid, Study, StudyTask, User
-from app.ws.db.types import StudyStatus, UserRole, UserStatus
+from app.ws.db.schemes import Stableid, Study, StudyTask
+from app.ws.db.types import StudyStatus
 from app.ws.db.wrappers import (
     create_study_model_from_db_study,
     get_user_model,
     update_study_model_from_directory,
 )
+from app.ws.study.user_service import UserService
 from app.ws.utils import read_tsv_with_filter, totuples
 
 logger = logging.getLogger("wslog")
@@ -163,7 +165,13 @@ class StudyService(object):
             if not study:
                 raise MetabolightsDBException(f"{study_id} does not exist")
             m_study = create_study_model_from_db_study(study)
-            m_study.users = [get_user_model(x) for x in study.users]
+            m_study.users = []
+            auth_manager = AuthenticationManager.get_instance()
+            user_service = UserService.get_instance(auth_manager)
+            for x in m_study.users or []:
+                m_study.users.append(user_service.create_user_model(x))
+
+            # m_study.users = [get_user_model(x) for x in study.users]
             return m_study
 
     def get_public_study_from_db(self, study_id) -> StudyModel:
@@ -235,35 +243,6 @@ class StudyService(object):
                 return df_data_dict
         except FileNotFoundError:
             raise MetabolightsDBException(f"{maf_file_path} MAF not found")
-
-    def get_all_authorized_study_ids(self, user_token):
-        with DBManager.get_instance().session_maker() as db_session:
-            db_user = db_session.query(User).filter(User.apitoken == user_token).first()
-
-            if db_user and int(db_user.status) == UserStatus.ACTIVE.value:
-                if UserRole(db_user.role) == UserRole.ROLE_SUPER_USER:
-                    study_id_list = (
-                        db_session.query(Study.acc)
-                        .order_by(Study.submissiondate)
-                        .first()
-                    )
-                else:
-                    study_id_list = (
-                        db_session.query(Study.acc)
-                        .filter(Study.status == StudyStatus.PUBLIC.value)
-                        .order_by(Study.submissiondate)
-                        .first()
-                    )
-
-                    own_study_id_list = [
-                        x.acc
-                        for x in db_user.studies
-                        if x.status != StudyStatus.PUBLIC.value
-                    ]
-                    study_id_list.extend(own_study_id_list)
-                return study_id_list
-
-        return []
 
     def get_all_study_ids(self) -> List[str]:
         with DBManager.get_instance().session_maker() as db_session:
