@@ -2,9 +2,10 @@ import datetime
 import enum
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 from pydantic.alias_generators import to_camel, to_pascal
 
+from app.ws.auth.service import UserProfile
 from app.ws.db.types import CurationRequest, StudyCategory, StudyStatus, UserRole
 
 
@@ -108,7 +109,30 @@ class StudyAccessPermission(BaseScopeModel):
     edit: bool = False
     delete: bool = False
     reason: str = ""
+    first_private_date: datetime.datetime | str = ""
     scopes: PermisionScopeDict = {}
+
+    @field_validator("first_private_date")
+    @classmethod
+    def datetime_validation(cls, value):
+        if not value:
+            return None
+        if isinstance(value, datetime.datetime):
+            return value.strftime("%Y-%m-%d")
+        elif isinstance(value, (float, int)):
+            return datetime.datetime.fromtimestamp(value).strftime("%Y-%m-%d")
+        return value
+
+    @field_serializer("first_private_date")
+    @classmethod
+    def datetime_serializer(cls, val) -> str:
+        if not val:
+            return None
+        if isinstance(val, datetime.datetime):
+            return val.strftime("%Y-%m-%d")
+        elif isinstance(val, (float, int)):
+            return datetime.datetime.fromtimestamp(val).strftime("%Y-%m-%d")
+        return str(val)
 
 
 class StudyPermissionContext(BaseScopeModel):
@@ -139,6 +163,9 @@ class StudyPermissionContext(BaseScopeModel):
     owner: None | bool = None
     email_verified: None | bool = None
     expected_release_date: None | datetime.datetime = None
+    globus_username: None | str = None
+    orcid: None | str = None
+    user_profile: None | UserProfile = None
 
 
 class RoleEvaluationResult(BaseScopeModel):
@@ -146,6 +173,7 @@ class RoleEvaluationResult(BaseScopeModel):
     success: bool = False
     reason: None | str = None
     messages: None | list[str] = None
+    user_profile: None | UserProfile = None
 
 
 class StudyPermissionEvaluationResult(RoleEvaluationResult):

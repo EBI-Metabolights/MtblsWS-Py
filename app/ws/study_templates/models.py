@@ -393,12 +393,19 @@ class ProtocolParameterDefinition(StudyBaseModel):
         ),
     ] = ""
     format: Annotated[
-        Literal["Text", "Ontology", "Numeric"],
+        Literal["text", "ontology", "numeric"],
         Field(description="value representation format"),
     ]
     examples: Annotated[
         list[str], Field(description="Example protocol parameter values.")
     ] = []
+
+    @field_validator("format", check_fields=False)
+    @classmethod
+    def datetime_validation(cls, value):
+        if not value:
+            return "ontology"
+        return value.lower()
 
 
 class ProtocolDefinition(StudyBaseModel):

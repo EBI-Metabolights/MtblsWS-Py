@@ -29,7 +29,9 @@ from marshmallow import ValidationError
 from app.config import get_settings
 from app.study_folder_utils import get_all_metadata_files
 from app.utils import metabolights_exception_handler
+from app.ws.auth import auth_manager
 from app.ws.auth.permissions import validate_submission_update, validate_submission_view
+from app.ws.auth.service import UserProfile
 from app.ws.db.models import StudyRevisionModel
 from app.ws.db.permission_scopes import StudyResource, StudyResourceScope
 from app.ws.db.types import CurationRequest, StudyCategory, UserRole
@@ -38,6 +40,7 @@ from app.ws.mm_models import IsaInvestigationSchema
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.study_revision_service import StudyRevisionService
 from app.ws.study.study_service import StudyService
+from app.ws.study.user_service import UserService
 from app.ws.study.utils import get_study_metadata_path
 from app.ws.utils import log_request
 
@@ -141,6 +144,11 @@ class IsaInvestigation(Resource):
         study_location = get_study_metadata_path(study_id)
 
         study = StudyService.get_instance().get_study_by_acc(study_id)
+
+        submitters: UserProfile = UserService.get_instance(
+            auth_manager=auth_manager.AuthenticationManager.get_instance()
+        ).get_study_submitters(study_id)
+
         metadata_files = get_all_metadata_files(study_location)
         investigation_file = [
             x
@@ -245,6 +253,7 @@ class IsaInvestigation(Resource):
         response["mtblsStudy"]["createdAt"] = (
             study.created_at.isoformat() if study.created_at else ""
         )
+        response["mtblsStudy"]["submitters"] = [x.username for x in submitters or []]
 
         # ToDo: Make sure this date is formatted YYYY-MM-DD and update the isa_inv, isa_study before returning
         # response['mtblsStudy']['release_date'] = release_date
@@ -351,7 +360,6 @@ Please use the GET method above to retrieve the structure of your study prior to
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(
             isa_inv,
-            None,
             std_path,
             save_investigation_copy=save_audit_copy,
             save_samples_copy=save_audit_copy,

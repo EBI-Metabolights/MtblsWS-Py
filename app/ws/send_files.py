@@ -16,21 +16,38 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import datetime
+import io
+import json
 import logging
 import os
+import pathlib
 import random
-from zipfile import ZipFile
+import shutil
+import time
+import uuid
+from pathlib import Path
+from zipfile import ZIP_STORED, ZipFile
 
-from flask import make_response, request, send_file
+from flask import (
+    Response,
+    make_response,
+    redirect,
+    request,
+    send_file,
+)
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 
+from app.config import get_settings
+from app.tasks.datamover_tasks.basic_tasks.file_management import copy, exists, isdir
 from app.utils import metabolights_exception_handler
 from app.ws.auth.permissions import validate_submission_view
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import get_basic_files
 from app.ws.study.utils import (
+    get_cluster_study_data_files_path,
     get_study_audit_files_path,
     get_study_internal_files_path,
     get_study_metadata_path,
@@ -39,6 +56,47 @@ from app.ws.study.utils import (
 logger = logging.getLogger("wslog")
 # MetaboLights (Java-Based) WebService client
 wsc = WsClient()
+
+
+def generate_file_chunks_with_cleanup(file_path, cleanup_func, chunk_size=8192):
+    """Generator function to read file in chunks for streaming, then run cleanup."""
+    try:
+        with open(file_path, "rb") as f:
+            while True:
+                chunk = f.read(chunk_size)
+                if not chunk:
+                    break
+                yield chunk
+    finally:
+        cleanup_func()
+
+
+class AutoCleanupFile(io.BufferedReader):
+    def __init__(self, file_path: str | Path, mode: str = "rb"):
+        self.file_path = Path(file_path).resolve()
+        self.parent_dir = self.file_path.parent
+        raw = open(self.file_path, mode)
+        super().__init__(raw)
+        self._closed_once = False
+
+    def close(self):
+        if self._closed_once:
+            return
+
+        self._closed_once = True
+
+        try:
+            super().close()
+        finally:
+            if self.parent_dir.exists():
+                shutil.rmtree(self.parent_dir, ignore_errors=True)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.close()
+        return False
 
 
 class SendFiles(Resource):
@@ -245,27 +303,56 @@ class SendFilesPrivate(Resource):
     def get(self, study_id, obfuscation_code):
         result = validate_submission_view(request)
         study_id = result.context.study_id
-        file_name = request.args.get("file") or ""
+        file_path = request.args.get("file") or ""
 
-        if not file_name:
+        if not file_path:
             logger.info("No file name given")
             abort(404, message="No file name given")
 
-        parts = file_name.split("/")
+        parts = file_path.split("/")
         initial_path = parts[0]
+        basename = os.path.basename(file_path)
+        if initial_path == "FILES":
+            response = self.create_data_file_response(
+                study_id, obfuscation_code, file_path
+            )
+            if response:
+                return response
+            settings = get_settings()
+            study_data_file_index_path = os.path.join(
+                settings.study.mounted_paths.study_internal_files_root_path,
+                study_id,
+                "DATA_FILES",
+                "data_file_index.json",
+            )
+            if os.path.exists(study_data_file_index_path):
+                data_files = json.loads(
+                    pathlib.Path(study_data_file_index_path).read_text()
+                )
+                if file_path in data_files.get("public_data_files", {}):
+                    public_config = settings.ftp_server.public.configuration
+
+                    redirect_url = os.path.join(
+                        public_config.public_studies_http_base_url, file_path
+                    )
+                    return redirect(redirect_url)
+            raise Exception(f"Invalid file {file_path}")
+
         study_metadata_location = get_study_metadata_path(study_id)
-        basename = os.path.basename(file_name)
-        target_path = os.path.join(study_metadata_location, file_name)
+
+        target_path = os.path.join(study_metadata_location, file_path)
+
         if initial_path == "INTERNAL_FILES":
             root_path = get_study_internal_files_path(study_id)
-            subpath = file_name.replace("INTERNAL_FILES", "", 1).lstrip("/")
+            subpath = file_path.replace("INTERNAL_FILES", "", 1).lstrip("/")
             target_path = os.path.join(root_path, subpath)
         elif initial_path == "AUDIT_FILES":
             root_path = get_study_audit_files_path(study_id)
-            subpath = file_name.replace("AUDIT_FILES", "", 1).lstrip("/")
+            subpath = file_path.replace("AUDIT_FILES", "", 1).lstrip("/")
             target_path = os.path.join(root_path, subpath)
+
         files = ""
-        if file_name == "metadata":
+        if file_path == "metadata":
             file_list = get_basic_files(
                 study_metadata_location, include_sub_dir=False, assay_file_list=None
             )
@@ -274,10 +361,10 @@ class SendFilesPrivate(Resource):
                 f_name = _file["file"]
                 if "metadata" in f_type:
                     files = files + f_name + "|"
-            file_name = files.rstrip("|")
+            file_path = files.rstrip("|")
 
         remove_file = False
-        safe_path = os.path.join(study_metadata_location, file_name)
+        safe_path = os.path.join(study_metadata_location, file_path)
         zip_name = None
         try:
             download_folder_path = os.path.join(
@@ -293,10 +380,10 @@ class SendFilesPrivate(Resource):
             zip_name = os.path.join(download_folder_path, short_zip)
             if os.path.isfile(zip_name):
                 os.remove(zip_name)
-            if "|" in file_name and not os.path.exists(safe_path):
+            if "|" in file_path and not os.path.exists(safe_path):
                 zipfile = ZipFile(zip_name, mode="a")
                 remove_file = True
-                files = file_name.split("|")
+                files = file_path.split("|")
                 for file in files:
                     safe_path = os.path.join(study_metadata_location, file)
                     if os.path.isdir(safe_path):
@@ -341,6 +428,105 @@ class SendFilesPrivate(Resource):
             if remove_file:
                 os.remove(safe_path)
                 logger.info("Removed zip file " + safe_path)
+
+    def create_data_file_response(
+        self, study_id, obfuscation_code, file_path
+    ) -> Response:
+        parts = file_path.split("/")
+        basename = os.path.basename(file_path)
+        ftp_folder_path = get_cluster_study_data_files_path(study_id, obfuscation_code)
+        source_path = os.path.join(ftp_folder_path, "/".join(parts[1:]))
+        shared_path = get_settings().hpc_cluster.datamover.shared_path
+        now = datetime.datetime.now()
+        this_month = now.strftime("%Y-%m")
+        now_str = now.strftime("%Y-%m-%d_%H-%M-%S")
+        folder_name = (
+            f"temp-download-data-files/{this_month}/{now_str}_{uuid.uuid4().hex[:6]}"
+        )
+        target_folder = os.path.join(shared_path, folder_name)
+        shared_target_path = os.path.join(target_folder, basename)
+
+        try:
+            task = exists.apply_async(kwargs={"source_path": source_path}, expires=10)
+            file_on_ftp_folder = task.get(timeout=10)
+            if not file_on_ftp_folder:
+                return None
+            os.makedirs(target_folder, exist_ok=True)
+            inputs = {
+                "source_path": source_path,
+                "target_path": shared_target_path,
+            }
+            exists_task = isdir.apply_async(
+                kwargs={"source_path": source_path}, expires=1
+            )
+            is_dir = exists_task.get(timeout=2)
+            process_folder = False
+            if is_dir:
+                _, ext = os.path.splitext(basename)
+                try:
+                    int_val = int(ext)
+                except Exception:
+                    int_val = 0
+                if int_val > 0 or ext.lower() in [".d", ".raw"]:
+                    process_folder = True
+                else:
+                    raise Exception("Source file is a directory")
+
+            task = copy.apply_async(kwargs=inputs, expires=60)
+            result = task.get(timeout=120)
+            if result and result.get("status"):
+                if process_folder:
+                    zip_file_path = shared_target_path + ".zip"
+                    if os.path.isfile(zip_file_path):
+                        os.remove(zip_file_path)
+                    with ZipFile(zip_file_path, "w", compression=ZIP_STORED) as zipfile:
+                        src_path = Path(shared_target_path)
+                        for file in src_path.rglob("*"):
+                            zipfile.write(
+                                file, arcname=file.relative_to(src_path.parent)
+                            )
+                    shared_target_path = zip_file_path
+                    basename += ".zip"
+                # Stream file in chunks
+                # response = Response(
+                #     stream_with_context(
+                #         generate_file_chunks_with_cleanup(
+                #             local_target_path,
+                #             lambda: (
+                #                 shutil.rmtree(target_folder)
+                #                 if os.path.exists(target_folder)
+                #                 else None
+                #             ),
+                #         )
+                #     ),
+                #     content_type="application/octet-stream",
+                #     headers={
+                #         "Content-Disposition": f'attachment; filename=basename'
+                #     },
+                # )
+                target_file = AutoCleanupFile(file_path=shared_target_path)
+                for _ in range(3):
+                    if os.path.exists(shared_target_path):
+                        break
+                    time.sleep(1)
+                if not os.path.exists(shared_target_path):
+                    abort(404, message="file not found")
+                response = make_response(
+                    send_file(
+                        target_file,
+                        as_attachment=True,
+                        download_name=basename,
+                        max_age=0,
+                    )
+                )
+                response.headers["Content-Type"] = "application/octet-stream"
+                return response
+            if result:
+                message = "Error while processing send data file task"
+                logger.error(f"{result.get('message', message)}")
+                raise Exception(message)
+        except Exception as ex:
+            raise ex
 
 
 def recursively_get_files(base_dir):

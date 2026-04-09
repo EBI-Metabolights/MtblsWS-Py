@@ -33,6 +33,7 @@ from app.services.storage_service.storage import Storage
 from app.services.storage_service.storage_service import StorageService
 from app.tasks.datamover_tasks.basic_tasks.execute_commands import execute_bash_command
 from app.tasks.hpc_rsync_worker import HpcRsyncWorker
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.chebi.chebi_utils import (
     chebi_search_v2,
     get_all_ontology_children_in_path,
@@ -41,12 +42,12 @@ from app.ws.chebi.chebi_utils import (
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.settings import get_chebi_ws_settings
 from app.ws.cluster_jobs import submit_job
-from app.ws.db_connection import get_user_email
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import get_all_files_from_filesystem
 from app.ws.study.study_service import StudyService
+from app.ws.study.user_service import UserService
 from app.ws.utils import read_tsv, safe_str, write_tsv
 
 logger = logging.getLogger("wslog")
@@ -72,7 +73,10 @@ def run_chebi_pipeline(
     http_file_location = http_base_location + os.sep + study_id + os.sep + "files"
     study = StudyService.get_instance().get_study_by_acc(study_id)
     obfuscation_code = study.obfuscationcode
-    user_email = get_user_email(user_token)
+    auth_manager = AuthenticationManager.get_instance()
+    user = UserService.get_instance(auth_manager).get_db_user_by_user_token(user_token)
+    user_email = user.email
+
     study_metadata_location = os.path.join(
         settings.study.mounted_paths.study_metadata_files_root_path, study_id
     )

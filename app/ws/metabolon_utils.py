@@ -886,7 +886,6 @@ def create_metabolon_investigation_file(
         try:
             iac.write_isa_study(
                 inv_obj=isa_inv,
-                api_key=None,
                 std_path=study_location,
                 save_investigation_copy=False,
                 save_samples_copy=False,

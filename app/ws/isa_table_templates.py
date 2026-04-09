@@ -325,9 +325,7 @@ def add_new_assay_sheet(
 
     logger.info("A copy of the previous files will be saved")
     assay.technology_platform = technology_platform
-    iac.write_isa_study(
-        isa_inv, None, study_metadata_location, save_investigation_copy=True
-    )
+    iac.write_isa_study(isa_inv, study_metadata_location, save_investigation_copy=True)
     return True, assay_file_name, maf_file_name
 
 
