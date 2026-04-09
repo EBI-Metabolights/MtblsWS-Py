@@ -3,7 +3,7 @@ from typing import Any, List, Self, Union
 
 from sqlalchemy import func, or_
 
-from app.utils import MetabolightsAuthorizationException, MetabolightsException
+from app.utils import MetabolightsAuthenticationException, MetabolightsAuthorizationException, MetabolightsException
 from app.ws.auth.service import AbstractAuthManager
 from app.ws.db import permission_scopes as scopes
 from app.ws.db.dbmanager import DBManager
@@ -242,6 +242,16 @@ class UserService(object):
         "permission-09": "Match all permission filters ",
     }
 
+    def raise_error(permission_context: scopes.StudyPermissionContext, message: str):
+        if (
+            permission_context.validated_jwt
+            or permission_context.validated_obfuscation_code
+            or permission_context.user_api_token
+        ):
+            raise MetabolightsAuthorizationException(message=message)
+        else:
+            raise MetabolightsAuthenticationException(message=message)
+
     def validate_permissions(
         self,
         study_id: str,
@@ -286,8 +296,8 @@ class UserService(object):
                 result.reason = "rule-03"
                 return result
             else:
-                raise MetabolightsAuthorizationException(
-                    message="No user or is not validated."
+                self.raise_error(
+                    permission_context, message="No user or is not validated."
                 )
 
         matches: list[bool] = []
@@ -327,8 +337,8 @@ class UserService(object):
                 result.reason = "permission-05"
                 return result
             else:
-                raise MetabolightsAuthorizationException(
-                    message="User has no permission to execute."
+                self.raise_error(
+                    permission_context, message="User has no permission to execute."
                 )
         if permissions.decision == scopes.DecisionType.NONE:
             if all([True if not x else False for x in matches]):
@@ -339,8 +349,9 @@ class UserService(object):
                 result.reason = "permission-07"
                 return result
             else:
-                raise MetabolightsAuthorizationException(
-                    message="User has unexpected permissions to execute."
+                self.raise_error(
+                    permission_context,
+                    message="User has unexpected permissions to execute.",
                 )
 
         if all(matches):
@@ -351,8 +362,9 @@ class UserService(object):
             result.reason = "permission-09"
             return result
         else:
-            raise MetabolightsAuthorizationException(
-                message="User has not enough permission to execute."
+            self.raise_error(
+                permission_context,
+                message="User has not enough permission to execute.",
             )
 
     REASON_CODE = {
