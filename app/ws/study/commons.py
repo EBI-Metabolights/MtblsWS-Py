@@ -68,7 +68,7 @@ def get_public_studies_list():
     logger.info("Getting all public studies")
 
     study_list = get_public_studies()
-    studies = [acc[0] for acc in study_list]
+    studies = [acc for acc in study_list]
     studies.sort(key=sort_by_study_id)
     logger.info("... found %d public studies", len(studies))
     return {"studies": len(studies), "content": studies}
