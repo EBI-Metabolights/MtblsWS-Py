@@ -16,7 +16,7 @@ dependencies = [
     "cirpy>=1.0.2,<2",
     "ctfile>=0.1.12,<0.2",
     "email-validator>=2.2.0,<3",
-    "elasticsearch>=1.4.0,<2",
+    "elasticsearch",
     "flask>=3.1.2",
     "flask-cors>=5.0.1",
     "flask-mail>=0.10.0,<0.11",
@@ -58,7 +58,7 @@ dependencies = [
     "xmltodict>=1.0.4",
     "zeep>=4.3.1,<5",
     # security related
-    "cryptography>=46.0.6",
+    "cryptography>=46.0.7",
     "Pygments>=2.20.0",
 ]
 
@@ -76,6 +76,7 @@ default-groups = []
 [tool.uv.sources]
 flask-restful-swagger = { git = "https://github.com/EBI-Metabolights/flask-restful-swagger.git", rev = "master" }
 isatools = { git = "https://github.com/EBI-Metabolights/isa-api.git", rev = "master" }
+elasticsearch = { git = "https://github.com/EBI-Metabolights/elasticsearch-py.git", rev = "elasticsearch-v1.9.1" }
 
 [tool.hatch.build.targets.sdist]
 include = [
