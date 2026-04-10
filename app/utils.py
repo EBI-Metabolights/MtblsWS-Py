@@ -7,6 +7,7 @@ from math import floor
 from typing import Any, Callable, Union
 
 from flask import make_response
+from werkzeug.exceptions import HTTPException
 
 from app.config import get_settings
 
@@ -66,6 +67,13 @@ def metabolights_exception_handler(func):
             data = {"content": None, "message": e.message, "err": str(e)}
             response = make_response(data, e.http_code)
             traceback.print_exc()
+            return response
+        except HTTPException as e:
+            message = getattr(e, "data", {}).get("message") or e.description
+            data = {"content": None, "message": message, "err": str(e)}
+            response = make_response(data, e.code or 400)
+            if get_settings().flask.DEBUG:
+                traceback.print_exc()
             return response
         except Exception as e:
             data = {
