@@ -3,7 +3,11 @@ from typing import Any, List, Self, Union
 
 from sqlalchemy import func, or_
 
-from app.utils import MetabolightsAuthenticationException, MetabolightsAuthorizationException, MetabolightsException
+from app.utils import (
+    MetabolightsAuthenticationException,
+    MetabolightsAuthorizationException,
+    MetabolightsException,
+)
 from app.ws.auth.service import AbstractAuthManager
 from app.ws.db import permission_scopes as scopes
 from app.ws.db.dbmanager import DBManager
@@ -242,7 +246,9 @@ class UserService(object):
         "permission-09": "Match all permission filters ",
     }
 
-    def raise_error(permission_context: scopes.StudyPermissionContext, message: str):
+    def raise_error(
+        self, permission_context: scopes.StudyPermissionContext, message: str
+    ):
         if (
             permission_context.validated_jwt
             or permission_context.validated_obfuscation_code
@@ -284,7 +290,7 @@ class UserService(object):
         )
         if not permission_context.study_id:
             if fail_silently:
-                result.reason = "rule-02"
+                result.reason = "permission-02"
                 return result
             else:
                 raise MetabolightsAuthorizationException(
@@ -293,11 +299,12 @@ class UserService(object):
 
         if permission_context.user_role not in ActiveUserRoles and user_required:
             if fail_silently:
-                result.reason = "rule-03"
+                result.reason = "permission-03"
                 return result
             else:
                 self.raise_error(
-                    permission_context, message="No user or is not validated."
+                    permission_context=permission_context,
+                    message="No user or is not validated.",
                 )
 
         matches: list[bool] = []
@@ -338,7 +345,8 @@ class UserService(object):
                 return result
             else:
                 self.raise_error(
-                    permission_context, message="User has no permission to execute."
+                    permission_context=permission_context,
+                    message="User has no permission to execute.",
                 )
         if permissions.decision == scopes.DecisionType.NONE:
             if all([True if not x else False for x in matches]):
@@ -350,7 +358,7 @@ class UserService(object):
                 return result
             else:
                 self.raise_error(
-                    permission_context,
+                    permission_context=permission_context,
                     message="User has unexpected permissions to execute.",
                 )
 
@@ -363,7 +371,7 @@ class UserService(object):
             return result
         else:
             self.raise_error(
-                permission_context,
+                permission_context=permission_context,
                 message="User has not enough permission to execute.",
             )
 
