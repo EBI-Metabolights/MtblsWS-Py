@@ -417,9 +417,9 @@ without setting the "force" parameter to True""",
 
 class StudyRawAndDerivedDataFiles(Resource):
     @swagger.operation(
-        summary="Search raw and derived data files in the study",
+        summary="Search private study raw and derived data files",
         notes="""
-        Search data files in in the study.
+        Search private study data files.
         """,
         parameters=[
             {
@@ -718,6 +718,165 @@ class StudyRawAndDerivedDataFiles(Resource):
                 message="Move files task submission was failed",
                 exception=ex,
             )
+
+
+class PublicStudyRawAndDerivedDataFiles(Resource):
+    @swagger.operation(
+        summary="Search public raw and derived data files in the study",
+        notes="""
+        Search public data files in in the study.
+        """,
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string",
+            },
+            {
+                "name": "search_pattern",
+                "description": "search pattern (*.mzML, *.zip, *.d etc.). Default is FILES/*",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "default": "FILES/*",
+            },
+            {
+                "name": "file_match",
+                "description": "Folder file matches",
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False,
+                "default": True,
+            },
+            {
+                "name": "folder_match",
+                "description": "Search folder matches",
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False,
+                "default": False,
+            },
+            {
+                "name": "user-token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False,
+            },
+        ],
+        responseMessages=[
+            {"code": 200, "message": "OK."},
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist.",
+            },
+        ],
+    )
+    @metabolights_exception_handler
+    def get(self, study_id):
+        # Validate user has submmission view permission
+        result = validate_submission_view(request)
+        study_id = result.context.study_id
+
+        settings = get_study_settings()
+
+        data_files_subfolder = settings.readonly_files_symbolic_link_name
+        search_pattern = f"{data_files_subfolder}/*"
+        file_match = False
+        folder_match = False
+        file_match = (
+            True if request.args.get("file_match", "").lower() == "true" else False
+        )
+        folder_match = (
+            True if request.args.get("folder_match", "").lower() == "true" else False
+        )
+        if not folder_match and not file_match:
+            raise MetabolightsException(
+                http_code=401,
+                message="At least one of them should be True: file_match, folder_match",
+            )
+        search_pattern = request.args.get("search_pattern", search_pattern)
+
+        if ".." + os.path.sep in search_pattern or "." + os.path.sep in search_pattern:
+            raise MetabolightsException(
+                http_code=401,
+                message="Relative folder search patterns (., ..) are not allowed",
+            )
+        search_pattern_prefix = f"{data_files_subfolder}/"
+        if not search_pattern.startswith(search_pattern_prefix):
+            search_pattern = f"{data_files_subfolder}/{search_pattern}"
+
+        study_data_file_index_path = os.path.join(
+            settings.mounted_paths.study_internal_files_root_path,
+            study_id,
+            "DATA_FILES",
+            "data_file_index.json",
+        )
+        if not os.path.exists(study_data_file_index_path):
+            return {"files": []}
+
+        data_files: dict = json.loads(
+            pathlib.Path(study_data_file_index_path).read_text()
+        )
+        if not data_files:
+            raise MetabolightsException(
+                "Study data files are not indexed. "
+                "Please contact with MetaboLights Team."
+            )
+        if not data_files.get("public_data_files"):
+            data_files["public_data_files"] = {}
+        public_data_files = data_files["public_data_files"]
+
+        public_selected = fnmatch.filter(public_data_files.keys(), search_pattern) or []
+        result = set()
+
+        if file_match and folder_match:
+            result.update(public_selected)
+        elif file_match:
+            result.update(
+                [
+                    x
+                    for x in public_selected
+                    if not data_files["public_data_files"][x]["is_dir"]
+                ]
+            )
+        else:
+            result.update(
+                [
+                    x
+                    for x in public_selected
+                    if data_files["public_data_files"][x]["is_dir"]
+                ]
+            )
+
+        final_result = [{"name": x} for x in result]
+        final_result.sort(key=lambda x: x["name"])
+        return {"files": final_result}
+
+    def get_ignore_list(self, search_path):
+        ignore_list = []
+
+        metadata_files = glob.glob(os.path.join(search_path, "[isam]_*.t[xs]?"))
+        internal_file_names = get_settings().file_filters.internal_mapping_list
+        internal_files = [
+            os.path.join(search_path, file + ".json") for file in internal_file_names
+        ]
+        internal_files.append(os.path.join(search_path, "missing_files.txt"))
+        ignore_list.extend(metadata_files)
+        ignore_list.extend(internal_files)
+        return ignore_list
 
 
 class StudyRawAndDerivedDataFolder(Resource):

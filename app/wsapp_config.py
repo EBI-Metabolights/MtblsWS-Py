@@ -181,6 +181,7 @@ from app.ws.study_files import (
     CopyFilesFolders,
     DeleteAsperaFiles,
     FileList,
+    PublicStudyRawAndDerivedDataFiles,
     SampleStudyFiles,
     StudyFiles,
     StudyFilesReuse,
@@ -402,6 +403,11 @@ def initialize_app(flask_app):
     api.add_resource(
         StudyRawAndDerivedDataFiles, res_path + "/studies/<string:study_id>/data-files"
     )
+    api.add_resource(
+        PublicStudyRawAndDerivedDataFiles,
+        res_path + "/studies/<string:study_id>/public-data-files",
+    )
+
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
     api.add_resource(
         DeleteAsperaFiles, res_path + "/studies/<string:study_id>/aspera-files"
