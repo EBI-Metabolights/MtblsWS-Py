@@ -272,9 +272,7 @@ class UserService(object):
             if fail_silently:
                 return scopes.StudyPermissionEvaluationResult(reason="permission-01")
             else:
-                raise MetabolightsAuthorizationException(
-                    message="There is not permission filter"
-                )
+                raise MetabolightsException(message="There is not permission filter")
         permission_context, messages = self.get_permission_context(
             user_token=user_token,
             jwt=jwt,
@@ -293,9 +291,7 @@ class UserService(object):
                 result.reason = "permission-02"
                 return result
             else:
-                raise MetabolightsAuthorizationException(
-                    message="No user or user has not been validated."
-                )
+                raise MetabolightsException(message="There is no study.")
 
         if permission_context.user_role not in ActiveUserRoles and user_required:
             if fail_silently:

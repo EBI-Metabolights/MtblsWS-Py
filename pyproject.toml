@@ -16,7 +16,6 @@ dependencies = [
     "celery>=5.4.0",
     "redis>=6.4.0,<7",
     "zeep>=4.3.1,<5",
-    "elasticsearch>=1.4.0,<2",
     "passlib>=1.7.4,<2",
     "cirpy>=1.0.2,<2",
     "ctfile>=0.1.12,<0.2",
@@ -49,12 +48,15 @@ dependencies = [
     "mzml2isa>=1.1.1",
     "python-keycloak>=5.8.1",
     "cachetools>=6.2.2",
-    "psycopg[binary,pool]>=3.3.2",
-    "sqlalchemy>=2.0.46",
+    "psycopg[binary,pool]>=3.3.3",
+    "sqlalchemy>=2.0.48",
     "python-multipart>=0.0.22",
     "flask>=3.1.2",
-    "mhd-model>=0.1.70",
+    "mhd-model>=0.1.74",
     "isatools",
+    "elasticsearch",
+    # security related
+    "cryptography>=46.0.7"
 ]
 
 [dependency-groups]
@@ -71,6 +73,7 @@ default-groups = []
 [tool.uv.sources]
 flask-restful-swagger = { git = "https://github.com/EBI-Metabolights/flask-restful-swagger.git", rev = "master" }
 isatools = { git = "https://github.com/EBI-Metabolights/isa-api.git", rev = "master" }
+elasticsearch = { git = "https://github.com/EBI-Metabolights/elasticsearch-py.git", rev = "elasticsearch-v1.9.1" }
 
 [tool.hatch.build.targets.sdist]
 include = [
