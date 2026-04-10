@@ -56,7 +56,8 @@ dependencies = [
     "isatools",
     "elasticsearch",
     # security related
-    "cryptography>=46.0.7"
+    "cryptography>=46.0.7",
+    "requests>=2.33.0",
 ]
 
 [dependency-groups]
