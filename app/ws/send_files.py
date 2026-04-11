@@ -43,6 +43,7 @@ from app.config import get_settings
 from app.tasks.datamover_tasks.basic_tasks.file_management import copy, exists, isdir
 from app.utils import metabolights_exception_handler
 from app.ws.auth.permissions import validate_submission_view
+from app.ws.db.types import StudyStatus
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import get_basic_files
@@ -102,7 +103,7 @@ class AutoCleanupFile(io.BufferedReader):
 class SendFiles(Resource):
     @swagger.operation(
         summary="Stream file(s) to the browser",
-        notes="Download/Stream files from the public study folder</p>"
+        notes="Download/Stream files from the private study folder</p>"
         "To download all the ISA-Tab metadata in one zip file, use the word <b>'metadata'</b> in the file_name.",
         parameters=[
             {
@@ -153,11 +154,21 @@ class SendFiles(Resource):
         study_id = result.context.study_id
         study_metadata_location = get_study_metadata_path(study_id)
 
-        file_name = request.args.get("file") or None
-
+        file_name = request.args.get("file") or ""
         if not file_name:
             logger.info("No file name given")
             abort(404)
+
+        is_public_study = result.context.study_status == StudyStatus.PUBLIC
+        if is_public_study and file_name.startswith("FILES/"):
+            ftp = "ftp.ebi.ac.uk"
+            path = f"/pub/databases/metabolights/studies/{study_id}"
+            abort(
+                403,
+                message="Please use EBI's public FTP service "
+                "to download public study data files "
+                f"on EBI's public FTP server '{ftp}' and path '{path}' ",
+            )
 
         settings = get_study_settings()
         files = ""
