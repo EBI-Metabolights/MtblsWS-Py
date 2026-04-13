@@ -625,69 +625,59 @@ class ColumnsRows(Resource):
         except FileNotFoundError:
             abort(404, message="The file " + file_name + " was not found or not valid")
         other_columns = {}
+        skipped_updates = []
         updated = False
         for column in columns_rows:
             cell_value = column["value"]
             row_index = column["row"]
             column_index = column["column"]
-            if maf_file:
-                other_columns[column_index] = table_df.columns[column_index]
             #  Need to add values for column and row (not header)
             try:
-                # for row_val in range(table_df.shape[0]):
-                value = table_df.iloc[int(row_index), int(column_index)]
+                row_index = int(row_index)
+                column_index = int(column_index)
+                if maf_file:
+                    other_columns[column_index] = table_df.columns[column_index]
+                value = table_df.iloc[row_index, column_index]
                 if cell_value != value:
-                    table_df.iloc[int(row_index), int(column_index)] = cell_value
+                    table_df.iloc[row_index, column_index] = cell_value
                     updated = True
-            except ValueError as e:
-                logger.error(
-                    "(ValueError) Unable to find the required 'value', 'row' and 'column' values. Value: "
-                    + cell_value
-                    + ", row: "
-                    + row_index
-                    + ", column: "
-                    + column
-                    + ". "
-                    + str(e)
+            except (TypeError, ValueError) as e:
+                message = (
+                    "(ValueError) Unable to find the required 'value', 'row' and "
+                    f"'column' values. Value: {cell_value!r}, row: {row_index!r}, "
+                    f"column: {column_index!r}."
                 )
+                logger.error("%s %s", message, str(e))
                 abort(
                     417,
-                    message="(ValueError) Unable to find the required 'value', 'row' and 'column' values. Value: "
-                    + cell_value
-                    + ", row: "
-                    + row_index
-                    + ", column: "
-                    + column,
+                    message=message,
                 )
             except IndexError as e:
-                logger.error(
-                    "(IndexError) Unable to find the required 'value', 'row' and 'column' values. Value: "
-                    + cell_value
-                    + ", row: "
-                    + row_index
-                    + ", column: "
-                    + column
-                    + ". "
-                    + str(e)
+                skipped_update = {
+                    "row": row_index,
+                    "column": column_index,
+                    "value": cell_value,
+                }
+                skipped_updates.append(skipped_update)
+                logger.warning(
+                    "Skipping out-of-range cell update %s. %s",
+                    skipped_update,
+                    str(e),
                 )
-                abort(
-                    417,
-                    message="(IndexError) Unable to find the required 'value', 'row' and 'column' values. Value: "
-                    + cell_value
-                    + ", row: "
-                    + row_index
-                    + ", column: "
-                    + column,
-                )
+                continue
         if not updated:
             filtered_headers = headers
             if maf_file:
                 filtered_headers = other_columns
+            message = "same data"
+            if skipped_updates:
+                message = f"same data, skipped {len(skipped_updates)} out-of-range cell update(s)"
             return {
                 "header": filtered_headers,
                 "updates": columns_rows,
+                "skipped": skipped_updates,
                 "success": True,
-                "message": "same data",
+                "message": message,
             }
 
         success = False
@@ -715,6 +705,7 @@ class ColumnsRows(Resource):
             return {
                 "header": filtered_headers,
                 "updates": columns_rows,
+                "skipped": skipped_updates,
                 "success": success,
                 "message": message,
             }
