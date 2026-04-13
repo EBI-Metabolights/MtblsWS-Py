@@ -250,10 +250,13 @@ def get_instruments(
                 ):
                     source_ref = df[df.columns[idx + 1]][row_idx]
                     accession = df[df.columns[idx + 2]][row_idx]
+                term_source = (
+                    model.OntologySource(name=source_ref) if source_ref else ""
+                )
                 instruments[key] = model.OntologyAnnotation(
                     term=x,
-                    term_accession=accession,
-                    term_source=model.OntologySource(name=source_ref),
+                    term_accession=accession or "",
+                    term_source=term_source if source_ref else "",
                     comments=[
                         model.Comment(
                             name="Study Design Category",
@@ -298,10 +301,11 @@ def get_sample_descriptors(
             ):
                 source_ref = df[df.columns[idx + 1]][row_idx]
                 accession = df[df.columns[idx + 2]][row_idx]
+            term_source = model.OntologySource(name=source_ref) if source_ref else ""
             descriptors[key] = model.OntologyAnnotation(
                 term=x,
-                term_accession=accession,
-                term_source=model.OntologySource(name=source_ref),
+                term_accession=accession or "",
+                term_source=term_source,
                 comments=[
                     model.Comment(
                         name="Study Design Category",
