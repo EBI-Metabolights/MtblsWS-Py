@@ -364,7 +364,6 @@ without setting the "force" parameter to True""",
                         removed_assays.append(name)
                 iac.write_isa_study(
                     isa_inv,
-                    None,
                     study_location,
                     save_investigation_copy=False,
                     save_assays_copy=False,

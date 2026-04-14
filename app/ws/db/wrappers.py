@@ -7,6 +7,7 @@ import os.path
 
 from isatools import isatab
 
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.db import models
 from app.ws.db.models import (
     BackupModel,
@@ -18,6 +19,7 @@ from app.ws.db.models import (
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus, UserRole, UserStatus
 from app.ws.db.utils import date_str_to_int, datetime_to_int
+from app.ws.study.user_service import UserService
 
 logger = logging.getLogger(__file__)
 
@@ -27,6 +29,8 @@ GB_FACTOR = 1024.0**3
 
 
 def create_study_model_from_db_study(db_study: Study):
+    auth_manager = AuthenticationManager.get_instance()
+
     m_study = models.StudyModel(
         id=db_study.id,
         studyIdentifier=db_study.acc,
@@ -71,7 +75,17 @@ def create_study_model_from_db_study(db_study: Study):
         except Exception as e:
             logger.warning(f"{e.args}")
 
-    m_study.users = [get_user_lite_model(x) for x in db_study.users]
+    m_study.users = []
+    for x in db_study.users or []:
+        user = UserService.get_instance(auth_manager).get_user_profile(x.username)
+        m_study.users.append(
+            models.UserLiteModel(
+                firstName=user.first_name,
+                lastName=user.last_name,
+                affiliation=user.affiliation,
+                address=user.country,
+            )
+        )
 
     return m_study
 
@@ -83,15 +97,6 @@ def get_user_model(db_user: User):
     m_user.dbPassword = None  # This value is set to empty string intentionally
     m_user.role = UserRole(int(m_user.role)).name
     m_user.status = UserStatus(int(m_user.status)).name
-    return m_user
-
-
-def get_user_lite_model(db_user: User):
-    m_user = models.UserLiteModel()
-    m_user.firstName = db_user.firstname
-    m_user.lastName = db_user.lastname
-    m_user.affiliation = db_user.affiliation
-    m_user.address = db_user.address
     return m_user
 
 

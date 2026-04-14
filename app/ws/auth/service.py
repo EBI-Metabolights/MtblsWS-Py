@@ -1,34 +1,56 @@
-from pydantic import BaseModel
+import abc
+import datetime
 
-from app.ws.db.models import SimplifiedUserModel
+from pydantic import field_serializer
+
+from app.ws.db.models import CamelCaseBaseModel
+from app.ws.db.types import UserRole, UserStatus
 
 
-class AuthUser(BaseModel):
+class UserProfile(CamelCaseBaseModel):
+    username: str = ""
+    full_name: str = ""
     email: str = ""
     email_verified: bool = False
     first_name: str = ""
     last_name: str = ""
     orcid: str = ""
-    roles: list[str] = []
+    role: None | UserRole = None
+    address: str = ""
     affiliation: str = ""
     affiliation_url: str = ""
     country: str = ""
+    globus_username: str = ""
+    enabled: bool = False
+    join_date: None | datetime.datetime = None
+    status: None | UserStatus = None
+    partner: bool = False
+    api_token: str = ""
+
+    @field_serializer("join_date")
+    @classmethod
+    def datetime_serializer(cls, value):
+        if value:
+            return value.isoformat()
+        return ""
 
 
-class AuthToken(AuthUser):
+class AuthToken(UserProfile):
     access_token: str
     refresh_token: str
 
 
-class AbstractAuthManager:
+class AbstractAuthManager(abc.ABC):
+    @abc.abstractmethod
     def validate_oauth2_token(
         self,
         token: str,
         audience: None | str = None,
         issuer_name: None | str = None,
         db_session=None,
-    ) -> None | SimplifiedUserModel: ...
+    ) -> UserProfile: ...
 
+    @abc.abstractmethod
     def create_oauth2_token(
         self,
         username,
@@ -39,6 +61,7 @@ class AbstractAuthManager:
         exp_period_in_mins: int = -1,
     ) -> tuple[str, str]: ...
 
+    @abc.abstractmethod
     def refresh_token(
         self,
         token: str,
@@ -47,3 +70,6 @@ class AbstractAuthManager:
         scopes: list[str] = [],
         exp_period_in_mins: int = -1,
     ) -> tuple[str, str]: ...
+
+    @abc.abstractmethod
+    def get_user_profile(self, username: str) -> UserProfile: ...

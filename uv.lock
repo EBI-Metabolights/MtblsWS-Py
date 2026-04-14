@@ -921,6 +921,20 @@ wheels = [
 ]
 
 [[package]]
+name = "globus-sdk"
+version = "4.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "pyjwt", extra = ["crypto"] },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5e/ed/3819840b716d26146026b0ac2faa4131fa9b8fa7b65f2493006434f505f7/globus_sdk-4.5.0.tar.gz", hash = "sha256:33f888e369e4d3fb183ecd8cdea1a0be40d930dc13549dc5c8b3326940398bc5", size = 278531, upload-time = "2026-03-30T20:35:01.871Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e3/03/7c993819f1d891c345f56396c8aed226aa8c7ec37bc0cb3c5120b6c1ec64/globus_sdk-4.5.0-py3-none-any.whl", hash = "sha256:5936cded28b8c6212870f54e3d3ae2c2d48d8061995117f52731992407bf66ab", size = 431789, upload-time = "2026-03-30T20:34:59.649Z" },
+]
+
+[[package]]
 name = "google-api-core"
 version = "2.30.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1963,6 +1977,7 @@ dependencies = [
     { name = "flask-restful" },
     { name = "flask-restful-swagger" },
     { name = "fuzzywuzzy" },
+    { name = "globus-sdk" },
     { name = "google-api-python-client" },
     { name = "gspread" },
     { name = "gspread-dataframe" },
@@ -1983,7 +1998,9 @@ dependencies = [
     { name = "pubchempy" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "pygments" },
     { name = "pyjwt" },
+    { name = "python-dateutil" },
     { name = "python-keycloak" },
     { name = "python-levenshtein" },
     { name = "python-multipart" },
@@ -2009,12 +2026,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "boto3", specifier = ">=1.37.8,<2" },
-    { name = "cachetools", specifier = ">=6.2.2" },
+    { name = "boto3", specifier = ">=1.42.7,<2" },
+    { name = "cachetools", specifier = ">=7.0.5" },
     { name = "cascadict", specifier = ">=0.8.5,<0.9" },
-    { name = "celery", specifier = ">=5.4.0" },
+    { name = "celery", specifier = ">=5.6.3" },
     { name = "chardet", specifier = ">=5.2.0" },
-    { name = "charset-normalizer", specifier = ">=3.4.2" },
+    { name = "charset-normalizer", specifier = ">=3.4.6" },
     { name = "chembl-structure-pipeline", specifier = ">=1.2.2,<2" },
     { name = "cirpy", specifier = ">=1.0.2,<2" },
     { name = "cryptography", specifier = ">=46.0.7" },
@@ -2027,7 +2044,8 @@ requires-dist = [
     { name = "flask-restful", specifier = ">=0.3.10,<0.4" },
     { name = "flask-restful-swagger", git = "https://github.com/EBI-Metabolights/flask-restful-swagger.git?rev=master" },
     { name = "fuzzywuzzy", specifier = ">=0.18.0,<0.19" },
-    { name = "google-api-python-client", specifier = ">=2.163.0,<3" },
+    { name = "globus-sdk", specifier = ">=4.5.0" },
+    { name = "google-api-python-client", specifier = ">=2.193.0,<3" },
     { name = "gspread", specifier = ">=6.2.0,<7" },
     { name = "gspread-dataframe", specifier = ">=4.0.0,<5" },
     { name = "gunicorn", specifier = ">=23.0.0,<24" },
@@ -2035,7 +2053,7 @@ requires-dist = [
     { name = "jira", specifier = ">=3.8.0,<4" },
     { name = "jsonpickle", specifier = ">=4.0.2,<5" },
     { name = "marshmallow", specifier = "==2.21.0" },
-    { name = "metabolights-utils", specifier = ">=1.4.21,<2" },
+    { name = "metabolights-utils", specifier = ">=1.4.23,<2" },
     { name = "metaspace2020", specifier = ">=2.0.9,<3" },
     { name = "mhd-model", specifier = ">=0.1.74" },
     { name = "mzml2isa", specifier = ">=1.1.1" },
@@ -2047,8 +2065,10 @@ requires-dist = [
     { name = "pubchempy", specifier = ">=1.0.4,<2" },
     { name = "pydantic", specifier = ">=2.10.6,<3" },
     { name = "pydantic-settings", specifier = ">=2.8.1,<3" },
-    { name = "pyjwt", specifier = ">=2.10.1,<3" },
-    { name = "python-keycloak", specifier = ">=5.8.1" },
+    { name = "pygments", specifier = ">=2.20.0" },
+    { name = "pyjwt", specifier = ">=2.12.1,<3" },
+    { name = "python-dateutil", specifier = ">=2.9.0.post0" },
+    { name = "python-keycloak", specifier = ">=7.1.1" },
     { name = "python-levenshtein", specifier = ">=0.27.1,<0.28" },
     { name = "python-multipart", specifier = ">=0.0.22" },
     { name = "pyyaml", specifier = ">=6.0.3,<7" },
@@ -2058,7 +2078,7 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2.0.48" },
     { name = "toml", specifier = ">=0.10.2,<0.11" },
     { name = "unidecode", specifier = ">=1.3.8,<2" },
-    { name = "xmltodict", specifier = ">=0.14.2" },
+    { name = "xmltodict", specifier = ">=1.0.4" },
     { name = "zeep", specifier = ">=4.3.1,<5" },
 ]
 
@@ -2673,6 +2693,11 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/c2/27/a3b6e5bf6ff856d2509292e95c8f57f0df7017cf5394921fc4e4ef40308a/pyjwt-2.12.1.tar.gz", hash = "sha256:c74a7a2adf861c04d002db713dd85f84beb242228e671280bf709d765b03672b", size = 102564, upload-time = "2026-03-13T19:27:37.25Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e5/7a/8dd906bd22e79e47397a61742927f6747fe93242ef86645ee9092e610244/pyjwt-2.12.1-py3-none-any.whl", hash = "sha256:28ca37c070cad8ba8cd9790cd940535d40274d22f80ab87f3ac6a713e6e8454c", size = 29726, upload-time = "2026-03-13T19:27:35.677Z" },
+]
+
+[package.optional-dependencies]
+crypto = [
+    { name = "cryptography" },
 ]
 
 [[package]]

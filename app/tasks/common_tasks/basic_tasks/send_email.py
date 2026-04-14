@@ -15,10 +15,7 @@ from app.tasks.worker import (
 )
 from app.utils import current_time
 from app.ws.auth.auth_manager import AuthenticationManager
-from app.ws.db_connection import (
-    get_email,
-    query_study_submitters,
-)
+from app.ws.db_connection import query_study_submitters
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
@@ -47,7 +44,7 @@ def send_test_email(email):
     name="app.tasks.common_tasks.basic_tasks.send_email.send_email_for_new_provisional_study",
 )
 def send_email_for_new_provisional_study(
-    user_token, study_id, folder_name, study_title
+    user_email, study_id, folder_name, study_title
 ):
     flask_app = get_flask_app()
     with flask_app.app_context():
@@ -55,7 +52,6 @@ def send_email_for_new_provisional_study(
         relative_study_path = os.path.join(
             os.sep, relative_studies_root_path.lstrip(os.sep), folder_name
         )
-        user_email = get_email(user_token)
         submitter_emails = query_study_submitters(study_id)
         submitters_email_list = []
         if submitter_emails:
@@ -104,7 +100,11 @@ def send_email_for_new_accession_number(
 ):
     flask_app = get_flask_app()
     with flask_app.app_context():
-        user_email = get_email(user_token)
+        auth_manager = AuthenticationManager.get_instance()
+        current_user = UserService.get_instance(auth_manager).get_db_user_by_user_name(
+            user_token
+        )
+        user_email = current_user.email
         submitter_emails = query_study_submitters(study_id)
         submitters_email_list = []
         if submitter_emails:
@@ -114,7 +114,7 @@ def send_email_for_new_accession_number(
         if not submitters_email_list:
             return
         submitter_email = submitters_email_list[0]
-        auth_manager = AuthenticationManager.get_instance()
+
         user = UserService.get_instance(auth_manager).get_db_user_by_user_name(
             submitter_email
         )
@@ -172,7 +172,11 @@ def send_email_for_new_accession_number(
 def send_email_on_public(user_token, study_id, release_date):
     flask_app = get_flask_app()
     with flask_app.app_context():
-        user_email = get_email(user_token)
+        auth_manager = AuthenticationManager.get_instance()
+        current_user = UserService.get_instance(auth_manager).get_db_user_by_user_name(
+            user_token
+        )
+        user_email = current_user.email
         submitter_emails = query_study_submitters(study_id)
         submitters_email_list = []
         if submitter_emails:

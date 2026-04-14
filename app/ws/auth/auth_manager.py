@@ -1,12 +1,14 @@
 import base64
+import datetime
 import hashlib
 import logging
+import re
 import uuid
 from datetime import timedelta
 from typing import Any, List, Union
 
 import jwt
-from keycloak import KeycloakAuthenticationError, KeycloakOpenID
+from keycloak import KeycloakAdmin, KeycloakAuthenticationError, KeycloakOpenID
 from passlib.context import CryptContext
 from sqlalchemy import func
 
@@ -15,9 +17,10 @@ from app.config.model.auth import AuthConfiguration
 from app.utils import (
     MetabolightsAuthenticationException,
     MetabolightsAuthorizationException,
+    MetabolightsException,
     current_time,
 )
-from app.ws.auth.service import AbstractAuthManager, AuthToken, AuthUser
+from app.ws.auth.service import AbstractAuthManager, AuthToken, UserProfile
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import SimplifiedUserModel
 from app.ws.db.schemes import User
@@ -25,24 +28,45 @@ from app.ws.db.types import (
     UserRole,
     UserStatus,
 )
+from app.ws.db.utils import datetime_to_int
 from app.ws.study.user_service import UserService
 
 logger = logging.getLogger("wslog")
 
 
 class KeycloakAuthService:
+    _keycloak_openid = None
+    _keycloak_admin = None
+
     def __init__(self, config: AuthConfiguration):
         self.config = config
 
-    def get_keycloak_openid(self) -> KeycloakOpenID:
+    def get_keycloak_admin(self) -> KeycloakAdmin:
+        if self._keycloak_admin:
+            return self._keycloak_admin
+
         settings = self.config.openid_connect_client
-        keycloak_openid = KeycloakOpenID(
+        self._keycloak_admin = KeycloakAdmin(
+            server_url=settings.server_url,
+            realm_name=settings.realm_name,
+            client_secret_key=settings.client_secret,
+            client_id=settings.client_id,
+            verify=True,
+        )
+        return self._keycloak_admin
+
+    def get_keycloak_openid(self) -> KeycloakOpenID:
+        if self._keycloak_openid:
+            return self._keycloak_openid
+
+        settings = self.config.openid_connect_client
+        self._keycloak_openid = KeycloakOpenID(
             server_url=settings.server_url,
             realm_name=settings.realm_name,
             client_id=settings.client_id,
             client_secret_key=settings.client_secret,
         )
-        return keycloak_openid
+        return self._keycloak_openid
 
     def authenticate(self, username: str, password: str) -> AuthToken:
         try:
@@ -52,7 +76,7 @@ class KeycloakAuthService:
                 access_token=token.get("access_token"),
                 refresh_token=token.get("refresh_token"),
             )
-            return self.set_auth_user_info(token.get("access_token"), auth_token)
+            return self.get_user_profile_from_jwt(token.get("access_token"), auth_token)
         except KeycloakAuthenticationError:
             message = f"Authentication error for user {username}"
             logger.error(message)
@@ -66,39 +90,122 @@ class KeycloakAuthService:
                 access_token=token.get("access_token"),
                 refresh_token=token.get("refresh_token"),
             )
-            return self.set_auth_user_info(token.get("access_token"), auth_token)
+            return self.get_user_profile_from_jwt(token.get("access_token"), auth_token)
         except KeycloakAuthenticationError:
             message = "Authentication error"
             logger.error(message)
             raise MetabolightsAuthenticationException(message=message)
 
-    def set_auth_user_info(
-        self, jwt_token: str, user: None | AuthUser = None
-    ) -> AuthUser:
+    def get_user_profile(self, username: str) -> UserProfile:
+        user_id = self.get_keycloak_admin().get_user_id(username)
+        if not user_id:
+            raise MetabolightsException(
+                message=f"Username '{username}' is not in auth service", http_code=501
+            )
+        user = self.get_keycloak_admin().get_user(
+            user_id=user_id, user_profile_metadata=True
+        )
+        if user:
+            roles = self.get_keycloak_admin().get_composite_realm_roles_of_user(user_id)
+            return self.create_user_profile_from_dict(user, roles)
+        return None
+
+    def create_user_profile_from_dict(
+        self, dict_data: dict, roles: list[dict]
+    ) -> UserProfile:
+        user = UserProfile()
+        if not dict_data:
+            return user
+
+        realm_roles = {x["name"] for x in roles} if roles else set()
+        if "study_curation" in realm_roles or "system_maintenance" in realm_roles:
+            role = UserRole.ROLE_SUPER_USER
+        elif "study_submission" in realm_roles:
+            role = UserRole.ROLE_SUBMITTER
+        elif "study_review" in realm_roles:
+            role = UserRole.REVIEWER
+        else:
+            role = UserRole.ANONYMOUS
+        partner = "partner" in realm_roles
+        payload = dict_data
+        enabled = payload.get("enabled", False)
+        email_verified = payload.get("emailVerified")
+        if enabled:
+            status = UserStatus.ACTIVE if email_verified else UserStatus.NEW
+        else:
+            status = UserStatus.FROZEN
+        join_date = datetime.datetime.fromtimestamp(
+            payload.get("createdTimestamp") / 1000.0
+        )
+
+        attributes: dict = dict_data.get("attributes", {})
+        orcid = attributes.get("orcid") or [""]
+        orcid = re.sub(r"https?://orcid\.org/", "", (orcid[0] or "").lower())
+        user.email = payload.get("email")
+        user.username = user.email
+        user.email_verified = email_verified
+        user.first_name = payload.get("firstName")
+        user.last_name = payload.get("lastName")
+        user.full_name = f"{user.first_name} {user.last_name}"
+        user.orcid = orcid
+        user.role = role
+        user.enabled = enabled
+        user.status = status
+        user.join_date = join_date
+        user.country = (attributes.get("country") or [""])[0]
+        user.affiliation = (attributes.get("affiliation") or [""])[0]
+        user.address = (attributes.get("affiliationAddress") or [""])[0]
+        user.affiliation_url = (attributes.get("affiliationUrl") or [""])[0]
+        user.globus_username = (attributes.get("globusUserName") or [""])[0]
+        user.partner = partner
+        return user
+
+    def get_user_profile_from_jwt(
+        self, jwt_token: str, user: None | UserProfile = None
+    ) -> UserProfile:
         if not user:
-            user = AuthUser()
+            user = UserProfile()
 
         options = {"verify_signature": False}
         payload: dict[str, str | list | dict] = jwt.decode(jwt_token, options=options)
         orcid = payload.get("orcid", "").replace("https://orcid.org/", "") or ""
-        roles = [x for x in payload.get("realm_access", {}).get("roles", [])]
-        user.email = payload.get("email")
-        user.email_verified = payload.get("email_verified")
-        user.first_name = payload.get("given_name")
-        user.last_name = payload.get("family_name")
+        roles = {x for x in payload.get("realm_access", {}).get("roles", [])}
+        if "study_curation" in roles or "system_maintenance" in roles:
+            role = UserRole.ROLE_SUPER_USER
+        elif "study_submission" in roles:
+            role = UserRole.ROLE_SUBMITTER
+        elif "study_review" in roles:
+            role = UserRole.REVIEWER
+        else:
+            role = UserRole.ANONYMOUS
+        user.partner == "partner" in roles
+        user.email = payload.get("email", "")
+        user.username = user.email
+        user.email_verified = payload.get("email_verified", None)
+        user.first_name = payload.get("given_name", "")
+        user.last_name = payload.get("family_name", "")
+        user.full_name = payload.get("name", f"{user.first_name} {user.last_name}")
         user.orcid = orcid
-        user.roles = roles
+        user.role = role
+        user.enabled = payload.get("enabled", None)
+
+        try:
+            created_at = int(payload.get("created_datetime", 0)) / 1000.0
+        except Exception:
+            created_at = None
+        user.join_date = datetime.datetime.fromtimestamp(created_at)
         user.country = payload.get("address", {}).get("country", "")
         user.affiliation = payload.get("affiliation", "")
         user.affiliation_url = payload.get("affiliation_url", "")
+        user.globus_username = payload.get("globus_username", "")
 
         return user
 
-    def validate_token(self, jwt: str) -> AuthUser:
+    def validate_token(self, jwt: str) -> UserProfile:
         try:
             auth_server: KeycloakOpenID = self.get_keycloak_openid()
             auth_server.userinfo(jwt)
-            auth_user = self.set_auth_user_info(jwt)
+            auth_user = self.get_user_profile_from_jwt(jwt)
 
             if not auth_user.email_verified:
                 raise MetabolightsAuthenticationException(
@@ -127,6 +234,12 @@ class AuthenticationManager(AbstractAuthManager):
             self.external_auth_service = KeycloakAuthService(self.settings)
 
     instance = None
+
+    def get_user_profile(self, username: str) -> UserProfile:
+        if self.external_auth_service:
+            return self.external_auth_service.get_user_profile(username)
+
+        raise NotImplementedError("Local profile is not supported.")
 
     def validate_standalone_jwt_token(
         self,
@@ -194,8 +307,8 @@ class AuthenticationManager(AbstractAuthManager):
                 raise MetabolightsAuthenticationException(
                     message="Could not validate credentials or no username"
                 )
-            user = SimplifiedUserModel.model_validate(db_user)
-            user.email = db_user.email.lower()
+
+            user = self.create_simplified_user_model(db_user)
         except Exception as e:
             raise e
 
@@ -203,6 +316,36 @@ class AuthenticationManager(AbstractAuthManager):
             raise MetabolightsAuthenticationException(message="Not an active user")
 
         return user
+
+    def create_simplified_user_model(self, db_user: User) -> None | SimplifiedUserModel:
+        if not self.external_auth_service or not db_user or not db_user.username:
+            username = db_user.username if db_user and db_user.username else ""
+            raise MetabolightsException(
+                message=f"Auth service or user is not defined. {username}"
+            )
+        user: UserProfile = self.external_auth_service.get_user_profile(
+            username=db_user.username
+        )
+        if not user:
+            raise MetabolightsException(
+                message=f"Username is not in auth service '{db_user.username}'"
+            )
+        return SimplifiedUserModel(
+            address=user.country,
+            affiliation=user.affiliation,
+            affiliationurl=user.affiliation_url,
+            email=user.email.lower(),
+            firstname=user.first_name,
+            fullName=user.first_name + " " + user.last_name,
+            joindate=datetime_to_int(user.join_date),
+            lastname=user.last_name,
+            orcid=user.orcid,
+            role=user.role.name,
+            status=user.status.name,
+            partner=user.partner,
+            username=user.username.lower(),
+            globususername=user.globus_username,
+        )
 
     @classmethod
     def get_instance(cls):
@@ -259,7 +402,7 @@ class AuthenticationManager(AbstractAuthManager):
         db_session=None,
         scopes: List[str] = [],
         exp_period_in_mins: int = -1,
-    ):
+    ) -> tuple[str, str]:
         if self.external_auth_service:
             auth_token = self.external_auth_service.authenticate(username, password)
             return auth_token.access_token, auth_token.refresh_token
@@ -289,7 +432,7 @@ class AuthenticationManager(AbstractAuthManager):
         db_session=None,
         scopes: List[str] = [],
         exp_period_in_mins: int = -1,
-    ):
+    ) -> tuple[str, str]:
         if self.external_auth_service:
             raise MetabolightsAuthenticationException(
                 message="Authorization with user token is not supported"
@@ -324,7 +467,7 @@ class AuthenticationManager(AbstractAuthManager):
         scopes: List[str] = [],
         exp_period_in_mins: int = -1,
         refresh_token_exp_period_in_mins: int = -1,
-    ):
+    ) -> tuple[str, str]:
         if self.external_auth_service:
             raise MetabolightsAuthenticationException(
                 message="Authorization with user name is not supported"
@@ -390,15 +533,16 @@ class AuthenticationManager(AbstractAuthManager):
                     apitoken=api_token,
                     password=self._get_password_sha1_hash(api_token),
                     metaspace_api_key=None,
-                    role=self.map_user_roles(auth_user.roles).value,
-                    status=UserStatus.ACTIVE.value,
-                    partner="",
-                    username="",
+                    role=auth_user.role.value,
+                    status=auth_user.status.value,
+                    partner=1 if auth_user.partner else 0,
+                    username=auth_user.username,
                 )
                 db_session.add(user)
                 db_session.commit()
                 db_session.refresh(user)
                 logger.info("%s user is created.", auth_user.email)
+                return user
             except Exception as e:
                 db_session.rollback()
                 logger.error("%s user is not created.", auth_user.email)
@@ -410,7 +554,7 @@ class AuthenticationManager(AbstractAuthManager):
         audience: Union[None, str] = None,
         issuer_name: Union[None, str] = None,
         db_session=None,
-    ):
+    ) -> UserProfile:
         if self.external_auth_service:
             auth_user = self.external_auth_service.validate_token(token)
 
@@ -420,12 +564,12 @@ class AuthenticationManager(AbstractAuthManager):
             with db_session:
                 query = db_session.query(User)
                 db_user = query.filter(
-                    func.lower(User.username) == auth_user.email.lower()
+                    func.lower(User.username) == auth_user.username.lower()
                 ).first()
             if not db_user:
-                self.create_user_in_db(auth_user)
-            user = SimplifiedUserModel.model_validate(db_user)
-            return user
+                db_user = self.create_user_in_db(auth_user)
+                auth_user.api_token = db_user.apitoken
+            return auth_user
 
         return self.validate_standalone_jwt_token(
             config=self.settings,

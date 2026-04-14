@@ -8,9 +8,7 @@ from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
 from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.db_connection import (
-    check_access_rights,
     get_all_non_public_studies,
-    get_email,
     get_private_studies,
     get_provisional_study_ids_for_user,
     get_public_studies,
@@ -28,12 +26,6 @@ def get_study_by_status(stype, publicS=True):
     studyID, studytype = get_study_by_type(stype, publicS)
     res = json.dumps(dict(zip(studyID, studytype)))
     return res
-
-
-def get_user_email(user_token):
-    user_email = get_email(user_token)
-    logger.info(" User Email: " + str(user_email))
-    return user_email
 
 
 def get_private_studies_list():
@@ -83,64 +75,10 @@ def get_all_studies_for_user(user_token):
     return text_resp
 
 
-def get_permissions(study_id, user_token, obfuscation_code=None):
-    """
-    Check MTBLS-WS for permissions on this Study for this user
-
-    Study       User    Submitter   Curator     Reviewer/Read-only
-    PROVISIONAL   ----    Read+Write  Read+Write  Read
-    PRIVATE  ----    Read        Read+Write  Read
-    INREVIEW    ----    Read        Read+Write  Read
-    PUBLIC      Read    Read        Read+Write  Read
-
-    :param obfuscation_code:
-    :param study_id:
-    :param user_token:
-    :return: study details and permission levels
-
-    """
-    if not user_token:
-        user_token = "public_access_only"
-
-    # Reviewer access will pass the study obfuscation code instead of api_key
-    if study_id and not obfuscation_code and user_token.startswith("ocode:"):
-        logger.info("Study obfuscation code passed instead of user API_CODE")
-        obfuscation_code = user_token.replace("ocode:", "")
-
-    (
-        is_curator,
-        read_access,
-        write_access,
-        obfuscation_code,
-        study_location,
-        release_date,
-        submission_date,
-        updated_date,
-        study_status,
-    ) = check_access_rights(
-        user_token, study_id.upper(), study_obfuscation_code=obfuscation_code
-    )
-
-    logger.info(
-        "Read access: " + str(read_access) + ". Write access: " + str(write_access)
-    )
-
-    return (
-        is_curator,
-        read_access,
-        write_access,
-        obfuscation_code,
-        study_location,
-        release_date,
-        submission_date,
-        study_status,
-    )
-
-
 def create_ftp_folder(
     study_id,
     obfuscation_code,
-    user_token,
+    username,
     email_service: Union[None, EmailService] = None,
     send_email=True,
 ):
@@ -172,7 +110,6 @@ def create_ftp_folder(
     )
 
     if new_folder and send_email:
-        user_email = get_email(user_token)
         submitter_emails = query_study_submitters(study_id)
         submitters_email_list = []
         if submitter_emails:
@@ -189,7 +126,7 @@ def create_ftp_folder(
         email_service.send_email_for_new_provisional_study(
             study_id,
             relative_study_path,
-            user_email,
+            username,
             submitters_email_list,
             submitter_fullname,
         )

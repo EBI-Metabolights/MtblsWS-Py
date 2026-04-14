@@ -80,6 +80,7 @@ from app.ws.ftp.ftp_operations import (
     SyncFromStudyFolder,
 )
 from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
+from app.ws.globus import GlobusIdentities, GlobusPermission, GlobusPermissions
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.internal import BannerMessage
 from app.ws.isa_table_sheet import StudySampleTemplate
@@ -724,3 +725,13 @@ def initialize_app(flask_app):
     api.add_resource(IntegrationCheck, res_path + "/ebi-internal/integration-check")
 
     api.add_resource(DataFolders, res_path + "/ebi-internal/data-folders")
+
+    api.add_resource(
+        GlobusPermission,
+        res_path + "/<string:study_id>/globus-permission",
+    )
+    api.add_resource(
+        GlobusPermissions,
+        res_path + "/<string:study_id>/globus-permissions",
+    )
+    api.add_resource(GlobusIdentities, res_path + "/globus/identities")

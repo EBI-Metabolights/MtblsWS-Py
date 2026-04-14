@@ -40,4 +40,5 @@
     ".poc/**"
   ],
   "python-envs.defaultEnvManager": "ms-python.python:venv",
+  "python.analysis.autoImportCompletions": true
 }

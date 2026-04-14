@@ -20,13 +20,11 @@ def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
         studies_dict = {}
 
         with DBManager.get_instance().session_maker() as db_session:
-            user = (
-                db_session.query(User.email).filter(User.apitoken == user_token).first()
-            )
+            user = db_session.query(User).filter(User.apitoken == user_token).first()
             if not user:
                 raise MetabolightsDBException("No user")
 
-            email = user.email
+            email = user.username
 
             result = db_session.query(Study.acc, Study.updatedate).all()
 
