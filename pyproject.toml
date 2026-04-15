@@ -50,7 +50,7 @@ dependencies = [
     "cachetools>=6.2.2",
     "psycopg[binary,pool]>=3.3.3",
     "sqlalchemy>=2.0.48",
-    "python-multipart>=0.0.22",
+    "python-multipart>=0.0.26",
     "flask>=3.1.2",
     "mhd-model>=0.1.74",
     "isatools",
