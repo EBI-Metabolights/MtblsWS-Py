@@ -87,6 +87,17 @@ wsc = WsClient()
 iac = IsaApiClient()
 
 
+def normalize_upload_relative_path(file_name: str) -> str:
+    if not file_name:
+        return file_name
+    normalized = file_name.strip().lstrip("/").replace("\\", "/")
+    if normalized == "FILES":
+        return ""
+    if normalized.startswith("FILES/"):
+        return normalized.replace("FILES/", "", 1)
+    return normalized
+
+
 class StudyFiles(Resource):
     @swagger.operation(
         summary="Get a list, with timestamps, of all files in the study folder",
@@ -391,10 +402,13 @@ without setting the "force" parameter to True""",
             for file in files:
                 try:
                     f_name = file["name"]
+                    upload_relative_path = normalize_upload_relative_path(f_name)
                     study_folder_root_path = os.path.join(
                         ftp_root_path, f"{study_id.lower()}-{obfuscation_code}"
                     )
-                    file_path = os.path.join(study_folder_root_path, f_name)
+                    file_path = os.path.join(
+                        study_folder_root_path, upload_relative_path
+                    )
                     status, message = delete_remote_file(
                         study_folder_root_path, file_path
                     )
