@@ -98,20 +98,11 @@ def normalize_upload_relative_path(file_name: str) -> str:
     return normalized
 
 
-PROTECTED_UPLOAD_FOLDERS = {"RAW_FILES", "DERIVED_FILES", "SUPPLEMENTARY_FILES"}
-
-
 def delete_upload_path(study_folder_root_path: str, file_name: str, force: bool):
     upload_relative_path = normalize_upload_relative_path(file_name)
 
     if not upload_relative_path:
         return False, "Deleting the FTP upload root is not allowed."
-
-    if upload_relative_path.rstrip("/") in PROTECTED_UPLOAD_FOLDERS:
-        return (
-            False,
-            f"Deleting protected upload folder '{upload_relative_path.rstrip('/')}' is not allowed.",
-        )
 
     file_path = os.path.join(study_folder_root_path, upload_relative_path)
     return delete_remote_file(study_folder_root_path, file_path)
