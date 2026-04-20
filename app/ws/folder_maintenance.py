@@ -527,6 +527,7 @@ class StudyFolderMaintenanceTask(object):
         metadata_files_signature_root_path: Union[None, str] = None,
         stage: None | str = "BACKUP",
         after_creation_callback: Union[None, Callable] = None,
+        skip_if_audit_folder_exists: bool =False,
     ):
         # if os.path.exists(self.study_metadata_files_path):
         metadata_files_list = self.get_all_metadata_files(
@@ -543,6 +544,8 @@ class StudyFolderMaintenanceTask(object):
             if not audit_folder_root_path:
                 audit_folder_root_path = self.study_audit_files_path
             audit_folder_path = os.path.join(audit_folder_root_path, folder_name)
+            if skip_if_audit_folder_exists and os.path.exists(audit_folder_path):
+                return audit_folder_path
             audit_folder_hash_path = os.path.join(audit_folder_path, "HASHES")
             os.makedirs(audit_folder_hash_path, exist_ok=True)
 

@@ -14,6 +14,7 @@ class StudyFolderService:
         folder_name: None | str = None,
         metadata_files_path: None | str = None,
         audit_folder_root_path: None | str = None,
+        skip_if_audit_folder_exists: bool = False,
     ):
         study_id = study.acc
         study_status = StudyStatus(study.status)
@@ -33,16 +34,29 @@ class StudyFolderService:
             audit_folder_root_path=audit_folder_root_path,
             folder_name=folder_name,
             stage=None,
+            skip_if_audit_folder_exists=skip_if_audit_folder_exists,
         )
 
     @staticmethod
-    def create_audit_folder_with_study_id(study_id: str):
+    def create_audit_folder_with_study_id(
+        study_id: str,
+        folder_name: None | str = None,
+        metadata_files_path: None | str = None,
+        audit_folder_root_path: None | str = None,
+        skip_if_audit_folder_exists: bool = False,
+    ):
         with DBManager.get_instance().session_maker() as db_session:
             try:
                 db_study: Study = (
                     db_session.query(Study).filter(Study.acc == study_id).first()
                 )
-                StudyFolderService.create_audit_folder(db_study)
+                StudyFolderService.create_audit_folder(
+                    db_study,
+                    folder_name=folder_name,
+                    metadata_files_path=metadata_files_path,
+                    audit_folder_root_path=audit_folder_root_path,
+                    skip_if_audit_folder_exists=skip_if_audit_folder_exists,
+                )
 
             except Exception as ex:
                 raise ex
