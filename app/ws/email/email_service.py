@@ -346,3 +346,26 @@ class EmailService(object):
         self.send_generic_email(
             subject_name, body, from_mail_address=None, to_mail_addresses=to
         )
+
+    def send_email_for_new_submitter(self, study_id, user_email):
+        host = get_settings().server.service.ws_app_base_link
+        submission_url = os.path.join(host, "editor", "study", study_id)
+        metabolights_help_email = "metabolights-help@ebi.ac.uk"
+        metabolights_website_url = get_settings().server.service.ws_app_base_link
+        
+        content = {
+            "study_id": study_id,
+            "submission_url": submission_url,
+            "metabolights_website_url": metabolights_website_url,
+            "metabolights_help_email": metabolights_help_email
+        }
+        
+        body = self.get_rendered_body("new_submitter.html", content)
+        subject_name = f"You have been added as a submitter to MetaboLights study {study_id}"
+
+        self.send_email(
+            subject_name,
+            body,
+            {user_email},
+            user_email
+        )

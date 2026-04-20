@@ -287,6 +287,19 @@ def get_principal_investigator_emails(study: Study):
     return additional_cc_emails
 
 
+@celery.task(
+    base=MetabolightsTask,
+    name="app.tasks.common_tasks.basic_tasks.send_email.send_email_for_new_submitter",
+)
+def send_email_for_new_submitter(study_id, user_email):
+    flask_app = get_flask_app()
+    with flask_app.app_context():
+        email_service = get_email_service(flask_app)
+        email_service.send_email_for_new_submitter(study_id, user_email)
+
+    return {"study_id": study_id, "user_email": user_email}
+
+
 @celery.task(name="app.tasks.common_tasks.basic_tasks.send_email.send_generic_email")
 def send_generic_email(subject, body, from_address, to_addresses, cc_addresses):
     send_email(subject, body, from_address, to_addresses, cc_addresses)
