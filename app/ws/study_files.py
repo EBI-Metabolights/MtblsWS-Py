@@ -98,6 +98,25 @@ def normalize_upload_relative_path(file_name: str) -> str:
     return normalized
 
 
+PROTECTED_UPLOAD_FOLDERS = {"RAW_FILES", "DERIVED_FILES", "SUPPLEMENTARY_FILES"}
+
+
+def delete_upload_path(study_folder_root_path: str, file_name: str, force: bool):
+    upload_relative_path = normalize_upload_relative_path(file_name)
+
+    if not upload_relative_path:
+        return False, "Deleting the FTP upload root is not allowed."
+
+    if upload_relative_path.rstrip("/") in PROTECTED_UPLOAD_FOLDERS:
+        return (
+            False,
+            f"Deleting protected upload folder '{upload_relative_path.rstrip('/')}' is not allowed.",
+        )
+
+    file_path = os.path.join(study_folder_root_path, upload_relative_path)
+    return delete_remote_file(study_folder_root_path, file_path)
+
+
 class StudyFiles(Resource):
     @swagger.operation(
         summary="Get a list, with timestamps, of all files in the study folder",
@@ -402,15 +421,11 @@ without setting the "force" parameter to True""",
             for file in files:
                 try:
                     f_name = file["name"]
-                    upload_relative_path = normalize_upload_relative_path(f_name)
                     study_folder_root_path = os.path.join(
                         ftp_root_path, f"{study_id.lower()}-{obfuscation_code}"
                     )
-                    file_path = os.path.join(
-                        study_folder_root_path, upload_relative_path
-                    )
-                    status, message = delete_remote_file(
-                        study_folder_root_path, file_path
+                    status, message = delete_upload_path(
+                        study_folder_root_path, f_name, always_remove
                     )
 
                     if not status:
