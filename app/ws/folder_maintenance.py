@@ -527,7 +527,6 @@ class StudyFolderMaintenanceTask(object):
         metadata_files_signature_root_path: Union[None, str] = None,
         stage: None | str = "BACKUP",
         after_creation_callback: Union[None, Callable] = None,
-        skip_if_audit_folder_exists: bool =False,
     ):
         # if os.path.exists(self.study_metadata_files_path):
         metadata_files_list = self.get_all_metadata_files(

@@ -275,7 +275,7 @@ def copy(self, source_path: str, target_path: str):
                     os.rename(temp_file_path, new_path)
                 else:
                     shutil.copy2(input_path, temp_file_path)
-                    with open(new_path, "ab") as f:
+                    with open(temp_file_path, "ab") as f:
                         os.fsync(f.fileno())
                     os.rename(temp_file_path, new_path)
                 logger.info("Folder path: %s", new_path_parent)
