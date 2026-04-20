@@ -32,7 +32,7 @@ import string
 import time
 import uuid
 from os.path import basename, normpath
-from typing import Tuple
+from typing import Tuple, Union
 from urllib import request as urllib_request
 
 import numpy as np
@@ -842,7 +842,7 @@ def update_correct_sample_file_name(isa_study, study_location, study_id):
     return isa_study, short_sample_file_name
 
 
-def delete_remote_file(root_path: str, file_path: str) -> Tuple[bool, str]:
+def delete_remote_file(root_path: str, file_path: Union[str, list[str]]) -> Tuple[bool, str]:
     inputs = {"root_path": root_path, "file_paths": file_path}
     try:
         task = delete_files.apply_async(kwargs=inputs, expires=20)
@@ -854,11 +854,21 @@ def delete_remote_file(root_path: str, file_path: str) -> Tuple[bool, str]:
     if not output:
         return False, "No response from server."
 
+    success_messages = []
+    error_messages = []
     for item in output:
-        if "status" in output[item]:
-            message = output[item]["message"] if "message" in output[item] else ""
+        if "status" not in output[item]:
+            continue
+        message = output[item]["message"] if "message" in output[item] else ""
+        if output[item]["status"]:
+            success_messages.append(message)
+        else:
+            error_messages.append(message)
 
-            return output[item]["status"], message
+    if error_messages:
+        return False, "; ".join(error_messages)
+    if success_messages:
+        return True, "; ".join(success_messages)
 
     return False, "No Files"
 
