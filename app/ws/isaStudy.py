@@ -29,6 +29,7 @@ from isatools import model
 from marshmallow import ValidationError
 
 from app.tasks.common_tasks.basic_tasks.elasticsearch import reindex_study
+from app.tasks.common_tasks.basic_tasks.send_email import send_email_for_new_submitter
 from app.utils import metabolights_exception_handler
 from app.ws import mm_models
 from app.ws.auth.permissions import validate_submission_update, validate_submission_view
@@ -3542,8 +3543,10 @@ class StudySubmitters(Resource):
             email = "not yet set"
 
             for submitter in data:
-                email = submitter.get("email")
+                email = submitter.get("email")  
                 study_submitters(study_id, email, "add")
+                email_inputs = {"study_id": study_id, "user_email": email}
+                send_email_for_new_submitter.apply_async(kwargs=email_inputs, expires=60)
                 inputs = {"user_token": None, "study_id": study_id}
                 reindex_study.apply_async(kwargs=inputs, expires=60)
         except:
