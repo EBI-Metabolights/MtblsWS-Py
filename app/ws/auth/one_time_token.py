@@ -11,6 +11,14 @@ from app.ws.redis.redis import RedisStorage, get_redis_server
 logger = logging.getLogger(__name__)
 
 
+def _decode_redis_value(value: None | bytes | str) -> str:
+    if not value:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8")
+    return value
+
+
 def create_one_time_token(
     jwt_token: str, expire_time_in_seconds: None | int = None
 ) -> None | str:
@@ -37,13 +45,14 @@ def create_one_time_token(
         ex = expire_time_in_seconds
         if not ex:
             ex = get_settings().auth.configuration.one_time_token_expires_in_seconds
-        redis.set_value(token_key, jwt_token, ex=ex)
-        val = redis.get_value(token_key)
-        val_str = val.decode("utf-8")
+        created = redis.set_value(token_key, jwt_token, ex=ex)
+        if not created:
+            logger.error("Redis did not store one-time-token for subject: %s", subject)
+            return None
         logger.info(
             "One-time-token created for subject: %s. JWT TOKEN: ...%s",
             subject,
-            val_str[-4:],
+            jwt_token[-4:],
         )
         return token
     except Exception as ex:
@@ -55,10 +64,11 @@ def get_jwt_with_one_time_token(one_time_token: str) -> None | str:
     if not one_time_token:
         return None
     token_key = f"one-time-token-request:token:{one_time_token}"
+    redis: None | RedisStorage = None
     try:
-        redis: RedisStorage = get_redis_server()
-        jwt_value: bytes = redis.get_value(token_key)
-        jwt_data = jwt_value.decode("utf-8") if jwt_value else ""
+        redis = get_redis_server()
+        jwt_value: None | bytes | str = redis.get_value(token_key, readonly=False)
+        jwt_data = _decode_redis_value(jwt_value)
         logger.info(
             "Fetching JWT with one-time-token: ...%s, JWT TOKEN: ...%s",
             one_time_token[-4:],
@@ -72,5 +82,9 @@ def get_jwt_with_one_time_token(one_time_token: str) -> None | str:
         return jwt_data
     except Exception as ex:
         logger.error("Error while fetching one-time-token: %s", ex)
-        redis.delete_value(token_key)
+        if redis:
+            try:
+                redis.delete_value(token_key)
+            except Exception as delete_ex:
+                logger.error("Error while deleting one-time-token: %s", delete_ex)
         return None
