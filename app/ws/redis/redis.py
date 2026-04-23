@@ -62,8 +62,8 @@ class RedisStorage(object):
             return True
         return False
 
-    def get_value(self, key):
-        redis = self.get_redis(readonly=True)
+    def get_value(self, key, readonly: bool = True):
+        redis = self.get_redis(readonly=readonly)
         value = redis.get(key)
         return value
 
