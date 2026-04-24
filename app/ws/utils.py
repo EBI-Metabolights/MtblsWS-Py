@@ -350,6 +350,11 @@ def read_tsv(file_name, col_names=None, sep="\t", **kwargs):
             if os.path.getsize(file_name) == 0:  # Empty file
                 logger.error("Could not read file " + file_name)
             else:
+                custom_kwargs = kwargs.copy()
+                for key in ["sep", "header", "encoding", "usecols", "dtype"]:
+                    if key in custom_kwargs:
+                        custom_kwargs.pop(key, None)
+
                 if filter:
                     table_df = pd.read_csv(
                         file_name,
@@ -358,7 +363,7 @@ def read_tsv(file_name, col_names=None, sep="\t", **kwargs):
                         encoding="utf-8",
                         usecols=col_names,
                         dtype=types_dict,
-                        **kwargs,
+                        **custom_kwargs,
                     )
                 else:
                     table_df = pd.read_csv(
@@ -367,9 +372,13 @@ def read_tsv(file_name, col_names=None, sep="\t", **kwargs):
                         header=0,
                         encoding="utf-8",
                         dtype=types_dict,
-                        **kwargs,
+                        **custom_kwargs,
                     )
         except Exception as e:  # Todo, should check if the file format is Excel. ie. not in the exception handler
+            custom_kwargs = kwargs.copy()
+            for key in ["sep", "header", "encoding", "usecols", "dtype"]:
+                if key in custom_kwargs:
+                    custom_kwargs.pop(key, None)
             if os.path.getsize(file_name) > 0:
                 table_df = pd.read_csv(
                     file_name,
@@ -377,7 +386,7 @@ def read_tsv(file_name, col_names=None, sep="\t", **kwargs):
                     header=0,
                     encoding="ISO-8859-1",
                     dtype=str,
-                    **kwargs,
+                    **custom_kwargs,
                 )  # Excel format
                 logger.info(
                     "Tried to open as Excel tsv file 'ISO-8859-1' file "
