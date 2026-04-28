@@ -24,7 +24,13 @@ logger = logging.getLogger(__name__)
     name="app.tasks.datamover_tasks.curation_tasks.metabolon.metabolon_confirm",
 )
 def metabolon_confirm(
-    self, study_id: str, study_location: str, email: str, target_location: str = None
+    self,
+    study_id: str,
+    study_location: str,
+    email: str,
+    target_location: str = None,
+    *args,
+    **kwargs,
 ):
     message = {}
     success = False

@@ -22,13 +22,13 @@ logger = logging.getLogger("wslog")
 @celery.task(
     base=MetabolightsTask,
     bind=True,
-    name="app.tasks.datamover_tasks.common_tasks.ftp_operations.index_study_data_files",
+    name="app.tasks.datamover_tasks.basic_tasks.ftp_operations.index_study_data_files",
     autoretry_for={Exception},
     default_retry_delay=1,
     max_retries=1,
 )
 def index_study_data_files(
-    self, study_id: str, obfuscation_code: str, recursive: bool = True
+    self, study_id: str, obfuscation_code: str, recursive: bool = True, *args, **kwargs,
 ) -> Dict[str, FileDescriptor]:
     folder_name = f"{study_id.lower()}-{obfuscation_code}"
     settings = get_settings()

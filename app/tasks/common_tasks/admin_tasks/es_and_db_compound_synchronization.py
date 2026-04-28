@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
     base=MetabolightsTask,
     name="app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization.sync_compounds_on_es_and_db",
 )
-def sync_compound_on_es_and_db(email: str, send_email_to_submitter=False):
+def sync_compound_on_es_and_db(email: None | str = None):
     try:
         compounds_dict = {}
 
@@ -107,7 +107,7 @@ def sync_compound_on_es_and_db(email: str, send_email_to_submitter=False):
             "deleted_compounds": str(compounds_not_in_db),
         }
 
-        if send_email_to_submitter:
+        if email:
             result_str = json.dumps(result, indent=4)
             result_str = result_str.replace("\n", "<p>")
             send_email(
@@ -121,7 +121,7 @@ def sync_compound_on_es_and_db(email: str, send_email_to_submitter=False):
         return result
 
     except Exception as ex:
-        if send_email_to_submitter:
+        if email:
             result_str = str(ex).replace("\n", "<p>")
             send_email(
                 "A task was failed: sync MetaboLights compounds on elasticsearch and database",

@@ -4,7 +4,7 @@ import os
 from app.tasks.worker import MetabolightsTask, celery, send_email
 from app.utils import MetabolightsDBException, current_time
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.schemes import RefMetabolite, Study, User
+from app.ws.db.schemes import RefMetabolite, Study
 from app.ws.db.types import StudyStatus
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 
@@ -42,16 +42,11 @@ def sort_by_study_id(key: str):
     base=MetabolightsTask,
     name="app.tasks.common_tasks.basic_tasks.elasticsearch.reindex_all_public_studies",
 )
-def reindex_all_public_studies(user_token, send_email_to_submitter=False):
+def reindex_all_public_studies(email: None | str = None):
     try:
         studies = []
 
         with DBManager.get_instance().session_maker() as db_session:
-            user = db_session.query(User).filter(User.apitoken == user_token).first()
-            if not user:
-                raise MetabolightsDBException("No user")
-            email = user.username
-
             result = (
                 db_session.query(Study.acc, Study.updatedate)
                 .filter(Study.status == StudyStatus.PUBLIC.value)
@@ -64,15 +59,15 @@ def reindex_all_public_studies(user_token, send_email_to_submitter=False):
                 studies.append(study)
             studies.sort(key=lambda x: sort_by_study_id(x.acc), reverse=True)
 
-        result = reindex_studies_in_list(user_token, studies)
+        result = reindex_studies_in_list(studies)
         result_str = json.dumps(result, indent=4)
         result_str = result_str.replace("\n", "<p>")
-        if send_email_to_submitter:
+        if email:
             send_email(
                 "Result of the task: reindex all studies", result_str, None, email, None
             )
     except Exception as ex:
-        if send_email_to_submitter:
+        if email:
             result_str = str(ex).replace("\n", "<p>")
             send_email(
                 "Reindex all studies task was failed", result_str, None, email, None
@@ -84,34 +79,26 @@ def reindex_all_public_studies(user_token, send_email_to_submitter=False):
     base=MetabolightsTask,
     name="app.tasks.common_tasks.basic_tasks.elasticsearch.reindex_all_studies",
 )
-def reindex_all_studies(user_token, send_email_to_submitter=False):
+def reindex_all_studies(email: str | None = None):
     try:
         studies = []
 
         with DBManager.get_instance().session_maker() as db_session:
-            user: User = (
-                db_session.query(User).filter(User.apitoken == user_token).first()
-            )
-            if not user:
-                raise MetabolightsDBException("No user")
-            email = user.username
-
             result = db_session.query(Study.acc, Study.updatedate).all()
-
             if not result:
                 raise MetabolightsDBException("No studies found on db.")
             for study in result:
                 studies.append(study)
             studies.sort(key=lambda x: sort_by_study_id(x.acc), reverse=True)
-        result = reindex_studies_in_list(user_token, studies)
+        result = reindex_studies_in_list(studies)
         result_str = json.dumps(result, indent=4)
         result_str = result_str.replace("\n", "<p>")
-        if send_email_to_submitter:
+        if email:
             send_email(
                 "Result of the task: reindex all studies", result_str, None, email, None
             )
     except Exception as ex:
-        if send_email_to_submitter:
+        if email:
             result_str = str(ex).replace("\n", "<p>")
             send_email(
                 "Reindex all studies task was failed", result_str, None, email, None
@@ -119,7 +106,7 @@ def reindex_all_studies(user_token, send_email_to_submitter=False):
             raise ex
 
 
-def reindex_studies_in_list(user_token, studies):
+def reindex_studies_in_list(studies):
     es = ElasticsearchService.get_instance()
     failed_indexed_studies = {}
     indexed_studies = []
@@ -127,9 +114,7 @@ def reindex_studies_in_list(user_token, studies):
     try:
         for item in studies:
             try:
-                es._reindex_study(
-                    item.acc, user_token, include_validation_results=False, sync=True
-                )
+                es._reindex_study(item.acc, include_validation_results=False, sync=True)
                 indexed_studies.append(item.acc)
             except Exception as ex:
                 failed_indexed_studies[item.acc] = str(ex)
@@ -167,7 +152,7 @@ def delete_compound_index(user_token, compound_id):
     base=MetabolightsTask,
     name="app.tasks.common_tasks.basic_tasks.elasticsearch.reindex_all_compounds",
 )
-def reindex_all_compounds(email, send_email_to_submitter=False):
+def reindex_all_compounds(email: None | str = None):
     try:
         compounds = []
 
@@ -205,7 +190,7 @@ def reindex_all_compounds(email, send_email_to_submitter=False):
         }
         result_str = json.dumps(result, indent=4)
         result_str = result_str.replace("\n", "<p>")
-        if send_email_to_submitter:
+        if reindex_all_compounds:
             send_email(
                 "Result of the task: reindex all compounds",
                 result_str,
@@ -214,7 +199,7 @@ def reindex_all_compounds(email, send_email_to_submitter=False):
                 None,
             )
     except Exception as ex:
-        if send_email_to_submitter:
+        if reindex_all_compounds:
             result_str = str(ex).replace("\n", "<p>")
             send_email(
                 "Reindex all compounds task was failed", result_str, None, email, None

@@ -2402,7 +2402,7 @@ class MtblsPublicStudiesIndexAll(Resource):
         user_token = result.context.user_api_token
 
         logger.info("Indexing public studies")
-        inputs = {"user_token": user_token, "send_email_to_submitter": True}
+        inputs = {"email": result.context.username}
         try:
             result = reindex_all_public_studies.apply_async(
                 kwargs=inputs, expires=60 * 5
@@ -2459,7 +2459,7 @@ class MtblsStudiesIndexAll(Resource):
         user_token = result.context.user_api_token
 
         logger.info("Indexing studies.")
-        inputs = {"user_token": user_token, "send_email_to_submitter": True}
+        inputs = {"email": result.context.username}
         try:
             result = reindex_all_studies.apply_async(kwargs=inputs, expires=60 * 5)
 
@@ -2514,7 +2514,7 @@ class MtblsStudiesIndexSync(Resource):
         user_token = result.context.user_api_token
 
         logger.info("Indexing missing/out-of-date studies.")
-        inputs = {"user_token": user_token, "send_email_to_submitter": True}
+        inputs = {"email": result.context.username}
         try:
             result = sync_studies_on_es_and_db.apply_async(
                 kwargs=inputs, expires=60 * 5

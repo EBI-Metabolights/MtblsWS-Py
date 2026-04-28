@@ -5,7 +5,7 @@ import os
 from app.tasks.worker import MetabolightsTask, celery, send_email
 from app.utils import MetabolightsDBException, current_time
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.schemes import Study, User
+from app.ws.db.schemes import Study
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 
 logger = logging.getLogger(__name__)
@@ -15,16 +15,11 @@ logger = logging.getLogger(__name__)
     base=MetabolightsTask,
     name="app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization.sync_studies_on_es_and_db",
 )
-def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
+def sync_studies_on_es_and_db(email: None | str = None):
     try:
         studies_dict = {}
 
         with DBManager.get_instance().session_maker() as db_session:
-            user = db_session.query(User).filter(User.apitoken == user_token).first()
-            if not user:
-                raise MetabolightsDBException("No user")
-
-            email = user.username
 
             result = db_session.query(Study.acc, Study.updatedate).all()
 
@@ -77,9 +72,7 @@ def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
             for item in unindexed_studies:
                 # print(f"inserting new studies index {item}")
                 try:
-                    es._reindex_study(
-                        item, user_token, include_validation_results=False, sync=True
-                    )
+                    es._reindex_study(item, include_validation_results=False, sync=True)
                 except Exception as ex:
                     logger.error(f"Error while adding new index {item}: {str(ex)}")
 
@@ -97,10 +90,7 @@ def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
                 for item in out_of_date_studies:
                     try:
                         es._reindex_study(
-                            item,
-                            user_token,
-                            include_validation_results=False,
-                            sync=True,
+                            item, include_validation_results=False, sync=True
                         )
                     except Exception as ex:
                         logger.error(f"Error while reindexing {item}: {str(ex)}")
@@ -119,7 +109,7 @@ def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
             "deleted_studies": str(studies_not_in_db),
         }
 
-        if send_email_to_submitter:
+        if email:
             result_str = json.dumps(result, indent=4)
             result_str = result_str.replace("\n", "<p>")
             send_email(
@@ -132,7 +122,7 @@ def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
 
         return result
     except Exception as ex:
-        if send_email_to_submitter:
+        if email:
             result_str = str(ex).replace("\n", "<p>")
             send_email(
                 "A task was failed: sync MetaboLights studies on elasticsearch and database",

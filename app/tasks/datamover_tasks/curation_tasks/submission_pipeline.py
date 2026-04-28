@@ -24,7 +24,9 @@ logger = logging.getLogger(__name__)
     max_retries=1,
     name="app.tasks.datamover_tasks.curation_tasks.submission_pipeline.make_ftp_folder_readonly_task",
 )
-def make_ftp_folder_readonly_task(self, params: dict[str, Any]):
+def make_ftp_folder_readonly_task(
+    self, params: dict[str, Any], *args, **kwargs
+) -> dict:
     model = MakeStudyPrivateParameters.model_validate(params)
     logger.info(f"{model.study_id} make_ftp_folder_readonly_task is running...")
     if model.test:
@@ -43,7 +45,7 @@ def make_ftp_folder_readonly_task(self, params: dict[str, Any]):
     max_retries=1,
     name="app.tasks.datamover_tasks.curation_tasks.submission_pipeline.make_ftp_folder_writable_task",
 )
-def make_ftp_folder_writable_task(self, params: dict[str, Any]):
+def make_ftp_folder_writable_task(self, params: dict[str, Any], *args, **kwargs):
     model = MakeStudyPrivateParameters.model_validate(params)
     logger.info(f"{model.study_id} make_ftp_folder_writable_task is running...")
     if model.test:
@@ -80,7 +82,7 @@ def update_folder_status(model: MakeStudyPrivateParameters, permission: int):
     max_retries=1,
     name="app.tasks.datamover_tasks.curation_tasks.submission_pipeline.index_study_data_files_task",
 )
-def index_study_data_files_task(self, params: dict[str, Any]):
+def index_study_data_files_task(self, params: dict[str, Any], *args, **kwargs):
     try:
         model = MakeStudyPrivateParameters.model_validate(params)
         logger.info(f"{model.study_id} index_study_data_files_task is running...")

@@ -477,7 +477,7 @@ class MtblsCompoundIndexAll(Resource):
         result = validate_user_has_curator_role(request)
         try:
             logger.info("Indexing all compounds")
-            inputs = {"email": result.context.username, "send_email_to_submitter": True}
+            inputs = {"email": result.context.username}
             result = reindex_all_compounds.apply_async(kwargs=inputs, expires=60 * 5)
 
             result = {
@@ -529,7 +529,7 @@ class MtblsCompoundIndexSync(Resource):
         log_request(request)
         result = validate_user_has_curator_role(request)
         try:
-            inputs = {"email": result.context.username, "send_email_to_submitter": True}
+            inputs = {"email": result.context.username}
 
             result = sync_compound_on_es_and_db.apply_async(
                 kwargs=inputs, expires=60 * 5

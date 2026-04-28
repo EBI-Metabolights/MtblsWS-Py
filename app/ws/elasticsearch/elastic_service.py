@@ -314,7 +314,7 @@ class ElasticsearchService(object):
         )
         return result
 
-    def delete_compound_index(self, user_token, compound_id):
+    def delete_compound_index(self, compound_id):
         self.client.delete(
             index=self.INDEX_NAME, doc_type=self.DOC_TYPE_COMPOUND, id=compound_id
         )
@@ -324,7 +324,7 @@ class ElasticsearchService(object):
             index=self.INDEX_NAME, doc_type=self.DOC_TYPE_COMPOUND, id=compound_id
         )
 
-    def delete_study_index(self, user_token, study_id):
+    def delete_study_index(self, study_id):
         self.client.delete(
             index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, id=study_id
         )
@@ -348,31 +348,29 @@ class ElasticsearchService(object):
     def reindex_study(
         self,
         study_id,
-        user_token,
         include_validation_results: bool = False,
         sync: bool = False,
     ):
         # Revalidate user permission
-        self._reindex_study(study_id, user_token, include_validation_results, sync)
+        self._reindex_study(
+            study_id, include_validation_results=include_validation_results, sync=sync
+        )
 
     def _reindex_study(
         self,
         study_id,
-        user_token,
         include_validation_results: bool = False,
         sync: bool = False,
     ):
         try:
-            self.reindex_study_with_task(
-                study_id, user_token, include_validation_results, sync
-            )
+            self.reindex_study_with_task(study_id, include_validation_results, sync)
             return study_id
         except Exception as e:
             raise MetabolightsException(
                 "Error while reindexing.", exception=e, http_code=500
             )
 
-    def reindex_compound(self, user_token, compound_id):
+    def reindex_compound(self, compound_id):
         compound_id = self._reindex_compound(compound_id)
         return compound_id
 
@@ -426,9 +424,7 @@ class ElasticsearchService(object):
         )
         return result
 
-    def reindex_study_with_task(
-        self, study_id, user_token, include_validation_results, sync: bool
-    ):
+    def reindex_study_with_task(self, study_id, include_validation_results, sync: bool):
         task_name = StudyTaskName.REINDEX
         tasks = StudyService.get_instance().get_study_tasks(
             study_id=study_id, task_name=task_name
@@ -460,7 +456,6 @@ class ElasticsearchService(object):
                 validations = include_validation_results
                 m_study = StudyService.get_instance().get_study_from_db_and_folder(
                     study_id,
-                    user_token,
                     optimize_for_es_indexing=True,
                     revalidate_study=validations,
                     include_maf_files=False,

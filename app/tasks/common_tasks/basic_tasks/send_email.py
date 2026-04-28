@@ -25,7 +25,7 @@ from app.ws.study.user_service import UserService
     base=MetabolightsTask,
     name="app.tasks.common_tasks.basic_tasks.send_email.send_test_email",
 )
-def send_test_email(email):
+def send_test_email(email, *args, **kwargs):
     flask_app = get_flask_app()
     with flask_app.app_context():
         email_service = get_email_service(flask_app)
@@ -44,7 +44,7 @@ def send_test_email(email):
     name="app.tasks.common_tasks.basic_tasks.send_email.send_email_for_new_provisional_study",
 )
 def send_email_for_new_provisional_study(
-    user_email, study_id, folder_name, study_title
+    user_email, study_id, folder_name, study_title, *args, **kwargs
 ):
     flask_app = get_flask_app()
     with flask_app.app_context():
@@ -97,6 +97,8 @@ def send_email_for_new_accession_number(
     release_date: str,
     additional_cc_emails: Union[None, List[str]] = None,
     study_contacts: str = "",
+    *args,
+    **kwargs,
 ):
     flask_app = get_flask_app()
     with flask_app.app_context():
@@ -169,7 +171,13 @@ def send_email_for_new_accession_number(
     base=MetabolightsTask,
     name="app.tasks.common_tasks.basic_tasks.send_email.send_email_on_public",
 )
-def send_email_on_public(user_token, study_id, release_date):
+def send_email_on_public(
+    user_token,
+    study_id,
+    release_date,
+    *args,
+    **kwargs,
+):
     flask_app = get_flask_app()
     with flask_app.app_context():
         auth_manager = AuthenticationManager.get_instance()
@@ -288,12 +296,14 @@ def get_principal_investigator_emails(study: Study):
 
 
 @celery.task(name="app.tasks.common_tasks.basic_tasks.send_email.send_generic_email")
-def send_generic_email(subject, body, from_address, to_addresses, cc_addresses):
+def send_generic_email(
+    subject, body, from_address, to_addresses, cc_addresses, *args, **kwargs
+):
     send_email(subject, body, from_address, to_addresses, cc_addresses)
 
 
 @celery.task(
     name="app.tasks.common_tasks.basic_tasks.send_email.send_technical_issue_email"
 )
-def send_technical_issue_email(subject, body):
+def send_technical_issue_email(subject, body, *args, **kwargs):
     report_internal_technical_issue(subject, body)

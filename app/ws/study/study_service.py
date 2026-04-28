@@ -120,7 +120,6 @@ class StudyService(object):
     def get_study_from_db_and_folder(
         self,
         study_id,
-        user_token,
         optimize_for_es_indexing=False,
         revalidate_study=True,
         include_maf_files=False,

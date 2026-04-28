@@ -21,6 +21,8 @@ def create_folders(
     folder_paths: Union[str, List[str]],
     acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE,
     exist_ok: bool = True,
+    *args,
+    **kwargs,
 ):
     results = {}
     input_paths = get_input_paths(folder_paths)
@@ -72,7 +74,11 @@ def create_folders(
     name="app.tasks.datamover_tasks.basic_tasks.file_management.chmod",
 )
 def chmod(
-    self, paths: Union[str, List[str]], acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE
+    self,
+    paths: Union[str, List[str]],
+    acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE,
+    *args,
+    **kwargs,
 ):
     results = {}
 
@@ -91,7 +97,12 @@ def chmod(
     name="app.tasks.datamover_tasks.basic_tasks.file_management.list_directory",
 )
 def list_directory(
-    self, path: str, recursive: bool = False, exclude_list: List[str] = None
+    self,
+    path: str,
+    recursive: bool = False,
+    exclude_list: List[str] = None,
+    *args,
+    **kwargs,
 ) -> Dict[str, Any]:
     applied_exclude_list = exclude_list if exclude_list else []
     directory_files = get_directory_files(
@@ -110,7 +121,9 @@ def list_directory(
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.delete_folders",
 )
-def delete_folders(self, root_path: str, folder_paths: Union[str, List[str]]):
+def delete_folders(
+    self, root_path: str, folder_paths: Union[str, List[str]], *args, **kwargs
+):
     results = {}
 
     input_paths = get_input_paths(folder_paths)
@@ -147,7 +160,9 @@ def delete_folders(self, root_path: str, folder_paths: Union[str, List[str]]):
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.delete_files",
 )
-def delete_files(self, root_path: str, file_paths: Union[str, List[str]]):
+def delete_files(
+    self, root_path: str, file_paths: Union[str, List[str]], *args, **kwargs
+):
     results = {}
 
     input_paths = get_input_paths(file_paths)
@@ -209,7 +224,7 @@ def delete_files(self, root_path: str, file_paths: Union[str, List[str]]):
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.move",
 )
-def move(self, source_path: str, target_path: str):
+def move(self, source_path: str, target_path: str, *args, **kwargs):
     input_path = source_path
     new_path = target_path
 
@@ -252,7 +267,7 @@ def move(self, source_path: str, target_path: str):
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.copy",
 )
-def copy(self, source_path: str, target_path: str):
+def copy(self, source_path: str, target_path: str, *args, **kwargs):
     input_path = source_path
     new_path = target_path
 
@@ -262,56 +277,34 @@ def copy(self, source_path: str, target_path: str):
     if os.path.exists(input_path):
         if not os.path.exists(new_path):
             try:
-                new_path_parent = os.path.dirname(new_path)
-                basename = os.path.basename(new_path)
-                temp_file_path = os.path.join(new_path_parent, f".{basename}")
-                os.makedirs(new_path_parent, exist_ok=True)
-                # BashClient.execute_command(
-                #     f'cp -r "{input_path}" "{temp_file_path}" && sync {temp_file_path}'
-                # )
                 if os.path.isdir(input_path):
-                    shutil.copytree(input_path, temp_file_path)
-                    os.system("sync")
-                    os.rename(temp_file_path, new_path)
+                    shutil.copytree(input_path, new_path)
+                elif os.path.isfile(input_path) or os.path.islink(input_path):
+                    shutil.copy2(input_path, new_path)
                 else:
-                    shutil.copy2(input_path, temp_file_path)
-                    with open(temp_file_path, "ab") as f:
-                        os.fsync(f.fileno())
-                    os.rename(temp_file_path, new_path)
-                logger.info("Folder path: %s", new_path_parent)
-                for file in os.listdir(new_path_parent):
-                    logger.info("File in folder: %s", file)
+                    return {
+                        "status": False,
+                        "message": f"Unexpected status: {input_path} is not file, folder or link.",
+                    }
 
                 if os.path.exists(new_path):
-                    logger.info("File copy: %s -> %s", input_path, new_path)
                     return {
                         "status": True,
                         "message": f"'{input_path}' was copied to {new_path}.",
                     }
                 else:
-                    logger.info("File copy failed: %s -> %s", input_path, new_path)
                     return {
                         "status": False,
-                        "message": f"Unexpected status: {input_path} could not be moved to {new_path} successfully.",
+                        "message": f"Unexpected status: {input_path} could not be copied to {new_path} successfully.",
                     }
             except Exception as ex:
-                logger.info("File copy failed: %s -> %s", input_path, new_path)
-                logger.exception(ex)
                 return {
                     "status": False,
-                    "message": f"Path '{input_path}' could not be copied to {new_path}. Root cause: {str(ex)}",
+                    "message": f"Path '{input_path}' could not be moved to {new_path}. Root cause: {str(ex)}",
                 }
         else:
-            logger.info(
-                "File copy failed. Target file exists: %s -> %s", input_path, new_path
-            )
             return {"status": False, "message": f"'{new_path}' already exists."}
     else:
-        logger.info(
-            "File copy failed. Source file does not exist: %s -> %s",
-            input_path,
-            new_path,
-        )
         return {"status": False, "message": f"'{new_path}'  does not exist."}
 
 
@@ -320,7 +313,7 @@ def copy(self, source_path: str, target_path: str):
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.isfile",
 )
-def isfile(self, source_path: str) -> bool:
+def isfile(self, source_path: str, *args, **kwargs) -> bool:
     if source_path and os.path.exists(source_path) and os.path.isfile(source_path):
         return True
     return False
@@ -331,7 +324,7 @@ def isfile(self, source_path: str) -> bool:
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.isdir",
 )
-def isdir(self, source_path: str) -> bool:
+def isdir(self, source_path: str, *args, **kwargs) -> bool:
     if source_path and os.path.exists(source_path) and os.path.isdir(source_path):
         return True
     return False
@@ -342,7 +335,7 @@ def isdir(self, source_path: str) -> bool:
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.exists",
 )
-def exists(self, source_path: str) -> bool:
+def exists(self, source_path: str, *args, **kwargs) -> bool:
     if source_path and os.path.exists(source_path):
         return True
     return False
@@ -353,7 +346,7 @@ def exists(self, source_path: str) -> bool:
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.basic_tasks.file_management.get_permission",
 )
-def get_permission(self, source_path: str):
+def get_permission(self, source_path: str, *args, **kwargs):
     try:
         if source_path and os.path.exists(source_path):
             current_permission = os.stat(source_path).st_mode

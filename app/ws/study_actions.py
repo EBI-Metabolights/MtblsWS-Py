@@ -598,7 +598,7 @@ class StudyStatus(Resource):
                 save_assays_copy=True,
                 save_samples_copy=True,
             )
-        ElasticsearchService.get_instance()._reindex_study(updated_study_id, user_token)
+        ElasticsearchService.get_instance()._reindex_study(updated_study_id)
         study = StudyService.get_instance().get_study_by_acc(updated_study_id)
         current_curation_request = CurationRequest(study.curation_request)
         current_status = types.StudyStatus(study.status)
@@ -916,14 +916,7 @@ class StudyStatus(Resource):
             shutil.move(current_path, new_path)
 
         maintenance_task.maintain_rw_storage_folders()
-        # if not os.path.exists(new_path):
-        #     maintenance_task.maintain_study_symlinks(current_path, new_path)
 
-        # create symbolic links on services storage
-        # inputs = {"updated_study_id": updated_study_id, "study_id": study_id}
-        # create_links_on_data_storage.apply_async(kwargs=inputs)
-
-        # create symbolic links on private ftp storage
         inputs = {
             "updated_study_id": updated_study_id,
             "study_id": study_id,

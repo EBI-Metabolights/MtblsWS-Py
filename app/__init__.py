@@ -1,4 +1,16 @@
+import warnings
 from pathlib import Path
+
+warnings.filterwarnings(
+    "ignore",
+    message=r"pkg_resources is deprecated as an API.*",
+    category=UserWarning,
+)
+warnings.filterwarnings(
+    "ignore",
+    message=r"pkg_resources is deprecated as an API.*",
+    category=DeprecationWarning,
+)
 
 application_path = Path(__file__).parent.parent
 

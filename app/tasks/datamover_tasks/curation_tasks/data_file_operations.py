@@ -19,7 +19,7 @@ logger = logging.getLogger("datamover_worker")
     base=MetabolightsTask,
     name="app.tasks.datamover_tasks.curation_tasks.data_file_operations.delete_aspera_files",
 )
-def delete_aspera_files_from_data_files(self, study_id: str):
+def delete_aspera_files_from_data_files(self, study_id: str, *args, **kwargs):
     mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
     study_data_path = os.path.join(
         mounted_paths.cluster_study_readonly_files_actual_root_path, study_id
@@ -69,6 +69,8 @@ def unzip_folders(
     files: Dict[str, Any],
     remove_zip_files: bool = True,
     override: bool = False,
+    *args,
+    **kwargs,
 ):
     settings = get_study_settings()
     for file in files:
@@ -141,6 +143,8 @@ def move_data_files(
     target_location: str = "RECYCLE_BIN",
     override: bool = False,
     task_name=None,
+    *args,
+    **kwargs,
 ):
     if not study_id or not files:
         raise MaintenanceException(message="Invalid input")

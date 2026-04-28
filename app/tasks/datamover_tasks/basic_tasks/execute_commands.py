@@ -19,6 +19,8 @@ def execute_bash_command(
     stderr_log_file_path: Union[None, str] = None,
     email=None,
     task_name=None,
+    *args,
+    **kwargs,
 ):
     self.update_state(state="STARTED", meta={"command": command})
     result = BashClient.execute_command(
