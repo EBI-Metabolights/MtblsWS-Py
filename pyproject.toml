@@ -33,9 +33,9 @@ dependencies = [
 "jira>=3.8.0,<4",
 "jsonpickle>=4.0.2,<5",
 "marshmallow==2.21.0",
-"metabolights-utils>=1.4.25,<2",
+"metabolights-utils>=1.4.29,<2",
 "metaspace2020>=2.0.9,<3",
-"mhd-model>=0.1.74",
+"mhd-model>=0.1.79",
 "mzml2isa>=1.1.1",
 "oauth2client>=4.1.3,<5",
 "owlready2>=0.47,<0.48",
@@ -62,7 +62,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pytest>=7.4.3",
+    "pytest>=9.0.3",
     "vulture>=2.14,<3",
     "ruff>=0.14.7,<1",
     "import-linter>=2.5,<3",
