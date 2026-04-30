@@ -164,6 +164,8 @@ class Study(Base):
     mhd_model_version = Column(String(50))
     created_at = Column(DateTime, nullable=True)
     study_template = Column(String, default="minimum", server_default="mininum")
+    review_expiration_datetime = Column(DateTime, nullable=True)
+    reviewer_access_token = Column(Text, nullable=True)
     users = relationship("User", secondary="study_user", back_populates="studies")
 
 

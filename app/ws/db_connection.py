@@ -16,6 +16,7 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 import datetime
+import hashlib
 import logging
 import os
 import re
@@ -140,7 +141,9 @@ query_studies_user = """
     s.mhd_model_version,
     s.dataset_license,
     s.template_version,
-    s.created_at
+    s.created_at,
+    s.reviewer_access_token,
+    s.review_expiration_datetime
     from studies s, users u, study_user su
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
@@ -155,7 +158,7 @@ insert_study_with_provisional_id = """
     insert into studies (id, obfuscationcode, releasedate, status, studysize, submissiondate,
     updatedate, validations, validation_status, reserved_submission_id, acc, study_category,
     template_version, sample_type, study_template, mhd_model_version, dataset_license,
-    dataset_license_version, data_policy_agreement
+    dataset_license_version, data_policy_agreement, reviewer_access_token
     )
     values (
         %(new_unique_id)s,
@@ -172,7 +175,8 @@ insert_study_with_provisional_id = """
         %(mhd_model_version)s,
         %(dataset_license)s,
         %(dataset_license_version)s,
-        %(data_policy_agreement)s
+        %(data_policy_agreement)s,
+        %(reviewer_access_token)s
         );
 """
 assign_user_sql = (
@@ -604,6 +608,8 @@ def get_all_studies_for_user(user_token):
         dataset_license = row[14] if row[14] else None
         template_version = row[15] if row[15] else ""
         created_at = row[16].isoformat() if row[16] else None
+        reviewer_access_token = row[17] if row[16] else None
+        review_expiration_datetime = row[18].isoformat() if row[16] else None
         complete_list.append(
             {
                 "accession": study_id,
@@ -633,6 +639,8 @@ def get_all_studies_for_user(user_token):
                 "datasetLicense": dataset_license,
                 "templateVersion": template_version,
                 "createdAt": created_at,
+                "reviewerAccessToken": reviewer_access_token,
+                "reviewExpirationDatetime": review_expiration_datetime,
             }
         )
     return complete_list
@@ -1149,12 +1157,18 @@ def create_empty_study(
     dataset_license=None,
     dataset_license_version=None,
     data_policy_agreement=0,
+    reviewer_access_token=None,
 ):
     req_id = study_id
     current_time = current_utc_time_without_timezone()
     releasedate = current_time + datetime.timedelta(days=365)
     if not obfuscationcode:
         obfuscationcode = str(uuid.uuid4())
+    if not reviewer_access_token:
+        review_id = str(uuid.uuid4()) + str(current_time.timestamp())
+        reviewer_access_token = (
+            "mtbls_" + hashlib.sha256(review_id.encode()).hexdigest()
+        )
     with get_connection() as (conn, cursor):
         try:
             user_id = None
@@ -1192,6 +1206,7 @@ def create_empty_study(
                 "dataset_license": dataset_license,
                 "dataset_license_version": dataset_license_version,
                 "data_policy_agreement": data_policy_agreement,
+                "reviewer_access_token": reviewer_access_token,
             }
             cursor.execute(insert_study_with_provisional_id, content)
             cursor.execute(assign_user_sql, content)

@@ -1255,6 +1255,14 @@ class StudyFilesReuse(Resource):
                 "allowMultiple": False,
             },
             {
+                "name": "reviewer-access-token",
+                "description": "Reviewer access token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False,
+            },
+            {
                 "name": "readonlyMode",
                 "description": "readonlyMode",
                 "required": False,
@@ -1845,6 +1853,14 @@ class StudyFilesTree(Resource):
                 "required": False,
                 "allowMultiple": False,
             },
+            {
+                "name": "reviewer-access-token",
+                "description": "Reviewer access token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
             {"code": 200, "message": "OK."},
@@ -2147,6 +2163,14 @@ class FileList(Resource):
             {
                 "name": "obfuscation-code",
                 "description": "obfuscation code",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False,
+            },
+            {
+                "name": "reviewer-access-token",
+                "description": "Reviewer access token",
                 "paramType": "header",
                 "type": "string",
                 "required": False,

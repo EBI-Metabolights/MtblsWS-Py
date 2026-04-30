@@ -85,6 +85,14 @@ class IsaInvestigation(Resource):
                 "allowMultiple": False,
             },
             {
+                "name": "reviewer-access-token",
+                "description": "Reviewer access token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False,
+            },
+            {
                 "name": "user-token",
                 "description": "User API token",
                 "paramType": "header",
@@ -246,6 +254,12 @@ class IsaInvestigation(Resource):
             study.created_at.isoformat() if study.created_at else ""
         )
 
+        response["mtblsStudy"]["reviewerAccessToken"] = (
+            study.reviewer_access_token or ""
+        )
+        response["mtblsStudy"]["reviewExpirationDatetime"] = (
+            study.review_expiration_datetime or ""
+        )
         # ToDo: Make sure this date is formatted YYYY-MM-DD and update the isa_inv, isa_study before returning
         # response['mtblsStudy']['release_date'] = release_date
         # isa_inv.public_release_date = release_date

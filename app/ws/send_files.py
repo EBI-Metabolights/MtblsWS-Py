@@ -234,6 +234,14 @@ class SendFilesPrivate(Resource):
                 "required": False,
                 "allowMultiple": False,
             },
+            {
+                "name": "reviewer-access-token",
+                "description": "Reviewer Access Token.",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
             {"code": 200, "message": "OK."},

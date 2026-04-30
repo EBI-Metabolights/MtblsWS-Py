@@ -24,6 +24,7 @@ class AuthInputData(BaseModel):
     jwt: None | str = None
     study_id: None | str = None
     obfuscation_code: None | str = None
+    reviewer_access_token: None | str = None
 
 
 class DecisionType(enum.StrEnum):
@@ -139,6 +140,9 @@ class StudyPermissionContext(BaseScopeModel):
     owner: None | bool = None
     email_verified: None | bool = None
     expected_release_date: None | datetime.datetime = None
+    reviewer_access_token: None | str = None
+    validated_reviewer_access_token: None | str = None
+    review_expiration_datetime: None | str = None
 
 
 class RoleEvaluationResult(BaseScopeModel):

@@ -287,6 +287,7 @@ def validate_user_has_role(
         jwt=auth_data.jwt,
         study_id=auth_data.study_id,
         obfuscation_code=auth_data.obfuscation_code,
+        reviewer_access_token=auth_data.reviewer_access_token,
         fail_silently=fail_silently,
         study_required=study_required,
     )
@@ -302,6 +303,7 @@ def get_auth_data(request) -> AuthInputData:
         obfuscation_code = request.args.get("reviewCode", None) or None
         if obfuscation_code:
             obfuscation_code = obfuscation_code.replace("reviewer", "", 1)
+    reviewer_access_token = request.headers.get("reviewer_access_token") or None
 
     jwt_data = None
     if "authorization" in request.headers:
@@ -326,6 +328,7 @@ def get_auth_data(request) -> AuthInputData:
         jwt=jwt_data,
         study_id=study_id,
         obfuscation_code=obfuscation_code,
+        reviewer_access_token=reviewer_access_token,
     )
 
 
@@ -342,6 +345,7 @@ def validate_permissions(
         permissions=permissions,
         user_token=auth_data.user_token,
         obfuscation_code=auth_data.obfuscation_code,
+        reviewer_access_token=auth_data.reviewer_access_token,
         jwt=auth_data.jwt,
         fail_silently=fail_silently,
         user_required=user_required,

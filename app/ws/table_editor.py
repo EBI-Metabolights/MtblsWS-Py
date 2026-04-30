@@ -1308,6 +1308,14 @@ class GetTsvFile(Resource):
                 "required": False,
                 "allowMultiple": False,
             },
+            {
+                "name": "reviewer-access-token",
+                "description": "Reviewer access token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False,
+            },
         ],
         responseMessages=[
             {"code": 200, "message": "OK. The TSV table is returned"},

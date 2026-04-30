@@ -634,6 +634,14 @@ class AuthUserStudyPermissions2(Resource):
                 "paramType": "path",
                 "dataType": "string",
             },
+            {
+                "name": "reviewer-access-token",
+                "description": "Reviewer Access Token",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+            },
         ],
         responseMessages=[
             {"code": 200, "message": "OK."},

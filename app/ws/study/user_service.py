@@ -77,6 +77,7 @@ class UserService(object):
         jwt: None | str = None,
         study_id: None | str = None,
         obfuscation_code: None | str = None,
+        reviewer_access_token: None | str = None,
     ) -> tuple[scopes.StudyPermissionContext, list[str]]:
         permission_context = scopes.StudyPermissionContext()
         username: None | str = None
@@ -107,6 +108,10 @@ class UserService(object):
                     )
                 if obfuscation_code:
                     filters.append(Study.obfuscationcode == obfuscation_code)
+                    filters.append(
+                        Study.reviewer_access_token
+                        == (reviewer_access_token or "invalid")
+                    )
 
                 query = db_session.query(Study)
                 study: Study = query.filter(*filters).first()
@@ -144,6 +149,19 @@ class UserService(object):
                     permission_context.study_template = study.study_template
                     permission_context.created_at = study.created_at
                     permission_context.expected_release_date = study.releasedate
+                    permission_context.review_expiration_datetime = (
+                        study.review_expiration_datetime
+                    )
+                    permission_context.reviewer_access_token = (
+                        study.reviewer_access_token
+                    )
+                    if (
+                        permission_context.reviewer_access_token
+                        == reviewer_access_token
+                    ):
+                        permission_context.validated_reviewer_access_token = (
+                            study.reviewer_access_token
+                        )
 
             if username or user_token:
                 base_query = db_session.query(User)
@@ -184,6 +202,7 @@ class UserService(object):
         jwt: None | str = None,
         study_id: None | str = None,
         obfuscation_code: None | str = None,
+        reviewer_access_token: None | str = None,
         fail_silently: bool = False,
         study_required: bool = False,
     ) -> scopes.RoleEvaluationResult:
@@ -202,6 +221,7 @@ class UserService(object):
             jwt=jwt,
             study_id=study_id,
             obfuscation_code=obfuscation_code,
+            reviewer_access_token=reviewer_access_token,
         )
         result = scopes.RoleEvaluationResult(
             context=permission_context, messages=messages
@@ -251,7 +271,10 @@ class UserService(object):
     ):
         if (
             permission_context.validated_jwt
-            or permission_context.validated_obfuscation_code
+            or (
+                permission_context.validated_obfuscation_code
+                and permission_context.validated_reviewer_access_token
+            )
             or permission_context.user_api_token
         ):
             raise MetabolightsAuthorizationException(message=message)
@@ -264,6 +287,7 @@ class UserService(object):
         permissions: scopes.PermissionFilter,
         user_token: None | str = None,
         obfuscation_code: None | str = None,
+        reviewer_access_token: None | str = None,
         jwt: None | str = None,
         fail_silently: bool = False,
         user_required: bool = True,
@@ -278,6 +302,7 @@ class UserService(object):
             jwt=jwt,
             study_id=study_id,
             obfuscation_code=obfuscation_code,
+            reviewer_access_token=reviewer_access_token,
         )
         study_permission = self.evaluate_study_permission(
             context=permission_context, user_required=user_required
@@ -423,6 +448,7 @@ class UserService(object):
             if (
                 context.study_status in (StudyStatus.INREVIEW, StudyStatus.PRIVATE)
                 and context.validated_obfuscation_code
+                and context.validated_reviewer_access_token
             ):
                 permission.study_id = context.study_id
                 permission.study_status = context.study_status.name
